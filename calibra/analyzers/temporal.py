@@ -128,6 +128,10 @@ class TemporalAnalyzer(Analyzer):
 
         hints = self._policy_hints(flags, policy_family, raw)
 
+        # Per-episode arrays for Phase 2 comparison/curation (convention: "per_episode_<key>").
+        raw["per_episode_jitter_cv"]        = jitter_raw.get("episode_values", [])
+        raw["per_episode_dropout_fraction"] = dropout_raw.get("episode_values", [])
+
         return AnalyzerResult(
             analyzer_name=self.name,
             flags=flags,
@@ -140,16 +144,16 @@ class TemporalAnalyzer(Analyzer):
     def _check_jitter(
         self, batch: EpisodeBatch
     ) -> tuple[Optional[RiskFlag], dict]:
-        cvs = [_episode_jitter_cv(ep) for ep in batch.episodes]
-        cvs = [v for v in cvs if v is not None]
+        ep_values = [_episode_jitter_cv(ep) for ep in batch.episodes]
+        cvs = [v for v in ep_values if v is not None]
 
         if not cvs:
-            return None, {"skipped": "insufficient steps"}
+            return None, {"skipped": "insufficient steps", "episode_values": ep_values}
 
         arr = np.array(cvs)
         stat, lo, hi = _bootstrap_ci(arr, np.mean, self.n_bootstrap, self.ci_level)
         raw = {"mean_cv": float(stat), "ci_lower": float(lo), "ci_upper": float(hi),
-               "n_episodes": len(cvs)}
+               "n_episodes": len(cvs), "episode_values": ep_values}
 
         level = self._threshold_level(
             stat, self.jitter_cv_warning, self.jitter_cv_critical
@@ -187,14 +191,15 @@ class TemporalAnalyzer(Analyzer):
     def _check_dropout(
         self, batch: EpisodeBatch
     ) -> tuple[Optional[RiskFlag], dict]:
-        fracs = [
+        ep_values = [
             _episode_dropout_fraction(ep, self.dropout_k)
             for ep in batch.episodes
         ]
-        arr = np.array(fracs)
+        arr = np.array(ep_values)
         stat, lo, hi = _bootstrap_ci(arr, np.mean, self.n_bootstrap, self.ci_level)
         raw = {"mean_dropout_fraction": float(stat), "ci_lower": float(lo),
-               "ci_upper": float(hi), "dropout_k": self.dropout_k}
+               "ci_upper": float(hi), "dropout_k": self.dropout_k,
+               "episode_values": ep_values}
 
         level = self._threshold_level(
             stat, self.dropout_warning, self.dropout_critical

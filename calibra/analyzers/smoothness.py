@@ -124,6 +124,11 @@ class ControlSmoothnessAnalyzer(Analyzer):
 
         hints = self._policy_hints(flags, policy_family, raw)
 
+        # Per-episode arrays for Phase 2 comparison/curation (convention: "per_episode_<key>").
+        raw["per_episode_ldlj"]           = ldlj_raw.get("episode_values", [])
+        raw["per_episode_spike_rate"]     = spike_raw.get("episode_values", [])
+        raw["per_episode_vel_disc_rate"]  = disc_raw.get("episode_values", [])
+
         return AnalyzerResult(
             analyzer_name=self.name,
             flags=flags,
@@ -134,19 +139,19 @@ class ControlSmoothnessAnalyzer(Analyzer):
     # ── metric: LDLJ ────────────────────────────────────────────────────────
 
     def _check_ldlj(self, batch: EpisodeBatch) -> tuple[RiskFlag, dict]:
-        values = []
-        for ep in batch.episodes:
-            v = _episode_ldlj(ep, self.action_type, self._active_dims(ep))
-            if v is not None:
-                values.append(v)
+        ep_values = [_episode_ldlj(ep, self.action_type, self._active_dims(ep))
+                     for ep in batch.episodes]
+        values = [v for v in ep_values if v is not None]
 
         if not values:
-            return self._skip_flag("ldlj", "insufficient episode length for LDLJ"), {}
+            return self._skip_flag("ldlj", "insufficient episode length for LDLJ"), {
+                "episode_values": ep_values
+            }
 
         arr = np.array(values)
         stat, lo, hi = _bootstrap_ci(arr, np.mean, self.n_bootstrap, self.ci_level)
         raw = {"mean_ldlj": float(stat), "ci_lower": float(lo), "ci_upper": float(hi),
-               "n_episodes": len(values)}
+               "n_episodes": len(values), "episode_values": ep_values}
 
         level = _threshold_level_lower(stat, self.ldlj_warning, self.ldlj_critical)
 
@@ -184,21 +189,21 @@ class ControlSmoothnessAnalyzer(Analyzer):
     # ── metric: jerk spikes ──────────────────────────────────────────────────
 
     def _check_jerk_spikes(self, batch: EpisodeBatch) -> tuple[RiskFlag, dict]:
-        fracs = []
-        for ep in batch.episodes:
-            f = _episode_jerk_spike_fraction(
-                ep, self.action_type, self._active_dims(ep), self.jerk_spike_k
-            )
-            if f is not None:
-                fracs.append(f)
+        ep_values = [_episode_jerk_spike_fraction(
+            ep, self.action_type, self._active_dims(ep), self.jerk_spike_k
+        ) for ep in batch.episodes]
+        fracs = [f for f in ep_values if f is not None]
 
         if not fracs:
-            return self._skip_flag("jerk_spike_rate", "insufficient episode length"), {}
+            return self._skip_flag("jerk_spike_rate", "insufficient episode length"), {
+                "episode_values": ep_values
+            }
 
         arr = np.array(fracs)
         stat, lo, hi = _bootstrap_ci(arr, np.mean, self.n_bootstrap, self.ci_level)
         raw = {"mean_spike_fraction": float(stat), "ci_lower": float(lo),
-               "ci_upper": float(hi), "spike_k": self.jerk_spike_k}
+               "ci_upper": float(hi), "spike_k": self.jerk_spike_k,
+               "episode_values": ep_values}
 
         level = _threshold_level_upper(stat, self.jerk_spike_warning, self.jerk_spike_critical)
 
@@ -238,22 +243,22 @@ class ControlSmoothnessAnalyzer(Analyzer):
     # ── metric: velocity discontinuities ─────────────────────────────────────
 
     def _check_vel_discontinuities(self, batch: EpisodeBatch) -> tuple[RiskFlag, dict]:
-        fracs = []
-        for ep in batch.episodes:
-            f = _episode_vel_disc_fraction(
-                ep, self.action_type, self._active_dims(ep), self.vel_disc_threshold
-            )
-            if f is not None:
-                fracs.append(f)
+        ep_values = [_episode_vel_disc_fraction(
+            ep, self.action_type, self._active_dims(ep), self.vel_disc_threshold
+        ) for ep in batch.episodes]
+        fracs = [f for f in ep_values if f is not None]
 
         if not fracs:
             return self._skip_flag("velocity_discontinuity_rate",
-                                   "insufficient episode length"), {}
+                                   "insufficient episode length"), {
+                "episode_values": ep_values
+            }
 
         arr = np.array(fracs)
         stat, lo, hi = _bootstrap_ci(arr, np.mean, self.n_bootstrap, self.ci_level)
         raw = {"mean_disc_fraction": float(stat), "ci_lower": float(lo),
-               "ci_upper": float(hi), "threshold": self.vel_disc_threshold}
+               "ci_upper": float(hi), "threshold": self.vel_disc_threshold,
+               "episode_values": ep_values}
 
         level = _threshold_level_upper(stat, self.vel_disc_warning, self.vel_disc_critical)
 
@@ -356,7 +361,7 @@ class ControlSmoothnessAnalyzer(Analyzer):
         return RiskFlag(
             level=RiskLevel.INFO,
             metric=metric,
-            observed=ObservedValue(value=float("nan")),
+            observed=ObservedValue(value=None),
             interpretation=f"Metric skipped: {reason}.",
             implication="Cannot assess this metric with available data.",
         )

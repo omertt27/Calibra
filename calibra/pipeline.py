@@ -17,6 +17,7 @@ from typing import Optional
 from calibra.analyzers.base import Analyzer
 from calibra.analyzers.coverage import CoverageEntropyAnalyzer
 from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
+from calibra.analyzers.task_structure import TaskStructureAnalyzer
 from calibra.analyzers.temporal import TemporalAnalyzer
 from calibra.schema.episode import EpisodeBatch
 from calibra.schema.report import DiagnosticReport
@@ -27,6 +28,7 @@ def _default_analyzers() -> list[Analyzer]:
         TemporalAnalyzer(),
         ControlSmoothnessAnalyzer(),
         CoverageEntropyAnalyzer(),
+        TaskStructureAnalyzer(),
     ]
 
 

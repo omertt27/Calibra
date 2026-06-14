@@ -140,6 +140,9 @@ class CoverageEntropyAnalyzer(Analyzer):
 
         hints = self._policy_hints(flags, policy_family, raw)
 
+        # Per-episode arrays for Phase 2 comparison/curation (convention: "per_episode_<key>").
+        raw["per_episode_length"] = [ep.n_steps for ep in batch.episodes]
+
         return AnalyzerResult(
             analyzer_name=self.name,
             flags=flags,
@@ -442,7 +445,7 @@ class CoverageEntropyAnalyzer(Analyzer):
         return RiskFlag(
             level=RiskLevel.INFO,
             metric=metric,
-            observed=ObservedValue(value=float("nan")),
+            observed=ObservedValue(value=None),
             interpretation=f"Metric skipped: {reason}.",
             implication="Cannot assess this metric with available data.",
         )
@@ -549,7 +552,7 @@ def _pca_top_k_fraction(data: np.ndarray, k: int = 2) -> tuple[float, list[float
     try:
         _, s, _ = np.linalg.svd(centered, full_matrices=False)
     except np.linalg.LinAlgError:
-        return float("nan"), []
+        return 1.0, []  # treat SVD failure as fully concentrated (conservative)
 
     var = s ** 2
     total_var = float(var.sum())

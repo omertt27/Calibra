@@ -39,7 +39,7 @@ class ObservedValue(BaseModel):
     single episode count) or when sample size makes bootstrapping meaningless.
     """
 
-    value: float
+    value: Optional[float] = None   # None = metric could not be computed
     unit: str = ""
     ci_lower: Optional[float] = None
     ci_upper: Optional[float] = None
@@ -54,6 +54,8 @@ class ObservedValue(BaseModel):
         return self
 
     def __str__(self) -> str:
+        if self.value is None:
+            return "n/a"
         s = f"{self.value:.4g}"
         if self.unit:
             s += f" {self.unit}"
