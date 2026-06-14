@@ -2,11 +2,14 @@
 CLI entry point.
 
     python -m calibra <path> [--policy FAMILY] [--format FORMAT] [--json]
+    python -m calibra compare <path> <reference> [--format FORMAT]
 
 Examples:
     python -m calibra /data/robot_demos.h5
     python -m calibra /data/lerobot_ds --policy diffusion
     python -m calibra /data/demo.h5 --policy act --json
+    python -m calibra compare /data/my_demos lerobot/pusht
+    python -m calibra compare lerobot/my_dataset aloha --format lerobot
 """
 from __future__ import annotations
 
@@ -17,9 +20,16 @@ from calibra.pipeline import Pipeline
 
 
 def main() -> None:
+    # Dispatch "compare" before argparse so the subcommand gets its own parser.
+    if len(sys.argv) > 1 and sys.argv[1] == "compare":
+        from calibra.compare import run_compare
+        run_compare(sys.argv[2:])
+        return
+
     parser = argparse.ArgumentParser(
         prog="calibra",
         description="Calibra — dataset reliability diagnostics for robotics IL",
+        epilog="Run 'calibra compare <path> <reference>' to compare against a reference profile.",
     )
     parser.add_argument("path", help="Path to dataset (file or directory)")
     parser.add_argument(
@@ -64,10 +74,10 @@ def main() -> None:
 
 def _get_reader(format_name: str):
     from calibra.ingestion import hdf5, lerobot, rlds, mcap  # noqa: F401 trigger register
-    from calibra.ingestion.adapters.hdf5   import HDF5Reader
+    from calibra.ingestion.adapters.hdf5    import HDF5Reader
     from calibra.ingestion.adapters.lerobot import LeRobotReader
-    from calibra.ingestion.adapters.rlds   import RLDSReader
-    from calibra.ingestion.adapters.mcap   import MCAPReader
+    from calibra.ingestion.adapters.rlds    import RLDSReader
+    from calibra.ingestion.adapters.mcap    import MCAPReader
 
     mapping = {
         "hdf5":    HDF5Reader,

@@ -1,0 +1,79 @@
+{
+  "claims": [
+    {
+      "id": "TEMP-001",
+      "metric": "jitter_cv",
+      "class": "any",
+      "assertion": "Simulated datasets have near-machine-precision timestamp jitter (CV < 1e-4), making the jitter metric uninformative for sim data",
+      "conditions": "applies to datasets generated in simulation (MuJoCo, Isaac Lab, PyBullet, etc.)",
+      "confidence": "HIGH",
+      "status": "active_hypothesis",
+      "evidence": [
+        {
+          "dataset": "lerobot/pusht",
+          "observed": 2.86e-06,
+          "supports": true,
+          "date": "2026-06-15",
+          "notes": "MuJoCo sim, deterministic timestamps"
+        },
+        {
+          "dataset": "lerobot/aloha_sim_insertion_human",
+          "observed": 1.11e-05,
+          "supports": true,
+          "date": "2026-06-15",
+          "notes": "MuJoCo sim, deterministic timestamps"
+        }
+      ],
+      "falsification": {
+        "condition": "A simulated dataset with jitter CV > 0.01 (1%)",
+        "threshold": 0.01,
+        "pending_tests": []
+      },
+      "last_updated": "2026-06-15"
+    },
+    {
+      "id": "TEMP-002",
+      "metric": "jitter_cv",
+      "class": "hardware",
+      "assertion": "Real hardware datasets with USB-camera + ROS recording typically show jitter CV in the range 5–25%",
+      "conditions": "USB camera at 20–30Hz, ROS topic recording",
+      "confidence": "NOT VALIDATED",
+      "status": "active_hypothesis",
+      "evidence": [],
+      "falsification": {
+        "condition": "Any real hardware dataset with jitter CV outside 1–40%",
+        "pending_tests": [
+          {
+            "dataset": "BridgeData V2",
+            "reason": "Large-scale real hardware dataset — first test of temporal claims on hardware"
+          },
+          {
+            "dataset": "DROID",
+            "reason": "Real hardware, varied setups — would characterize hardware jitter range"
+          }
+        ]
+      },
+      "last_updated": "2026-06-15"
+    },
+    {
+      "id": "TEMP-003",
+      "metric": "dropout_rate",
+      "class": "any",
+      "assertion": "Current dropout_rate thresholds (warning: 1%, critical: 5%) are calibrated from synthetic fixtures only and have not been validated on real hardware",
+      "conditions": "dropout defined as step gap > 3x median step duration",
+      "confidence": "NOT VALIDATED",
+      "status": "active_hypothesis",
+      "evidence": [],
+      "falsification": {
+        "condition": "A real hardware dataset where dropout_rate threshold produces false positives on known-clean data",
+        "pending_tests": [
+          {
+            "dataset": "BridgeData V2",
+            "reason": "Known dataset — if it fires WARNING on dataset considered clean by the community, threshold needs recalibration"
+          }
+        ]
+      },
+      "last_updated": "2026-06-15"
+    }
+  ]
+}

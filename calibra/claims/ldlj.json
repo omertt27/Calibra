@@ -1,0 +1,59 @@
+{
+  "claims": [
+    {
+      "id": "LDLJ-001",
+      "metric": "ldlj",
+      "class": "any",
+      "assertion": "LDLJ is not a valid cross-dataset comparator when control modes or control frequencies differ significantly (> ~2x)",
+      "conditions": "LDLJ = -log((T^3 / v_max^2) * integral(||jerk||^2 dt))",
+      "confidence": "MODERATE",
+      "status": "active_hypothesis",
+      "evidence": [
+        {
+          "dataset": "lerobot/aloha_sim_insertion_human",
+          "observed": -20.43,
+          "supports": true,
+          "date": "2026-06-15",
+          "notes": "50Hz, 14-DOF position control. Scores WORSE than pusht despite being physically smoother — confirms cross-mode incomparability"
+        },
+        {
+          "dataset": "lerobot/pusht",
+          "observed": -16.34,
+          "supports": true,
+          "date": "2026-06-15",
+          "notes": "~10Hz, 2D velocity command. Scores BETTER than aloha despite being a jerkier control mode — anomalous direction confirms the claim"
+        }
+      ],
+      "falsification": {
+        "condition": "Two datasets with different control modes where LDLJ ranks them in the physically expected order (position smoother than velocity) AND control frequencies differ > 2x",
+        "pending_tests": [
+          {
+            "dataset": "A low-frequency position-command dataset (< 15Hz)",
+            "reason": "Would test whether frequency is the primary confounder or if control mode also contributes independently"
+          }
+        ]
+      },
+      "last_updated": "2026-06-15"
+    },
+    {
+      "id": "LDLJ-002",
+      "metric": "ldlj",
+      "class": "any",
+      "assertion": "LDLJ may be valid for within-type comparison (same control mode, similar frequency)",
+      "conditions": "control frequencies within ~2x, same action space semantics",
+      "confidence": "LOW",
+      "status": "active_hypothesis",
+      "evidence": [],
+      "falsification": {
+        "condition": "Two datasets of same type where LDLJ fails to distinguish a known-worse dataset (e.g. one with injected noise) from a clean one",
+        "pending_tests": [
+          {
+            "dataset": "Two velocity-command datasets with different operator quality",
+            "reason": "Would directly test whether LDLJ captures quality within a class"
+          }
+        ]
+      },
+      "last_updated": "2026-06-15"
+    }
+  ]
+}

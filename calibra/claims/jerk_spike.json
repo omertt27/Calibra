@@ -1,0 +1,91 @@
+{
+  "claims": [
+    {
+      "id": "JS-001",
+      "metric": "spike_rate",
+      "class": "position",
+      "assertion": "Position-command datasets have jerk spike rate below 2%",
+      "conditions": "spike defined as per-step jerk norm > 5x median jerk for that episode",
+      "confidence": "LOW-MODERATE",
+      "status": "active_hypothesis",
+      "evidence": [
+        {
+          "dataset": "lerobot/aloha_sim_insertion_human",
+          "observed": 0.0069,
+          "supports": true,
+          "date": "2026-06-15",
+          "notes": "Simulated, 14-DOF bimanual, 50Hz"
+        }
+      ],
+      "falsification": {
+        "condition": "Any position-command hardware dataset with rate > 0.04",
+        "threshold": 0.04,
+        "pending_tests": [
+          {
+            "dataset": "BridgeData V2",
+            "reason": "Real hardware — spike rate may increase due to sensor noise and actuation lags"
+          }
+        ]
+      },
+      "last_updated": "2026-06-15"
+    },
+    {
+      "id": "JS-002",
+      "metric": "spike_rate",
+      "class": "velocity",
+      "assertion": "Velocity-command datasets have jerk spike rate in the range 2–8% due to frequent direction reversals",
+      "conditions": "spike defined as per-step jerk norm > 5x median jerk for that episode",
+      "confidence": "LOW-MODERATE",
+      "status": "active_hypothesis",
+      "evidence": [
+        {
+          "dataset": "lerobot/pusht",
+          "observed": 0.049,
+          "supports": true,
+          "date": "2026-06-15",
+          "notes": "Simulated, 2D velocity command, ~10Hz"
+        }
+      ],
+      "falsification": {
+        "condition": "A second velocity-command dataset with rate < 0.01 or > 0.12",
+        "threshold_low": 0.01,
+        "threshold_high": 0.12,
+        "pending_tests": [
+          {
+            "dataset": "Any second velocity-command dataset",
+            "reason": "Single data point — cannot distinguish class property from pusht artifact"
+          }
+        ]
+      },
+      "last_updated": "2026-06-15"
+    },
+    {
+      "id": "JS-003",
+      "metric": "spike_rate",
+      "class": "any",
+      "assertion": "Jerk spike rate is more robust to cross-frequency comparison than LDLJ, because the 5x-median threshold self-adapts to episode scale",
+      "conditions": "requires same spike_k parameter across datasets being compared",
+      "confidence": "LOW",
+      "status": "active_hypothesis",
+      "evidence": [
+        {
+          "dataset": "lerobot/pusht + lerobot/aloha_sim_insertion_human",
+          "observed": "pusht=4.9% (10Hz, 2D), aloha=0.69% (50Hz, 14D)",
+          "supports": true,
+          "date": "2026-06-15",
+          "notes": "Direction of difference matches physical expectation despite 5x frequency difference — tentatively supports frequency-robustness claim"
+        }
+      ],
+      "falsification": {
+        "condition": "Two datasets of same control mode with 3x+ frequency difference showing inverted spike rates",
+        "pending_tests": [
+          {
+            "dataset": "A 10Hz position-command dataset vs aloha at 50Hz",
+            "reason": "Would test whether frequency independence holds within a single control mode"
+          }
+        ]
+      },
+      "last_updated": "2026-06-15"
+    }
+  ]
+}

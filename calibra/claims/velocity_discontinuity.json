@@ -1,0 +1,67 @@
+{
+  "claims": [
+    {
+      "id": "VD-001",
+      "metric": "velocity_discontinuity_rate",
+      "class": "position",
+      "assertion": "Position-command datasets have velocity discontinuity rate below 5%",
+      "conditions": "threshold=0.20 (step velocity change > 20% of peak counts as discontinuity)",
+      "confidence": "LOW-MODERATE",
+      "status": "active_hypothesis",
+      "evidence": [
+        {
+          "dataset": "lerobot/aloha_sim_insertion_human",
+          "observed": 0.024,
+          "supports": true,
+          "date": "2026-06-15",
+          "notes": "Simulated, 14-DOF bimanual, 50Hz, peg insertion"
+        }
+      ],
+      "falsification": {
+        "condition": "Any position-command hardware dataset with rate > 0.08",
+        "threshold": 0.08,
+        "pending_tests": [
+          {
+            "dataset": "BridgeData V2",
+            "reason": "Real hardware, varied tasks, same control mode — first real test of this claim"
+          },
+          {
+            "dataset": "DROID",
+            "reason": "Large-scale real hardware, diverse environments"
+          }
+        ]
+      },
+      "last_updated": "2026-06-15"
+    },
+    {
+      "id": "VD-002",
+      "metric": "velocity_discontinuity_rate",
+      "class": "velocity",
+      "assertion": "Velocity-command datasets have velocity discontinuity rate in the range 10–20% due to unconstrained instantaneous reversals in human teleop",
+      "conditions": "threshold=0.20 (step velocity change > 20% of peak counts as discontinuity)",
+      "confidence": "LOW-MODERATE",
+      "status": "active_hypothesis",
+      "evidence": [
+        {
+          "dataset": "lerobot/pusht",
+          "observed": 0.167,
+          "supports": true,
+          "date": "2026-06-15",
+          "notes": "Simulated, 2D velocity command (dx,dy), ~10Hz, push task"
+        }
+      ],
+      "falsification": {
+        "condition": "A second velocity-command dataset with rate < 0.08 or > 0.25",
+        "threshold_low": 0.08,
+        "threshold_high": 0.25,
+        "pending_tests": [
+          {
+            "dataset": "Any second velocity-command dataset",
+            "reason": "Cannot distinguish class property from pusht artifact without a second sample"
+          }
+        ]
+      },
+      "last_updated": "2026-06-15"
+    }
+  ]
+}
