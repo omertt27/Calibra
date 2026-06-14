@@ -1,15 +1,20 @@
 """
 CLI entry point.
 
-    python -m calibra <path> [--policy FAMILY] [--format FORMAT] [--json]
+    python -m calibra <path> [--policy FAMILY] [--format FORMAT] [--json] [--strict]
     python -m calibra compare <path> <reference> [--format FORMAT]
 
 Examples:
     python -m calibra /data/robot_demos.h5
     python -m calibra /data/lerobot_ds --policy diffusion
     python -m calibra /data/demo.h5 --policy act --json
-    python -m calibra compare /data/my_demos lerobot/pusht
+    python -m calibra compare /data/my_demos pusht
     python -m calibra compare lerobot/my_dataset aloha --format lerobot
+
+Exit codes:
+    0  No critical issues found.
+    1  One or more CRITICAL flags or severe episode outliers detected.
+       (With --strict: exits 1 on WARNING too.)
 """
 from __future__ import annotations
 
@@ -17,10 +22,10 @@ import argparse
 import sys
 
 from calibra.pipeline import Pipeline
+from calibra.schema.report import RiskLevel
 
 
 def main() -> None:
-    # Dispatch "compare" before argparse so the subcommand gets its own parser.
     if len(sys.argv) > 1 and sys.argv[1] == "compare":
         from calibra.compare import run_compare
         run_compare(sys.argv[2:])
@@ -49,6 +54,16 @@ def main() -> None:
         choices=["hdf5", "lerobot", "rlds", "mcap"],
         help="Force a specific format adapter (default: auto-detect)",
     )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Exit 1 on WARNING in addition to CRITICAL",
+    )
+    parser.add_argument(
+        "--no-anomalies",
+        action="store_true",
+        help="Skip per-episode outlier detection (faster, aggregate flags only)",
+    )
 
     args = parser.parse_args()
 
@@ -68,8 +83,26 @@ def main() -> None:
 
     if args.json:
         print(report.model_dump_json(indent=2))
-    else:
-        print(report.summary())
+        sys.exit(_exit_code(report, strict=args.strict))
+
+    print(report.summary())
+
+    if not args.no_anomalies:
+        from calibra.anomalies import find_outliers, render
+        outliers = find_outliers(report)
+        if outliers:
+            print()
+            print(render(outliers, report.n_episodes))
+
+    sys.exit(_exit_code(report, strict=args.strict))
+
+
+def _exit_code(report, strict: bool = False) -> int:
+    if report.flags_at_level(RiskLevel.CRITICAL):
+        return 1
+    if strict and report.flags_at_level(RiskLevel.WARNING):
+        return 1
+    return 0
 
 
 def _get_reader(format_name: str):

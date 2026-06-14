@@ -129,6 +129,7 @@ class DiagnosticReport(BaseModel):
     n_samples: int
     analyzer_results: list[AnalyzerResult] = []
     policy_family: Optional[str] = None
+    episode_ids: list[str] = []
 
     # ── convenience accessors ───────────────────────────────────────────────
 

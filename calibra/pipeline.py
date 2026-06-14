@@ -75,6 +75,7 @@ class Pipeline:
             n_samples=batch.n_samples,
             analyzer_results=results,
             policy_family=policy_family,
+            episode_ids=[ep.metadata.episode_id for ep in batch.episodes],
         )
 
     def analyze_path(

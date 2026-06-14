@@ -12,20 +12,21 @@ fine may be surprisingly clean compared to peers.
 
 ## Cross-dataset comparison
 
-| Metric | pusht (velocity cmd) | aloha insertion (position cmd) | Verdict |
-|--------|---------------------|-------------------------------|---------|
-| Episodes / Steps | 206 / 25,650 | 50 / 25,000 | — |
-| Episode length (steps) | mean 125, std 36 | exactly 500 | — |
-| Control frequency | ~10 Hz | 50 Hz | — |
-| Action dim | 2 | 14 | — |
-| Jitter CV | 2.9e-6 | 1.1e-5 | Both sim — not informative |
-| Dropout | 0.0% | 0.0% | Both sim — not informative |
-| **LDLJ (mean)** | **−16.34** | **−20.43** | Both CRITICAL — see note |
-| **Jerk spike rate** | **4.9% ⚠ WARNING** | **0.69% ✓ OK** | Clear separation |
-| **Velocity disc. rate** | **16.7% 🔴 CRITICAL** | **2.4% ⚠ WARNING** | Clear separation — see verdict |
-| Action entropy (bits/dim) | 5.30 | 4.85 | Both healthy |
-| Contact fraction | 21.7% | 90.7% | Task-type difference |
-| Grasps per episode | none (no gripper) | 1.0 (every episode) | Task structure working |
+| Metric | pusht (velocity cmd, sim) | aloha insertion (position cmd, sim) | aloha mobile cabinet (position cmd, **hardware**) | Verdict |
+|--------|--------------------------|-------------------------------------|--------------------------------------------------|---------|
+| Episodes / Steps | 206 / 25,650 | 50 / 25,000 | 85 / 127,500 | — |
+| Episode length (steps) | mean 125, std 36 | exactly 500 | exactly 1,500 | — |
+| Control frequency | ~10 Hz | 50 Hz | 50 Hz | — |
+| Action dim | 2 | 14 | 14 | — |
+| Jitter CV | 2.9e-6 | 1.1e-5 | 3.1e-5 | Sim and hardware similar here |
+| Dropout | 0.0% | 0.0% | 0.0% | — |
+| **LDLJ (mean)** | **−16.34** | **−20.43** | **−24.08** | All CRITICAL — see note |
+| **Jerk spike rate** | **4.9% WARNING** | **0.69% OK** | **1.0% OK** | Position cmd consistently cleaner |
+| **Velocity disc. rate** | **16.7% CRITICAL** | **2.4% WARNING** | **1.3% OK** | Clean separation by control mode |
+| Action entropy (bits/dim) | 5.30 | 4.85 | 4.67 | All healthy |
+| Contact fraction | 21.7% | 90.7% | 78.9% | Task-type difference |
+| Grasps per episode | none (no gripper) | 1.0 | 4.0 | Task structure detected correctly |
+| **Episode outliers (Calibra)** | **27 / 206** | **n/a (fixed length)** | **8 / 85** | Aggregate-invisible corruption |
 
 ### Verdict: Outcome 1 — velocity discontinuity threshold is correctly calibrated
 
@@ -140,3 +141,76 @@ arm dataset above ~8% warrants investigation. Below 2% is unusually smooth.
 **LDLJ is not the right cross-dataset comparator.** Use jerk spike rate and velocity
 discontinuity rate for comparisons involving datasets with different control modes
 or frequencies.
+
+---
+
+## [`aloha_mobile_cabinet.json`](aloha_mobile_cabinet.json)
+
+**Dataset:** `lerobot/aloha_mobile_cabinet`  
+**Task:** Mobile ALOHA bimanual robot opening a cabinet door.  
+**Episodes:** 85 | **Steps:** 127,500 | **Action space:** 14D joint positions (7 per arm), 50 Hz  
+**Origin:** Real hardware
+
+### Key numbers
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| Timestamp jitter CV | 3.1e-5 | Low but above machine-precision — hardware timing is clean |
+| Dropout rate | 0.0% | No dropped frames |
+| LDLJ (mean) | −24.08 | Worse than sim aloha — expected on real hardware with oscillation noise |
+| Jerk spike rate | 1.0% | OK (< 2% threshold); position control is smooth |
+| Velocity discontinuity rate | **1.3%** | **Second real-data point supporting VD-001** (position cmd < 5%) |
+| Action entropy | 4.67 bits/dim | Healthy |
+| Contact fraction | 78.9% | Contact-rich task — consistent with cabinet manipulation |
+| Grasps per episode | 4.0 | 4 gripper events per episode (door handle grasp, pull open, two more) |
+| **Episode outliers** | **8 / 85** | **Invisible to aggregate metrics** |
+
+### The documented real catch
+
+`aloha_mobile_cabinet` passes every aggregate check — velocity discontinuity OK,
+jitter OK, spike rate OK, entropy OK. A user inspecting only the summary report
+would conclude this is a clean dataset.
+
+Calibra's episode-level anomaly detection finds **8 of 85 episodes** are outliers
+within this dataset's own distribution:
+
+```
+ep_2          vel_disc_rate 3.0× MAD    → start of dataset (equipment warm-up)
+ep_27         vel_disc_rate 3.3× MAD    → investigate before training
+ep_35         vel_disc_rate 3.3× MAD    → investigate before training
+ep_46         vel_disc_rate 3.0× MAD    → investigate before training
+ep_54         vel_disc_rate 4.8× MAD    → investigate before training  ← worst
+ep_68         vel_disc_rate 3.3× MAD    → investigate before training
+ep_74         spike_rate    3.3× MAD    → investigate before training
+ep_81         vel_disc_rate 3.8× MAD    → end of dataset (fatigue / drift)
+```
+
+**ep_54** deviates 4.8× MAD from the per-episode median on velocity discontinuity
+rate. The aggregate vel_disc_rate is 1.29% (well within the 2% OK threshold), which
+means this outlier episode contributes noise that the average absorbs. A policy
+trained on this dataset would see spurious high-discontinuity targets from ep_54
+with no warning from any aggregate diagnostic.
+
+**The start/end pattern** (ep_2 and ep_81) is consistent with equipment warm-up
+artifacts at session start and operator fatigue or hardware drift at session end.
+This is not identifiable from aggregate metrics.
+
+**To remove flagged episodes:**
+```python
+from calibra.comparison.curator import EpisodeCurator
+curator = EpisodeCurator(strategy="remove")
+```
+
+### What this profile tells you
+
+**Position-command hardware datasets are not always clean.** The aloha_sim datasets
+(perfect timing, no hardware noise) are not representative of real hardware. This
+dataset shows real but subtle episode-level variance that simulation hides.
+
+**VD-001 holds on real hardware.** Aggregate vel_disc_rate of 1.29% confirms
+the < 5% position-command claim on a second, independent dataset. The per-episode
+outliers don't change the aggregate verdict — they reveal local corruption.
+
+**Temporal metrics are still uninformative.** Jitter CV 3.1e-5 is still very low
+despite being real hardware. This dataset may use locked-timestep playback.
+Need BridgeData V2 or DROID to see real hardware timing noise.
