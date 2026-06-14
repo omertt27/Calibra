@@ -11,6 +11,9 @@ from calibra.schema.report import (
 )
 from calibra.ingestion.registry import load, registered_formats
 from calibra.analyzers.temporal import TemporalAnalyzer
+from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
+from calibra.analyzers.coverage import CoverageEntropyAnalyzer
+from calibra.pipeline import Pipeline
 
 __all__ = [
     "Episode",
@@ -25,4 +28,7 @@ __all__ = [
     "load",
     "registered_formats",
     "TemporalAnalyzer",
+    "ControlSmoothnessAnalyzer",
+    "CoverageEntropyAnalyzer",
+    "Pipeline",
 ]

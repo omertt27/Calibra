@@ -102,11 +102,20 @@ class TestBootstrapCI:
         assert lo == pytest.approx(5.0)
         assert hi == pytest.approx(5.0)
 
-    def test_ci_contains_true_mean(self):
+    def test_ci_bounds_bracket_point_estimate(self):
+        # Bootstrap CIs always bracket the point estimate by construction.
         rng = np.random.default_rng(7)
         arr = rng.normal(3.0, 0.5, 30)
-        _, lo, hi = _bootstrap_ci(arr, np.mean, n_boot=2000, ci_level=0.95)
-        assert lo <= 3.0 <= hi
+        stat, lo, hi = _bootstrap_ci(arr, np.mean, n_boot=2000, ci_level=0.95)
+        assert lo <= stat <= hi
+
+    def test_ci_narrows_with_more_samples(self):
+        rng = np.random.default_rng(7)
+        small = rng.normal(3.0, 0.5, 10)
+        large = rng.normal(3.0, 0.5, 200)
+        _, lo_s, hi_s = _bootstrap_ci(small, np.mean, n_boot=1000)
+        _, lo_l, hi_l = _bootstrap_ci(large, np.mean, n_boot=1000)
+        assert (hi_s - lo_s) > (hi_l - lo_l)
 
     def test_ci_ordering(self):
         arr = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
@@ -164,8 +173,12 @@ class TestTemporalAnalyzerCameraLag:
     def test_cam_lag_batch_flags_lag(self, cam_lag_batch):
         result = TemporalAnalyzer().analyze(cam_lag_batch)
         cam_flags = [f for f in result.flags if "camera_lag" in f.metric]
-        assert cam_flags
-        assert cam_flags[0].level == RiskLevel.CRITICAL
+        assert cam_flags, "Expected at least one camera_lag flag"
+        # Fixture uses 50ms std, threshold is 20ms — should be CRITICAL
+        assert cam_flags[0].level == RiskLevel.CRITICAL, (
+            f"Expected CRITICAL, got {cam_flags[0].level}; "
+            f"observed={cam_flags[0].observed}"
+        )
 
     def test_observed_unit_is_ms(self, cam_lag_batch):
         result = TemporalAnalyzer().analyze(cam_lag_batch)

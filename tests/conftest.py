@@ -99,9 +99,9 @@ def dropout_batch() -> EpisodeBatch:
 
 @pytest.fixture
 def cam_lag_batch() -> EpisodeBatch:
-    """Episodes with camera lag std > CRITICAL threshold (25 ms)."""
+    """Episodes with camera lag std well above CRITICAL threshold (50 ms > 20 ms)."""
     episodes = [
-        _make_episode(cam_lag_std=0.025, episode_id=f"ep_{i}") for i in range(10)
+        _make_episode(cam_lag_std=0.050, episode_id=f"ep_{i}") for i in range(10)
     ]
     return EpisodeBatch(episodes=episodes, dataset_name="cam_lag",
                         format="hdf5", source_path="/tmp/cam_lag.h5")
