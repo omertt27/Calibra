@@ -37,8 +37,7 @@ Usage
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -303,23 +302,27 @@ def _quality_filter(
     fail: list[int] = []
     for i, ep in enumerate(episodes):
         if ep.n_steps < cfg.min_length:
-            fail.append(i); continue
+            fail.append(i)
+            continue
 
         spike = _safe_get(spike_rates, i)
         if spike is not None and spike > cfg.max_spike_rate:
-            fail.append(i); continue
+            fail.append(i)
+            continue
 
         disc = _safe_get(disc_rates, i)
         if disc is not None and disc > cfg.max_vel_disc_rate:
-            fail.append(i); continue
+            fail.append(i)
+            continue
 
         drop = _safe_get(dropouts, i)
         if drop is not None and drop > cfg.max_dropout_fraction:
-            fail.append(i); continue
+            fail.append(i)
+            continue
 
         ldlj = _safe_get(ldlj_values, i)
         if ldlj is not None and ldlj < cfg.min_ldlj:
-            fail.append(i); continue
+            fail.append(i)
 
     return fail
 

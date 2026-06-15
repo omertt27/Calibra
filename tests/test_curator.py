@@ -5,7 +5,6 @@ All fixtures are synthetic — no real dataset files required.
 """
 from __future__ import annotations
 
-import warnings
 
 import numpy as np
 import pytest

@@ -57,13 +57,13 @@ import numpy as np
 _REPO = Path(__file__).parent.parent
 sys.path.insert(0, str(_REPO))
 
-from calibra.analyzers.coverage import CoverageEntropyAnalyzer
-from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
-from calibra.analyzers.task_structure import TaskStructureAnalyzer
-from calibra.analyzers.temporal import TemporalAnalyzer
-from calibra.ingestion.registry import load
-from calibra.pipeline import Pipeline
-from calibra.schema.report import DiagnosticReport
+from calibra.analyzers.coverage import CoverageEntropyAnalyzer  # noqa: E402
+from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer  # noqa: E402
+from calibra.analyzers.task_structure import TaskStructureAnalyzer  # noqa: E402
+from calibra.analyzers.temporal import TemporalAnalyzer  # noqa: E402
+from calibra.ingestion.registry import load  # noqa: E402
+from calibra.pipeline import Pipeline  # noqa: E402
+from calibra.schema.report import DiagnosticReport  # noqa: E402
 
 PERCENTILES = [5, 10, 25, 50, 75, 90, 95]
 
@@ -173,7 +173,8 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    log = lambda msg: print(msg, file=sys.stderr, flush=True)
+    def log(msg: str) -> None:
+        print(msg, file=sys.stderr, flush=True)
 
     # Strip hf:// prefix
     dataset = args.dataset

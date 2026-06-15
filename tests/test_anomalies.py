@@ -16,7 +16,7 @@ from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
 from calibra.analyzers.temporal import TemporalAnalyzer
 from calibra.pipeline import Pipeline
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
-from calibra.schema.report import AnalyzerResult, DiagnosticReport
+from calibra.schema.report import DiagnosticReport
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────

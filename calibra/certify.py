@@ -175,7 +175,9 @@ def run_certify(argv: list[str]) -> None:
         from calibra.__main__ import _get_reader
         reader = _get_reader(args.format)
 
-    log = lambda msg: print(msg, file=sys.stderr, flush=True)
+    def log(msg: str) -> None:
+        print(msg, file=sys.stderr, flush=True)
+
     log(f"Certifying {dataset_path!r} ...")
 
     try:

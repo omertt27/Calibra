@@ -4,7 +4,6 @@ Tests for calibra.corrupt — corruption transforms and CLI rendering.
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from calibra.corrupt import (
     CorruptionConfig,

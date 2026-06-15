@@ -52,10 +52,8 @@ Exit codes
 from __future__ import annotations
 
 import copy
-import random
 import sys
-import textwrap
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
@@ -404,7 +402,8 @@ def run_corrupt(argv: list[str]) -> None:
         from calibra.__main__ import _get_reader
         reader = _get_reader(args.format)
 
-    log = lambda msg: print(msg, file=sys.stderr, flush=True)
+    def log(msg: str) -> None:
+        print(msg, file=sys.stderr, flush=True)
 
     # Strip hf:// prefix
     path = args.path[len("hf://"):] if args.path.startswith("hf://") else args.path

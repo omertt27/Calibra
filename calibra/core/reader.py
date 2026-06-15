@@ -20,11 +20,9 @@ Dependencies: pip install 'calibra[lerobot]'  (pyarrow, duckdb)
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
-import numpy as np
 
 
 def _strip_hf(path: str) -> str:

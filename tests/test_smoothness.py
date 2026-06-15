@@ -2,14 +2,12 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from calibra.analyzers.smoothness import (
     ControlSmoothnessAnalyzer,
     _episode_jerk_spike_fraction,
     _episode_ldlj,
     _episode_vel_disc_fraction,
-    _get_velocity,
 )
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 from calibra.schema.report import RiskLevel

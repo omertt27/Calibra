@@ -98,7 +98,6 @@ class RLDSReader(DatasetReader):
     ) -> Episode:
         steps = ep["steps"]
         step_list = list(steps)
-        n = len(step_list)
 
         obs_keys = [k for k in step_list[0]["observation"].keys()]
         obs: dict[str, list] = {k: [] for k in obs_keys}

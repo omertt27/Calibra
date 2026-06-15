@@ -5,9 +5,8 @@ import numpy as np
 import pytest
 
 from calibra.pipeline import Pipeline
-from calibra.pruning import CoresetSelector, _greedy_max_coverage, _build_feature_matrix
+from calibra.pruning import CoresetSelector, _greedy_max_coverage
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
-from calibra.comparison.comparator import _extract_ep_data
 
 
 # ── fixtures ──────────────────────────────────────────────────────────────────
@@ -92,7 +91,6 @@ class TestCoresetSelector:
         # The 3 spikey episodes should be quality-filtered
         spikey_ids = {f"ep_{i+10}" for i in range(3)}
         kept_set   = set(result.keep_episode_ids)
-        removed    = set(result.quality_fail_ids)
         # All spikey episodes should be removed (not kept)
         assert not (spikey_ids & kept_set), (
             f"Spikey episodes in kept set: {spikey_ids & kept_set}"
@@ -150,24 +148,31 @@ class TestCoresetSelector:
         assert "CALIBRA PRUNING SUMMARY" in s
 
     def test_diverse_selection_spreads_across_clusters(self):
-        """Episodes from two well-separated action clusters should both be selected."""
-        rng = np.random.default_rng(0)
-        # Cluster A: actions near 0
+        """
+        Episodes from two well-separated action clusters should both appear in
+        the coreset when the greedy max-coverage algorithm is free to choose.
+
+        Uses smooth random-walk trajectories (cumsum) so quality filtering
+        doesn't interfere, and lenient quality thresholds to isolate Stage 2.
+        """
+        rng = np.random.default_rng(7)
+        # Cluster A: smooth trajectories with actions centred near 0
         eps_a = []
         for i in range(8):
-            ts = np.arange(50) * 0.02
-            acts = rng.normal(0.0, 0.01, (50, 4)).astype(np.float32)
-            obs  = rng.random((50, 4)).astype(np.float32)
+            ts = np.arange(80) * 0.02
+            # smooth random walk near 0
+            acts = np.cumsum(rng.normal(0, 0.005, (80, 4)), axis=0).astype(np.float32)
+            obs  = rng.random((80, 4)).astype(np.float32)
             eps_a.append(Episode(
                 metadata=EpisodeMetadata(episode_id=f"a_{i}"),
                 timestamps=ts, observations={"state": obs}, actions=acts,
             ))
-        # Cluster B: actions near 10
+        # Cluster B: smooth trajectories with actions centred near +5
         eps_b = []
         for i in range(8):
-            ts = np.arange(50) * 0.02
-            acts = rng.normal(10.0, 0.01, (50, 4)).astype(np.float32)
-            obs  = rng.random((50, 4)).astype(np.float32)
+            ts = np.arange(80) * 0.02
+            acts = (np.cumsum(rng.normal(0, 0.005, (80, 4)), axis=0) + 5.0).astype(np.float32)
+            obs  = rng.random((80, 4)).astype(np.float32)
             eps_b.append(Episode(
                 metadata=EpisodeMetadata(episode_id=f"b_{i}"),
                 timestamps=ts, observations={"state": obs}, actions=acts,
@@ -178,11 +183,20 @@ class TestCoresetSelector:
             format="hdf5", source_path="/tmp/clusters.h5",
         )
         report = Pipeline().run(batch)
-        result = CoresetSelector(keep_fraction=0.5).select(batch, report)
+
+        # Lenient quality thresholds so Stage 1 passes everything through;
+        # we're testing that Stage 2 (diversity) picks from both clusters.
+        result = CoresetSelector(
+            keep_fraction=0.25,          # select 4 out of 16
+            max_spike_rate=1.0,
+            max_vel_disc_rate=1.0,
+            max_dropout_fraction=1.0,
+            min_ldlj=-1000.0,
+        ).select(batch, report)
 
         kept = set(result.keep_episode_ids)
         a_kept = sum(1 for k in kept if k.startswith("a_"))
         b_kept = sum(1 for k in kept if k.startswith("b_"))
-        # Both clusters should be represented
-        assert a_kept > 0, "No episodes from cluster A were kept"
-        assert b_kept > 0, "No episodes from cluster B were kept"
+        # Both clusters should be represented in the selected coreset
+        assert a_kept > 0, f"No episodes from cluster A kept. Kept: {kept}"
+        assert b_kept > 0, f"No episodes from cluster B kept. Kept: {kept}"

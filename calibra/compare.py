@@ -17,7 +17,6 @@ from __future__ import annotations
 import json
 import sys
 import textwrap
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -219,7 +218,6 @@ def _interp_temporal(
             "Not informative until profiled against real hardware.",
             "NOT VALIDATED",
         )
-    delta = yours - ref
     if key == "jitter_cv":
         if yours < 0.05:
             return ("Low jitter. Control loop is running at a consistent rate.", "MODERATE")
@@ -254,7 +252,6 @@ def _interp_temporal(
 def _interp_entropy(
     yours: float, ref: float, ref_label: str
 ) -> tuple[str, str]:
-    delta = yours - ref
     if yours > 4.5:
         return (
             f"Healthy action-space coverage. Similar to {ref_label}.",
@@ -579,7 +576,8 @@ def run_compare(argv: list[str]) -> None:
         raw = args.gripper_dims.strip()
         gripper_dims = [int(x) for x in raw.split(",") if x.strip()] if raw else []
 
-    log = lambda msg: print(msg, file=sys.stderr, flush=True)
+    def log(msg: str) -> None:
+        print(msg, file=sys.stderr, flush=True)
 
     # load reference
     try:

@@ -17,7 +17,6 @@ roughly equivalent to 3σ on a normal distribution but distribution-free.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 import numpy as np
 

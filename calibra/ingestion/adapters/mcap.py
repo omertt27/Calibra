@@ -26,7 +26,7 @@ from calibra.ingestion.registry import register
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 
 if TYPE_CHECKING:
-    from mcap.reader import McapReader as _McapReader
+    pass
 
 
 def _require_mcap() -> tuple:

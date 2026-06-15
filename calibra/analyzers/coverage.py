@@ -41,7 +41,6 @@ from typing import Optional
 import numpy as np
 
 from calibra.analyzers.base import Analyzer
-from calibra.analyzers.temporal import _bootstrap_ci
 from calibra.schema.episode import EpisodeBatch
 from calibra.schema.report import (
     AnalyzerResult,

@@ -265,7 +265,6 @@ class TestCoverageEntropyAnalyzerCollapsed:
 
 class TestCoverageEntropyAnalyzerBimodal:
     def test_bimodal_episodes_flagged_as_info(self):
-        rng = np.random.default_rng(0)
         short_eps = [_make_episode(30, ep_id=f"ep_{i}") for i in range(10)]
         long_eps  = [_make_episode(120, ep_id=f"ep_{i+10}") for i in range(10)]
         batch = _batch_of(short_eps + long_eps)

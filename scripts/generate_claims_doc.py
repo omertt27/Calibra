@@ -20,7 +20,7 @@ from pathlib import Path
 _REPO = Path(__file__).parent.parent
 sys.path.insert(0, str(_REPO))
 
-from calibra.claims import _derive_confidence   # reuse the same scale
+from calibra.claims import _derive_confidence  # noqa: E402  # reuse the same scale
 
 _STATUS_EMOJI = {
     "validated":        "✅ validated",
@@ -77,8 +77,8 @@ def render_claims_doc(claims: list[dict], references: list[str]) -> str:
         "",
         "## Health",
         "",
-        f"| Stat | Value |",
-        f"|------|-------|",
+        "| Stat | Value |",
+        "|------|-------|",
         f"| Active claims | {n_claims} |",
         f"| Reference profiles | {n_refs} |",
         f"| Ratio | {ratio_icon} {n_refs}:{n_claims} "

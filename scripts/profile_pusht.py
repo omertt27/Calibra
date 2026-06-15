@@ -118,7 +118,8 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    log = lambda msg: print(msg, file=sys.stderr, flush=True)
+    def log(msg: str) -> None:
+        print(msg, file=sys.stderr, flush=True)
 
     log(f"Loading {args.dataset!r} ...")
     batch = LeRobotReader().read(args.dataset)

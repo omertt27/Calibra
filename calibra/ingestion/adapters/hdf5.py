@@ -23,7 +23,6 @@ Dependency: pip install 'calibra[hdf5]'  (h5py)
 """
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 

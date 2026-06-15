@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional
 
 _CLAIMS_DIR = Path(__file__).parent / "claims"
 

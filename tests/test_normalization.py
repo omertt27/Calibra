@@ -6,7 +6,6 @@ from __future__ import annotations
 import warnings
 
 import numpy as np
-import pytest
 
 from calibra.schema.normalization import normalize_obs_keys, _resolve, _DEFAULT_MAPPING
 
