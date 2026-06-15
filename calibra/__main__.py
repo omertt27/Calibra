@@ -6,6 +6,7 @@ CLI entry point.
     python -m calibra certify <path> [--reference REF] [--policy FAMILY]
     python -m calibra prune <path> --keep FRACTION [--out coreset_index.json]
     python -m calibra corrupt <path> --drop-frames RATE [--add-jitter-ms STD] ...
+    python -m calibra retarget <path> [--out DIR] [--obs-key-pos KEY] [--obs-key-quat KEY]
 
 Examples:
     python -m calibra /data/robot_demos.h5
@@ -17,8 +18,12 @@ Examples:
     python -m calibra certify /data/my_demos --reference aloha --policy diffusion
     python -m calibra prune /data/100k_episodes --keep 0.3 --out coreset.json
     python -m calibra prune /data/my_ds --keep 0.5 --quality-only
+    python -m calibra prune /data/my_ds --keep 0.3 --entropy-weight 0.4 --policy gr00t
     python -m calibra corrupt lerobot/pusht --drop-frames 0.10
     python -m calibra corrupt /data/robot.h5 --inject-spikes 0.05 --add-jitter-ms 50
+    python -m calibra retarget /data/isaac_lab.h5 --out retargeted/ --pad
+    python -m calibra retarget /data/demos.h5 --obs-key-pos robot0_eef_pos \\
+                                               --obs-key-quat robot0_eef_quat
 
 Exit codes:
     0  No critical issues found.
@@ -53,6 +58,11 @@ def main() -> None:
     if len(sys.argv) > 1 and sys.argv[1] == "corrupt":
         from calibra.corrupt import run_corrupt
         run_corrupt(sys.argv[2:])
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "retarget":
+        from calibra.retarget import run_retarget
+        run_retarget(sys.argv[2:])
         return
 
     parser = argparse.ArgumentParser(

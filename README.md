@@ -5,10 +5,11 @@
 Calibra tells you what is wrong with your robot demonstrations — and removes the redundant ones — before you waste GPU time training on bad data.
 
 ```bash
-pip install 'calibra[lerobot]'
+pip install calibra
 calibra compare hf://lerobot/my_dataset aloha
 calibra certify /data/my_demos --reference aloha --policy diffusion
 calibra prune   /data/100k_episodes --keep 0.3 --out coreset.json
+calibra retarget /data/isaac_lab.h5 --out retargeted/
 ```
 
 ---
@@ -25,7 +26,7 @@ Calibra solves the data side.
 
 ---
 
-## Five commands
+## Six commands
 
 ### 1. `audit` — full diagnostic report
 
@@ -150,6 +151,8 @@ Two-stage pipeline:
 - **Stage 1 — Quality filter:** removes episodes that fail kinematic/temporal thresholds (jerk spike rate, velocity discontinuity, dropout, LDLJ, minimum length).
 - **Stage 2 — Greedy max-coverage:** from the quality-passing pool, selects the K most behaviorally diverse episodes using farthest-point sampling on action-space statistics. O(N × K) — handles ~50k episodes without approximation.
 
+Use `--entropy-weight 0.4` (or `--policy gr00t`) to bias selection toward high-entropy (informationally rich) episodes, which improves GR00T fine-tuning outcomes.
+
 Output `coreset.json` contains `keep_episode_ids`, `quality_fail_ids`, `diversity_pruned_ids`, and per-episode quality and diversity scores.
 
 ### 5. `corrupt` — validate metric sensitivity
@@ -175,6 +178,31 @@ Corruptions: drop_frames=10.0%
 ```
 
 Inject synthetic corruptions into a known-good dataset to verify that your metrics actually respond to the defects they claim to detect.
+
+### 6. `retarget` — convert absolute EEF actions to relative deltas
+
+```bash
+calibra retarget /data/isaac_lab_demos.h5 --out /data/retargeted/
+calibra retarget /data/demos.h5 --pad --out retargeted/
+calibra retarget /data/demos.h5 --obs-key-pos robot0_eef_pos \
+                                 --obs-key-quat robot0_eef_quat
+```
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  calibra retarget — isaac_lab_demos
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Episodes converted : 500
+  Episodes skipped   : 0
+  Output directory   : /data/retargeted/
+  Action shape       : (T−1, 6)  [dx, dy, dz, droll, dpitch, dyaw]
+  Rotation units     : radians (intrinsic XYZ)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+NVIDIA GR00T N1.7+ uses a **Relative End-Effector (EEF)** action space. Isaac Lab and robomimic HDF5 datasets record actions in absolute world-frame coordinates. `retarget` converts absolute 7-DoF poses `[x, y, z, qx, qy, qz, qw]` into 6-DoF local-frame deltas `[dx, dy, dz, droll, dpitch, dyaw]` — one `.npz` per episode.
+
+Use `--pad` to append a zero row so output shape is `(T, 6)` instead of `(T−1, 6)` when your policy requires fixed-length sequences.
 
 ---
 
@@ -325,6 +353,15 @@ Three empirical baselines are shipped:
 | `pusht` | velocity | 10 Hz | 2 | 206 | sim |
 | `aloha_sim` | position | 50 Hz | 14 | 50 | sim |
 | `aloha_mobile_cabinet` | position | 50 Hz | 14 | 85 | ✓ real |
+| `aloha_mobile_shrimp` | position | 50 Hz | 14 | 100 | ✓ real |
+| `aloha_sim_insertion_scripted` | position | 50 Hz | 14 | 50 | sim |
+| `aloha_sim_transfer_cube_scripted` | position | 50 Hz | 14 | 50 | sim |
+| `aloha_sim_transfer_cube_human` | position | 50 Hz | 14 | 50 | sim |
+| `aloha_static_battery` | position | 50 Hz | 14 | — | ✓ real |
+| `aloha_static_candy` | position | 50 Hz | 14 | — | ✓ real |
+| `aloha_static_coffee` | position | 50 Hz | 14 | — | ✓ real |
+| `aloha_static_cups_open` | position | 50 Hz | 14 | — | ✓ real |
+| `pusht_image` | velocity | 10 Hz | 2 | — | sim |
 
 Add your own with `scripts/profile_dataset.py` (see Contributing).
 

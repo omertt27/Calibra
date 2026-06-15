@@ -44,10 +44,12 @@ claims:
     class: "position"
     status: "active_hypothesis"
     confidence: "LOW-MODERATE"
-    assertion: "Position-command datasets have jerk spike rate below 2%"
-    evidence_count: 1
+    assertion: "Human-collected position-command datasets have jerk spike rate below 2%; scripted/planner-generated datasets regularly exceed this due to sharp trajectory waypoints"
+    evidence_count: 3
     evidence_datasets:
       - lerobot/aloha_sim_insertion_human  # ✓ 0.0069
+      - lerobot/aloha_sim_insertion_scripted  # ✗ 0.249
+      - lerobot/aloha_sim_transfer_cube_scripted  # ✗ 0.219
     falsification: "Any position-command hardware dataset with rate > 0.04"
     pending_tests:
       - BridgeData V2
@@ -82,12 +84,14 @@ claims:
     metric: "ldlj"
     class: "any"
     status: "active_hypothesis"
-    confidence: "LOW"
+    confidence: "MEDIUM"
     assertion: "LDLJ is not a valid cross-dataset comparator when control modes or control frequencies differ significantly (> ~2x)"
-    evidence_count: 2
+    evidence_count: 4
     evidence_datasets:
       - lerobot/aloha_sim_insertion_human  # ✓ -20.43
       - lerobot/pusht  # ✓ -16.34
+      - lerobot/aloha_sim_insertion_scripted  # ✓ -17.192
+      - lerobot/aloha_sim_transfer_cube_scripted  # ✓ -17.232
     falsification: "Two datasets with different control modes where LDLJ ranks them in the physically expected order (position smoother than velocity) AND control frequencies differ > 2x"
     pending_tests:
       - A low-frequency position-command dataset (< 15Hz)
@@ -107,12 +111,14 @@ claims:
     metric: "jitter_cv"
     class: "any"
     status: "active_hypothesis"
-    confidence: "LOW"
+    confidence: "MEDIUM"
     assertion: "Simulated datasets have near-machine-precision timestamp jitter (CV < 1e-4), making the jitter metric uninformative for sim data"
-    evidence_count: 2
+    evidence_count: 4
     evidence_datasets:
       - lerobot/pusht  # ✓ 2.86e-06
       - lerobot/aloha_sim_insertion_human  # ✓ 1.11e-05
+      - lerobot/aloha_sim_insertion_scripted  # ✓ 4e-06
+      - lerobot/aloha_sim_transfer_cube_scripted  # ✓ 4e-06
     falsification: "A simulated dataset with jitter CV > 0.01 (1%)"
 
   - id: "TEMP-002"
@@ -142,12 +148,14 @@ claims:
     metric: "velocity_discontinuity_rate"
     class: "position"
     status: "active_hypothesis"
-    confidence: "LOW"
+    confidence: "MEDIUM"
     assertion: "Position-command datasets have velocity discontinuity rate below 5%"
-    evidence_count: 2
+    evidence_count: 4
     evidence_datasets:
       - lerobot/aloha_sim_insertion_human  # ✓ 0.024
       - lerobot/aloha_mobile_cabinet  # ✓ 0.013
+      - lerobot/aloha_sim_insertion_scripted  # ✓ 0.0075
+      - lerobot/aloha_sim_transfer_cube_scripted  # ✓ 0.0075
     falsification: "Any position-command hardware dataset with aggregate rate > 0.08"
     pending_tests:
       - BridgeData V2

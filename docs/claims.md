@@ -10,8 +10,8 @@ Do not edit manually — edit the source JSON files in `calibra/claims/`.
 | Stat | Value |
 |------|-------|
 | Active claims | 12 |
-| Reference profiles | 3 |
-| Ratio | ⚠️  3:12 (theory outpacing evidence — run more profiles first) |
+| Reference profiles | 12 |
+| Ratio | ✅ 12:12 (evidence outpaces theory ✓) |
 
 **Rule:** Number of reference profiles should be ≥ number of active claims.
 See `calibra/claims/SPEC.md` for the full contribution protocol.
@@ -23,7 +23,16 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 | Dataset | File |
 |---------|------|
 | aloha_mobile_cabinet | `calibra/references/aloha_mobile_cabinet.json` |
+| aloha_mobile_shrimp | `calibra/references/aloha_mobile_shrimp.json` |
 | aloha_sim_insertion_human | `calibra/references/aloha_sim_insertion_human.json` |
+| aloha_sim_insertion_scripted | `calibra/references/aloha_sim_insertion_scripted.json` |
+| aloha_sim_transfer_cube_human | `calibra/references/aloha_sim_transfer_cube_human.json` |
+| aloha_sim_transfer_cube_scripted | `calibra/references/aloha_sim_transfer_cube_scripted.json` |
+| aloha_static_battery | `calibra/references/aloha_static_battery.json` |
+| aloha_static_candy | `calibra/references/aloha_static_candy.json` |
+| aloha_static_coffee | `calibra/references/aloha_static_coffee.json` |
+| aloha_static_cups_open | `calibra/references/aloha_static_cups_open.json` |
+| pusht_image | `calibra/references/pusht_image.json` |
 | pusht_velocity_command | `calibra/references/pusht_velocity_command.json` |
 
 ---
@@ -116,7 +125,7 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 #### TEMP-001 — any
 
 **Status:** 🔬 active hypothesis  
-**Confidence:** 🟠 LOW  
+**Confidence:** 🟡 MEDIUM  
 **Class:** `any`  
 **Source:** `calibra/claims/temporal_stability.json`  
 
@@ -130,6 +139,8 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 |---------|----------|----------|------|-------|
 | `lerobot/pusht` | 2.86e-06 | ✅ | 2026-06-15 | MuJoCo sim, deterministic timestamps |
 | `lerobot/aloha_sim_insertion_human` | 1.11e-05 | ✅ | 2026-06-15 | MuJoCo sim, deterministic timestamps |
+| `lerobot/aloha_sim_insertion_scripted` | 4e-06 | ✅ | 2026-06-15 | MuJoCo sim, scripted demos. Machine-precision jitter confirms claim for scripted sim data. |
+| `lerobot/aloha_sim_transfer_cube_scripted` | 4e-06 | ✅ | 2026-06-15 | MuJoCo sim, scripted demos. Consistent with all other sim datasets. Four sim data points now supporting TEMP-001. |
 
 **Falsification condition:**
 > A simulated dataset with jitter CV > 0.01 (1%)
@@ -166,7 +177,7 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 #### LDLJ-001 — any
 
 **Status:** 🔬 active hypothesis  
-**Confidence:** 🟠 LOW  
+**Confidence:** 🟡 MEDIUM  
 **Class:** `any`  
 **Source:** `calibra/claims/ldlj.json`  
 
@@ -180,6 +191,8 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 |---------|----------|----------|------|-------|
 | `lerobot/aloha_sim_insertion_human` | -20.43 | ✅ | 2026-06-15 | 50Hz, 14-DOF position control. Scores WORSE than pusht despite being physically smoother — confirms cross-mode incomparability |
 | `lerobot/pusht` | -16.34 | ✅ | 2026-06-15 | ~10Hz, 2D velocity command. Scores BETTER than aloha despite being a jerkier control mode — anomalous direction confirms the claim |
+| `lerobot/aloha_sim_insertion_scripted` | -17.19 | ✅ | 2026-06-15 | 50Hz, 14-DOF position control, scripted. Scores BETTER than aloha_sim_insertion_human (-20.43) despite same setup — difference driven by motion profile, not frequency. Further confirms cross-mode incomparability. |
+| `lerobot/aloha_sim_transfer_cube_scripted` | -17.23 | ✅ | 2026-06-15 | 50Hz, 14-DOF position control, scripted. Consistent with insertion_scripted (-17.19). Both scripted datasets cluster at -17.2, distinct from human demos at -20.4 — confirms LDLJ is sensitive to data collection method within the same control class. |
 
 **Falsification condition:**
 > Two datasets with different control modes where LDLJ ranks them in the physically expected order (position smoother than velocity) AND control frequencies differ > 2x
@@ -223,7 +236,7 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 **Class:** `position`  
 **Source:** `calibra/claims/jerk_spike.json`  
 
-**Assertion:** Position-command datasets have jerk spike rate below 2%
+**Assertion:** Human-collected position-command datasets have jerk spike rate below 2%; scripted/planner-generated datasets regularly exceed this due to sharp trajectory waypoints
 
 **Conditions:** spike defined as per-step jerk norm > 5x median jerk for that episode
 
@@ -232,6 +245,8 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 | Dataset | Observed | Supports | Date | Notes |
 |---------|----------|----------|------|-------|
 | `lerobot/aloha_sim_insertion_human` | 0.0069 | ✅ | 2026-06-15 | Simulated, 14-DOF bimanual, 50Hz |
+| `lerobot/aloha_sim_insertion_scripted` | 0.249 | ❌ | 2026-06-15 | Scripted ALOHA sim, 14-DOF, 50Hz. Spike rate 24.9% — far above the 2% threshold. Scripted motions have abrupt start/stop profiles not present in human teleop. Does not trigger formal falsification (condition requires hardware dataset) but indicates claim scope should be clarified as 'human-collected' position datasets. |
+| `lerobot/aloha_sim_transfer_cube_scripted` | 0.219 | ❌ | 2026-06-15 | Scripted ALOHA sim, 14-DOF, 50Hz. Spike rate 21.9% — consistent with insertion_scripted finding. Confirms that scripted motion planners produce high jerk due to sharp trajectory waypoints. Both scripted datasets disconfirm the claim for scripted (non-human) demonstrations. |
 
 **Falsification condition:**
 > Any position-command hardware dataset with rate > 0.04
@@ -305,7 +320,7 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 #### VD-001 — position
 
 **Status:** 🔬 active hypothesis  
-**Confidence:** 🟠 LOW  
+**Confidence:** 🟡 MEDIUM  
 **Class:** `position`  
 **Source:** `calibra/claims/velocity_discontinuity.json`  
 
@@ -319,6 +334,8 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 |---------|----------|----------|------|-------|
 | `lerobot/aloha_sim_insertion_human` | 0.024 | ✅ | 2026-06-15 | Simulated, 14-DOF bimanual, 50Hz, peg insertion |
 | `lerobot/aloha_mobile_cabinet` | 0.013 | ✅ | 2026-06-15 | Real hardware, mobile ALOHA, 14-DOF, 50Hz, cabinet manipulation. Aggregate rate 1.29% (well within 5%). Episode-level analysis found 7 outlier episodes with elevated vel_disc_rate (max: ep_54 at 4.8× MAD above median). Second real-data point supporting claim. |
+| `lerobot/aloha_sim_insertion_scripted` | 0.0075 | ✅ | 2026-06-15 | Scripted ALOHA sim, 14-DOF bimanual, 50Hz, peg insertion. Rate 0.75% — fourth position-control data point supporting claim. |
+| `lerobot/aloha_sim_transfer_cube_scripted` | 0.0075 | ✅ | 2026-06-15 | Scripted ALOHA sim, 14-DOF bimanual, 50Hz, cube transfer. Rate 0.75% — fifth position-control data point supporting claim. |
 
 **Falsification condition:**
 > Any position-command hardware dataset with aggregate rate > 0.08

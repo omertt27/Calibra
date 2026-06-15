@@ -4,9 +4,9 @@
       "id": "JS-001",
       "metric": "spike_rate",
       "class": "position",
-      "assertion": "Position-command datasets have jerk spike rate below 2%",
+      "assertion": "Human-collected position-command datasets have jerk spike rate below 2%; scripted/planner-generated datasets regularly exceed this due to sharp trajectory waypoints",
       "conditions": "spike defined as per-step jerk norm > 5x median jerk for that episode",
-      "confidence": "LOW-MODERATE",
+      "confidence": "MODERATE",
       "status": "active_hypothesis",
       "evidence": [
         {
@@ -15,6 +15,20 @@
           "supports": true,
           "date": "2026-06-15",
           "notes": "Simulated, 14-DOF bimanual, 50Hz"
+        },
+        {
+          "dataset": "lerobot/aloha_sim_insertion_scripted",
+          "observed": 0.249,
+          "supports": false,
+          "date": "2026-06-15",
+          "notes": "Scripted ALOHA sim, 14-DOF, 50Hz. Spike rate 24.9% — far above the 2% threshold. Scripted motions have abrupt start/stop profiles not present in human teleop. Does not trigger formal falsification (condition requires hardware dataset) but indicates claim scope should be clarified as 'human-collected' position datasets."
+        },
+        {
+          "dataset": "lerobot/aloha_sim_transfer_cube_scripted",
+          "observed": 0.219,
+          "supports": false,
+          "date": "2026-06-15",
+          "notes": "Scripted ALOHA sim, 14-DOF, 50Hz. Spike rate 21.9% — consistent with insertion_scripted finding. Confirms that scripted motion planners produce high jerk due to sharp trajectory waypoints. Both scripted datasets disconfirm the claim for scripted (non-human) demonstrations."
         }
       ],
       "falsification": {

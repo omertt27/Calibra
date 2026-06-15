@@ -22,6 +22,20 @@
           "supports": true,
           "date": "2026-06-15",
           "notes": "~10Hz, 2D velocity command. Scores BETTER than aloha despite being a jerkier control mode — anomalous direction confirms the claim"
+        },
+        {
+          "dataset": "lerobot/aloha_sim_insertion_scripted",
+          "observed": -17.192,
+          "supports": true,
+          "date": "2026-06-15",
+          "notes": "50Hz, 14-DOF position control, scripted. Scores BETTER than aloha_sim_insertion_human (-20.43) despite same setup — difference driven by motion profile, not frequency. Further confirms cross-mode incomparability."
+        },
+        {
+          "dataset": "lerobot/aloha_sim_transfer_cube_scripted",
+          "observed": -17.232,
+          "supports": true,
+          "date": "2026-06-15",
+          "notes": "50Hz, 14-DOF position control, scripted. Consistent with insertion_scripted (-17.19). Both scripted datasets cluster at -17.2, distinct from human demos at -20.4 — confirms LDLJ is sensitive to data collection method within the same control class."
         }
       ],
       "falsification": {

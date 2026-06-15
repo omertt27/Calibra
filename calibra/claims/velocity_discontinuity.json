@@ -22,6 +22,20 @@
           "supports": true,
           "date": "2026-06-15",
           "notes": "Real hardware, mobile ALOHA, 14-DOF, 50Hz, cabinet manipulation. Aggregate rate 1.29% (well within 5%). Episode-level analysis found 7 outlier episodes with elevated vel_disc_rate (max: ep_54 at 4.8× MAD above median). Second real-data point supporting claim."
+        },
+        {
+          "dataset": "lerobot/aloha_sim_insertion_scripted",
+          "observed": 0.0075,
+          "supports": true,
+          "date": "2026-06-15",
+          "notes": "Scripted ALOHA sim, 14-DOF bimanual, 50Hz, peg insertion. Rate 0.75% — fourth position-control data point supporting claim."
+        },
+        {
+          "dataset": "lerobot/aloha_sim_transfer_cube_scripted",
+          "observed": 0.0075,
+          "supports": true,
+          "date": "2026-06-15",
+          "notes": "Scripted ALOHA sim, 14-DOF bimanual, 50Hz, cube transfer. Rate 0.75% — fifth position-control data point supporting claim."
         }
       ],
       "falsification": {

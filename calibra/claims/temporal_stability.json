@@ -22,6 +22,20 @@
           "supports": true,
           "date": "2026-06-15",
           "notes": "MuJoCo sim, deterministic timestamps"
+        },
+        {
+          "dataset": "lerobot/aloha_sim_insertion_scripted",
+          "observed": 4e-06,
+          "supports": true,
+          "date": "2026-06-15",
+          "notes": "MuJoCo sim, scripted demos. Machine-precision jitter confirms claim for scripted sim data."
+        },
+        {
+          "dataset": "lerobot/aloha_sim_transfer_cube_scripted",
+          "observed": 4e-06,
+          "supports": true,
+          "date": "2026-06-15",
+          "notes": "MuJoCo sim, scripted demos. Consistent with all other sim datasets. Four sim data points now supporting TEMP-001."
         }
       ],
       "falsification": {

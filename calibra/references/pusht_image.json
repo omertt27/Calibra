@@ -1,0 +1,356 @@
+{
+  "meta": {
+    "dataset": "lerobot/pusht_image",
+    "n_episodes": 206,
+    "n_steps_total": 25650,
+    "action_dim": 2,
+    "modalities": [
+      "state"
+    ],
+    "control_mode": "velocity",
+    "gripper_dims": [
+      -1
+    ],
+    "note": "PushT with image observations, velocity control, 2D"
+  },
+  "episode_structure": {
+    "length_steps": {
+      "n": 206,
+      "mean": 124.514563,
+      "std": 35.587678,
+      "min": 49.0,
+      "max": 246.0,
+      "p5": 69.0,
+      "p10": 78.0,
+      "p25": 99.0,
+      "p50": 122.0,
+      "p75": 148.0,
+      "p90": 168.0,
+      "p95": 186.0
+    },
+    "duration_seconds": {
+      "n": 206,
+      "mean": 12.351456,
+      "std": 3.558768,
+      "min": 4.8,
+      "max": 24.5,
+      "p5": 6.8,
+      "p10": 7.7,
+      "p25": 9.8,
+      "p50": 12.1,
+      "p75": 14.7,
+      "p90": 16.7,
+      "p95": 18.5
+    }
+  },
+  "per_episode_distributions": {
+    "temporal_stability/per_episode_jitter_cv": {
+      "n": 206,
+      "mean": 3e-06,
+      "std": 1e-06,
+      "min": 1e-06,
+      "max": 5e-06,
+      "p5": 1e-06,
+      "p10": 1e-06,
+      "p25": 2e-06,
+      "p50": 3e-06,
+      "p75": 3e-06,
+      "p90": 4e-06,
+      "p95": 4e-06
+    },
+    "temporal_stability/per_episode_dropout_fraction": {
+      "n": 206,
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "p5": 0.0,
+      "p10": 0.0,
+      "p25": 0.0,
+      "p50": 0.0,
+      "p75": 0.0,
+      "p90": 0.0,
+      "p95": 0.0
+    },
+    "temporal_stability/per_episode_drift_lag_frames": {
+      "n": 0,
+      "note": "no valid values"
+    },
+    "control_smoothness/per_episode_ldlj": {
+      "n": 206,
+      "mean": -16.012659,
+      "std": 1.141588,
+      "min": -18.821469,
+      "max": -11.859213,
+      "p5": -17.602877,
+      "p10": -17.400831,
+      "p25": -16.833801,
+      "p50": -16.079441,
+      "p75": -15.241837,
+      "p90": -14.497355,
+      "p95": -13.879139
+    },
+    "control_smoothness/per_episode_spike_rate": {
+      "n": 206,
+      "mean": 0.077552,
+      "std": 0.037219,
+      "min": 0.0,
+      "max": 0.2,
+      "p5": 0.025263,
+      "p10": 0.029412,
+      "p25": 0.047734,
+      "p50": 0.07435,
+      "p75": 0.098361,
+      "p90": 0.129676,
+      "p95": 0.146543
+    },
+    "control_smoothness/per_episode_vel_disc_rate": {
+      "n": 206,
+      "mean": 0.111068,
+      "std": 0.048596,
+      "min": 0.01087,
+      "max": 0.38806,
+      "p5": 0.035016,
+      "p10": 0.050503,
+      "p25": 0.081492,
+      "p50": 0.10822,
+      "p75": 0.141648,
+      "p90": 0.169015,
+      "p95": 0.180718
+    },
+    "control_smoothness/per_episode_act_state_div": {
+      "n": 206,
+      "mean": 14.517677,
+      "std": 3.158726,
+      "min": 6.63633,
+      "max": 23.784533,
+      "p5": 9.519968,
+      "p10": 10.475611,
+      "p25": 12.44145,
+      "p50": 14.433182,
+      "p75": 16.279897,
+      "p90": 18.553123,
+      "p95": 19.987379
+    },
+    "coverage_entropy/per_episode_length": {
+      "n": 206,
+      "mean": 124.514563,
+      "std": 35.587678,
+      "min": 49.0,
+      "max": 246.0,
+      "p5": 69.0,
+      "p10": 78.0,
+      "p25": 99.0,
+      "p50": 122.0,
+      "p75": 148.0,
+      "p90": 168.0,
+      "p95": 186.0
+    },
+    "task_structure/per_episode_contact_fraction": {
+      "n": 206,
+      "mean": 0.217113,
+      "std": 0.125231,
+      "min": 0.021739,
+      "max": 0.685535,
+      "p5": 0.06538,
+      "p10": 0.086607,
+      "p25": 0.128248,
+      "p50": 0.197902,
+      "p75": 0.276068,
+      "p90": 0.380833,
+      "p95": 0.463139
+    },
+    "task_structure/per_episode_grasp_count": {
+      "n": 0,
+      "note": "no valid values"
+    }
+  },
+  "aggregate_metrics": {
+    "temporal_stability": {
+      "jitter.mean_cv": 3e-06,
+      "jitter.ci_lower": 3e-06,
+      "jitter.ci_upper": 3e-06,
+      "jitter.n_episodes": 206.0,
+      "dropout.mean_dropout_fraction": 0.0,
+      "dropout.ci_lower": 0.0,
+      "dropout.ci_upper": 0.0,
+      "dropout.dropout_k": 3.0
+    },
+    "control_smoothness": {
+      "ldlj.mean_ldlj": -16.012659,
+      "ldlj.ci_lower": -16.174082,
+      "ldlj.ci_upper": -15.856882,
+      "ldlj.n_episodes": 206.0,
+      "jerk_spikes.mean_spike_fraction": 0.077552,
+      "jerk_spikes.ci_lower": 0.072793,
+      "jerk_spikes.ci_upper": 0.082467,
+      "jerk_spikes.spike_k": 5.0,
+      "vel_discontinuities.mean_disc_fraction": 0.111068,
+      "vel_discontinuities.ci_lower": 0.104426,
+      "vel_discontinuities.ci_upper": 0.117877,
+      "vel_discontinuities.threshold": 0.2,
+      "action_state_divergence.mean_divergence": 14.517677,
+      "action_state_divergence.ci_lower": 8.662043,
+      "action_state_divergence.ci_upper": 21.014828,
+      "action_state_divergence.n_episodes": 206.0,
+      "action_state_divergence.n_skipped": 0.0
+    },
+    "coverage_entropy": {
+      "action_entropy.entropy_bits_per_dim": 5.30033,
+      "action_entropy.n_samples": 25650.0,
+      "action_entropy.action_dim": 2.0,
+      "state_entropy.entropy_bits_per_dim": 5.337855,
+      "state_entropy.n_samples": 25650.0,
+      "episode_lengths.mean_steps": 124.514563,
+      "episode_lengths.std_steps": 35.587678,
+      "episode_lengths.min_steps": 49.0,
+      "episode_lengths.max_steps": 246.0,
+      "episode_lengths.cv": 0.285811,
+      "episode_lengths.bimodal_hint": 0.0,
+      "episode_lengths.n_episodes": 206.0
+    },
+    "task_structure": {
+      "contact_density.mean_contact_fraction": 0.217113,
+      "contact_density.ci_lower": 0.201053,
+      "contact_density.ci_upper": 0.233591,
+      "contact_density.gripper_used": 0.0,
+      "trajectory_diversity.estimated_modes": 2.0,
+      "trajectory_diversity.separation_score": 0.455302,
+      "trajectory_diversity.n_episodes": 206.0,
+      "short_episodes.short_episode_fraction": 0.0,
+      "short_episodes.lower_fence_steps": 25.5,
+      "short_episodes.q1_steps": 99.0,
+      "short_episodes.q3_steps": 148.0,
+      "short_episodes.iqr_steps": 49.0,
+      "short_episodes.n_outliers": 0.0
+    }
+  },
+  "flags": [
+    {
+      "analyzer": "temporal_stability",
+      "metric": "timestamp_jitter_cv",
+      "level": "OK",
+      "observed": 2.8640388409803325e-06,
+      "ci_lower": 2.7609304758288482e-06,
+      "ci_upper": 2.9747536549615295e-06,
+      "interpretation": "Step-to-step timing is consistent."
+    },
+    {
+      "analyzer": "temporal_stability",
+      "metric": "timestamp_dropout_rate",
+      "level": "OK",
+      "observed": 0.0,
+      "ci_lower": 0.0,
+      "ci_upper": 0.0,
+      "interpretation": "Timestamp dropout rate is within acceptable range."
+    },
+    {
+      "analyzer": "control_smoothness",
+      "metric": "ldlj",
+      "level": "CRITICAL",
+      "observed": -16.01265898255618,
+      "ci_lower": -16.174081507855128,
+      "ci_upper": -15.85688212613899,
+      "interpretation": "Mean LDLJ = -16.01 across 206 episodes (threshold: >-10). Action trajectories contain significant jerk."
+    },
+    {
+      "analyzer": "control_smoothness",
+      "metric": "jerk_spike_rate",
+      "level": "CRITICAL",
+      "observed": 0.07755218391547568,
+      "ci_lower": 0.07279311095683898,
+      "ci_upper": 0.0824673416901852,
+      "interpretation": "7.8% of steps have jerk > 5.0\u00d7 median jerk \u2014 anomalous discontinuities in action sequence."
+    },
+    {
+      "analyzer": "control_smoothness",
+      "metric": "velocity_discontinuity_rate",
+      "level": "CRITICAL",
+      "observed": 0.11106799858504014,
+      "ci_lower": 0.10442622836701092,
+      "ci_upper": 0.1178774731132191,
+      "interpretation": "11.1% of steps show velocity change > 20% of peak velocity."
+    },
+    {
+      "analyzer": "control_smoothness",
+      "metric": "action_state_divergence",
+      "level": "CRITICAL",
+      "observed": 14.517677260834036,
+      "ci_lower": 8.662043333053589,
+      "ci_upper": 21.014827966690063,
+      "interpretation": "Action-state divergence is high (14.5177, threshold: 0.100). Strong evidence of packet drops, hardware lag, or wrong control mode."
+    },
+    {
+      "analyzer": "coverage_entropy",
+      "metric": "action_entropy_bits_per_dim",
+      "level": "OK",
+      "observed": 5.300329979497967,
+      "ci_lower": null,
+      "ci_upper": null,
+      "interpretation": "Action-space coverage is healthy (5.30 bits/dim)."
+    },
+    {
+      "analyzer": "coverage_entropy",
+      "metric": "pca_top2_variance_fraction",
+      "level": "INFO",
+      "observed": null,
+      "ci_lower": null,
+      "ci_upper": null,
+      "interpretation": "Metric skipped: action space is < 3-dimensional."
+    },
+    {
+      "analyzer": "coverage_entropy",
+      "metric": "state_entropy_bits_per_dim[state]",
+      "level": "OK",
+      "observed": 5.337855277829348,
+      "ci_lower": null,
+      "ci_upper": null,
+      "interpretation": "State-space coverage is healthy (5.34 bits/dim)."
+    },
+    {
+      "analyzer": "coverage_entropy",
+      "metric": "episode_length_distribution",
+      "level": "OK",
+      "observed": 0.2858113679344729,
+      "ci_lower": null,
+      "ci_upper": null,
+      "interpretation": "Episode lengths are consistent (mean=125, CV=0.29)."
+    },
+    {
+      "analyzer": "task_structure",
+      "metric": "contact_density",
+      "level": "INFO",
+      "observed": 0.21711269514999101,
+      "ci_lower": 0.20105329163970953,
+      "ci_upper": 0.23359056536953354,
+      "interpretation": "21.7% of steps are in contact/slow phase (estimated via velocity envelope only (no gripper detected))."
+    },
+    {
+      "analyzer": "task_structure",
+      "metric": "grasp_events_per_episode",
+      "level": "INFO",
+      "observed": null,
+      "ci_lower": null,
+      "ci_upper": null,
+      "interpretation": "No gripper dimension detected \u2014 grasp count unavailable."
+    },
+    {
+      "analyzer": "task_structure",
+      "metric": "trajectory_diversity",
+      "level": "INFO",
+      "observed": 0.4553018475257893,
+      "ci_lower": null,
+      "ci_upper": null,
+      "interpretation": "Trajectory diversity score 0.46 \u2014 weak evidence of multiple strategies. May be within-task variation."
+    },
+    {
+      "analyzer": "task_structure",
+      "metric": "short_episode_fraction",
+      "level": "OK",
+      "observed": 0.0,
+      "ci_lower": null,
+      "ci_upper": null,
+      "interpretation": "No suspiciously short episodes detected."
+    }
+  ]
+}

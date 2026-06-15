@@ -52,6 +52,16 @@ _ALIGN_CRITICAL     = 0.05
 
 _CAMERA_PREFIXES    = ("camera", "cam", "rgb", "depth", "wrist", "overhead")
 
+# ── camera-physics drift thresholds (frames) ─────────────────────────────────
+
+_DRIFT_WARNING_FRAMES:  int = 2   # 40 ms at 50 Hz
+_DRIFT_CRITICAL_FRAMES: int = 5   # 100 ms at 50 Hz
+
+# Observation key fragments used to detect joint-velocity arrays.
+_JOINT_VEL_KEYS = frozenset(["joint_vel", "robot0_joint_vel", "velocity"])
+# Observation key fragments used to detect image arrays.
+_VISUAL_KEYS    = frozenset(["camera", "image", "rgb", "depth", "visual"])
+
 
 @dataclass
 class TemporalAnalyzer(Analyzer):
@@ -66,25 +76,30 @@ class TemporalAnalyzer(Analyzer):
     cam_lag_warning_s, cam_lag_critical_s : camera lag std thresholds (seconds).
     align_tol_s         : per-step tolerance for action-obs alignment (seconds).
     align_warning, align_critical : misalignment fraction thresholds.
+    drift_warning_frames, drift_critical_frames : camera-physics lag thresholds
+                          (frames). Checked when both image and joint-velocity
+                          observations are present. 2 frames ≈ 40 ms at 50 Hz.
     n_bootstrap         : number of bootstrap resamples for CIs.
     ci_level            : confidence level for all CIs.
     camera_keys         : explicit list of obs keys to treat as camera modalities.
                           If None, auto-detected by prefix matching.
     """
 
-    jitter_cv_warning:   float = _JITTER_CV_WARNING
-    jitter_cv_critical:  float = _JITTER_CV_CRITICAL
-    dropout_k:           float = _DROPOUT_K
-    dropout_warning:     float = _DROPOUT_WARNING
-    dropout_critical:    float = _DROPOUT_CRITICAL
-    cam_lag_warning_s:   float = _CAM_LAG_WARNING_S
-    cam_lag_critical_s:  float = _CAM_LAG_CRITICAL_S
-    align_tol_s:         float = _ALIGN_TOL_S
-    align_warning:       float = _ALIGN_WARNING
-    align_critical:      float = _ALIGN_CRITICAL
-    n_bootstrap:         int   = 1000
-    ci_level:            float = 0.95
-    camera_keys:         Optional[list[str]] = None
+    jitter_cv_warning:    float = _JITTER_CV_WARNING
+    jitter_cv_critical:   float = _JITTER_CV_CRITICAL
+    dropout_k:            float = _DROPOUT_K
+    dropout_warning:      float = _DROPOUT_WARNING
+    dropout_critical:     float = _DROPOUT_CRITICAL
+    cam_lag_warning_s:    float = _CAM_LAG_WARNING_S
+    cam_lag_critical_s:   float = _CAM_LAG_CRITICAL_S
+    align_tol_s:          float = _ALIGN_TOL_S
+    align_warning:        float = _ALIGN_WARNING
+    align_critical:       float = _ALIGN_CRITICAL
+    drift_warning_frames: int   = _DRIFT_WARNING_FRAMES
+    drift_critical_frames: int  = _DRIFT_CRITICAL_FRAMES
+    n_bootstrap:          int   = 1000
+    ci_level:             float = 0.95
+    camera_keys:          Optional[list[str]] = None
 
     @property
     def name(self) -> str:
@@ -125,11 +140,17 @@ class TemporalAnalyzer(Analyzer):
             flags.append(align_flag)
         raw["alignment"] = align_raw
 
+        drift_flag, drift_raw = self._check_visual_physics_drift(batch)
+        if drift_flag is not None:
+            flags.append(drift_flag)
+            raw["camera_physics_drift"] = drift_raw
+
         hints = self._policy_hints(flags, policy_family, raw)
 
         # Per-episode arrays for Phase 2 comparison/curation (convention: "per_episode_<key>").
         raw["per_episode_jitter_cv"]        = jitter_raw.get("episode_values", [])
         raw["per_episode_dropout_fraction"] = dropout_raw.get("episode_values", [])
+        raw["per_episode_drift_lag_frames"] = drift_raw.get("episode_lags", []) if drift_raw else []
 
         return AnalyzerResult(
             analyzer_name=self.name,
@@ -359,9 +380,13 @@ class TemporalAnalyzer(Analyzer):
 
         jitter_cv = raw.get("jitter", {}).get("mean_cv")
         dropout   = raw.get("dropout", {}).get("mean_dropout_fraction")
+        drift_lag = raw.get("camera_physics_drift", {}).get("median_lag_frames") if raw.get("camera_physics_drift") else None
         has_cam_lag_crit = any(
             f.level == RiskLevel.CRITICAL and "camera_lag" in f.metric
             for f in flags
+        )
+        has_drift_issue = (
+            drift_lag is not None and abs(drift_lag) > self.drift_warning_frames
         )
 
         if "diffusion" in pf:
@@ -377,6 +402,13 @@ class TemporalAnalyzer(Analyzer):
                 caveats.append(
                     "Camera lag will cause visual observations to lag behind "
                     "proprioception, corrupting multi-modal conditioning."
+                )
+                compatible = False
+            if has_drift_issue:
+                caveats.append(
+                    f"Camera-physics render lag of {abs(drift_lag)} frames detected. "
+                    "Visual observations reflect a stale physical state, which "
+                    "corrupts diffusion conditioning on multi-modal history."
                 )
                 compatible = False
             hints.append(CompatibilityHint(
@@ -413,6 +445,13 @@ class TemporalAnalyzer(Analyzer):
                     "approximately uniform step intervals."
                 )
                 compatible = None
+            if has_drift_issue:
+                caveats.append(
+                    f"Camera-physics render lag of {abs(drift_lag)} frames detected. "
+                    "Transformer token sequences will mix observations from "
+                    "different physical states, degrading temporal attention."
+                )
+                compatible = None
             hints.append(CompatibilityHint(
                 policy_family="Transformer",
                 compatible=compatible,
@@ -422,6 +461,114 @@ class TemporalAnalyzer(Analyzer):
             ))
 
         return hints
+
+    # ── metric: camera-physics temporal drift ────────────────────────────────
+
+    def _check_visual_physics_drift(
+        self, batch: EpisodeBatch
+    ) -> tuple[Optional[RiskFlag], Optional[dict]]:
+        """
+        Detect render-pipeline lag by cross-correlating joint-velocity magnitude
+        against visual activity magnitude (mean absolute frame difference).
+
+        Only runs when the batch contains both:
+          - at least one image observation (ndim 3 or 4, spatial dims ≥ 8 px), AND
+          - at least one joint-velocity observation (key matches _JOINT_VEL_KEYS).
+
+        Silently returns (None, None) when prerequisites are not met — i.e. for
+        datasets without image data (e.g. proprioception-only LeRobot datasets).
+
+        Returns
+        -------
+        (RiskFlag | None, dict | None)
+            RiskFlag with metric "camera_physics_drift" and lag in frames, or
+            None if prerequisites are not met.
+        """
+        from calibra.temporal.drift import compute_visual_activity, estimate_sensor_command_latency
+
+        lag_samples: list[int] = []
+
+        for ep in batch.episodes:
+            jv_arr: Optional[np.ndarray] = None
+            for key in _JOINT_VEL_KEYS:
+                if key in ep.observations:
+                    jv_arr = ep.observations[key]
+                    break
+
+            img_arr: Optional[np.ndarray] = None
+            for key in ep.observations:
+                if any(kw in key.lower() for kw in _VISUAL_KEYS):
+                    candidate = ep.observations[key]
+                    if (
+                        candidate.ndim in (3, 4)
+                        and candidate.shape[1] >= 8
+                        and candidate.shape[2] >= 8
+                    ):
+                        img_arr = candidate
+                        break
+
+            if jv_arr is None or img_arr is None:
+                continue
+            if len(img_arr) < 4 or len(jv_arr) < 4:
+                continue
+
+            try:
+                visual_activity = compute_visual_activity(img_arr)
+                physical_activity = (
+                    np.linalg.norm(jv_arr.astype(np.float32), axis=1)
+                    if jv_arr.ndim > 1
+                    else np.abs(jv_arr.astype(np.float32))
+                )
+                lag = estimate_sensor_command_latency(physical_activity, visual_activity)
+                lag_samples.append(lag)
+            except Exception:
+                continue
+
+        if not lag_samples:
+            return None, None
+
+        median_lag = int(np.median(lag_samples))
+        raw: dict = {
+            "median_lag_frames": median_lag,
+            "n_episodes_checked": len(lag_samples),
+            "episode_lags": lag_samples,
+        }
+
+        abs_lag = abs(median_lag)
+        if abs_lag <= self.drift_warning_frames:
+            return RiskFlag(
+                level=RiskLevel.OK,
+                metric="camera_physics_drift",
+                observed=ObservedValue(value=float(median_lag), unit="frames"),
+                threshold=float(self.drift_warning_frames),
+                interpretation=(
+                    f"Camera-proprioception temporal alignment: {median_lag:+d} frames "
+                    f"(within ±{self.drift_warning_frames} frame tolerance)."
+                ),
+                implication="No significant render-pipeline lag detected.",
+            ), raw
+
+        level = RiskLevel.CRITICAL if abs_lag > self.drift_critical_frames else RiskLevel.WARNING
+        direction = "behind" if median_lag < 0 else "ahead of"
+        return RiskFlag(
+            level=level,
+            metric="camera_physics_drift",
+            observed=ObservedValue(value=float(median_lag), unit="frames"),
+            threshold=float(self.drift_warning_frames),
+            interpretation=(
+                f"Camera frames are {abs_lag} frames {direction} physics "
+                f"(median over {len(lag_samples)} episodes). "
+                f"Threshold: ±{self.drift_warning_frames} frames."
+            ),
+            implication=(
+                "Temporal misalignment between visual and proprioceptive observations "
+                "causes policies to make decisions from stale visual input. "
+                "This is a known Isaac Sim 5.x/6.x render-pipeline issue. "
+                "Apply timestamp correction or use `calibra retarget` to re-align "
+                "before training."
+            ),
+            affected_fraction=float(sum(1 for l in lag_samples if abs(l) > self.drift_warning_frames) / len(lag_samples)),
+        ), raw
 
     # ── helpers ──────────────────────────────────────────────────────────────
 
