@@ -5,9 +5,12 @@ Usage (via CLI):
     calibra compare /path/to/dataset pusht
     calibra compare /path/to/dataset aloha
     calibra compare lerobot/my_dataset pusht --format lerobot
+    calibra compare hf://lerobot/aloha_mobile_cabinet aloha
 
 The reference name is matched against files in calibra/references/. Partial
 matches work: "pusht" matches "pusht_velocity_command.json".
+
+hf:// URIs are supported and stripped before passing to the ingestion layer.
 """
 from __future__ import annotations
 
@@ -298,6 +301,7 @@ def _section(
     arrow: str,
     interpretation: str,
     evidence: str,
+    confidence: str = "",
 ) -> str:
     lines = [
         title,
@@ -310,8 +314,10 @@ def _section(
         interpretation, width=_WIDTH, initial_indent="  ", subsequent_indent="  "
     )
     lines.append(interp_wrapped)
-    if evidence:
-        lines.append(f"\n  {evidence}")
+    conf_str = f"Confidence: {confidence}" if confidence else ""
+    ev_parts = [p for p in (conf_str, evidence) if p]
+    if ev_parts:
+        lines.append(f"\n  {' · '.join(ev_parts)}")
     return "\n".join(lines) + "\n"
 
 
@@ -323,6 +329,7 @@ def render_comparison(
     ref_data: dict,
     ref_metrics: dict[str, Optional[float]],
     ref_name: str,
+    outlier_episodes: Optional[list] = None,
 ) -> str:
     meta = ref_data.get("meta", {})
     ref_label = meta.get("dataset", ref_name)
@@ -351,22 +358,28 @@ def render_comparison(
     # 1. Velocity discontinuity
     y, r = your_metrics["vel_disc_rate"], ref_metrics["vel_disc_rate"]
     delta = (y - r) if y is not None and r is not None else None
-    interp, _ = _interp_vel_disc(y or 0, r or 0, ref_mode, ref_name) if (y is not None and r is not None) else ("Could not compute.", "")
+    if y is not None and r is not None:
+        interp, conf = _interp_vel_disc(y, r, ref_mode, ref_name)
+    else:
+        interp, conf = "Could not compute.", ""
     lines.append(_section(
         "VELOCITY DISCONTINUITY RATE",
         _pct(y), _pct(r), ref_name, _pct(delta), _delta_arrow(delta),
-        interp, _claims.evidence_line("vel_disc_rate", ref_mode),
+        interp, _claims.evidence_line("vel_disc_rate", ref_mode), conf,
     ))
     lines.append(divider)
 
     # 2. Jerk spike rate
     y, r = your_metrics["spike_rate"], ref_metrics["spike_rate"]
     delta = (y - r) if y is not None and r is not None else None
-    interp, _ = _interp_spike_rate(y or 0, r or 0, ref_mode, ref_name) if (y is not None and r is not None) else ("Could not compute.", "")
+    if y is not None and r is not None:
+        interp, conf = _interp_spike_rate(y, r, ref_mode, ref_name)
+    else:
+        interp, conf = "Could not compute.", ""
     lines.append(_section(
         "JERK SPIKE RATE",
         _pct(y), _pct(r), ref_name, _pct(delta), _delta_arrow(delta),
-        interp, _claims.evidence_line("spike_rate", ref_mode),
+        interp, _claims.evidence_line("spike_rate", ref_mode), conf,
     ))
     lines.append(divider)
 
@@ -374,57 +387,146 @@ def render_comparison(
     y, r = your_metrics["ldlj"], ref_metrics["ldlj"]
     delta = (y - r) if y is not None and r is not None else None
     if y is not None and r is not None:
-        interp, _ = _interp_ldlj(y, r, ref_mode, ref_name, your_action_dim, ref_action_dim)
+        interp, conf = _interp_ldlj(y, r, ref_mode, ref_name, your_action_dim, ref_action_dim)
     else:
-        interp = "Could not compute."
+        interp, conf = "Could not compute.", ""
     delta_str = f"{delta:+.2f}" if delta is not None else "n/a"
     arrow = ("  ▲ (smoother)" if delta > 0 else "  ▼ (rougher)") if delta is not None else ""
     lines.append(_section(
         "LDLJ",
         _f2(y), _f2(r), ref_name, delta_str, arrow,
-        interp, _claims.evidence_line("ldlj", "any"),
+        interp, _claims.evidence_line("ldlj", "any"), conf,
     ))
     lines.append(divider)
 
     # 4. Timestamp jitter
     y, r = your_metrics["jitter_cv"], ref_metrics["jitter_cv"]
     delta = (y - r) if y is not None and r is not None else None
-    interp, _ = _interp_temporal(y or 0, r or 0, "jitter_cv", ref_is_sim) if y is not None else ("Could not compute.", "")
+    if y is not None:
+        interp, conf = _interp_temporal(y, r or 0, "jitter_cv", ref_is_sim)
+    else:
+        interp, conf = "Could not compute.", ""
     ref_str = (_sci(r) + "  (sim)") if ref_is_sim else _sci(r)
     hw_class = "any" if ref_is_sim else "hardware"
     lines.append(_section(
         "TIMESTAMP JITTER CV",
         _sci(y), ref_str, ref_name, _sci(delta), _delta_arrow(delta),
-        interp, _claims.evidence_line("jitter_cv", hw_class),
+        interp, _claims.evidence_line("jitter_cv", hw_class), conf,
     ))
     lines.append(divider)
 
     # 5. Timestamp dropout
     y, r = your_metrics["dropout_rate"], ref_metrics["dropout_rate"]
     delta = (y - r) if y is not None and r is not None else None
-    interp, _ = _interp_temporal(y or 0, r or 0, "dropout_rate", ref_is_sim) if y is not None else ("Could not compute.", "")
+    if y is not None:
+        interp, conf = _interp_temporal(y, r or 0, "dropout_rate", ref_is_sim)
+    else:
+        interp, conf = "Could not compute.", ""
     ref_str = (_pct(r) + "  (sim)") if ref_is_sim else _pct(r)
     lines.append(_section(
         "TIMESTAMP DROPOUT RATE",
         _pct(y), ref_str, ref_name, _pct(delta), _delta_arrow(delta),
-        interp, _claims.evidence_line("dropout_rate", "any"),
+        interp, _claims.evidence_line("dropout_rate", "any"), conf,
     ))
     lines.append(divider)
 
     # 6. Action entropy
     y, r = your_metrics["action_entropy"], ref_metrics["action_entropy"]
     delta = (y - r) if y is not None and r is not None else None
-    interp, _ = _interp_entropy(y or 0, r or 0, ref_name) if y is not None else ("Could not compute.", "")
+    if y is not None:
+        interp, conf = _interp_entropy(y, r or 0, ref_name)
+    else:
+        interp, conf = "Could not compute.", ""
     lines.append(_section(
         "ACTION ENTROPY",
         f"{_f2(y)} bits/dim", f"{_f2(r)} bits/dim", ref_name,
         f"{delta:+.2f} bits/dim" if delta is not None else "n/a",
         _delta_arrow(delta),
-        interp, _claims.evidence_line("action_entropy", ref_mode),
+        interp, _claims.evidence_line("action_entropy", ref_mode), conf,
     ))
     lines.append(thick)
 
+    # ── Recommended Actions ───────────────────────────────────────────────────
+    rec = _recommended_actions(your_path, your_metrics, ref_metrics, ref_is_sim, outlier_episodes)
+    if rec:
+        lines.append("")
+        lines.append("RECOMMENDED ACTIONS")
+        lines.append(divider)
+        for action in rec:
+            lines.append(f"  {action}")
+        lines.append(divider)
+
     return "\n".join(lines)
+
+
+def _recommended_actions(
+    your_path: str,
+    your_metrics: dict[str, Optional[float]],
+    ref_metrics: dict[str, Optional[float]],
+    ref_is_sim: bool,
+    outlier_episodes: Optional[list],
+) -> list[str]:
+    """
+    Build a prioritised list of concrete recommended actions based on observed
+    metric values and episode-level outliers.
+    """
+    actions: list[str] = []
+
+    # Jerk outliers → prune specific episodes
+    if outlier_episodes:
+        jerk_eps = [
+            a for a in outlier_episodes
+            if any(m in ("spike_rate", "vel_disc_rate") for m in a.metrics)
+        ]
+        if jerk_eps:
+            ids = ", ".join(str(a.episode_id) for a in jerk_eps[:6])
+            suffix = f" (and {len(jerk_eps) - 6} more)" if len(jerk_eps) > 6 else ""
+            actions.append(
+                f"Prune episode(s) {ids}{suffix} — jerk outliers detected by MAD analysis."
+            )
+
+    # High dropout → fix recording pipeline
+    dropout = your_metrics.get("dropout_rate")
+    if dropout is not None and dropout > 0.05:
+        actions.append(
+            f"Dropout rate is {dropout:.1%}. Fix the camera/sensor logging loop "
+            "to eliminate dropped frames before starting training."
+        )
+    elif dropout is not None and dropout > 0.01:
+        actions.append(
+            f"Dropout rate is {dropout:.1%}. Filter or interpolate "
+            "affected episodes before training."
+        )
+
+    # High jitter → resample
+    jitter = your_metrics.get("jitter_cv")
+    if jitter is not None and jitter > 0.30:
+        actions.append(
+            f"Timestamp jitter CV is {jitter:.2f} (high). "
+            "Resample to a uniform control frequency before training "
+            "time-series policies (ACT, Diffusion Policy)."
+        )
+
+    # High vel_disc under position control
+    vd = your_metrics.get("vel_disc_rate")
+    ref_vd = ref_metrics.get("vel_disc_rate")
+    if vd is not None and ref_vd is not None and vd > 0.04 and ref_vd < 0.05:
+        actions.append(
+            f"Velocity discontinuity rate is {vd:.1%} (above 4% position-control "
+            "threshold). Investigate command packet drops, hardware communication "
+            "lag, or abrupt operator corrections."
+        )
+
+    # Low entropy
+    entropy = your_metrics.get("action_entropy")
+    if entropy is not None and entropy < 3.0:
+        actions.append(
+            f"Action entropy is low ({entropy:.2f} bits/dim). "
+            "Collect more diverse demonstrations before training to improve "
+            "out-of-distribution generalisation."
+        )
+
+    return actions
 
 
 def _ref_is_sim(ref_metrics: dict) -> bool:
@@ -447,7 +549,7 @@ def run_compare(argv: list[str]) -> None:
         prog="calibra compare",
         description="Compare a dataset against a named reference profile.",
     )
-    p.add_argument("path",      help="Path or Hub ID of dataset to analyse")
+    p.add_argument("path",      help="Path or Hub ID of dataset to analyse (hf:// URIs supported)")
     p.add_argument("reference", help="Reference name (e.g. 'pusht', 'aloha')")
     p.add_argument("--format", "-f", metavar="FMT",
                    choices=["hdf5", "lerobot", "rlds", "mcap"],
@@ -456,7 +558,14 @@ def run_compare(argv: list[str]) -> None:
                    help="Comma-separated gripper dimension indices to exclude "
                         "from smoothness metrics (e.g. '6,13'). "
                         "Use '' to disable gripper exclusion.")
+    p.add_argument("--no-recommendations", action="store_true",
+                   help="Skip the Recommended Actions section")
     args = p.parse_args(argv)
+
+    # Strip hf:// prefix — the ingestion layer handles bare "org/repo" IDs.
+    dataset_path = args.path
+    if dataset_path.startswith("hf://"):
+        dataset_path = dataset_path[len("hf://"):]
 
     # resolve reader
     reader = None
@@ -480,7 +589,7 @@ def run_compare(argv: list[str]) -> None:
         sys.exit(1)
 
     # run pipeline on user's dataset
-    log(f"Loading {args.path!r} ...")
+    log(f"Loading {dataset_path!r} ...")
     try:
         pipeline = Pipeline(analyzers=[
             TemporalAnalyzer(),
@@ -488,11 +597,17 @@ def run_compare(argv: list[str]) -> None:
             CoverageEntropyAnalyzer(),
             TaskStructureAnalyzer(),
         ])
-        report: DiagnosticReport = pipeline.analyze_path(args.path, reader=reader)
+        report: DiagnosticReport = pipeline.analyze_path(dataset_path, reader=reader)
     except Exception as e:
         print(f"error: {e}", file=sys.stderr)
         sys.exit(1)
     log(f"  {report.n_episodes} episodes  ·  {report.n_samples} steps")
+
+    # episode-level outlier detection for recommendations
+    outlier_episodes = None
+    if not args.no_recommendations:
+        from calibra.anomalies import find_outliers
+        outlier_episodes = find_outliers(report)
 
     # extract metrics and render
     your_metrics = metrics_from_report(report)
@@ -508,12 +623,13 @@ def run_compare(argv: list[str]) -> None:
             break
 
     output = render_comparison(
-        your_path=args.path,
+        your_path=dataset_path,
         your_metrics=your_metrics,
         your_n_episodes=report.n_episodes,
         your_action_dim=your_action_dim,
         ref_data=ref_data,
         ref_metrics=ref_metrics,
         ref_name=args.reference,
+        outlier_episodes=outlier_episodes,
     )
     print(output)

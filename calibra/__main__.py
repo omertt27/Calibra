@@ -3,13 +3,16 @@ CLI entry point.
 
     python -m calibra <path> [--policy FAMILY] [--format FORMAT] [--json] [--strict]
     python -m calibra compare <path> <reference> [--format FORMAT]
+    python -m calibra corrupt <path> --drop-frames RATE [--add-jitter-ms STD] ...
 
 Examples:
     python -m calibra /data/robot_demos.h5
     python -m calibra /data/lerobot_ds --policy diffusion
     python -m calibra /data/demo.h5 --policy act --json
     python -m calibra compare /data/my_demos pusht
-    python -m calibra compare lerobot/my_dataset aloha --format lerobot
+    python -m calibra compare hf://lerobot/my_dataset aloha --format lerobot
+    python -m calibra corrupt lerobot/pusht --drop-frames 0.10
+    python -m calibra corrupt /data/robot.h5 --inject-spikes 0.05 --add-jitter-ms 50
 
 Exit codes:
     0  No critical issues found.
@@ -29,6 +32,11 @@ def main() -> None:
     if len(sys.argv) > 1 and sys.argv[1] == "compare":
         from calibra.compare import run_compare
         run_compare(sys.argv[2:])
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "corrupt":
+        from calibra.corrupt import run_corrupt
+        run_corrupt(sys.argv[2:])
         return
 
     parser = argparse.ArgumentParser(

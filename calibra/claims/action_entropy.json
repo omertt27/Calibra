@@ -1,0 +1,83 @@
+{
+  "claims": [
+    {
+      "id": "ENT-001",
+      "metric": "action_entropy",
+      "class": "any",
+      "assertion": "Action-space entropy below 3 bits/dim indicates high trajectory redundancy and is a risk signal for weak policy generalisation to out-of-distribution states",
+      "conditions": "entropy computed as marginal Shannon entropy over discretised action dimensions; threshold applies per-dimension",
+      "confidence": "MEDIUM",
+      "status": "provisional",
+      "caution": "Treat as a useful heuristic, not a validated law. Some tasks legitimately require low entropy (e.g. peg insertion). Some tasks fail despite high entropy. Control mode distorts interpretation. The link to downstream OOD failure has NOT been directly measured — it is inferred from first principles. Requires ablation studies on held-out test sets before upgrading to active_hypothesis.",
+      "evidence": [
+        {
+          "dataset": "lerobot/pusht",
+          "observed": 5.30,
+          "supports": true,
+          "date": "2026-06-15",
+          "notes": "2D velocity-command, entropy 5.30 bits/dim — healthy coverage across push target space"
+        },
+        {
+          "dataset": "lerobot/aloha_sim_insertion_human",
+          "observed": 4.45,
+          "supports": true,
+          "date": "2026-06-15",
+          "notes": "14-DOF position-command, entropy 4.45 bits/dim — moderate coverage for a constrained peg-insertion task"
+        },
+        {
+          "dataset": "lerobot/aloha_mobile_cabinet",
+          "observed": 4.24,
+          "supports": true,
+          "date": "2026-06-15",
+          "notes": "14-DOF position-command real hardware, entropy 4.24 bits/dim — narrower distribution than sim but above warning threshold"
+        }
+      ],
+      "interpretation_rule": {
+        "confidence_label": "MEDIUM",
+        "thresholds": {
+          "ok": 4.5,
+          "warning": 3.0,
+          "critical": 2.0
+        },
+        "ok_text": "Healthy action-space coverage. Diverse trajectory distribution — policy likely to generalise.",
+        "warning_text": "Moderate coverage. Some risk of limited trajectory diversity. Check whether demonstrations span the full operating range of the task.",
+        "critical_text": "Low entropy — possible mode collapse or narrow trajectory variation. Policy expected to generalise poorly to out-of-distribution object placements.",
+        "note": "MEDIUM confidence: metric is validated on 3 sim/real datasets but the link to downstream generalisation failure has not been directly measured on held-out test sets. Treat as a risk signal, not a guarantee."
+      },
+      "falsification": {
+        "condition": "A dataset with action entropy below 3 bits/dim where the trained policy achieves strong OOD generalisation, OR a dataset with entropy above 4.5 bits/dim where the policy fails OOD",
+        "pending_tests": [
+          {
+            "dataset": "DROID",
+            "reason": "Large-scale diverse real hardware — would test whether high entropy from task diversity translates to better generalisation"
+          },
+          {
+            "dataset": "lerobot/libero",
+            "reason": "Multi-task sim dataset — would characterise entropy range for constrained skill-specific demonstrations"
+          }
+        ]
+      },
+      "last_updated": "2026-06-15"
+    },
+    {
+      "id": "ENT-002",
+      "metric": "action_entropy",
+      "class": "any",
+      "assertion": "PCA top-2 variance fraction above 0.95 in high-dimensional action spaces (> 6 DOF) signals effective dimensionality collapse — the policy will likely only need 1–2 latent modes",
+      "conditions": "PCA computed over all steps concatenated across episodes; top-2 eigenvectors capture fraction of variance",
+      "confidence": "LOW",
+      "status": "active_hypothesis",
+      "evidence": [],
+      "falsification": {
+        "condition": "A task where PCA top-2 variance > 0.95 but the policy requires all DOF for task completion",
+        "pending_tests": [
+          {
+            "dataset": "lerobot/aloha_sim_insertion_human",
+            "reason": "14-DOF bimanual — would reveal whether a precise high-DOF task still has low PCA rank"
+          }
+        ]
+      },
+      "last_updated": "2026-06-15"
+    }
+  ]
+}

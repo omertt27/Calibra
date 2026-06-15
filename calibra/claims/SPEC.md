@@ -99,6 +99,10 @@ confidence automatically; it should open a review.
 **`status`** — the current epistemic state of the claim. Valid transitions:
 
 ```
+provisional
+  └─→ active_hypothesis  (after review, when the team agrees the evidence
+                          is sufficient to treat it as a working hypothesis)
+
 active_hypothesis
   ├─→ validated      (n >= 5, consistent direction, no counter-evidence)
   ├─→ falsified      (a falsification condition was met)
@@ -114,6 +118,13 @@ falsified
 updated
   └─→ active_hypothesis  (after revision, the claim restarts its evidence cycle)
 ```
+
+`provisional` is the entry state for claims that are directionally plausible but
+where the downstream causal link has not been directly measured. Use `provisional`
+when the claim asserts a connection between a metric and an outcome (e.g. "low
+entropy predicts weak generalisation") rather than a connection between a metric
+and a structural property of the dataset. The `caution` field (optional) should
+explain what specific evidence would be needed to graduate the claim.
 
 A falsified claim is never deleted. It stays in the registry with status
 `falsified` so the falsification event is traceable. If the failure was
@@ -203,14 +214,19 @@ structure is high.
 
 ### Adding a new claim
 
-1. Identify the metric, class, and assertion from the profiling output.
-2. Check whether an existing claim already covers the same metric + class.
+1. **Check the claims/references ratio first.** The number of active claims
+   should not exceed the number of reference profiles. If you have more claims
+   than references, run a profiling pass before adding new claims. Theory that
+   outpaces evidence accumulates debt.
+2. Identify the metric, class, and assertion from the profiling output.
+3. Check whether an existing claim already covers the same metric + class.
    If it does, add evidence to the existing claim rather than creating a new one.
-3. Write the falsification condition before writing the assertion. If you
+4. Write the falsification condition before writing the assertion. If you
    cannot write a specific falsification condition, the claim is not ready.
-4. Set `status` to `active_hypothesis`. Do not set it to `validated` until
-   n >= 5 with consistent direction.
-5. Add at least one entry to `pending_tests` — the dataset that would most
+5. Set `status` to `active_hypothesis` for structural/distributional claims,
+   or `provisional` for causal claims (e.g. metric X predicts outcome Y).
+   Do not set it to `validated` until n >= 5 with consistent direction.
+6. Add at least one entry to `pending_tests` — the dataset that would most
    reduce uncertainty.
 
 ### Running a new dataset

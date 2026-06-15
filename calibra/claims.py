@@ -33,6 +33,7 @@ _METRIC_KEYS = {
     "jitter_cv":      "jitter_cv",
     "dropout_rate":   "dropout_rate",
     "action_entropy": "action_entropy",
+    "state_entropy":  "action_entropy",   # covered by the same claim family
 }
 
 
@@ -46,8 +47,10 @@ def _derive_confidence(claim: dict) -> str:
         return "NOT VALIDATED"
     if n == 1:
         return "LOW-MODERATE"
+    if n <= 2:
+        return "LOW"        # 2 points — not enough for MODERATE
     if n <= 4:
-        return "MODERATE"
+        return "MEDIUM"     # 3–4 points — MEDIUM per roadmap table
     if n <= 9:
         return "HIGH"
     return "STRONG"
@@ -72,9 +75,11 @@ def get(metric_key: str, class_name: str) -> list[dict]:
     """
     Return active claims for a metric key (as used in compare.py) and class name.
     Class name is matched against the claim's 'class' field; 'any' matches everything.
+
+    'provisional' claims are included but callers should surface a caution marker.
     """
     metric = _METRIC_KEYS.get(metric_key, metric_key)
-    active_statuses = {"active_hypothesis", "validated"}
+    active_statuses = {"active_hypothesis", "validated", "provisional"}
     return [
         c for c in load_all().values()
         if c.get("metric") == metric
@@ -87,6 +92,7 @@ def evidence_line(metric_key: str, class_name: str) -> str:
     """
     One-line evidence summary for display in comparison output.
     Shows evidence count, source datasets, and next pending test.
+    Provisional claims are marked with ⚠ to distinguish them from validated ones.
     """
     relevant = get(metric_key, class_name)
     if not relevant:
@@ -97,6 +103,7 @@ def evidence_line(metric_key: str, class_name: str) -> str:
     claim = specific[0] if specific else relevant[0]
 
     confidence = claim.get("confidence", "UNKNOWN")
+    is_provisional = claim.get("status") == "provisional"
     evidence = claim.get("evidence", [])
     n = len(evidence)
 
@@ -105,6 +112,9 @@ def evidence_line(metric_key: str, class_name: str) -> str:
     else:
         names = [_short(e.get("dataset", "?")) for e in evidence]
         base = f"{confidence} · n={n} ({', '.join(names)})"
+
+    if is_provisional:
+        base = "⚠ provisional · " + base
 
     pending = claim.get("falsification", {}).get("pending_tests", [])
     if pending:
