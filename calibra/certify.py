@@ -151,7 +151,7 @@ def run_certify(argv: list[str]) -> None:
     p.add_argument(
         "--format", "-f",
         metavar="FMT",
-        choices=["hdf5", "lerobot", "rlds", "mcap"],
+        choices=["hdf5", "isaac_lab", "lerobot", "rlds", "mcap"],
         help="Force a format adapter (default: auto-detect)",
     )
     p.add_argument(

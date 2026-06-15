@@ -16,6 +16,7 @@ from typing import Optional
 
 from calibra.analyzers.base import Analyzer
 from calibra.analyzers.coverage import CoverageEntropyAnalyzer
+from calibra.analyzers.gr00t import GR00TCompatibilityAnalyzer
 from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
 from calibra.analyzers.task_structure import TaskStructureAnalyzer
 from calibra.analyzers.temporal import TemporalAnalyzer
@@ -63,9 +64,13 @@ class Pipeline:
         policy_family : optional target policy for conditioned hints
                         (e.g. "diffusion", "act", "transformer").
         """
+        analyzers = list(self.analyzers)
+        if policy_family and "gr00t" in policy_family.lower():
+            analyzers.append(GR00TCompatibilityAnalyzer())
+
         results = [
             analyzer.analyze(batch, policy_family=policy_family)
-            for analyzer in self.analyzers
+            for analyzer in analyzers
         ]
         return DiagnosticReport(
             dataset_name=batch.dataset_name,

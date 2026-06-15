@@ -75,7 +75,7 @@ def main() -> None:
     parser.add_argument(
         "--format", "-f",
         metavar="FORMAT",
-        choices=["hdf5", "lerobot", "rlds", "mcap"],
+        choices=["hdf5", "isaac_lab", "lerobot", "rlds", "mcap"],
         help="Force a specific format adapter (default: auto-detect)",
     )
     parser.add_argument(
@@ -130,17 +130,19 @@ def _exit_code(report, strict: bool = False) -> int:
 
 
 def _get_reader(format_name: str):
-    from calibra.ingestion import hdf5, lerobot, rlds, mcap  # noqa: F401 trigger register
-    from calibra.ingestion.adapters.hdf5    import HDF5Reader
-    from calibra.ingestion.adapters.lerobot import LeRobotReader
-    from calibra.ingestion.adapters.rlds    import RLDSReader
-    from calibra.ingestion.adapters.mcap    import MCAPReader
+    from calibra.ingestion import isaac_lab, hdf5, lerobot, rlds, mcap  # noqa: F401
+    from calibra.ingestion.adapters.isaac_lab import IsaacLabReader
+    from calibra.ingestion.adapters.hdf5      import HDF5Reader
+    from calibra.ingestion.adapters.lerobot   import LeRobotReader
+    from calibra.ingestion.adapters.rlds      import RLDSReader
+    from calibra.ingestion.adapters.mcap      import MCAPReader
 
     mapping = {
-        "hdf5":    HDF5Reader,
-        "lerobot": LeRobotReader,
-        "rlds":    RLDSReader,
-        "mcap":    MCAPReader,
+        "isaac_lab": IsaacLabReader,
+        "hdf5":      HDF5Reader,
+        "lerobot":   LeRobotReader,
+        "rlds":      RLDSReader,
+        "mcap":      MCAPReader,
     }
     return mapping[format_name]()
 
