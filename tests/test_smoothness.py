@@ -244,3 +244,130 @@ class TestControlSmoothnessAnalyzerEdgeCases:
         )
         dp_hints = [h for h in result.hints if "Diffusion" in h.policy_family]
         assert dp_hints
+
+
+# ── scripted motion signature ─────────────────────────────────────────────────
+
+def _scripted_episode(n_steps: int = 200, dt: float = 0.02, ep_id: str = "ep_0") -> Episode:
+    """
+    Synthetic scripted-planner episode: sharp waypoint transitions (high spike)
+    with no direction reversals (near-zero vel_disc).
+
+    Structure: piecewise linear trajectory between 5 waypoints, with near-
+    instantaneous transitions. The transition steps have extreme jerk. Between
+    waypoints the motion is perfectly smooth, so velocity never reverses.
+    """
+    rng = np.random.default_rng(0)
+    n_dim = 6
+    waypoints = rng.random((6, n_dim)).astype(np.float32)
+    seg_len = n_steps // 5
+
+    actions = np.zeros((n_steps, n_dim), dtype=np.float32)
+    for i in range(5):
+        start = i * seg_len
+        end = min((i + 1) * seg_len, n_steps)
+        # Smooth linear interpolation within segment
+        t_seg = np.linspace(0, 1, end - start)
+        actions[start:end] = (
+            waypoints[i] * (1 - t_seg[:, None]) + waypoints[i + 1] * t_seg[:, None]
+        )
+    # Inject abrupt spikes at waypoint boundaries
+    for i in range(1, 5):
+        idx = i * seg_len
+        if idx < n_steps:
+            actions[idx] = waypoints[i] + rng.random(n_dim).astype(np.float32) * 5.0
+
+    ts = np.arange(n_steps, dtype=float) * dt
+    return Episode(
+        metadata=EpisodeMetadata(episode_id=ep_id),
+        timestamps=ts,
+        observations={"state": np.zeros((n_steps, n_dim), dtype=np.float32)},
+        actions=actions,
+    )
+
+
+class TestScriptedMotionSignature:
+    def test_smooth_human_data_does_not_trigger(self):
+        """Clean sinusoidal (human-like) data must NOT fire the scripted flag."""
+        eps = [_sine_episode(200, ep_id=str(i)) for i in range(5)]
+        result = ControlSmoothnessAnalyzer().analyze(_batch_of(eps))
+        sig_flags = [f for f in result.flags if f.metric == "motion_collection_signature"]
+        assert sig_flags == [], "Human-like data should not trigger scripted signature"
+
+    def test_velocity_action_type_does_not_trigger(self):
+        """Scripted detection only applies to position-control data."""
+        eps = [_scripted_episode(200, ep_id=str(i)) for i in range(5)]
+        # Force velocity action type — should suppress the check
+        result = ControlSmoothnessAnalyzer(action_type="velocity").analyze(_batch_of(eps))
+        sig_flags = [f for f in result.flags if f.metric == "motion_collection_signature"]
+        assert sig_flags == [], "Scripted check should not fire for velocity action_type"
+
+    def test_scripted_episode_triggers_info_flag(self):
+        """Scripted planner data must fire an INFO flag with correct metric name."""
+        eps = [_scripted_episode(200, ep_id=str(i)) for i in range(5)]
+        # Lower thresholds to ensure detection regardless of synthetic data specifics.
+        analyzer = ControlSmoothnessAnalyzer(
+            action_type="position",
+            scripted_spike_min=0.01,       # very sensitive for synthetic data
+            scripted_vel_disc_max=0.20,    # relaxed — synthetic vel_disc varies
+        )
+        result = analyzer.analyze(_batch_of(eps))
+        sig_flags = [f for f in result.flags if f.metric == "motion_collection_signature"]
+        assert sig_flags, "Scripted planner data should trigger motion_collection_signature"
+        assert sig_flags[0].level == RiskLevel.INFO
+
+    def test_scripted_flag_level_is_info(self):
+        """The scripted signature flag must always be INFO, never WARNING/CRITICAL."""
+        # Patch the analyzer to force the flag to fire.
+        from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
+        spike_raw = {"mean_spike_fraction": 0.25}
+        disc_raw  = {"mean_disc_fraction": 0.005}
+        analyzer = ControlSmoothnessAnalyzer(action_type="position")
+        flag = analyzer._check_scripted_motion_signature(spike_raw, disc_raw)
+        assert flag is not None
+        assert flag.level == RiskLevel.INFO
+
+    def test_below_spike_threshold_no_flag(self):
+        """Spike below threshold: no scripted flag, even with low vel_disc."""
+        analyzer = ControlSmoothnessAnalyzer(action_type="position")
+        flag = analyzer._check_scripted_motion_signature(
+            {"mean_spike_fraction": 0.05},  # below default 0.10
+            {"mean_disc_fraction": 0.005},
+        )
+        assert flag is None
+
+    def test_above_vel_disc_threshold_no_flag(self):
+        """Vel_disc above threshold: no scripted flag, even with high spike."""
+        analyzer = ControlSmoothnessAnalyzer(action_type="position")
+        flag = analyzer._check_scripted_motion_signature(
+            {"mean_spike_fraction": 0.25},
+            {"mean_disc_fraction": 0.05},   # above default 0.015
+        )
+        assert flag is None
+
+    def test_scripted_flag_includes_prune_guidance(self):
+        """The implication text must mention the quality filter and max-spike-rate."""
+        analyzer = ControlSmoothnessAnalyzer(action_type="position")
+        flag = analyzer._check_scripted_motion_signature(
+            {"mean_spike_fraction": 0.22},
+            {"mean_disc_fraction": 0.007},
+        )
+        assert flag is not None
+        assert "--max-spike-rate" in flag.implication
+
+    def test_scripted_diffusion_hint_has_caveat(self):
+        """When scripted signature is present, Diffusion Policy hint gets a caveat."""
+        analyzer = ControlSmoothnessAnalyzer(action_type="position")
+        flag = analyzer._check_scripted_motion_signature(
+            {"mean_spike_fraction": 0.22},
+            {"mean_disc_fraction": 0.007},
+        )
+        assert flag is not None
+        hints = analyzer._policy_hints([flag], "diffusion", {
+            "ldlj": {"mean_ldlj": -5.0},
+            "jerk_spikes": {"mean_spike_fraction": 0.22},
+        })
+        dp_hints = [h for h in hints if "Diffusion" in h.policy_family]
+        assert dp_hints
+        scripted_caveats = [c for c in dp_hints[0].caveats if "cripted" in c]
+        assert scripted_caveats, "Expected a caveat mentioning scripted data"

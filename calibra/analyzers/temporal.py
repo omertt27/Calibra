@@ -53,9 +53,31 @@ _ALIGN_CRITICAL     = 0.05
 _CAMERA_PREFIXES    = ("camera", "cam", "rgb", "depth", "wrist", "overhead")
 
 # ── camera-physics drift thresholds (frames) ─────────────────────────────────
+#
+# NOT VALIDATED AGAINST REAL HARDWARE DATA
+# ─────────────────────────────────────────
+# These thresholds are derived from GR00T N1 documentation reasoning:
+#   "A lag of more than 2 frames at 50 Hz (= 40 ms) is significant enough to
+#    degrade multi-step action prediction." (calibra.temporal.drift module doc)
+#
+# As of 2026-06-15, ALL 12 reference profiles in calibra/references/ are
+# proprioception-only (modalities: ['state'] or ['state', 'effort']).
+# None contain simultaneous image observations AND joint_vel observations,
+# so _check_visual_physics_drift() has never fired on any real dataset in
+# this repository. The thresholds have no empirical backing.
+#
+# To validate these numbers you need:
+#   1. An Isaac Lab dataset exported with BOTH camera frames AND joint_vel.
+#   2. A version where the render-pipeline lag is known (e.g. by disabling
+#      the async render in IsaacSim settings and comparing).
+#   3. Measure what abs(median_lag) value corresponds to a detectable
+#      policy performance drop in sim-to-real transfer.
+#
+# Until then, treat WARNING/CRITICAL levels here as informed guesses.
+# Do not cite these numbers in published results.
 
-_DRIFT_WARNING_FRAMES:  int = 2   # 40 ms at 50 Hz
-_DRIFT_CRITICAL_FRAMES: int = 5   # 100 ms at 50 Hz
+_DRIFT_WARNING_FRAMES:  int = 2   # 40 ms at 50 Hz — NOT VALIDATED
+_DRIFT_CRITICAL_FRAMES: int = 5   # 100 ms at 50 Hz — NOT VALIDATED
 
 # Observation key fragments used to detect joint-velocity arrays.
 _JOINT_VEL_KEYS = frozenset(["joint_vel", "robot0_joint_vel", "velocity"])
@@ -545,7 +567,11 @@ class TemporalAnalyzer(Analyzer):
                     f"Camera-proprioception temporal alignment: {median_lag:+d} frames "
                     f"(within ±{self.drift_warning_frames} frame tolerance)."
                 ),
-                implication="No significant render-pipeline lag detected.",
+                implication=(
+                    "No significant render-pipeline lag detected. "
+                    "Note: drift thresholds are not yet validated against real hardware — "
+                    "treat this result as indicative, not definitive."
+                ),
             ), raw
 
         level = RiskLevel.CRITICAL if abs_lag > self.drift_critical_frames else RiskLevel.WARNING

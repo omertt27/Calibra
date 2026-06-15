@@ -68,6 +68,30 @@ _VEL_DISC_CRITICAL  = 0.05
 _ACT_STATE_DIV_WARNING  = 0.05   # NOT VALIDATED — pending hardware profiling
 _ACT_STATE_DIV_CRITICAL = 0.10
 
+# ── scripted motion signature thresholds ─────────────────────────────────────
+#
+# Calibrated from 12 reference profiles (2026-06-15).
+# Across all position-control datasets profiled:
+#
+#   Collection method    spike_rate       vel_disc_rate
+#   ─────────────────    ──────────       ─────────────
+#   Human teleop         0.17 – 1.00%    0.66 – 6.44%
+#   Scripted planner     21.9 – 24.9%    0.66 – 0.75%  ← consistently low
+#
+# The combination of HIGH spike rate AND LOW vel_disc rate is unique to
+# scripted/planner-generated demonstrations. Motion planners connect discrete
+# waypoints with sharp starts and stops — producing jerk spikes at every
+# transition — but never reverse direction (no velocity discontinuities).
+# Human teleoperation shows the opposite: modest spike rates but variable
+# velocity reversals as operators correct course.
+#
+# This signature does NOT appear in velocity-command datasets (both metrics
+# are elevated), so the heuristic is only applied when action_type="position".
+#
+# Empirical separating threshold (leaves 3σ margin on both sides):
+_SCRIPTED_SIGNATURE_SPIKE_MIN   = 0.10   # >10% spike rate
+_SCRIPTED_SIGNATURE_VEL_DISC_MAX = 0.015  # <1.5% vel_disc rate
+
 
 @dataclass
 class ControlSmoothnessAnalyzer(Analyzer):
@@ -101,6 +125,8 @@ class ControlSmoothnessAnalyzer(Analyzer):
     vel_disc_critical:   float    = _VEL_DISC_CRITICAL
     act_state_div_warning:  float = _ACT_STATE_DIV_WARNING
     act_state_div_critical: float = _ACT_STATE_DIV_CRITICAL
+    scripted_spike_min:     float = _SCRIPTED_SIGNATURE_SPIKE_MIN
+    scripted_vel_disc_max:  float = _SCRIPTED_SIGNATURE_VEL_DISC_MAX
     n_bootstrap:      int         = 1000
     ci_level:         float       = 0.95
 
@@ -138,6 +164,11 @@ class ControlSmoothnessAnalyzer(Analyzer):
         if div_flag is not None:
             flags.append(div_flag)
             raw["action_state_divergence"] = div_raw
+
+        # Scripted motion signature: fires when high spike + low vel_disc on position data.
+        sig_flag = self._check_scripted_motion_signature(spike_raw, disc_raw)
+        if sig_flag is not None:
+            flags.append(sig_flag)
 
         hints = self._policy_hints(flags, policy_family, raw)
 
@@ -313,6 +344,78 @@ class ControlSmoothnessAnalyzer(Analyzer):
             affected_fraction=float(stat),
         ), raw
 
+    # ── scripted motion signature ─────────────────────────────────────────────
+
+    def _check_scripted_motion_signature(
+        self,
+        spike_raw: dict,
+        disc_raw: dict,
+    ) -> Optional[RiskFlag]:
+        """
+        Detect the scripted/planner-generated demonstration signature.
+
+        Motion planners connect waypoints with sharp starts and stops, producing
+        high jerk spike rates at every transition. Because the planner never
+        reverses direction mid-segment, velocity discontinuity rates remain very
+        low. Human teleoperation shows the opposite: modest spike rates but
+        variable velocity reversals as operators correct course in real time.
+
+        Calibrated from 12 reference profiles:
+          Human teleop (position):   spike 0.17–1.0%,  vel_disc 0.66–6.4%
+          Scripted planner (position): spike 21.9–24.9%, vel_disc 0.66–0.75%
+
+        Only fires when action_type == "position" — the pattern is not
+        validated for velocity-command datasets (both metrics are elevated there).
+
+        Returns an INFO-level flag. This is NOT a data quality defect — it is
+        information about how the data was collected. The primary consequence
+        is that Calibra's default quality filter (--max-spike-rate 0.10) will
+        incorrectly discard these episodes as low quality.
+        """
+        if self.action_type != "position":
+            return None
+
+        spike_rate = spike_raw.get("mean_spike_fraction")
+        vel_disc   = disc_raw.get("mean_disc_fraction")
+
+        if spike_rate is None or vel_disc is None:
+            return None
+
+        if not (spike_rate > self.scripted_spike_min
+                and vel_disc < self.scripted_vel_disc_max):
+            return None
+
+        return RiskFlag(
+            level=RiskLevel.INFO,
+            metric="motion_collection_signature",
+            observed=ObservedValue(
+                value=spike_rate,
+                unit="spike_fraction",
+            ),
+            interpretation=(
+                f"Scripted/planner-generated demonstration signature detected: "
+                f"spike_rate={spike_rate:.1%} (>{self.scripted_spike_min:.0%}) "
+                f"with vel_disc_rate={vel_disc:.2%} (<{self.scripted_vel_disc_max:.1%}). "
+                "Motion planners connect waypoints with abrupt starts and stops, "
+                "producing jerk spikes at every transition — but never reverse direction, "
+                "so velocity discontinuity stays near zero. "
+                "Human teleoperation shows the opposite pattern."
+            ),
+            implication=(
+                "This is NOT a data quality defect. The jerk spikes are waypoint "
+                "transitions, not recording artifacts. "
+                "Two consequences to act on:\n"
+                "  1. Calibra's default quality filter will discard these episodes "
+                "as low quality (default --max-spike-rate 0.10). "
+                "Use --max-spike-rate 0.30 or higher when pruning scripted datasets, "
+                "or use --quality-only=False to skip the spike filter.\n"
+                "  2. Policies trained on scripted data learn sharp waypoint-to-waypoint "
+                "transitions rather than smooth human-like motion. If your target "
+                "deployment expects smooth trajectories, consider blending with human "
+                "demonstrations or applying trajectory smoothing before training."
+            ),
+        )
+
     # ── policy hints ─────────────────────────────────────────────────────────
 
     def _check_action_state_divergence(
@@ -440,6 +543,7 @@ class ControlSmoothnessAnalyzer(Analyzer):
         hints: list[CompatibilityHint] = []
         ldlj = raw.get("ldlj", {}).get("mean_ldlj")
         spike_rate = raw.get("jerk_spikes", {}).get("mean_spike_fraction")
+        is_scripted = any(f.metric == "motion_collection_signature" for f in flags)
 
         if "diffusion" in pf:
             caveats: list[str] = []
@@ -449,6 +553,14 @@ class ControlSmoothnessAnalyzer(Analyzer):
                     "Diffusion Policy score-matching is sensitive to multimodal "
                     "action distributions; jerk spikes can manifest as spurious "
                     "high-energy modes in the learned score function."
+                )
+                compatible = None
+            if is_scripted:
+                caveats.append(
+                    "Scripted demonstration signature detected. Diffusion Policy "
+                    "will learn to reproduce sharp waypoint transitions rather than "
+                    "smooth motion. Consider smoothing actions before training or "
+                    "blending with human demonstrations."
                 )
                 compatible = None
             hints.append(CompatibilityHint(
@@ -462,11 +574,19 @@ class ControlSmoothnessAnalyzer(Analyzer):
             caveats = []
             compatible = True
             if spike_rate is not None and spike_rate > self.jerk_spike_warning:
-                caveats.append(
-                    "ACT predicts action chunks; if jerk spikes cluster at "
-                    "episode boundaries, chunks will span discontinuities and "
-                    "the cross-attention mechanism will struggle."
-                )
+                if is_scripted:
+                    caveats.append(
+                        "Scripted demonstration signature detected. ACT action chunks "
+                        "will frequently straddle waypoint transitions where jerk is "
+                        "highest. The cross-attention mechanism will overfit to the "
+                        "transition pattern of the specific planner used."
+                    )
+                else:
+                    caveats.append(
+                        "ACT predicts action chunks; if jerk spikes cluster at "
+                        "episode boundaries, chunks will span discontinuities and "
+                        "the cross-attention mechanism will struggle."
+                    )
                 compatible = None
             hints.append(CompatibilityHint(
                 policy_family="ACT",
