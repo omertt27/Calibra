@@ -188,6 +188,52 @@ def _render_claim(claim: dict, lines: list[str]) -> None:
     lines.append("")
 
 
+def _render_claims_yaml(claims: list[dict]) -> str:
+    """Generate a human-readable YAML surface from the parsed claim list."""
+    lines = [
+        "# Calibra Knowledge Base — claims.yaml",
+        "# Auto-generated from calibra/claims/*.json",
+        "# Do not edit — edit the source JSON files and re-run:",
+        "#   python scripts/generate_claims_doc.py",
+        "",
+        "claims:",
+    ]
+    for claim in claims:
+        cid = claim.get("id", "?")
+        lines.append(f"  - id: \"{cid}\"")
+        lines.append(f"    metric: \"{claim.get('metric', '')}\"")
+        lines.append(f"    class: \"{claim.get('class', 'any')}\"")
+        lines.append(f"    status: \"{claim.get('status', '')}\"")
+        lines.append(f"    confidence: \"{claim.get('confidence', '')}\"")
+        assertion = claim.get("assertion", "").replace('"', "'")
+        lines.append(f"    assertion: \"{assertion}\"")
+        evidence = claim.get("evidence", [])
+        lines.append(f"    evidence_count: {len(evidence)}")
+        if evidence:
+            lines.append("    evidence_datasets:")
+            for e in evidence:
+                tick = "✓" if e.get("supports", True) else "✗"
+                obs = e.get("observed", "")
+                lines.append(f"      - {e.get('dataset', '?')}  # {tick} {obs}")
+        falsify = claim.get("falsification", {})
+        if falsify.get("condition"):
+            cond = falsify["condition"].replace('"', "'")
+            lines.append(f"    falsification: \"{cond}\"")
+        pending = falsify.get("pending_tests", [])
+        if pending:
+            lines.append("    pending_tests:")
+            for pt in pending:
+                lines.append(f"      - {pt.get('dataset', '?')}")
+        if claim.get("caution"):
+            lines.append("    caution: |")
+            for sentence in claim["caution"].split(". "):
+                s = sentence.strip()
+                if s:
+                    lines.append(f"      {s}.")
+        lines.append("")
+    return "\n".join(lines)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -223,7 +269,12 @@ def main() -> None:
     out_path = _REPO / args.out
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(doc)
-    print(f"Written to {out_path}")
+
+    # Also regenerate knowledge_base/claims.yaml (human-readable YAML surface).
+    yaml_path = _REPO / "calibra" / "knowledge_base" / "claims.yaml"
+    yaml_path.parent.mkdir(parents=True, exist_ok=True)
+    yaml_path.write_text(_render_claims_yaml(claims))
+    print(f"Written to {out_path}  +  {yaml_path}")
     print(f"  {n_claims} claims  ·  {n_refs} references  ·  ratio {'✅' if n_refs >= n_claims else '⚠️ inverted'}")
 
 

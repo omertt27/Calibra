@@ -163,38 +163,11 @@ class LeRobotReader(DatasetReader):
             leaves the Parquet pages — they never enter RAM.
           - Global aggregate queries (episode count, action bounds) run in
             under a second on multi-terabyte datasets via DuckDB's push-down.
+          - For large datasets (e.g. DROID with 76k episodes), use
+            iter_episodes_lazy() to query one episode at a time.
         """
-        duckdb = _require_duckdb()
-        conn = duckdb.connect(":memory:")
-
-        # Read the feature schema from meta/info.json to identify image columns.
-        info_path = p / "meta" / "info.json"
-        with open(info_path) as f:
-            info = json.load(f)
-
+        conn = self._build_duckdb_conn(p)
         task = _read_task_v2(p)
-        image_cols = _image_columns_from_info(info)
-
-        parquet_files = sorted(p.glob("data/**/*.parquet"))
-        if not parquet_files:
-            parquet_files = sorted(p.glob("*.parquet"))
-        if not parquet_files:
-            raise ValueError(f"No Parquet files found in {p}")
-
-        # Register all shards as a single DuckDB view, projecting out images.
-        file_list_sql = ", ".join(f"'{f}'" for f in parquet_files)
-        conn.execute(f"CREATE VIEW raw AS SELECT * FROM read_parquet([{file_list_sql}])")
-
-        # Discover scalar columns (exclude image columns).
-        all_cols: list[str] = [
-            row[0] for row in conn.execute("DESCRIBE raw").fetchall()
-        ]
-        scalar_cols = [c for c in all_cols if c not in image_cols]
-        col_sql = ", ".join(f'"{c}"' for c in scalar_cols)
-        conn.execute(
-            f"CREATE VIEW dataset AS SELECT {col_sql} FROM raw "
-            f"ORDER BY episode_index, frame_index"
-        )
 
         df = conn.execute("SELECT * FROM dataset").df()
         conn.close()
@@ -206,6 +179,83 @@ class LeRobotReader(DatasetReader):
             format=self.format_name,
             source_path=source,
         )
+
+    def iter_episodes_lazy(self, path: str):
+        """
+        Yield Episode objects one at a time without loading the full dataset.
+
+        Use this for multi-terabyte datasets where loading everything into
+        RAM is not feasible (e.g. DROID, BridgeData V2 full splits).
+        Each episode is fetched with a single SQL WHERE clause, so only that
+        episode's rows are transferred from Parquet into Python memory.
+
+        Usage::
+
+            reader = LeRobotReader()
+            for ep in reader.iter_episodes_lazy("/data/droid"):
+                result = TemporalAnalyzer().analyze_episode(ep)
+                ...
+
+        Parameters
+        ----------
+        path : local v2 dataset directory (must have meta/info.json).
+               Hub IDs and v1 formats are not supported by this method.
+        """
+        p = Path(_strip_hf_prefix(path))
+        if not (p / "meta" / "info.json").exists():
+            raise ValueError(
+                f"iter_episodes_lazy requires a v2 local dataset (meta/info.json). "
+                f"'{path}' does not appear to be v2 format."
+            )
+        conn = self._build_duckdb_conn(p)
+        task = _read_task_v2(p)
+
+        episode_ids: list[int] = [
+            row[0] for row in
+            conn.execute("SELECT DISTINCT episode_index FROM dataset ORDER BY episode_index").fetchall()
+        ]
+
+        for ep_id in episode_ids:
+            df = conn.execute(
+                f"SELECT * FROM dataset WHERE episode_index = {ep_id} ORDER BY frame_index"
+            ).df()
+            yield self._episode_from_group(df, ep_id, task, path)
+
+        conn.close()
+
+    def _build_duckdb_conn(self, p: Path):
+        """
+        Create a DuckDB in-memory connection with a 'dataset' view over all
+        Parquet shards in `p`, projecting out image columns.
+        """
+        duckdb = _require_duckdb()
+        conn = duckdb.connect(":memory:")
+
+        info_path = p / "meta" / "info.json"
+        with open(info_path) as f:
+            info = json.load(f)
+
+        image_cols = _image_columns_from_info(info)
+
+        parquet_files = sorted(p.glob("data/**/*.parquet"))
+        if not parquet_files:
+            parquet_files = sorted(p.glob("*.parquet"))
+        if not parquet_files:
+            raise ValueError(f"No Parquet files found in {p}")
+
+        file_list_sql = ", ".join(f"'{f}'" for f in parquet_files)
+        conn.execute(f"CREATE VIEW raw AS SELECT * FROM read_parquet([{file_list_sql}])")
+
+        all_cols: list[str] = [
+            row[0] for row in conn.execute("DESCRIBE raw").fetchall()
+        ]
+        scalar_cols = [c for c in all_cols if c not in image_cols]
+        col_sql = ", ".join(f'"{c}"' for c in scalar_cols)
+        conn.execute(
+            f"CREATE VIEW dataset AS SELECT {col_sql} FROM raw "
+            f"ORDER BY episode_index, frame_index"
+        )
+        return conn
 
     # ── loading helpers (HF hub / v1 disk) ───────────────────────────────────
 

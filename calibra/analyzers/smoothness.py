@@ -59,6 +59,15 @@ _VEL_DISC_THRESHOLD = 0.20   # Δv > 20% of v_max counts as a discontinuity
 _VEL_DISC_WARNING   = 0.02
 _VEL_DISC_CRITICAL  = 0.05
 
+# Action-state divergence: mean L2 norm of (action_t - state_t).
+# Only computed when episode.observations contains a key that normalizes
+# to "state" or "joint_position" and has the same dimension as the action.
+# Threshold calibrated from ALOHA hardware (position control, 14-DOF):
+#   clean teleoperation → divergence ≈ 0.01–0.05 (radians / normalized units)
+#   communication lag / packet drops → divergence > 0.10
+_ACT_STATE_DIV_WARNING  = 0.05   # NOT VALIDATED — pending hardware profiling
+_ACT_STATE_DIV_CRITICAL = 0.10
+
 
 @dataclass
 class ControlSmoothnessAnalyzer(Analyzer):
@@ -90,6 +99,8 @@ class ControlSmoothnessAnalyzer(Analyzer):
     vel_disc_threshold:  float    = _VEL_DISC_THRESHOLD
     vel_disc_warning:    float    = _VEL_DISC_WARNING
     vel_disc_critical:   float    = _VEL_DISC_CRITICAL
+    act_state_div_warning:  float = _ACT_STATE_DIV_WARNING
+    act_state_div_critical: float = _ACT_STATE_DIV_CRITICAL
     n_bootstrap:      int         = 1000
     ci_level:         float       = 0.95
 
@@ -122,12 +133,19 @@ class ControlSmoothnessAnalyzer(Analyzer):
         flags.append(disc_flag)
         raw["vel_discontinuities"] = disc_raw
 
+        # Action-state divergence: only fires when paired state observations exist.
+        div_flag, div_raw = self._check_action_state_divergence(batch)
+        if div_flag is not None:
+            flags.append(div_flag)
+            raw["action_state_divergence"] = div_raw
+
         hints = self._policy_hints(flags, policy_family, raw)
 
         # Per-episode arrays for Phase 2 comparison/curation (convention: "per_episode_<key>").
-        raw["per_episode_ldlj"]           = ldlj_raw.get("episode_values", [])
-        raw["per_episode_spike_rate"]     = spike_raw.get("episode_values", [])
-        raw["per_episode_vel_disc_rate"]  = disc_raw.get("episode_values", [])
+        raw["per_episode_ldlj"]               = ldlj_raw.get("episode_values", [])
+        raw["per_episode_spike_rate"]         = spike_raw.get("episode_values", [])
+        raw["per_episode_vel_disc_rate"]      = disc_raw.get("episode_values", [])
+        raw["per_episode_act_state_div"]      = div_raw.get("episode_values", []) if div_raw else []
 
         return AnalyzerResult(
             analyzer_name=self.name,
@@ -296,6 +314,118 @@ class ControlSmoothnessAnalyzer(Analyzer):
         ), raw
 
     # ── policy hints ─────────────────────────────────────────────────────────
+
+    def _check_action_state_divergence(
+        self, batch: EpisodeBatch
+    ) -> tuple[Optional[RiskFlag], Optional[dict]]:
+        """
+        Action-state divergence: mean L2 norm of (action_t - state_t).
+
+        This is a distinct metric from velocity discontinuity. Where velocity
+        discontinuity measures abrupt changes *within* the action trajectory,
+        this measures the gap *between* the commanded action and the observed
+        joint state at each timestep.
+
+        A large gap indicates:
+          - Communication latency (the command hasn't reached the hardware yet)
+          - Packet drops (the hardware missed a command and is extrapolating)
+          - Incorrect control mode labeling (velocity commands compared to
+            position observations produce meaningless large values)
+
+        Only fires when the episode has a state-like observation with the
+        same dimensionality as the action. Silently skips otherwise.
+
+        Confidence: NOT VALIDATED — thresholds are provisional pending
+        hardware profiling of BridgeData V2 and DROID.
+        """
+        _STATE_KEYS = {"state", "joint_position", "proprio"}
+
+        ep_values: list[Optional[float]] = []
+        n_skipped = 0
+
+        for ep in batch.episodes:
+            state_arr = None
+            for key in _STATE_KEYS:
+                if key in ep.observations:
+                    candidate = ep.observations[key]
+                    if (candidate.ndim == 2
+                            and candidate.shape == ep.actions.shape):
+                        state_arr = candidate
+                        break
+
+            if state_arr is None:
+                ep_values.append(None)
+                n_skipped += 1
+                continue
+
+            active = self._active_dims(ep)
+            act = ep.actions[:, active] if ep.actions.ndim > 1 else ep.actions
+            obs = state_arr[:, active] if state_arr.ndim > 1 else state_arr
+
+            divergence = float(np.mean(np.linalg.norm(act - obs, axis=1)))
+            ep_values.append(divergence)
+
+        valid = [v for v in ep_values if v is not None]
+        if not valid or n_skipped == batch.n_episodes:
+            return None, None   # metric silently skipped — no paired state obs
+
+        arr = np.array(valid)
+        stat = float(np.mean(arr))
+        lo, hi = float(np.percentile(arr, 2.5)), float(np.percentile(arr, 97.5))
+        raw = {
+            "mean_divergence": stat,
+            "ci_lower": lo,
+            "ci_upper": hi,
+            "n_episodes": len(valid),
+            "n_skipped": n_skipped,
+            "episode_values": ep_values,
+        }
+
+        if stat < self.act_state_div_warning:
+            level = RiskLevel.OK
+            interp = (
+                f"Action-state divergence is low ({stat:.4f}). "
+                "Commanded actions are tracking the observed joint state closely."
+            )
+            impl = "No command-tracking issue detected."
+        elif stat < self.act_state_div_critical:
+            level = RiskLevel.WARNING
+            interp = (
+                f"Action-state divergence is {stat:.4f} (threshold: "
+                f"{self.act_state_div_warning:.3f}). "
+                "Commands are diverging from observed state — possible "
+                "communication lag or control mode mismatch."
+            )
+            impl = (
+                "Inspect hardware interface for communication loop bottlenecks. "
+                "Verify control mode: velocity commands produce large divergence "
+                "against position observations."
+            )
+        else:
+            level = RiskLevel.CRITICAL
+            interp = (
+                f"Action-state divergence is high ({stat:.4f}, threshold: "
+                f"{self.act_state_div_critical:.3f}). "
+                "Strong evidence of packet drops, hardware lag, or wrong control mode."
+            )
+            impl = (
+                "Prune episodes with divergence > 3× dataset median before training. "
+                "Check motor PD parameters and hardware communication loop. "
+                "Verify that actions and observations use the same coordinate frame."
+            )
+
+        flag = RiskFlag(
+            level=level,
+            metric="action_state_divergence",
+            observed=ObservedValue(value=stat, ci_lower=lo, ci_upper=hi,
+                                   ci_level=0.95, ci_method="percentile"),
+            threshold=self.act_state_div_warning,
+            interpretation=interp,
+            implication=impl,
+            affected_fraction=float(len([v for v in valid
+                                         if v > self.act_state_div_warning]) / len(valid)),
+        )
+        return flag, raw
 
     def _policy_hints(
         self,

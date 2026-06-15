@@ -12,6 +12,9 @@ dependencies = [
     "numpy>=1.24",
 ]
 
+[project.scripts]
+calibra = "calibra.__main__:main"
+
 [project.optional-dependencies]
 hdf5    = ["h5py>=3.0"]
 lerobot = ["datasets>=2.0", "pyarrow>=12.0", "duckdb>=0.9"]
