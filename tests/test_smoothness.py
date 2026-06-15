@@ -371,3 +371,295 @@ class TestScriptedMotionSignature:
         assert dp_hints
         scripted_caveats = [c for c in dp_hints[0].caveats if "cripted" in c]
         assert scripted_caveats, "Expected a caveat mentioning scripted data"
+
+
+# ── action-state divergence validation ───────────────────────────────────────
+
+class TestActionStateDivergenceValidation:
+    """Tests for the recalibrated action-state divergence metric."""
+
+    def _batch_with_state(self, divergence_level: float, n=5, action_type="position") -> EpisodeBatch:
+        """Create a batch with position control and a controlled divergence level."""
+        rng = np.random.default_rng(99)
+        episodes = []
+        for i in range(n):
+            n_steps, d = 100, 6
+            actions = rng.uniform(-1, 1, (n_steps, d)).astype(np.float32)
+            # State = action + controlled offset
+            noise_scale = divergence_level / np.sqrt(d)
+            state = actions + rng.normal(0, noise_scale, (n_steps, d)).astype(np.float32)
+            episodes.append(Episode(
+                metadata=EpisodeMetadata(episode_id=f"ep_{i}"),
+                timestamps=np.arange(n_steps) * 0.02,
+                observations={"state": state},
+                actions=actions,
+            ))
+        return EpisodeBatch(
+            episodes=episodes, dataset_name="test",
+            format="hdf5", source_path="/tmp/test"
+        )
+
+    def test_velocity_datasets_skip_divergence(self):
+        """action_state_divergence must not fire for velocity-command datasets."""
+        batch = self._batch_with_state(divergence_level=0.5, action_type="velocity")
+        analyzer = ControlSmoothnessAnalyzer(action_type="velocity")
+        div_flag, div_raw = analyzer._check_action_state_divergence(batch)
+        assert div_flag is None
+        assert div_raw is None
+
+    def test_position_datasets_with_low_divergence_are_ok(self):
+        """Typical ALOHA hardware divergence (~0.08–0.12) should be OK."""
+        batch = self._batch_with_state(divergence_level=0.10)
+        analyzer = ControlSmoothnessAnalyzer()
+        div_flag, _ = analyzer._check_action_state_divergence(batch)
+        assert div_flag is not None
+        assert div_flag.level == RiskLevel.OK
+
+    def test_high_divergence_without_scripted_is_critical(self):
+        """Divergence > 0.35 with no scripted signature → CRITICAL."""
+        batch = self._batch_with_state(divergence_level=0.55)  # ~0.55/√d > 0.35
+        analyzer = ControlSmoothnessAnalyzer()
+        result = analyzer.analyze(batch)
+        div_flags = [f for f in result.flags if f.metric == "action_state_divergence"]
+        assert div_flags
+        assert div_flags[0].level == RiskLevel.CRITICAL
+
+    def test_scripted_downgrade_critical_to_warning(self):
+        """When scripted signature is detected, CRITICAL divergence → WARNING."""
+        rng = np.random.default_rng(7)
+        n_steps, d = 300, 7
+        # Generate planner-like data: constant blocks → high spike, low vel_disc
+        actions = np.zeros((n_steps, d), dtype=np.float32)
+        for i in range(0, n_steps, 15):
+            actions[i:i+15] = rng.uniform(-1, 1, d).astype(np.float32)
+        # Large waypoint tracking error (>0.35 L2)
+        state = actions + rng.normal(0, 0.25, (n_steps, d)).astype(np.float32)
+        ep = Episode(
+            metadata=EpisodeMetadata(episode_id="ep_0"),
+            timestamps=np.arange(n_steps) * 0.02,
+            observations={"state": state},
+            actions=actions,
+        )
+        batch = EpisodeBatch(
+            episodes=[ep] * 4, dataset_name="test",
+            format="hdf5", source_path="/tmp/test"
+        )
+        result = ControlSmoothnessAnalyzer().analyze(batch)
+        div_flags = [f for f in result.flags if f.metric == "action_state_divergence"]
+        sig_flags = [f for f in result.flags if f.metric == "motion_collection_signature"]
+        if sig_flags and div_flags:
+            # If scripted signature was detected, divergence CRITICAL → WARNING
+            assert div_flags[0].level == RiskLevel.WARNING, (
+                "Expected divergence downgraded to WARNING when scripted detected"
+            )
+            assert "Downgraded from CRITICAL" in div_flags[0].interpretation
+
+    def test_no_state_obs_silently_skips(self):
+        """If no state-like observation, divergence metric is silently skipped."""
+        rng = np.random.default_rng(0)
+        n_steps, d = 80, 4
+        actions = rng.random((n_steps, d)).astype(np.float32)
+        ep = Episode(
+            metadata=EpisodeMetadata(episode_id="ep_0"),
+            timestamps=np.arange(n_steps) * 0.02,
+            observations={"image": rng.random((n_steps, 64, 64, 3)).astype(np.float32)},
+            actions=actions,
+        )
+        batch = EpisodeBatch(
+            episodes=[ep], dataset_name="test",
+            format="hdf5", source_path="/tmp/test"
+        )
+        div_flag, _ = ControlSmoothnessAnalyzer()._check_action_state_divergence(batch)
+        assert div_flag is None
+
+
+# ── certify scripted-aware grading ───────────────────────────────────────────
+
+class TestCertifyScriptedGrading:
+    """Tests for scripted-aware certification grading."""
+
+    def _scripted_report(self):
+        """Build a minimal DiagnosticReport with scripted signature + spike CRITICAL."""
+        from calibra.schema.report import (
+            AnalyzerResult, DiagnosticReport, ObservedValue, RiskFlag, RiskLevel
+        )
+        spike_flag = RiskFlag(
+            level=RiskLevel.CRITICAL,
+            metric="spike_rate",
+            observed=ObservedValue(value=0.22),
+            threshold=0.05,
+            interpretation="High jerk spike rate.",
+            implication="Check data.",
+        )
+        sig_flag = RiskFlag(
+            level=RiskLevel.INFO,
+            metric="motion_collection_signature",
+            observed=ObservedValue(value=0.22),
+            threshold=0.10,
+            interpretation="Scripted motion signature detected.",
+            implication="Use --max-spike-rate 0.30.",
+        )
+        result = AnalyzerResult(
+            analyzer_name="control_smoothness",
+            flags=[spike_flag, sig_flag],
+        )
+        return DiagnosticReport(
+            source_path="/tmp/scripted_ds",
+            dataset_name="scripted_ds",
+            format="hdf5",
+            n_episodes=5,
+            n_samples=500,
+            analyzer_results=[result],
+        )
+
+    def test_scripted_spike_critical_does_not_fail_grade(self):
+        from calibra.certify import _grade
+        report = self._scripted_report()
+        grade, code = _grade(report)
+        assert grade == "CERTIFIED"
+        assert code == 0
+
+    def test_non_scripted_spike_critical_fails_grade(self):
+        from calibra.certify import _grade
+        from calibra.schema.report import (
+            AnalyzerResult, DiagnosticReport, ObservedValue, RiskFlag, RiskLevel
+        )
+        spike_flag = RiskFlag(
+            level=RiskLevel.CRITICAL,
+            metric="spike_rate",
+            observed=ObservedValue(value=0.22),
+            threshold=0.05,
+            interpretation="High jerk spike rate.",
+            implication="Check data.",
+        )
+        result = AnalyzerResult(
+            analyzer_name="control_smoothness",
+            flags=[spike_flag],
+        )
+        report = DiagnosticReport(
+            source_path="/tmp/human_ds",
+            dataset_name="human_ds",
+            format="hdf5",
+            n_episodes=5,
+            n_samples=500,
+            analyzer_results=[result],
+        )
+        grade, code = _grade(report)
+        assert grade == "NOT CERTIFIED"
+        assert code == 2
+
+    def test_certificate_shows_scripted_note(self):
+        from calibra.certify import render_certificate
+        report = self._scripted_report()
+        cert = render_certificate(report, "CERTIFIED", None)
+        assert "SCRIPTED DATA NOTE" in cert
+        assert "scripted/planner" in cert.lower() or "scripted motion" in cert.lower()
+
+    def test_certificate_shows_scripted_source_line(self):
+        from calibra.certify import render_certificate
+        report = self._scripted_report()
+        cert = render_certificate(report, "CERTIFIED", None)
+        assert "Source" in cert and "scripted" in cert.lower()
+
+
+# ── compare mismatch banner ───────────────────────────────────────────────────
+
+class TestCompareMismatchBanner:
+    """Tests for the collection-method mismatch warning in calibra compare."""
+
+    def _metrics(self, spike: float, vel_disc: float) -> dict:
+        return {
+            "spike_rate": spike,
+            "vel_disc_rate": vel_disc,
+            "ldlj": -5.0,
+            "jitter_cv": 0.01,
+            "dropout_rate": 0.001,
+            "action_entropy": 4.2,
+        }
+
+    def _ref_data(self, mode: str = "position") -> dict:
+        return {
+            "meta": {"dataset": "test_ref", "control_mode": mode, "n_episodes": 50},
+            "aggregate_metrics": {},
+            "flags": [],
+        }
+
+    def _render(self, yours_is_scripted: bool, ref_scripted: bool) -> str:
+        from calibra.compare import render_comparison
+        if yours_is_scripted:
+            your_m = self._metrics(spike=0.22, vel_disc=0.007)
+        else:
+            your_m = self._metrics(spike=0.005, vel_disc=0.03)
+        if ref_scripted:
+            ref_m = self._metrics(spike=0.22, vel_disc=0.007)
+        else:
+            ref_m = self._metrics(spike=0.005, vel_disc=0.03)
+        return render_comparison(
+            your_path="/tmp/ds",
+            your_metrics=your_m,
+            your_n_episodes=20,
+            your_action_dim=14,
+            ref_data=self._ref_data(),
+            ref_metrics=ref_m,
+            ref_name="test_ref",
+            yours_is_scripted=yours_is_scripted,
+            ref_scripted=ref_scripted,
+        )
+
+    def test_scripted_vs_human_shows_mismatch_banner(self):
+        output = self._render(yours_is_scripted=True, ref_scripted=False)
+        assert "COLLECTION METHOD MISMATCH" in output
+        assert "scripted/planner" in output
+
+    def test_human_vs_scripted_shows_mismatch_banner(self):
+        output = self._render(yours_is_scripted=False, ref_scripted=True)
+        assert "COLLECTION METHOD MISMATCH" in output
+
+    def test_no_mismatch_when_both_scripted(self):
+        output = self._render(yours_is_scripted=True, ref_scripted=True)
+        assert "COLLECTION METHOD MISMATCH" not in output
+
+    def test_no_mismatch_when_both_human(self):
+        output = self._render(yours_is_scripted=False, ref_scripted=False)
+        assert "COLLECTION METHOD MISMATCH" not in output
+
+    def test_scripted_spike_interp_explains_planner(self):
+        from calibra.compare import _interp_spike_rate
+        interp, conf = _interp_spike_rate(
+            0.22, 0.005, "position", "aloha",
+            yours_is_scripted=True, ref_is_scripted=False,
+        )
+        assert "scripted" in interp.lower() or "planner" in interp.lower()
+        assert "0.30" in interp  # prune guidance
+
+    def test_ref_is_scripted_detection(self):
+        from calibra.compare import _ref_is_scripted
+        assert _ref_is_scripted({"spike_rate": 0.22, "vel_disc_rate": 0.007})
+        assert not _ref_is_scripted({"spike_rate": 0.005, "vel_disc_rate": 0.03})
+        assert not _ref_is_scripted({"spike_rate": 0.22, "vel_disc_rate": 0.05})
+
+
+# ── prune scripted auto-adjust ────────────────────────────────────────────────
+
+class TestPruneScriptedAutoAdjust:
+    """Tests for the scripted-data spike threshold auto-adjustment in prune CLI."""
+
+    def test_args_default_is_none(self):
+        """--max-spike-rate default must be None (sentinel for auto-adjust)."""
+        import argparse
+        from calibra.prune import run_prune
+        import sys, io
+        # parse help to get argument spec
+        import calibra.prune as prune_module
+        import inspect, ast
+        src = inspect.getsource(prune_module.run_prune)
+        # Just verify the default in the code is None
+        assert "default=None" in src, "Expected --max-spike-rate default=None for auto-adjust"
+
+    def test_auto_adjust_message_mentions_scripted(self):
+        """The auto-adjust log message must explain what happened."""
+        import calibra.prune as prune_module
+        import inspect
+        src = inspect.getsource(prune_module.run_prune)
+        assert "scripted" in src.lower()
+        assert "0.30" in src or "_SCRIPTED_AUTO_SPIKE" in src

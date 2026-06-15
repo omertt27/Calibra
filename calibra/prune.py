@@ -81,8 +81,9 @@ def run_prune(argv: list[str]) -> None:
 
     # Stage 1 quality thresholds
     q = p.add_argument_group("Stage 1 quality thresholds (override defaults)")
-    q.add_argument("--max-spike-rate",    type=float, default=0.10,
-                   help="Max jerk spike fraction per episode (default: 0.10)")
+    q.add_argument("--max-spike-rate",    type=float, default=None,
+                   help="Max jerk spike fraction per episode (default: 0.10; "
+                        "auto-raised to 0.30 when scripted motion signature is detected)")
     q.add_argument("--max-vel-disc-rate", type=float, default=0.25,
                    help="Max velocity discontinuity fraction (default: 0.25)")
     q.add_argument("--max-dropout",       type=float, default=0.10,
@@ -144,7 +145,8 @@ def run_prune(argv: list[str]) -> None:
     log("Running coreset selection ...")
 
     # Apply GR00T-specific defaults before building the selector.
-    max_spike_rate    = args.max_spike_rate
+    user_set_spike_rate = args.max_spike_rate is not None
+    max_spike_rate    = args.max_spike_rate if user_set_spike_rate else 0.10
     max_vel_disc_rate = args.max_vel_disc_rate
     max_dropout       = args.max_dropout
     diversity_weight  = args.diversity_weight
@@ -158,6 +160,26 @@ def run_prune(argv: list[str]) -> None:
         if entropy_weight == 0.0:
             entropy_weight = 0.4   # prefer informative episodes by default
         log("  [--policy gr00t] Applying GR00T quality thresholds and entropy weighting.")
+
+    # Auto-adjust spike threshold for scripted/planner datasets.
+    # Scripted demos have spike_rate ~22–25% (planner waypoint transitions),
+    # which would discard the entire dataset under the default threshold of 0.10.
+    # When the scripted motion signature is detected and the user has not
+    # explicitly set --max-spike-rate, raise it to 0.30 automatically.
+    _SCRIPTED_AUTO_SPIKE = 0.30
+    if not user_set_spike_rate:
+        is_scripted = any(
+            f.metric == "motion_collection_signature"
+            for r in report.analyzer_results
+            for f in r.flags
+        )
+        if is_scripted and max_spike_rate < _SCRIPTED_AUTO_SPIKE:
+            log(
+                f"  [scripted data] Scripted motion signature detected. "
+                f"Auto-raised --max-spike-rate from {max_spike_rate:.2f} to "
+                f"{_SCRIPTED_AUTO_SPIKE:.2f}. Use --max-spike-rate to override."
+            )
+            max_spike_rate = _SCRIPTED_AUTO_SPIKE
 
     selector = CoresetSelector(
         keep_fraction=args.keep,

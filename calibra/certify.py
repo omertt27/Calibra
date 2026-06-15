@@ -39,10 +39,37 @@ _THIN  = "─" * _WIDTH
 
 # ── grading ──────────────────────────────────────────────────────────────────
 
+_SCRIPTED_EXEMPT_METRICS = frozenset({"spike_rate", "jerk_spikes"})
+
+
+def _is_scripted_report(report: DiagnosticReport) -> bool:
+    """True when ControlSmoothnessAnalyzer detected the scripted motion signature."""
+    return any(f.metric == "motion_collection_signature" for f in report.flags)
+
+
 def _grade(report: DiagnosticReport) -> tuple[str, int]:
-    """Return (grade_label, exit_code)."""
-    criticals = report.flags_at_level(RiskLevel.CRITICAL)
-    warnings  = report.flags_at_level(RiskLevel.WARNING)
+    """Return (grade_label, exit_code).
+
+    When a scripted motion signature is detected, spike_rate-related
+    CRITICAL/WARNING flags are excluded from grading: scripted planners
+    structurally produce high jerk spikes (waypoint transitions), and
+    treating them as quality failures would incorrectly fail every scripted
+    dataset. All other criteria (jitter, dropout, vel_disc, LDLJ, etc.)
+    still apply.
+    """
+    is_scripted = _is_scripted_report(report)
+
+    def _effective_level(flag):
+        """Return the flag level, or None if it should be ignored for grading."""
+        if is_scripted and flag.metric in _SCRIPTED_EXEMPT_METRICS:
+            return None
+        return flag.level
+
+    criticals = [f for f in report.flags_at_level(RiskLevel.CRITICAL)
+                 if _effective_level(f) == RiskLevel.CRITICAL]
+    warnings  = [f for f in report.flags_at_level(RiskLevel.WARNING)
+                 if _effective_level(f) == RiskLevel.WARNING]
+
     if criticals:
         return "NOT CERTIFIED", 2
     if warnings:
@@ -60,12 +87,14 @@ def _grade_banner(grade: str) -> str:
 
 # ── remediation ───────────────────────────────────────────────────────────────
 
-def _remediation_steps(report: DiagnosticReport) -> list[str]:
+def _remediation_steps(report: DiagnosticReport, is_scripted: bool = False) -> list[str]:
     steps: list[str] = []
 
     for result in report.analyzer_results:
         for flag in result.flags:
             if flag.level in (RiskLevel.CRITICAL, RiskLevel.WARNING):
+                if is_scripted and flag.metric in _SCRIPTED_EXEMPT_METRICS:
+                    continue
                 metric = flag.metric
                 impl = flag.implication or ""
                 steps.append(f"[{flag.level.value}] {metric}: {impl.strip()}")
@@ -81,6 +110,7 @@ def render_certificate(
     reference_name: Optional[str],
     extra_steps: Optional[list[str]] = None,
 ) -> str:
+    is_scripted = _is_scripted_report(report)
     lines = [
         _THICK,
         "  CALIBRA CERTIFICATION REPORT",
@@ -94,14 +124,27 @@ def render_certificate(
         lines.append(f"  Policy   : {report.policy_family}")
     if reference_name:
         lines.append(f"  Reference: {reference_name}")
+    if is_scripted:
+        lines.append("  Source   : scripted/planner demonstrations")
     lines += ["", _THIN, ""]
 
     lines.append(_grade_banner(grade))
     lines.append("")
 
-    # Summary of flags
-    criticals = report.flags_at_level(RiskLevel.CRITICAL)
-    warnings  = report.flags_at_level(RiskLevel.WARNING)
+    # Summary of flags — exclude spike_rate from displayed criticals/warnings when scripted
+    criticals = [
+        f for f in report.flags_at_level(RiskLevel.CRITICAL)
+        if not (is_scripted and f.metric in _SCRIPTED_EXEMPT_METRICS)
+    ]
+    warnings = [
+        f for f in report.flags_at_level(RiskLevel.WARNING)
+        if not (is_scripted and f.metric in _SCRIPTED_EXEMPT_METRICS)
+    ]
+    scripted_spike_flags = [
+        f for f in report.flags
+        if is_scripted and f.metric in _SCRIPTED_EXEMPT_METRICS
+        and f.level in (RiskLevel.CRITICAL, RiskLevel.WARNING)
+    ]
 
     if criticals:
         lines.append("  CRITICAL issues:")
@@ -114,8 +157,35 @@ def render_certificate(
             lines.append(f"    • {f.metric}: {f.interpretation}")
         lines.append("")
 
+    # Scripted data note — shown when spike flags are suppressed
+    if scripted_spike_flags:
+        lines.append(_THIN)
+        lines.append("  SCRIPTED DATA NOTE")
+        lines.append(_THIN)
+        lines.append(
+            "  Scripted motion signature detected. The following flags were"
+        )
+        lines.append(
+            "  excluded from the grade because scripted/planner datasets"
+        )
+        lines.append(
+            "  structurally produce high jerk spikes at waypoint transitions:"
+        )
+        for f in scripted_spike_flags:
+            lines.append(
+                f"    • [{f.level.value}] {f.metric} = {f.observed.value:.3f}"
+                "  (expected for planner data)"
+            )
+        lines.append(
+            "  If training a smoothness-sensitive policy (Diffusion, GR00T),"
+        )
+        lines.append(
+            "  consider filtering episodes by spike_rate or using action smoothing."
+        )
+        lines.append("")
+
     # Remediation
-    steps = _remediation_steps(report)
+    steps = _remediation_steps(report, is_scripted=is_scripted)
     if extra_steps:
         steps.extend(extra_steps)
 

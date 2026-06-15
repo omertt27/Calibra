@@ -61,12 +61,33 @@ _VEL_DISC_CRITICAL  = 0.05
 
 # Action-state divergence: mean L2 norm of (action_t - state_t).
 # Only computed when episode.observations contains a key that normalizes
-# to "state" or "joint_position" and has the same dimension as the action.
-# Threshold calibrated from ALOHA hardware (position control, 14-DOF):
-#   clean teleoperation → divergence ≈ 0.01–0.05 (radians / normalized units)
-#   communication lag / packet drops → divergence > 0.10
-_ACT_STATE_DIV_WARNING  = 0.05   # NOT VALIDATED — pending hardware profiling
-_ACT_STATE_DIV_CRITICAL = 0.10
+# to "state" or "joint_position" and has the same dimension as the action,
+# AND when action_type == "position" (velocity datasets produce meaningless
+# large values — e.g. pusht_image fired at 14.52 because dx/dy velocity
+# commands were compared to pixel-space position observations).
+#
+# CALIBRATED from 12 reference profiles (2026-06-15), position control only:
+#
+#   Dataset                           mean_divergence   flag
+#   ──────────────────────────────    ───────────────   ────
+#   aloha_static_battery (real hw)        0.079         OK   ← normal tracking
+#   aloha_static_candy   (real hw)        0.078         OK
+#   aloha_static_cups_open (real hw)      0.091         OK
+#   aloha_static_coffee  (real hw)        0.103         OK
+#   aloha_mobile_shrimp  (real hw)        0.119         OK
+#   aloha_sim_transfer_cube_human         0.179         WARNING
+#   aloha_sim_transfer_cube_scripted      0.222         WARNING  ← planner gap
+#   aloha_sim_insertion_scripted          0.367         CRITICAL ← large planner gap
+#
+# Key insight: scripted planners issue large discrete waypoint targets that the
+# controller has not yet reached; this inflates divergence. When the scripted
+# motion signature is also detected, CRITICAL is downgraded to WARNING in
+# analyze() because the cause (planner waypoints) is non-pathological.
+#
+# NOTE: thresholds still need hardware BridgeData V2 / DROID validation
+# before the WARNING boundary is considered well-calibrated.
+_ACT_STATE_DIV_WARNING  = 0.15   # real-hardware tracking error falls below this
+_ACT_STATE_DIV_CRITICAL = 0.35   # only planner waypoint datasets reach this
 
 # ── scripted motion signature thresholds ─────────────────────────────────────
 #
@@ -159,7 +180,7 @@ class ControlSmoothnessAnalyzer(Analyzer):
         flags.append(disc_flag)
         raw["vel_discontinuities"] = disc_raw
 
-        # Action-state divergence: only fires when paired state observations exist.
+        # Action-state divergence: only fires for position control with paired state obs.
         div_flag, div_raw = self._check_action_state_divergence(batch)
         if div_flag is not None:
             flags.append(div_flag)
@@ -169,6 +190,28 @@ class ControlSmoothnessAnalyzer(Analyzer):
         sig_flag = self._check_scripted_motion_signature(spike_raw, disc_raw)
         if sig_flag is not None:
             flags.append(sig_flag)
+
+        # When scripted signature is detected AND divergence is CRITICAL, downgrade
+        # divergence to WARNING: scripted planners issue large waypoint targets that
+        # inflate tracking error non-pathologically. The CRITICAL threshold (0.35) was
+        # calibrated assuming human teleoperation; scripted datasets reach 0.22–0.37.
+        is_scripted = sig_flag is not None
+        if is_scripted and div_flag is not None and div_flag.level == RiskLevel.CRITICAL:
+            new_interp = (
+                div_flag.interpretation
+                + " Downgraded from CRITICAL: scripted motion signature detected — "
+                "high tracking error is expected from planner waypoint transitions."
+            )
+            downgraded = div_flag.model_copy(update={
+                "level": RiskLevel.WARNING,
+                "interpretation": new_interp,
+                "implication": (
+                    "Scripted planner dataset with large waypoint gaps. "
+                    "Verify normalisation and coordinate frames. "
+                    "Consider whether the planner targets represent reachable states."
+                ),
+            })
+            flags = [downgraded if f is div_flag else f for f in flags]
 
         hints = self._policy_hints(flags, policy_family, raw)
 
@@ -429,18 +472,27 @@ class ControlSmoothnessAnalyzer(Analyzer):
         this measures the gap *between* the commanded action and the observed
         joint state at each timestep.
 
-        A large gap indicates:
-          - Communication latency (the command hasn't reached the hardware yet)
-          - Packet drops (the hardware missed a command and is extrapolating)
-          - Incorrect control mode labeling (velocity commands compared to
-            position observations produce meaningless large values)
+        Interpretation: for position control, the divergence represents
+        tracking error — the difference between the commanded joint position
+        and the actual observed joint position. A healthy position-control
+        dataset has divergence 0.07–0.13 (ALOHA hardware, radians). Values
+        above 0.15 indicate either a planner-waypoint dataset (scripted demos)
+        or genuine communication lag / packet drops.
+
+        Silently skipped for velocity-command datasets (action_type != "position"):
+        comparing velocity commands against position observations always produces
+        meaningless large values (e.g. pusht_image fires at 14.52).
 
         Only fires when the episode has a state-like observation with the
-        same dimensionality as the action. Silently skips otherwise.
+        same dimensionality as the action.
 
-        Confidence: NOT VALIDATED — thresholds are provisional pending
-        hardware profiling of BridgeData V2 and DROID.
+        NOTE: WARNING threshold at 0.15 calibrated from 8 ALOHA profiles.
+        Still needs BridgeData V2 / DROID validation (see _ACT_STATE_DIV_WARNING).
         """
+        # Skip for velocity/acceleration datasets — not meaningful
+        if self.action_type != "position":
+            return None, None
+
         _STATE_KEYS = {"state", "joint_position", "proprio"}
 
         ep_values: list[Optional[float]] = []
@@ -487,8 +539,8 @@ class ControlSmoothnessAnalyzer(Analyzer):
         if stat < self.act_state_div_warning:
             level = RiskLevel.OK
             interp = (
-                f"Action-state divergence is low ({stat:.4f}). "
-                "Commanded actions are tracking the observed joint state closely."
+                f"Action-state divergence is {stat:.4f} — within expected range "
+                "for position-control teleoperation. Controller tracking is normal."
             )
             impl = "No command-tracking issue detected."
         elif stat < self.act_state_div_critical:
@@ -496,25 +548,31 @@ class ControlSmoothnessAnalyzer(Analyzer):
             interp = (
                 f"Action-state divergence is {stat:.4f} (threshold: "
                 f"{self.act_state_div_warning:.3f}). "
-                "Commands are diverging from observed state — possible "
+                "Higher than typical real-hardware position control (0.07–0.13). "
+                "If this is a scripted/planner dataset, divergence above 0.15 is "
+                "expected due to large waypoint targets. Otherwise, investigate "
                 "communication lag or control mode mismatch."
             )
             impl = (
-                "Inspect hardware interface for communication loop bottlenecks. "
-                "Verify control mode: velocity commands produce large divergence "
-                "against position observations."
+                "Check whether dataset was collected with a scripted planner. "
+                "For human teleoperation: inspect hardware interface for "
+                "communication loop bottlenecks. "
+                "Verify control mode matches observations (position vs velocity)."
             )
         else:
             level = RiskLevel.CRITICAL
             interp = (
                 f"Action-state divergence is high ({stat:.4f}, threshold: "
                 f"{self.act_state_div_critical:.3f}). "
-                "Strong evidence of packet drops, hardware lag, or wrong control mode."
+                "Very large gap between commanded position and observed joint state. "
+                "Likely cause: scripted planner with large waypoint targets, or "
+                "severe communication lag / wrong control mode."
             )
             impl = (
-                "Prune episodes with divergence > 3× dataset median before training. "
-                "Check motor PD parameters and hardware communication loop. "
-                "Verify that actions and observations use the same coordinate frame."
+                "If scripted dataset: divergence > 0.35 indicates the planner "
+                "issues positions far ahead of the arm. Verify normalisation and "
+                "coordinate frames. For human teleoperation at this level: "
+                "prune high-divergence episodes and check motor PD parameters."
             )
 
         flag = RiskFlag(
