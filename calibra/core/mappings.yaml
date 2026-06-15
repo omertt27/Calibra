@@ -1,0 +1,61 @@
+# calibra/core/mappings.yaml
+# User-editable schema mapping config.
+#
+# Copy this file and pass the path to SchemaNormalizer(config_path=...) to
+# override or extend the built-in key mappings for your robot's naming convention.
+#
+# Format: each key under "mappings" is the canonical Calibra channel name.
+# The list of strings are partial-match patterns checked via substring search.
+# The first pattern that matches a raw column name wins.
+#
+# Built-in defaults (LeRobot, Robomimic, Isaac Lab, RLDS conventions) are
+# always applied first; entries here are merged on top and take precedence.
+
+mappings:
+  action_joints:
+    - "action"
+    - "joint_cmd"
+    - "joint_command"
+    - "motors/target"
+    - "cmd_pos"
+
+  observation_joints:
+    - "observation.state"
+    - "joint_state"
+    - "joint_states"
+    - "motors/position"
+    - "obs_pos"
+
+  eef_position:
+    - "eef_pos"
+    - "ee_pos"
+    - "end_effector_position"
+    - "robot0_eef_pos"
+
+  eef_orientation:
+    - "eef_quat"
+    - "ee_quat"
+    - "end_effector_quat"
+    - "robot0_eef_quat"
+
+  gripper_state:
+    - "gripper"
+    - "gripper_pos"
+    - "gripper_state"
+    - "robot0_gripper_qpos"
+
+  camera_top:
+    - "observation.images.top"
+    - "images.top"
+    - "cam_top"
+    - "top_camera"
+
+  camera_wrist:
+    - "observation.images.wrist"
+    - "images.wrist"
+    - "wrist_camera"
+    - "cam_wrist"
+
+# Add your robot-specific overrides below:
+# my_robot_joint_pos:
+#   - "my_robot/joints/q"

@@ -3,6 +3,8 @@ CLI entry point.
 
     python -m calibra <path> [--policy FAMILY] [--format FORMAT] [--json] [--strict]
     python -m calibra compare <path> <reference> [--format FORMAT]
+    python -m calibra certify <path> [--reference REF] [--policy FAMILY]
+    python -m calibra prune <path> --keep FRACTION [--out coreset_index.json]
     python -m calibra corrupt <path> --drop-frames RATE [--add-jitter-ms STD] ...
 
 Examples:
@@ -11,6 +13,10 @@ Examples:
     python -m calibra /data/demo.h5 --policy act --json
     python -m calibra compare /data/my_demos pusht
     python -m calibra compare hf://lerobot/my_dataset aloha --format lerobot
+    python -m calibra certify /data/my_demos
+    python -m calibra certify /data/my_demos --reference aloha --policy diffusion
+    python -m calibra prune /data/100k_episodes --keep 0.3 --out coreset.json
+    python -m calibra prune /data/my_ds --keep 0.5 --quality-only
     python -m calibra corrupt lerobot/pusht --drop-frames 0.10
     python -m calibra corrupt /data/robot.h5 --inject-spikes 0.05 --add-jitter-ms 50
 
@@ -32,6 +38,16 @@ def main() -> None:
     if len(sys.argv) > 1 and sys.argv[1] == "compare":
         from calibra.compare import run_compare
         run_compare(sys.argv[2:])
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "certify":
+        from calibra.certify import run_certify
+        run_certify(sys.argv[2:])
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "prune":
+        from calibra.prune import run_prune
+        run_prune(sys.argv[2:])
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "corrupt":
