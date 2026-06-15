@@ -51,6 +51,12 @@ _KNOWN_ACTION_DIMS: set[int] = {7, 8, 14, 16}  # documented GR00T robot configs
 
 _VISUAL_KEYS = frozenset(["camera", "image", "rgb", "depth", "visual"])
 
+# Camera-proprioception drift threshold (frames).  At 50 Hz, 2 frames = 40 ms.
+_DRIFT_WARNING_FRAMES:  int = 2
+_DRIFT_CRITICAL_FRAMES: int = 5
+
+_JOINT_VEL_KEYS = frozenset(["joint_vel", "robot0_joint_vel", "velocity"])
+
 
 @dataclass
 class GR00TCompatibilityAnalyzer(Analyzer):
@@ -69,10 +75,12 @@ class GR00TCompatibilityAnalyzer(Analyzer):
         Action dimensions that are known GR00T robot configurations.
     """
 
-    chunk_size:          int       = _CHUNK_SIZE
-    freq_low_warning:    float     = _FREQ_LOW_WARNING
-    freq_high_warning:   float     = _FREQ_HIGH_WARNING
-    known_action_dims:   set[int]  = field(default_factory=lambda: set(_KNOWN_ACTION_DIMS))
+    chunk_size:           int       = _CHUNK_SIZE
+    freq_low_warning:     float     = _FREQ_LOW_WARNING
+    freq_high_warning:    float     = _FREQ_HIGH_WARNING
+    known_action_dims:    set[int]  = field(default_factory=lambda: set(_KNOWN_ACTION_DIMS))
+    drift_warning_frames: int       = _DRIFT_WARNING_FRAMES
+    drift_critical_frames: int      = _DRIFT_CRITICAL_FRAMES
 
     @property
     def name(self) -> str:
@@ -104,6 +112,11 @@ class GR00TCompatibilityAnalyzer(Analyzer):
         dim_flag, dim_raw = self._check_action_dim(batch)
         flags.append(dim_flag)
         raw["action_dim"] = dim_raw
+
+        drift_flag, drift_raw = self._check_camera_proprioception_drift(batch)
+        if drift_flag is not None:
+            flags.append(drift_flag)
+            raw["camera_physics_drift"] = drift_raw
 
         hint = self._overall_hint(flags)
         hints.append(hint)
@@ -335,6 +348,108 @@ class GR00TCompatibilityAnalyzer(Analyzer):
                 f"Verify that your GR00T robot config's action_head output_dim "
                 f"is set to {modal_dim}. If you are using a custom embodiment, "
                 "this is expected — dismiss this warning after confirming the config."
+            ),
+        ), raw
+
+    # ── camera-proprioception drift ──────────────────────────────────────────
+
+    def _check_camera_proprioception_drift(
+        self, batch: EpisodeBatch
+    ) -> tuple[Optional[RiskFlag], Optional[dict]]:
+        """
+        Detect render-pipeline lag in Isaac Sim by cross-correlating the
+        joint-velocity magnitude with the visual activity magnitude.
+
+        A non-zero peak lag indicates that camera frames are not synchronised
+        with the physics solver — a known issue in Isaac Sim 5.x/6.x when
+        render ticks lag behind physics steps.
+
+        Silently skips (returns None, None) when the batch does not contain
+        both image observations AND joint velocity observations.
+
+        See: calibra.temporal.drift.estimate_visual_physics_lag
+        """
+        from calibra.temporal.drift import compute_visual_activity, estimate_sensor_command_latency
+
+        lag_samples: list[int] = []
+
+        for ep in batch.episodes:
+            # Find a joint velocity obs key.
+            jv_arr: Optional[np.ndarray] = None
+            for key in _JOINT_VEL_KEYS:
+                if key in ep.observations:
+                    jv_arr = ep.observations[key]
+                    break
+
+            # Find a camera/image obs key.
+            img_arr: Optional[np.ndarray] = None
+            for key in ep.observations:
+                if any(kw in key.lower() for kw in _VISUAL_KEYS):
+                    candidate = ep.observations[key]
+                    if candidate.ndim in (3, 4):   # (T, H, W) or (T, H, W, C)
+                        img_arr = candidate
+                        break
+
+            if jv_arr is None or img_arr is None:
+                continue
+            if len(img_arr) < 4 or len(jv_arr) < 4:
+                continue
+
+            try:
+                visual_activity  = compute_visual_activity(img_arr)
+                physical_activity = np.linalg.norm(
+                    jv_arr.astype(np.float32), axis=1
+                ) if jv_arr.ndim > 1 else np.abs(jv_arr.astype(np.float32))
+                lag = estimate_sensor_command_latency(physical_activity, visual_activity)
+                lag_samples.append(lag)
+            except Exception:
+                continue
+
+        if not lag_samples:
+            return None, None   # silently skip — prerequisites not met
+
+        median_lag = int(np.median(lag_samples))
+        raw = {"median_lag_frames": median_lag, "n_episodes_checked": len(lag_samples)}
+
+        abs_lag = abs(median_lag)
+        if abs_lag <= self.drift_warning_frames:
+            return RiskFlag(
+                level=RiskLevel.OK,
+                metric="gr00t.camera_physics_drift",
+                observed=ObservedValue(value=float(median_lag), unit="frames"),
+                interpretation=(
+                    f"Camera-proprioception temporal alignment: {median_lag:+d} frames "
+                    f"(within ±{self.drift_warning_frames} frame tolerance)."
+                ),
+                implication="No significant render-pipeline lag detected in Isaac Sim.",
+            ), raw
+
+        level = RiskLevel.CRITICAL if abs_lag > self.drift_critical_frames else RiskLevel.WARNING
+        dt_str = ""
+        # Estimate lag in ms using median control freq if available.
+        freqs = [1.0 / float(np.median(np.diff(ep.timestamps)))
+                 for ep in batch.episodes if ep.n_steps > 1]
+        if freqs:
+            median_dt_ms = 1000.0 / float(np.median(freqs))
+            dt_str = f" ≈ {abs_lag * median_dt_ms:.0f} ms"
+
+        return RiskFlag(
+            level=level,
+            metric="gr00t.camera_physics_drift",
+            observed=ObservedValue(value=float(median_lag), unit="frames"),
+            threshold=float(self.drift_warning_frames),
+            interpretation=(
+                f"Camera frames lag physics by {abs_lag} steps{dt_str} "
+                f"(threshold: {self.drift_warning_frames} frames). "
+                "Isaac Sim render pipeline is drifting behind the physics solver."
+            ),
+            implication=(
+                "GR00T N1 assumes camera and proprioception are synchronous. "
+                f"A {abs_lag}-frame lag{dt_str} causes the policy to plan actions "
+                "from a stale visual state, producing instability near contacts "
+                "and degrading sim-to-real transfer. "
+                "Fix: set render_dt = physics_dt in your Isaac Lab env config "
+                "and verify that camera.update() is called inside the physics step."
             ),
         ), raw
 

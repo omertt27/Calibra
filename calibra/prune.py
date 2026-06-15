@@ -67,8 +67,16 @@ def run_prune(argv: list[str]) -> None:
     p.add_argument(
         "--format", "-f",
         metavar="FMT",
-        choices=["hdf5", "lerobot", "rlds", "mcap"],
+        choices=["hdf5", "isaac_lab", "lerobot", "rlds", "mcap"],
         help="Force a format adapter (default: auto-detect)",
+    )
+    p.add_argument(
+        "--policy",
+        metavar="FAMILY",
+        help=(
+            "Target policy family. Use 'gr00t' to apply GR00T-optimised defaults: "
+            "stricter quality thresholds and entropy-weighted diversity selection."
+        ),
     )
 
     # Stage 1 quality thresholds
@@ -89,6 +97,11 @@ def run_prune(argv: list[str]) -> None:
     d.add_argument("--diversity-weight", type=float, default=0.7,
                    help="Weight of action-space features vs quality features "
                         "in diversity computation (0–1, default: 0.7)")
+    d.add_argument("--entropy-weight", type=float, default=0.0,
+                   help="Weight of per-trajectory Shannon entropy in the diversity "
+                        "feature vector (0–1, default: 0). Set > 0 to preferentially "
+                        "retain high-entropy (informative) episodes. "
+                        "Automatically set to 0.4 when --policy gr00t is used.")
 
     p.add_argument("--json", "-j", action="store_true",
                    help="Print full JSON result to stdout in addition to writing --out")
@@ -130,15 +143,32 @@ def run_prune(argv: list[str]) -> None:
 
     log("Running coreset selection ...")
 
+    # Apply GR00T-specific defaults before building the selector.
+    max_spike_rate    = args.max_spike_rate
+    max_vel_disc_rate = args.max_vel_disc_rate
+    max_dropout       = args.max_dropout
+    diversity_weight  = args.diversity_weight
+    entropy_weight    = args.entropy_weight
+
+    if args.policy and "gr00t" in args.policy.lower():
+        # GR00T fine-tuning is sensitive to jerk and discontinuities.
+        max_spike_rate    = min(max_spike_rate,    0.05)
+        max_vel_disc_rate = min(max_vel_disc_rate, 0.10)
+        max_dropout       = min(max_dropout,       0.05)
+        if entropy_weight == 0.0:
+            entropy_weight = 0.4   # prefer informative episodes by default
+        log("  [--policy gr00t] Applying GR00T quality thresholds and entropy weighting.")
+
     selector = CoresetSelector(
         keep_fraction=args.keep,
-        max_spike_rate=args.max_spike_rate,
-        max_vel_disc_rate=args.max_vel_disc_rate,
-        max_dropout_fraction=args.max_dropout,
+        max_spike_rate=max_spike_rate,
+        max_vel_disc_rate=max_vel_disc_rate,
+        max_dropout_fraction=max_dropout,
         min_ldlj=args.min_ldlj,
         min_length=args.min_length,
         quality_only=args.quality_only,
-        diversity_weight=args.diversity_weight,
+        diversity_weight=diversity_weight,
+        entropy_weight=entropy_weight,
     )
 
     result = selector.select(batch, report)

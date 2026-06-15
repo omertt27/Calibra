@@ -157,6 +157,7 @@ class CoresetSelector:
     min_length:           int   = _DEFAULT_MIN_LENGTH
     quality_only:         bool  = False
     diversity_weight:     float = 0.7
+    entropy_weight:       float = 0.0
 
     def select(
         self,
@@ -209,8 +210,10 @@ class CoresetSelector:
             diversity_pruned_indices: list[int] = []
             diversity_scores: dict[str, float] = {}
         else:
+            entropy_scores = _compute_entropy_scores(episodes) if self.entropy_weight > 0 else {}
             features = _build_feature_matrix(
-                episodes, quality_pass_indices, ep_data, self.diversity_weight
+                episodes, quality_pass_indices, ep_data,
+                self.diversity_weight, entropy_scores, self.entropy_weight,
             )
             selected_local = _greedy_max_coverage(features, k)
             selected_global = [quality_pass_indices[i] for i in selected_local]
@@ -329,11 +332,19 @@ def _quality_filter(
 
 # ── Stage 2: behavioral feature extraction ────────────────────────────────────
 
+def _compute_entropy_scores(episodes: list[Episode]) -> dict[int, float]:
+    """Return {episode_index: trajectory_entropy} for all episodes."""
+    from calibra.curation.entropy import compute_trajectory_entropy
+    return {i: compute_trajectory_entropy(ep.actions) for i, ep in enumerate(episodes)}
+
+
 def _build_feature_matrix(
     episodes: list[Episode],
     candidate_indices: list[int],
     ep_data: dict[str, list],
     diversity_weight: float,
+    entropy_scores: dict[int, float] | None = None,
+    entropy_weight: float = 0.0,
 ) -> np.ndarray:
     """
     Build a (len(candidate_indices), F) feature matrix for diversity selection.
@@ -368,10 +379,16 @@ def _build_feature_matrix(
         length_raw = _safe_get(lengths, i) or float(ep.n_steps)
         quality_feat = np.array([spike, disc, length_raw / 1000.0])
 
-        # Blend: diversity_weight controls the contribution of action stats
+        # Entropy feature: per-trajectory action diversity (bits/dim).
+        entropy_feat = np.array([entropy_scores.get(i, 0.0) if entropy_scores else 0.0])
+
+        # Blend: diversity_weight for action stats, entropy_weight for entropy,
+        # remaining for quality metrics.
+        q_scale = max(0.0, 1.0 - diversity_weight - entropy_weight)
         row = np.concatenate([
-            action_feat * diversity_weight,
-            quality_feat * (1.0 - diversity_weight),
+            action_feat  * diversity_weight,
+            quality_feat * q_scale,
+            entropy_feat * entropy_weight,
         ])
         rows.append(row)
 
