@@ -29,6 +29,13 @@
           "supports": false,
           "date": "2026-06-15",
           "notes": "Scripted ALOHA sim, 14-DOF, 50Hz. Spike rate 21.9% — consistent with insertion_scripted finding. Confirms that scripted motion planners produce high jerk due to sharp trajectory waypoints. Both scripted datasets disconfirm the claim for scripted (non-human) demonstrations."
+        },
+        {
+          "dataset": "lerobot/droid_100",
+          "observed": 0.045,
+          "supports": false,
+          "date": "2026-06-16",
+          "notes": "DROID, 7-DOF position-command, real hardware teleoperation, 15Hz, diverse robots and tasks. Mean spike_rate 4.5% — exceeds the 2% human-teleop threshold and meets the formal falsification condition (rate > 4%). This is the first real-hardware human-teleoperated position-control dataset to challenge JS-001. Likely contributing factors: diverse hardware platforms with varying noise characteristics, 15Hz control loop introducing coarser jerk estimates compared to 50Hz ALOHA, and a wide range of operator skill levels across 100 episodes (episode-level range: 0–13.5%). The claim boundary of 2% appears too tight for diverse real-hardware teleoperation. Evidence now supports revising to ~5% for heterogeneous hardware."
         }
       ],
       "falsification": {
@@ -41,7 +48,7 @@
           }
         ]
       },
-      "last_updated": "2026-06-15"
+      "last_updated": "2026-06-16"
     },
     {
       "id": "JS-002",

@@ -130,6 +130,7 @@ class DiagnosticReport(BaseModel):
     analyzer_results: list[AnalyzerResult] = []
     policy_family: Optional[str] = None
     episode_ids: list[str] = []
+    timing: dict[str, float] = {}   # analyzer_name → wall-clock seconds
 
     # ── convenience accessors ───────────────────────────────────────────────
 
@@ -176,4 +177,12 @@ class DiagnosticReport(BaseModel):
         n_crit = len(self.flags_at_level(RiskLevel.CRITICAL))
         n_warn = len(self.flags_at_level(RiskLevel.WARNING))
         lines.append(f"{n_crit} critical  ·  {n_warn} warnings")
+
+        if self.timing:
+            total = sum(self.timing.values())
+            timing_parts = "  ".join(
+                f"{name}: {t:.2f}s" for name, t in self.timing.items()
+            )
+            lines.append(f"\nTiming ({total:.2f}s total): {timing_parts}")
+
         return "\n".join(lines)

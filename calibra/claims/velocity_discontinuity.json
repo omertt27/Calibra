@@ -36,6 +36,13 @@
           "supports": true,
           "date": "2026-06-15",
           "notes": "Scripted ALOHA sim, 14-DOF bimanual, 50Hz, cube transfer. Rate 0.75% — fifth position-control data point supporting claim."
+        },
+        {
+          "dataset": "lerobot/droid_100",
+          "observed": 0.071,
+          "supports": false,
+          "date": "2026-06-16",
+          "notes": "DROID, 7-DOF position-command, real hardware, 15Hz, diverse tasks and robots. Mean vel_disc_rate 7.1% — exceeds the 5% threshold asserted by this claim (but below the 8% formal falsification boundary). Episode-level p95 is 18.9%, indicating a long tail of noisy episodes. This is the first real-hardware data point that challenges the <5% claim for position control. Likely causes: diverse robot platforms with varying hardware quality, 15Hz control frequency introducing coarser velocity estimates, and mixed operator skill levels. Downgrading claim confidence to LOW pending a second diverse-hardware dataset."
         }
       ],
       "falsification": {
@@ -52,7 +59,7 @@
           }
         ]
       },
-      "last_updated": "2026-06-15"
+      "last_updated": "2026-06-16"
     },
     {
       "id": "VD-002",

@@ -37,7 +37,9 @@ import sys
 from pathlib import Path
 
 from calibra.pipeline import Pipeline
-from calibra.pruning import CoresetSelector
+from calibra.pruning import ApproximateCoresetSelector, CoresetSelector
+
+_APPROXIMATE_AUTO_THRESHOLD = 50_000  # auto-enable approximate mode above this episode count
 
 
 def run_prune(argv: list[str]) -> None:
@@ -103,7 +105,22 @@ def run_prune(argv: list[str]) -> None:
                         "feature vector (0–1, default: 0). Set > 0 to preferentially "
                         "retain high-entropy (informative) episodes. "
                         "Automatically set to 0.4 when --policy gr00t is used.")
+    d.add_argument("--approximate", action="store_true",
+                   help="Use approximate MiniBatch diversity selection (O(N×B) instead of "
+                        "O(N×K)). Auto-enabled when N > 50 000. Suitable for 100k+ episodes.")
+    d.add_argument("--batch-size", type=int, default=1000,
+                   help="MiniBatch size for --approximate mode (default: 1000)")
 
+    p.add_argument(
+        "--export-dataset",
+        metavar="DIR",
+        default=None,
+        help=(
+            "Materialise the coreset as a ready-to-train dataset in DIR. "
+            "Supports LeRobot v2 (Parquet), LeRobot v1, and HDF5 sources. "
+            "Hub IDs must be downloaded locally first."
+        ),
+    )
     p.add_argument("--json", "-j", action="store_true",
                    help="Print full JSON result to stdout in addition to writing --out")
     args = p.parse_args(argv)
@@ -181,7 +198,16 @@ def run_prune(argv: list[str]) -> None:
             )
             max_spike_rate = _SCRIPTED_AUTO_SPIKE
 
-    selector = CoresetSelector(
+    # Auto-enable approximate mode for very large datasets.
+    use_approximate = args.approximate or batch.n_episodes > _APPROXIMATE_AUTO_THRESHOLD
+    if use_approximate and batch.n_episodes > _APPROXIMATE_AUTO_THRESHOLD and not args.approximate:
+        log(
+            f"  [large dataset] {batch.n_episodes} episodes exceeds {_APPROXIMATE_AUTO_THRESHOLD:,}. "
+            "Auto-enabling --approximate mode. Use --approximate to silence this message."
+        )
+
+    selector_cls = ApproximateCoresetSelector if use_approximate else CoresetSelector
+    selector_kwargs: dict = dict(
         keep_fraction=args.keep,
         max_spike_rate=max_spike_rate,
         max_vel_disc_rate=max_vel_disc_rate,
@@ -192,6 +218,10 @@ def run_prune(argv: list[str]) -> None:
         diversity_weight=diversity_weight,
         entropy_weight=entropy_weight,
     )
+    if use_approximate:
+        selector_kwargs["batch_size"] = args.batch_size
+
+    selector = selector_cls(**selector_kwargs)
 
     result = selector.select(batch, report)
 
@@ -207,3 +237,22 @@ def run_prune(argv: list[str]) -> None:
 
     if args.json:
         print(json.dumps(out_data, indent=2))
+
+    if args.export_dataset:
+        from calibra.curation.export import export_dataset
+        log(f"Exporting coreset dataset to {args.export_dataset!r} ...")
+        try:
+            exported = export_dataset(
+                result,
+                dataset_path,
+                args.export_dataset,
+                log=log,
+            )
+            log(f"Dataset exported to {exported}")
+            print(
+                f"\n  Ready to train:\n"
+                f"    python train.py --dataset {exported}"
+            )
+        except Exception as exc:
+            print(f"error exporting dataset: {exc}", file=sys.stderr)
+            sys.exit(1)

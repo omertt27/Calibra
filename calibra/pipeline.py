@@ -12,6 +12,7 @@ Usage:
 """
 from __future__ import annotations
 
+import time
 from typing import Optional
 
 from calibra.analyzers.base import Analyzer
@@ -68,10 +69,13 @@ class Pipeline:
         if policy_family and "gr00t" in policy_family.lower():
             analyzers.append(GR00TCompatibilityAnalyzer())
 
-        results = [
-            analyzer.analyze(batch, policy_family=policy_family)
-            for analyzer in analyzers
-        ]
+        results = []
+        timing: dict[str, float] = {}
+        for analyzer in analyzers:
+            t0 = time.perf_counter()
+            results.append(analyzer.analyze(batch, policy_family=policy_family))
+            timing[analyzer.name] = round(time.perf_counter() - t0, 4)
+
         return DiagnosticReport(
             dataset_name=batch.dataset_name,
             source_path=batch.source_path,
@@ -81,6 +85,7 @@ class Pipeline:
             analyzer_results=results,
             policy_family=policy_family,
             episode_ids=[ep.metadata.episode_id for ep in batch.episodes],
+            timing=timing,
         )
 
     def analyze_path(

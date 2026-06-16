@@ -36,6 +36,13 @@
           "supports": true,
           "date": "2026-06-15",
           "notes": "MuJoCo sim, scripted demos. Consistent with all other sim datasets. Four sim data points now supporting TEMP-001."
+        },
+        {
+          "dataset": "lerobot/droid_100",
+          "observed": 6e-06,
+          "supports": true,
+          "date": "2026-06-16",
+          "notes": "DROID real-hardware dataset downloaded from HuggingFace Hub. Jitter CV of 6e-06 is at sim-precision level — the LeRobot Hub version resamples timestamps to a fixed grid, making jitter uninformative for hardware characterisation. Confirms TEMP-001 from the ingestion side: Hub-served datasets always show machine-precision jitter regardless of whether the underlying data came from hardware."
         }
       ],
       "falsification": {
@@ -43,7 +50,7 @@
         "threshold": 0.01,
         "pending_tests": []
       },
-      "last_updated": "2026-06-15"
+      "last_updated": "2026-06-16"
     },
     {
       "id": "TEMP-002",
