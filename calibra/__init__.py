@@ -1,3 +1,5 @@
+__version__ = "0.4.0"
+
 """Calibra — dataset reliability and risk profiling for robotics IL pipelines."""
 
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata

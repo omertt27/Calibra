@@ -1,13 +1,14 @@
-# Calibra
+w# Calibra
 
 [![CI](https://github.com/omerTT/Calibra/actions/workflows/ci.yml/badge.svg)](https://github.com/omerTT/Calibra/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/calibra-robotics.svg)](https://pypi.org/project/calibra-robotics/)
 
 **Dataset observability and coreset selection for robotics imitation learning.**
 
 Calibra tells you what is wrong with your robot demonstrations — and removes the redundant ones — before you waste GPU time training on bad data.
 
 ```bash
-pip install calibra
+pip install calibra-robotics
 calibra compare hf://lerobot/my_dataset aloha
 calibra certify /data/my_demos --reference aloha --policy diffusion
 calibra prune   /data/100k_episodes --keep 0.3 --out coreset.json
@@ -210,20 +211,22 @@ Use `--pad` to append a zero row so output shape is `(T, 6)` instead of `(T−1,
 
 ## Install
 
+> **PyPI package name:** `calibra-robotics`  (the `calibra` name on PyPI is an unrelated package)
+
 ```bash
 # Core (numpy + pydantic only — no format adapters)
-pip install calibra
+pip install calibra-robotics
 
 # With LeRobot / HuggingFace Hub support (recommended)
-pip install 'calibra[lerobot]'   # Parquet, DuckDB, Hub IDs
+pip install 'calibra-robotics[lerobot]'   # Parquet, DuckDB, Hub IDs
 
 # Other format adapters
-pip install 'calibra[hdf5]'      # HDF5 (Isaac Lab, Robomimic)
-pip install 'calibra[rlds]'      # RLDS / TensorFlow Datasets
-pip install 'calibra[mcap]'      # MCAP / ROS2 bags
+pip install 'calibra-robotics[hdf5]'      # HDF5 (Isaac Lab, Robomimic)
+pip install 'calibra-robotics[rlds]'      # RLDS / TensorFlow Datasets
+pip install 'calibra-robotics[mcap]'      # MCAP / ROS2 bags
 
 # Everything
-pip install 'calibra[all]'
+pip install 'calibra-robotics[all]'
 ```
 
 ---
@@ -364,6 +367,8 @@ Three empirical baselines are shipped:
 | `aloha_static_coffee` | position | 50 Hz | 14 | — | ✓ real |
 | `aloha_static_cups_open` | position | 50 Hz | 14 | — | ✓ real |
 | `pusht_image` | velocity | 10 Hz | 2 | — | sim |
+| `svla_so100_pickplace` | position | 15 Hz | 6 | 50 | ✓ real |
+| `svla_so100_stacking` | position | 15 Hz | 6 | 56 | ✓ real |
 
 Add your own with `scripts/profile_dataset.py` (see Contributing).
 
@@ -391,8 +396,8 @@ The evidence base for `calibra compare` grows with every new reference profile. 
 | Dataset | Why it matters |
 |---|---|
 | `lerobot/droid_100` | Large-scale real hardware, position control — validates VD-001 at scale |
-| `lerobot/so100` | Low-cost hardware platform — establishes noise characteristics for affordable arms |
-| `lerobot/bridge` (BridgeData V2) | Second velocity-command dataset — needed to validate JS-002, VD-002 |
+| `lerobot/svla_so100_pickplace` | ✅ Profiled — SO-100 low-cost arm, pick-and-place |
+| `nvidia/BridgeData2_LeRobot_v3` | BridgeData V2, velocity control — needed to validate JS-002, VD-002 |
 | Any Isaac Lab sim dataset | Validates TEMP-001 (sim jitter) across a second simulator |
 
 ```bash

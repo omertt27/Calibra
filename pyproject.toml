@@ -3,14 +3,18 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "calibra"
-version = "0.1.0"
+name = "calibra-robotics"
+version = "0.4.0"
 description = "Dataset reliability and risk profiling for robotics imitation learning"
 requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.0",
     "numpy>=1.24",
 ]
+
+[project.urls]
+Repository = "https://github.com/omerTT/Calibra"
+"Bug Tracker" = "https://github.com/omerTT/Calibra/issues"
 
 [project.scripts]
 calibra = "calibra.__main__:main"
@@ -22,7 +26,7 @@ rlds       = ["tensorflow>=2.12", "tensorflow-datasets>=4.9"]
 mcap       = ["mcap>=0.0.10", "mcap-ros2-support>=0.0.3"]
 kinematics = ["scipy>=1.10"]
 dev        = ["pytest>=7.0", "pytest-cov", "ruff", "mypy"]
-all        = ["calibra[hdf5,lerobot,rlds,mcap,kinematics]"]
+all        = ["calibra-robotics[hdf5,lerobot,rlds,mcap,kinematics]"]
 
 [tool.ruff]
 line-length = 100
