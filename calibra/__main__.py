@@ -35,11 +35,16 @@ from __future__ import annotations
 import argparse
 import sys
 
+from calibra import __version__
 from calibra.pipeline import Pipeline
 from calibra.schema.report import RiskLevel
 
 
 def main() -> None:
+    if len(sys.argv) > 1 and sys.argv[1] in ("--version", "-V"):
+        print(f"calibra {__version__}")
+        return
+
     if len(sys.argv) > 1 and sys.argv[1] == "compare":
         from calibra.compare import run_compare
         run_compare(sys.argv[2:])
@@ -70,6 +75,7 @@ def main() -> None:
         description="Calibra — dataset reliability diagnostics for robotics IL",
         epilog="Run 'calibra compare <path> <reference>' to compare against a reference profile.",
     )
+    parser.add_argument("--version", "-V", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("path", help="Path to dataset (file or directory)")
     parser.add_argument(
         "--policy", "-p",
