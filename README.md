@@ -1,5 +1,7 @@
 # Calibra
 
+[![CI](https://github.com/omerTT/Calibra/actions/workflows/ci.yml/badge.svg)](https://github.com/omerTT/Calibra/actions/workflows/ci.yml)
+
 **Dataset observability and coreset selection for robotics imitation learning.**
 
 Calibra tells you what is wrong with your robot demonstrations — and removes the redundant ones — before you waste GPU time training on bad data.
@@ -434,7 +436,7 @@ docs/
 ```bash
 git clone https://github.com/omerTT/Calibra
 pip install -e '.[all,dev]'
-pytest              # 259 tests
+pytest              # 377 tests
 ruff check .        # zero errors expected
 ```
 
