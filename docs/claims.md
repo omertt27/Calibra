@@ -10,8 +10,8 @@ Do not edit manually — edit the source JSON files in `calibra/claims/`.
 | Stat | Value |
 |------|-------|
 | Active claims | 12 |
-| Reference profiles | 13 |
-| Ratio | ✅ 13:12 (evidence outpaces theory ✓) |
+| Reference profiles | 15 |
+| Ratio | ✅ 15:12 (evidence outpaces theory ✓) |
 
 **Rule:** Number of reference profiles should be ≥ number of active claims.
 See `calibra/claims/SPEC.md` for the full contribution protocol.
@@ -35,6 +35,8 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 | droid_100 | `calibra/references/droid_100.json` |
 | pusht_image | `calibra/references/pusht_image.json` |
 | pusht_velocity_command | `calibra/references/pusht_velocity_command.json` |
+| svla_so100_pickplace | `calibra/references/svla_so100_pickplace.json` |
+| svla_so100_stacking | `calibra/references/svla_so100_stacking.json` |
 
 ---
 
