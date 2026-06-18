@@ -127,8 +127,11 @@ class LeRobotReader(DatasetReader):
         else:
             p = Path(bare)
             if (p / "meta" / "info.json").exists():
-                # v2 format: fast DuckDB path
-                return self._read_local_v2_duckdb(p, path)
+                # v2 format: DuckDB fast path, pyarrow fallback
+                try:
+                    return self._read_local_v2_duckdb(p, path)
+                except ImportError:
+                    return self._read_local_v2_pyarrow(p, path)
             else:
                 hf = _require_datasets()
                 ds, dataset_name, task = self._load_local(hf, p)
@@ -172,6 +175,49 @@ class LeRobotReader(DatasetReader):
         df = conn.execute("SELECT * FROM dataset").df()
         conn.close()
 
+        episodes = self._episodes_from_df(df, task, source)
+        return EpisodeBatch(
+            episodes=episodes,
+            dataset_name=p.name,
+            format=self.format_name,
+            source_path=source,
+        )
+
+    def _read_local_v2_pyarrow(self, p: Path, source: str) -> EpisodeBatch:
+        """
+        Fallback reader for v2 LeRobot datasets when DuckDB is not installed.
+
+        Uses pyarrow.parquet with column projection to exclude image columns,
+        so image bytes never enter RAM even without DuckDB.
+        """
+        import pyarrow.parquet as pq
+
+        info_path = p / "meta" / "info.json"
+        with open(info_path) as f:
+            info = json.load(f)
+
+        image_cols = _image_columns_from_info(info)
+        parquet_files = sorted(p.glob("data/**/*.parquet"))
+        if not parquet_files:
+            parquet_files = sorted(p.glob("*.parquet"))
+        if not parquet_files:
+            raise ValueError(f"No Parquet files found in {p}")
+
+        # Determine scalar columns from first file's schema
+        schema = pq.read_schema(str(parquet_files[0]))
+        scalar_cols = [c for c in schema.names if c not in image_cols]
+
+        tables = [
+            pq.read_table(str(f), columns=scalar_cols)
+            for f in parquet_files
+        ]
+
+        import pyarrow as pa
+        combined = pa.concat_tables(tables)
+        df = combined.to_pandas()
+        df = df.sort_values(["episode_index", "frame_index"]).reset_index(drop=True)
+
+        task = _read_task_v2(p)
         episodes = self._episodes_from_df(df, task, source)
         return EpisodeBatch(
             episodes=episodes,

@@ -43,6 +43,13 @@
           "supports": true,
           "date": "2026-06-16",
           "notes": "DROID real-hardware dataset downloaded from HuggingFace Hub. Jitter CV of 6e-06 is at sim-precision level \u2014 the LeRobot Hub version resamples timestamps to a fixed grid, making jitter uninformative for hardware characterisation. Confirms TEMP-001 from the ingestion side: Hub-served datasets always show machine-precision jitter regardless of whether the underlying data came from hardware."
+        },
+        {
+          "dataset": "nvidia/BridgeData2_LeRobot_v3",
+          "observed": 1e-06,
+          "supports": true,
+          "date": "2026-06-18",
+          "notes": "BridgeData V2 real hardware, 5Hz, 50415 episodes, Hub format. Jitter CV 1e-6 \u2014 machine precision. Confirms TEMP-001 for a second real-hardware Hub dataset: the LeRobot v3 format resamples timestamps to a uniform grid, making jitter uninformative for hardware datasets served via Hub. Sixth evidence point for TEMP-001."
         }
       ],
       "falsification": {
@@ -50,7 +57,7 @@
         "threshold": 0.01,
         "pending_tests": []
       },
-      "last_updated": "2026-06-16"
+      "last_updated": "2026-06-18"
     },
     {
       "id": "TEMP-002",
@@ -67,6 +74,13 @@
           "supports": false,
           "date": "2026-06-18",
           "notes": "DROID real hardware, 15Hz, downloaded from HuggingFace Hub in LeRobot v2 format. Jitter CV 6e-6 (0.0006%) \u2014 indistinguishable from sim-precision (see TEMP-001). This does NOT support the claim that hardware datasets show 5\u201325% jitter. The LeRobot Hub pipeline resamples all observations to a uniform timestamp grid, eliminating real-world timing variation before the dataset reaches Calibra. Conclusion: TEMP-002 applies only to raw sensor recordings (MCAP/ROS2 bags, CSV exports with original hardware timestamps). Hub-served datasets will always report machine-precision jitter regardless of hardware origin."
+        },
+        {
+          "dataset": "nvidia/BridgeData2_LeRobot_v3",
+          "observed": 1e-06,
+          "supports": false,
+          "date": "2026-06-18",
+          "notes": "BridgeData V2 real hardware, 5Hz, Hub format. Jitter CV 1e-6 \u2014 identical to sim datasets (see TEMP-001). Confirms that Hub-format hardware data always shows machine-precision jitter, regardless of control frequency or recording hardware. TEMP-002 remains untestable without raw MCAP/ROS2 recordings."
         }
       ],
       "falsification": {
@@ -96,6 +110,13 @@
           "supports": true,
           "date": "2026-06-18",
           "notes": "DROID real hardware, 15Hz, Hub format, 100 episodes. dropout_rate = 0.0% \u2014 the warning threshold (1%) and critical threshold (5%) are not triggered. LeRobot Hub resampling eliminates timestamp gaps, so this data point cannot validate the thresholds for raw hardware recordings. However, it confirms that Hub-format hardware data does not produce false-positive dropout flags. Thresholds remain unvalidated for raw sensor streams."
+        },
+        {
+          "dataset": "nvidia/BridgeData2_LeRobot_v3",
+          "observed": 0.0,
+          "supports": true,
+          "date": "2026-06-18",
+          "notes": "BridgeData V2, 5Hz, Hub format, 50415 episodes. dropout_rate = 0.0%. No false-positive dropout flags on the largest Hub-format real-hardware dataset profiled to date (1.8M steps). Thresholds remain not validated for raw sensor streams, but confirmed non-triggering for Hub data."
         }
       ],
       "falsification": {

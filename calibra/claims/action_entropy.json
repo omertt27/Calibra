@@ -37,6 +37,13 @@
           "supports": true,
           "date": "2026-06-18",
           "notes": "DROID, 7-DOF real hardware, 15Hz, diverse tasks and robots, 100 episodes. Action entropy 4.24 bits/dim \u2014 above the 3-bit warning threshold, indicating healthy action-space coverage across diverse environments. Fourth evidence point; all four datasets sit in the 4.2\u20135.3 range, with no dataset near the 3-bit risk threshold."
+        },
+        {
+          "dataset": "nvidia/BridgeData2_LeRobot_v3",
+          "observed": 1.98,
+          "supports": true,
+          "date": "2026-06-18",
+          "notes": "BridgeData V2, 7-DOF real hardware velocity-command, 5Hz, 50415 episodes, 22k distinct tasks. Action entropy 1.98 bits/dim \u2014 below the 3-bit warning threshold despite enormous task diversity. Likely cause: at 5Hz the action values cluster in a narrow velocity range (slow motions dominate), collapsing the distribution. First real-world data point BELOW the 3-bit threshold, directly supporting ENT-001's assertion that sub-3-bit entropy is a detectable risk signal. Upgrades claim evidence count to 5."
         }
       ],
       "interpretation_rule": {
@@ -68,7 +75,7 @@
       "class": "any",
       "assertion": "PCA top-2 variance fraction above 0.95 in high-dimensional action spaces (> 6 DOF) signals effective dimensionality collapse \u2014 the policy will likely only need 1\u20132 latent modes",
       "conditions": "PCA computed over all steps concatenated across episodes; top-2 eigenvectors capture fraction of variance",
-      "confidence": "LOW-MODERATE",
+      "confidence": "MODERATE",
       "status": "active_hypothesis",
       "evidence": [
         {
@@ -84,6 +91,13 @@
           "supports": true,
           "date": "2026-06-18",
           "notes": "DROID, 7-DOF real hardware, 15Hz, diverse tasks. PCA top-2 fraction 0.566 \u2014 lowest of all profiled datasets, reflecting high effective dimensionality from cross-task and cross-robot diversity. Strongly below 0.95 threshold. Second evidence point; confirms the threshold does not fire for healthy diverse high-DOF datasets."
+        },
+        {
+          "dataset": "nvidia/BridgeData2_LeRobot_v3",
+          "observed": 0.9894,
+          "supports": true,
+          "date": "2026-06-18",
+          "notes": "BridgeData V2, 7-DOF real hardware velocity-command, 5Hz, 50415 episodes. PCA top-2 variance fraction 0.989 \u2014 above the 0.95 threshold in a 7-DOF action space. This is the FIRST dataset to fire the ENT-002 warning. Despite 22k distinct tasks and diverse robot configurations, the velocity commands at 5Hz collapse almost entirely onto 2 principal components. This confirms the claim: a high PCA fraction in a high-DOF space is detectable and meaningful as a redundancy indicator. Upgrades confidence from LOW-MODERATE to MODERATE."
         }
       ],
       "falsification": {

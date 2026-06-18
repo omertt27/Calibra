@@ -48,12 +48,7 @@
       "falsification": {
         "condition": "Any position-command hardware dataset with aggregate rate > 0.08",
         "threshold": 0.08,
-        "pending_tests": [
-          {
-            "dataset": "BridgeData V2",
-            "reason": "Real hardware, varied tasks, higher-speed motions \u2014 tests whether 5% holds outside ALOHA kinematics"
-          }
-        ]
+        "pending_tests": []
       },
       "last_updated": "2026-06-18"
     },
@@ -63,8 +58,8 @@
       "class": "velocity",
       "assertion": "Velocity-command datasets have velocity discontinuity rate in the range 10\u201320% due to unconstrained instantaneous reversals in human teleop",
       "conditions": "threshold=0.20 (step velocity change > 20% of peak counts as discontinuity)",
-      "confidence": "MODERATE",
-      "status": "active_hypothesis",
+      "confidence": "LOW",
+      "status": "falsified",
       "evidence": [
         {
           "dataset": "lerobot/pusht",
@@ -79,13 +74,63 @@
           "supports": true,
           "date": "2026-06-18",
           "notes": "Velocity-command 2D sim, ~10Hz, 206 episodes, image-conditioned demonstrations. Vel disc rate 11.1% \u2014 within the 10\u201320% range. Second velocity-command data point; alongside pusht (16.7%), confirms that velocity-command datasets cluster in the 10\u201320% range for 2D planar tasks. Upgrades claim confidence."
+        },
+        {
+          "dataset": "nvidia/BridgeData2_LeRobot_v3",
+          "observed": 0.8048,
+          "supports": false,
+          "date": "2026-06-18",
+          "notes": "BridgeData V2, 7-DOF real hardware velocity-command, 5Hz, 50415 episodes. vel_disc_rate 80.5% \u2014 far above the 10\u201320% range and exceeds the 0.25 formal falsification threshold. This FORMALLY FALSIFIES VD-002. Root cause: at 5Hz control frequency, virtually every step-to-step velocity change exceeds the 20% threshold because the time resolution is coarse enough that smooth real-world paths appear as abrupt step changes in the discretised action sequence. VD-002's 10\u201320% range appears to be specific to ~10Hz velocity-command datasets; the claim must be refined with a frequency qualifier. Additionally, BridgeData2 has very short episodes (mean 36 steps) and exceptionally diverse operator styles across 22k tasks."
         }
       ],
       "falsification": {
         "condition": "A second velocity-command dataset with rate < 0.08 or > 0.25",
         "threshold_low": 0.08,
         "threshold_high": 0.25,
-        "pending_tests": []
+        "pending_tests": [],
+        "note": "Formally falsified by BridgeData2 (5Hz). VD-002 should be replaced with frequency-qualified successor claims: one for ~10Hz datasets, one for \u22645Hz."
+      },
+      "last_updated": "2026-06-18"
+    },
+    {
+      "id": "VD-003",
+      "metric": "velocity_discontinuity_rate",
+      "class": "velocity",
+      "assertion": "Velocity-command datasets at ~10Hz have velocity discontinuity rate in the range 10\u201320%; at \u22645Hz the rate exceeds 50% due to coarse step resolution",
+      "conditions": "threshold=0.20; claim is frequency-qualified \u2014 VD-002 successor",
+      "confidence": "LOW",
+      "status": "active_hypothesis",
+      "evidence": [
+        {
+          "dataset": "lerobot/pusht",
+          "observed": 0.167,
+          "supports": true,
+          "date": "2026-06-18",
+          "notes": "10Hz velocity-command, 2D, 206 episodes. 16.7% \u2014 within 10-20% range for ~10Hz."
+        },
+        {
+          "dataset": "lerobot/pusht_image",
+          "observed": 0.111,
+          "supports": true,
+          "date": "2026-06-18",
+          "notes": "10Hz velocity-command, 2D, 206 episodes. 11.1% \u2014 within 10-20% range for ~10Hz."
+        },
+        {
+          "dataset": "nvidia/BridgeData2_LeRobot_v3",
+          "observed": 0.8048,
+          "supports": true,
+          "date": "2026-06-18",
+          "notes": "5Hz velocity-command, 7-DOF, 50415 episodes. 80.5% \u2014 confirms \u22645Hz rate is far above 10-20%. Supports the frequency-split assertion."
+        }
+      ],
+      "falsification": {
+        "condition": "A \u22645Hz velocity-command dataset with rate < 0.30, OR a ~10Hz velocity-command dataset with rate > 0.25",
+        "pending_tests": [
+          {
+            "dataset": "Any second 5Hz velocity-command dataset",
+            "reason": "Single 5Hz data point (BridgeData2). Need a second to confirm the >50% pattern."
+          }
+        ]
       },
       "last_updated": "2026-06-18"
     }

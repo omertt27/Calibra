@@ -1,7 +1,13 @@
 # Calibra
 
-[![CI](https://github.com/omerTT/Calibra/actions/workflows/ci.yml/badge.svg)](https://github.com/omerTT/Calibra/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/calibra-robotics.svg)](https://pypi.org/project/calibra-robotics/)
+<p align="center">
+  <img src="docs/logo.svg" alt="Calibra — dataset observability for robotics" width="480"/>
+</p>
+
+<p align="center">
+  <a href="https://github.com/omerTT/Calibra/actions/workflows/ci.yml"><img src="https://github.com/omerTT/Calibra/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+  <a href="https://pypi.org/project/calibra-robotics/"><img src="https://img.shields.io/pypi/v/calibra-robotics.svg" alt="PyPI"/></a>
+</p>
 
 **Dataset observability and coreset selection for robotics imitation learning.**
 
@@ -370,6 +376,7 @@ Three empirical baselines are shipped:
 | `droid_100` | position | 15 Hz | 7 | 100 | ✓ real |
 | `svla_so100_pickplace` | position | 15 Hz | 6 | 50 | ✓ real |
 | `svla_so100_stacking` | position | 15 Hz | 6 | 56 | ✓ real |
+| `bridgedata_v2` | velocity | 5 Hz | 7 | 50415 | ✓ real |
 
 Add your own with `scripts/profile_dataset.py` (see Contributing).
 
@@ -398,8 +405,9 @@ The evidence base for `calibra compare` grows with every new reference profile. 
 |---|---|
 | `lerobot/droid_100` | ✅ Profiled — large-scale real hardware, position control, validates VD-001 at scale |
 | `lerobot/svla_so100_pickplace` | ✅ Profiled — SO-100 low-cost arm, pick-and-place |
-| `nvidia/BridgeData2_LeRobot_v3` | BridgeData V2, velocity control — needed to validate JS-001, VD-001 at scale |
+| `nvidia/BridgeData2_LeRobot_v3` | ✅ Profiled — falsified VD-002 and JS-002; revealed frequency-dependent behaviour |
 | Any Isaac Lab sim dataset | Validates TEMP-001 (sim jitter) across a second simulator |
+| Any second 5Hz velocity-command dataset | Validates JS-004 and VD-003 successor claims |
 
 ```bash
 python scripts/profile_dataset.py lerobot/droid_100 \
