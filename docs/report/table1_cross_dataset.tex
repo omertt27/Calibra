@@ -1,0 +1,32 @@
+\begin{table*}[htbp]
+\centering
+\caption{Calibra observability metrics across 15 public imitation-learning datasets.
+Scripted datasets are marked $\dagger$.
+Spike and VelDisc are mean per-episode rates (\%).
+LDLJ is mean log dimensionless jerk (more negative = less smooth).}
+\label{tab:cross_dataset}
+\small
+\begin{tabular}{lllrrrr}
+\toprule
+Dataset & Ctrl & $N$ & Spike\,\% & VelDisc\,\% & Jitter CV & LDLJ \\
+\midrule
+aloha\_mobile\_cabinet          & position & 85     & 0.42  & 0.84  & 3.0e-05 & -24.70 \\
+aloha\_mobile\_shrimp           & position & 18     & 0.46  & 0.66  & 8.5e-05 & -27.80 \\
+aloha\_sim\_insertion\_human    & position & 50     & 0.69  & 2.39  & 1.1e-05 & -20.43 \\
+aloha\_sim\_insertion\_scripted$^\dagger$ & position & 50 & 24.90 & 0.75 & 4.0e-06 & -17.19 \\
+aloha\_sim\_transfer\_cube\_human & position & 50   & 0.94  & 4.56  & 4.0e-06 & -20.02 \\
+aloha\_sim\_transfer\_cube\_scripted$^\dagger$ & position & 50 & 21.87 & 0.75 & 4.0e-06 & -17.23 \\
+aloha\_static\_battery          & position & 49     & 0.44  & 5.46  & 1.4e-05 & -22.10 \\
+aloha\_static\_candy            & position & 50     & 0.42  & 2.66  & 1.6e-05 & -22.28 \\
+aloha\_static\_coffee           & position & 50     & 0.17  & 1.95  & 2.6e-05 & -24.14 \\
+aloha\_static\_cups\_open       & position & 50     & 0.30  & 6.44  & 4.0e-06 & -20.51 \\
+\midrule
+BridgeData\_V2                  & velocity & 50{,}415 & 0.71 & \textbf{80.48} & 1.0e-06 & -13.79 \\
+droid\_100                      & position & 100    & 4.55  & 7.08  & 6.0e-06 & -19.39 \\
+pusht\_image                    & velocity & 206    & 7.76  & 11.11 & 3.0e-06 & -16.01 \\
+pusht                           & velocity & 206    & 4.94  & 16.72 & 3.0e-06 & -16.34 \\
+svla\_so100\_pickplace          & position & 50     & 1.09  & 6.73  & 9.0e-06 & -20.11 \\
+svla\_so100\_stacking           & position & 56     & 1.02  & 1.65  & 9.0e-06 & -19.61 \\
+\bottomrule
+\end{tabular}
+\end{table*}
