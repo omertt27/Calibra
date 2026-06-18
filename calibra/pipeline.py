@@ -18,6 +18,9 @@ from typing import Optional
 from calibra.analyzers.base import Analyzer
 from calibra.analyzers.coverage import CoverageEntropyAnalyzer
 from calibra.analyzers.gr00t import GR00TCompatibilityAnalyzer
+from calibra.analyzers.octo import OctoCompatibilityAnalyzer
+from calibra.analyzers.openvla import OpenVLACompatibilityAnalyzer
+from calibra.analyzers.pi0 import Pi0CompatibilityAnalyzer
 from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
 from calibra.analyzers.task_structure import TaskStructureAnalyzer
 from calibra.analyzers.temporal import TemporalAnalyzer
@@ -66,8 +69,15 @@ class Pipeline:
                         (e.g. "diffusion", "act", "transformer").
         """
         analyzers = list(self.analyzers)
-        if policy_family and "gr00t" in policy_family.lower():
+        pf_lower = policy_family.lower() if policy_family else ""
+        if pf_lower and "gr00t" in pf_lower:
             analyzers.append(GR00TCompatibilityAnalyzer())
+        if pf_lower and "pi0" in pf_lower:
+            analyzers.append(Pi0CompatibilityAnalyzer())
+        if pf_lower and "openvla" in pf_lower:
+            analyzers.append(OpenVLACompatibilityAnalyzer())
+        if pf_lower and "octo" in pf_lower:
+            analyzers.append(OctoCompatibilityAnalyzer())
 
         results = []
         timing: dict[str, float] = {}

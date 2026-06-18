@@ -1,0 +1,116 @@
+# Reusable workflow: Calibra dataset quality gate.
+#
+# Call this from any robotics repo to add a Calibra certification gate:
+#
+#   jobs:
+#     data-quality:
+#       uses: omertt27/Calibra/.github/workflows/certify.yml@main
+#       with:
+#         dataset: ./demos
+#         reference: aloha
+#         policy: diffusion
+#
+# Or inline usage example (copy into your own workflow):
+#
+#   - name: Certify dataset
+#     uses: omertt27/Calibra/.github/actions/certify@main
+#     with:
+#       dataset: ./demos
+#       reference: aloha
+
+name: Calibra Dataset Certification
+
+on:
+  workflow_call:
+    inputs:
+      dataset:
+        description: "Path or HF Hub ID of the dataset to certify"
+        required: true
+        type: string
+      reference:
+        description: "Reference profile (e.g. aloha, pusht)"
+        required: false
+        type: string
+        default: ""
+      policy:
+        description: "Policy family (e.g. diffusion, act, pi0, gr00t)"
+        required: false
+        type: string
+        default: ""
+      format:
+        description: "Format adapter (hdf5, lerobot, isaac_lab, rlds, mcap)"
+        required: false
+        type: string
+        default: ""
+      strict:
+        description: "Fail on warnings too"
+        required: false
+        type: boolean
+        default: false
+      python-version:
+        description: "Python version to use"
+        required: false
+        type: string
+        default: "3.11"
+
+    outputs:
+      grade:
+        description: "Certification grade"
+        value: ${{ jobs.certify.outputs.grade }}
+      score:
+        description: "Calibra Score (0–100)"
+        value: ${{ jobs.certify.outputs.score }}
+
+jobs:
+  certify:
+    name: Calibra Dataset Quality Gate
+    runs-on: ubuntu-latest
+    outputs:
+      grade: ${{ steps.certify.outputs.grade }}
+      score: ${{ steps.score.outputs.score }}
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install Calibra
+        run: |
+          pip install "calibra-robotics[hdf5,lerobot,kinematics]" --quiet
+          calibra --version
+
+      - name: Run calibra certify
+        id: certify
+        run: |
+          ARGS="${{ inputs.dataset }}"
+          [ -n "${{ inputs.reference }}" ] && ARGS="$ARGS --reference ${{ inputs.reference }}"
+          [ -n "${{ inputs.policy }}"    ] && ARGS="$ARGS --policy ${{ inputs.policy }}"
+          [ -n "${{ inputs.format }}"    ] && ARGS="$ARGS --format ${{ inputs.format }}"
+          [ "${{ inputs.strict }}" = "true" ] && ARGS="$ARGS --strict"
+
+          JSON=$(calibra certify $ARGS --json 2>/dev/null) || true
+          EXIT_CODE=$?
+          calibra certify $ARGS || true
+
+          GRADE=$(echo "$JSON" | python3 -c \
+            "import sys,json; print(json.load(sys.stdin).get('grade','UNKNOWN'))" 2>/dev/null \
+            || echo "UNKNOWN")
+          echo "grade=$GRADE" >> $GITHUB_OUTPUT
+          echo "::notice title=Calibra::Grade: $GRADE"
+          exit $EXIT_CODE
+
+      - name: Run calibra score
+        id: score
+        if: always()
+        run: |
+          ARGS="${{ inputs.dataset }}"
+          [ -n "${{ inputs.format }}" ] && ARGS="$ARGS --format ${{ inputs.format }}"
+          [ -n "${{ inputs.policy }}" ] && ARGS="$ARGS --policy ${{ inputs.policy }}"
+
+          JSON=$(calibra score $ARGS --json 2>/dev/null) || true
+          SCORE=$(echo "$JSON" | python3 -c \
+            "import sys,json; print(json.load(sys.stdin).get('total_score','n/a'))" 2>/dev/null \
+            || echo "n/a")
+          echo "score=$SCORE" >> $GITHUB_OUTPUT
+          echo "::notice title=Calibra Score::$SCORE / 100"

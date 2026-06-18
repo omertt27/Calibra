@@ -70,6 +70,31 @@ def main() -> None:
         run_retarget(sys.argv[2:])
         return
 
+    if len(sys.argv) > 1 and sys.argv[1] == "score":
+        from calibra.score import run_score
+        run_score(sys.argv[2:])
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "sim2real":
+        from calibra.sim2real import run_sim2real
+        run_sim2real(sys.argv[2:])
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "transfer":
+        from calibra.transfer import run_transfer
+        run_transfer(sys.argv[2:])
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "watch":
+        from calibra.watch import run_watch
+        run_watch(sys.argv[2:])
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "predict":
+        from calibra.predict import run_predict
+        run_predict(sys.argv[2:])
+        return
+
     parser = argparse.ArgumentParser(
         prog="calibra",
         description="Calibra — dataset reliability diagnostics for robotics IL",

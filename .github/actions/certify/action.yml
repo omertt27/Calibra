@@ -1,0 +1,175 @@
+# Calibra Dataset Certification GitHub Action
+#
+# Runs `calibra certify` on a robot dataset and fails the CI job if the
+# dataset is NOT CERTIFIED (exit code 2) or, when strict=true, also on
+# PROVISIONALLY CERTIFIED (exit code 1).
+#
+# Usage in a workflow:
+#
+#   jobs:
+#     certify-dataset:
+#       runs-on: ubuntu-latest
+#       steps:
+#         - uses: actions/checkout@v4
+#
+#         - name: Certify dataset
+#           uses: omertt27/Calibra/.github/actions/certify@main
+#           with:
+#             dataset: ./demos
+#             reference: aloha
+#             policy: diffusion
+#             strict: false
+#
+# Outputs:
+#   grade        — CERTIFIED / PROVISIONALLY CERTIFIED / NOT CERTIFIED
+#   exit-code    — 0 / 1 / 2
+#   score        — Calibra Score (0–100)
+#   report-json  — full JSON certification report
+
+name: "Calibra Dataset Certifier"
+description: >
+  Run Calibra quality diagnostics on a robot imitation-learning dataset and
+  gate CI on the certification grade.
+
+branding:
+  icon: "check-circle"
+  color: "green"
+
+inputs:
+  dataset:
+    description: >
+      Path to the dataset directory or HuggingFace Hub ID (e.g. lerobot/pusht_image).
+    required: true
+
+  reference:
+    description: >
+      Optional reference profile to compare against (e.g. aloha, pusht).
+      Must match a name in calibra/references/.
+    required: false
+    default: ""
+
+  policy:
+    description: >
+      Target policy family for conditioned compatibility hints.
+      One of: diffusion, act, transformer, gr00t, pi0, openvla, octo.
+    required: false
+    default: ""
+
+  format:
+    description: >
+      Force a specific dataset format adapter.
+      One of: hdf5, isaac_lab, lerobot, rlds, mcap.
+      Leave empty for auto-detection.
+    required: false
+    default: ""
+
+  strict:
+    description: >
+      If true, treat PROVISIONALLY CERTIFIED (warnings) as a failure (exit code 2).
+    required: false
+    default: "false"
+
+  calibra-version:
+    description: >
+      Version of calibra-robotics to install. Defaults to latest.
+    required: false
+    default: ""
+
+  extra-args:
+    description: >
+      Additional arguments to pass to `calibra certify` (e.g. --no-anomalies).
+    required: false
+    default: ""
+
+outputs:
+  grade:
+    description: "Certification grade: CERTIFIED, PROVISIONALLY CERTIFIED, or NOT CERTIFIED"
+    value: ${{ steps.certify.outputs.grade }}
+
+  exit-code:
+    description: "Exit code: 0=certified, 1=warnings, 2=failed"
+    value: ${{ steps.certify.outputs.exit_code }}
+
+  score:
+    description: "Calibra Score (0–100) from calibra score"
+    value: ${{ steps.score.outputs.score }}
+
+  report-json:
+    description: "Full JSON certification report"
+    value: ${{ steps.certify.outputs.report_json }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Calibra
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.calibra-version }}" ]; then
+          pip install "calibra-robotics[hdf5,lerobot,kinematics]==${{ inputs.calibra-version }}" --quiet
+        else
+          pip install "calibra-robotics[hdf5,lerobot,kinematics]" --quiet
+        fi
+        calibra --version
+
+    - name: Run calibra certify
+      id: certify
+      shell: bash
+      run: |
+        ARGS="${{ inputs.dataset }}"
+
+        if [ -n "${{ inputs.reference }}" ]; then
+          ARGS="$ARGS --reference ${{ inputs.reference }}"
+        fi
+        if [ -n "${{ inputs.policy }}" ]; then
+          ARGS="$ARGS --policy ${{ inputs.policy }}"
+        fi
+        if [ -n "${{ inputs.format }}" ]; then
+          ARGS="$ARGS --format ${{ inputs.format }}"
+        fi
+        if [ "${{ inputs.strict }}" = "true" ]; then
+          ARGS="$ARGS --strict"
+        fi
+        if [ -n "${{ inputs.extra-args }}" ]; then
+          ARGS="$ARGS ${{ inputs.extra-args }}"
+        fi
+
+        # Capture JSON output for structured parsing
+        JSON_OUTPUT=$(calibra certify $ARGS --json 2>/dev/null) || true
+        EXIT_CODE=$?
+
+        # Also print human-readable output
+        calibra certify $ARGS || true
+
+        GRADE=$(echo "$JSON_OUTPUT" | python3 -c \
+          "import sys,json; d=json.load(sys.stdin); print(d.get('grade','UNKNOWN'))" \
+          2>/dev/null || echo "UNKNOWN")
+        REPORT=$(echo "$JSON_OUTPUT" | python3 -c \
+          "import sys,json; d=json.load(sys.stdin); print(json.dumps(d))" \
+          2>/dev/null || echo "{}")
+
+        echo "grade=$GRADE"         >> $GITHUB_OUTPUT
+        echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
+        echo "report_json=$REPORT"  >> $GITHUB_OUTPUT
+
+        echo "::notice title=Calibra Certification::Grade: $GRADE (exit $EXIT_CODE)"
+        exit $EXIT_CODE
+
+    - name: Run calibra score
+      id: score
+      if: always()
+      shell: bash
+      run: |
+        ARGS="${{ inputs.dataset }}"
+        if [ -n "${{ inputs.format }}" ]; then
+          ARGS="$ARGS --format ${{ inputs.format }}"
+        fi
+        if [ -n "${{ inputs.policy }}" ]; then
+          ARGS="$ARGS --policy ${{ inputs.policy }}"
+        fi
+
+        SCORE_JSON=$(calibra score $ARGS --json 2>/dev/null) || true
+        SCORE=$(echo "$SCORE_JSON" | python3 -c \
+          "import sys,json; d=json.load(sys.stdin); print(d.get('total_score', 'n/a'))" \
+          2>/dev/null || echo "n/a")
+        echo "score=$SCORE" >> $GITHUB_OUTPUT
+        echo "::notice title=Calibra Score::Score: $SCORE / 100"
