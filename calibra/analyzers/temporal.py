@@ -593,7 +593,7 @@ class TemporalAnalyzer(Analyzer):
                 "Apply timestamp correction or use `calibra retarget` to re-align "
                 "before training."
             ),
-            affected_fraction=float(sum(1 for l in lag_samples if abs(l) > self.drift_warning_frames) / len(lag_samples)),
+            affected_fraction=float(sum(1 for lag in lag_samples if abs(lag) > self.drift_warning_frames) / len(lag_samples)),
         ), raw
 
     # ── helpers ──────────────────────────────────────────────────────────────

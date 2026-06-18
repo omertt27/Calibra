@@ -141,7 +141,7 @@ def main() -> None:
 
         result = subprocess.run(cmd, capture_output=False)
         if result.returncode == 0:
-            print(f"    ✅ done\n")
+            print("    ✅ done\n")
             n_ok += 1
         else:
             print(f"    ❌ failed (exit {result.returncode})\n", file=sys.stderr)

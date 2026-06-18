@@ -199,7 +199,7 @@ class GR00TCompatibilityAnalyzer(Analyzer):
         """Episodes shorter than chunk_size produce incomplete trailing chunks."""
         lengths = [ep.n_steps for ep in batch.episodes]
         median_len = float(np.median(lengths))
-        short_count = sum(1 for l in lengths if l < self.chunk_size)
+        short_count = sum(1 for length in lengths if length < self.chunk_size)
         short_frac = short_count / batch.n_episodes
 
         if short_frac == 0.0:

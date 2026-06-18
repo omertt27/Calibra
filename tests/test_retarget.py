@@ -6,7 +6,7 @@ import pytest
 
 scipy = pytest.importorskip("scipy", reason="scipy required for kinematics")
 
-from calibra.kinematics.retarget import absolute_to_relative_eef, retarget_episode_eef
+from calibra.kinematics.retarget import absolute_to_relative_eef, retarget_episode_eef  # noqa: E402
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────

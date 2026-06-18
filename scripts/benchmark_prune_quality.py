@@ -34,11 +34,11 @@ import numpy as np
 _REPO = Path(__file__).parent.parent
 sys.path.insert(0, str(_REPO))
 
-from calibra.ingestion.registry import load
-from calibra.pipeline import Pipeline
-from calibra.pruning import CoresetSelector
-from calibra.schema.episode import EpisodeBatch
-from calibra.schema.report import DiagnosticReport, RiskLevel
+from calibra.ingestion.registry import load  # noqa: E402
+from calibra.pipeline import Pipeline  # noqa: E402
+from calibra.pruning import CoresetSelector  # noqa: E402
+from calibra.schema.episode import EpisodeBatch  # noqa: E402
+from calibra.schema.report import DiagnosticReport, RiskLevel  # noqa: E402
 
 
 def _extract_scalar(report: DiagnosticReport, metric_key: str) -> float | None:

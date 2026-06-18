@@ -2,10 +2,8 @@
 from __future__ import annotations
 
 import json
-import tempfile
 from pathlib import Path
 
-import numpy as np
 import pytest
 
 from calibra.pruning import PruningResult
@@ -36,8 +34,8 @@ def _make_lerobot_v2_dir(tmp_path: Path, n_episodes: int = 5, steps_per_ep: int 
     Create a minimal LeRobot v2 dataset on disk (Parquet + meta).
     Uses pyarrow directly; skips if unavailable.
     """
-    pa = pytest.importorskip("pyarrow")
-    pq = pytest.importorskip("pyarrow.parquet")
+    pytest.importorskip("pyarrow")
+    pytest.importorskip("pyarrow.parquet")
 
     import pyarrow as pa_mod
     import pyarrow.parquet as pq_mod
@@ -174,7 +172,7 @@ class TestExportLeRobotV2:
 
         lines = (out / "meta" / "episodes.jsonl").read_text().strip().splitlines()
         assert len(lines) == 2
-        indices = [json.loads(l)["episode_index"] for l in lines]
+        indices = [json.loads(line)["episode_index"] for line in lines]
         assert sorted(indices) == [0, 1]
 
     def test_tasks_jsonl_copied(self, tmp_path):

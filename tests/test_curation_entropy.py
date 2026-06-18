@@ -11,6 +11,7 @@ from calibra.curation.entropy import (
 )
 from calibra.pruning import CoresetSelector
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
+from calibra.schema.report import DiagnosticReport
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
@@ -121,7 +122,7 @@ class TestScoreAndRank:
 # ── CoresetSelector with entropy_weight ──────────────────────────────────────
 
 class TestCoresetSelectorEntropy:
-    def _make_mixed_batch(self, n: int = 20) -> tuple[EpisodeBatch, "DiagnosticReport"]:
+    def _make_mixed_batch(self, n: int = 20) -> tuple[EpisodeBatch, DiagnosticReport]:
         from calibra.pipeline import Pipeline
         rng = np.random.default_rng(0)
         eps = []

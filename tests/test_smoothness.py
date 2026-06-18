@@ -646,12 +646,9 @@ class TestPruneScriptedAutoAdjust:
 
     def test_args_default_is_none(self):
         """--max-spike-rate default must be None (sentinel for auto-adjust)."""
-        import argparse
-        from calibra.prune import run_prune
-        import sys, io
         # parse help to get argument spec
         import calibra.prune as prune_module
-        import inspect, ast
+        import inspect
         src = inspect.getsource(prune_module.run_prune)
         # Just verify the default in the code is None
         assert "default=None" in src, "Expected --max-spike-rate default=None for auto-adjust"

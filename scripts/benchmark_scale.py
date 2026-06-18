@@ -26,9 +26,9 @@ import numpy as np
 _REPO = Path(__file__).parent.parent
 sys.path.insert(0, str(_REPO))
 
-from calibra.pruning import ApproximateCoresetSelector, CoresetSelector
-from calibra.pipeline import Pipeline
-from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
+from calibra.pruning import ApproximateCoresetSelector, CoresetSelector  # noqa: E402
+from calibra.pipeline import Pipeline  # noqa: E402
+from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata  # noqa: E402
 
 
 def _make_batch(
@@ -116,7 +116,7 @@ def main() -> None:
     rng = np.random.default_rng(seed=0)
 
     rows = []
-    print(f"\nCalibra Scale Benchmark")
+    print("\nCalibra Scale Benchmark")
     print(f"  steps_per_episode={args.steps}  action_dim={args.action_dim}")
     print()
 

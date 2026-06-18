@@ -35,7 +35,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from calibra.schema.episode import Episode, EpisodeBatch
+from calibra.schema.episode import EpisodeBatch
 
 
 def compute_trajectory_entropy(actions: np.ndarray, num_bins: int = 20) -> float:
