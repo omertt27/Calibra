@@ -10,14 +10,14 @@ claims:
     status: "provisional"
     confidence: "MEDIUM"
     assertion: "Action-space entropy below 3 bits/dim indicates high trajectory redundancy and is a risk signal for weak policy generalisation to out-of-distribution states"
-    evidence_count: 3
+    evidence_count: 4
     evidence_datasets:
       - lerobot/pusht  # ✓ 5.3
       - lerobot/aloha_sim_insertion_human  # ✓ 4.45
       - lerobot/aloha_mobile_cabinet  # ✓ 4.24
+      - lerobot/droid_100  # ✓ 4.24
     falsification: "A dataset with action entropy below 3 bits/dim where the trained policy achieves strong OOD generalisation, OR a dataset with entropy above 4.5 bits/dim where the policy fails OOD"
     pending_tests:
-      - DROID
       - lerobot/libero
     caution: |
       Treat as a useful heuristic, not a validated law.
@@ -32,12 +32,13 @@ claims:
     metric: "action_entropy"
     class: "any"
     status: "active_hypothesis"
-    confidence: "NOT VALIDATED"
+    confidence: "LOW"
     assertion: "PCA top-2 variance fraction above 0.95 in high-dimensional action spaces (> 6 DOF) signals effective dimensionality collapse — the policy will likely only need 1–2 latent modes"
-    evidence_count: 0
+    evidence_count: 2
+    evidence_datasets:
+      - lerobot/aloha_sim_insertion_human  # ✓ 0.668735
+      - lerobot/droid_100  # ✓ 0.565881
     falsification: "A task where PCA top-2 variance > 0.95 but the policy requires all DOF for task completion"
-    pending_tests:
-      - lerobot/aloha_sim_insertion_human
 
   - id: "JS-001"
     metric: "spike_rate"
@@ -45,11 +46,12 @@ claims:
     status: "active_hypothesis"
     confidence: "LOW-MODERATE"
     assertion: "Human-collected position-command datasets have jerk spike rate below 2%; scripted/planner-generated datasets regularly exceed this due to sharp trajectory waypoints"
-    evidence_count: 3
+    evidence_count: 4
     evidence_datasets:
       - lerobot/aloha_sim_insertion_human  # ✓ 0.0069
       - lerobot/aloha_sim_insertion_scripted  # ✗ 0.249
       - lerobot/aloha_sim_transfer_cube_scripted  # ✗ 0.219
+      - lerobot/droid_100  # ✗ 0.045
     falsification: "Any position-command hardware dataset with rate > 0.04"
     pending_tests:
       - BridgeData V2
@@ -58,67 +60,66 @@ claims:
     metric: "spike_rate"
     class: "velocity"
     status: "active_hypothesis"
-    confidence: "LOW-MODERATE"
+    confidence: "LOW"
     assertion: "Velocity-command datasets have jerk spike rate in the range 2–8% due to frequent direction reversals"
-    evidence_count: 1
+    evidence_count: 2
     evidence_datasets:
       - lerobot/pusht  # ✓ 0.049
+      - lerobot/pusht_image  # ✓ 0.077552
     falsification: "A second velocity-command dataset with rate < 0.01 or > 0.12"
-    pending_tests:
-      - Any second velocity-command dataset
 
   - id: "JS-003"
     metric: "spike_rate"
     class: "any"
     status: "active_hypothesis"
-    confidence: "LOW-MODERATE"
+    confidence: "LOW"
     assertion: "Jerk spike rate is more robust to cross-frequency comparison than LDLJ, because the 5x-median threshold self-adapts to episode scale"
-    evidence_count: 1
+    evidence_count: 2
     evidence_datasets:
       - lerobot/pusht + lerobot/aloha_sim_insertion_human  # ✓ pusht=4.9% (10Hz, 2D), aloha=0.69% (50Hz, 14D)
+      - lerobot/droid_100 vs lerobot/aloha_sim_insertion_human  # ✓ droid_100=4.5% (15Hz, 7D position), aloha=0.69% (50Hz, 14D position)
     falsification: "Two datasets of same control mode with 3x+ frequency difference showing inverted spike rates"
-    pending_tests:
-      - A 10Hz position-command dataset vs aloha at 50Hz
 
   - id: "LDLJ-001"
     metric: "ldlj"
     class: "any"
     status: "active_hypothesis"
-    confidence: "MEDIUM"
+    confidence: "HIGH"
     assertion: "LDLJ is not a valid cross-dataset comparator when control modes or control frequencies differ significantly (> ~2x)"
-    evidence_count: 4
+    evidence_count: 5
     evidence_datasets:
       - lerobot/aloha_sim_insertion_human  # ✓ -20.43
       - lerobot/pusht  # ✓ -16.34
       - lerobot/aloha_sim_insertion_scripted  # ✓ -17.192
       - lerobot/aloha_sim_transfer_cube_scripted  # ✓ -17.232
+      - lerobot/droid_100  # ✓ -19.393163
     falsification: "Two datasets with different control modes where LDLJ ranks them in the physically expected order (position smoother than velocity) AND control frequencies differ > 2x"
-    pending_tests:
-      - A low-frequency position-command dataset (< 15Hz)
 
   - id: "LDLJ-002"
     metric: "ldlj"
     class: "any"
     status: "active_hypothesis"
-    confidence: "NOT VALIDATED"
+    confidence: "LOW"
     assertion: "LDLJ may be valid for within-type comparison (same control mode, similar frequency)"
-    evidence_count: 0
+    evidence_count: 2
+    evidence_datasets:
+      - lerobot/pusht_image  # ✓ -16.012659
+      - lerobot/pusht_velocity_command  # ✓ -16.340008
     falsification: "Two datasets of same type where LDLJ fails to distinguish a known-worse dataset (e.g. one with injected noise) from a clean one"
-    pending_tests:
-      - Two velocity-command datasets with different operator quality
 
   - id: "TEMP-001"
     metric: "jitter_cv"
     class: "any"
     status: "active_hypothesis"
-    confidence: "MEDIUM"
+    confidence: "HIGH"
     assertion: "Simulated datasets have near-machine-precision timestamp jitter (CV < 1e-4), making the jitter metric uninformative for sim data"
-    evidence_count: 4
+    evidence_count: 5
     evidence_datasets:
       - lerobot/pusht  # ✓ 2.86e-06
       - lerobot/aloha_sim_insertion_human  # ✓ 1.11e-05
       - lerobot/aloha_sim_insertion_scripted  # ✓ 4e-06
       - lerobot/aloha_sim_transfer_cube_scripted  # ✓ 4e-06
+      - lerobot/droid_100  # ✓ 6e-06
     falsification: "A simulated dataset with jitter CV > 0.01 (1%)"
 
   - id: "TEMP-002"
@@ -127,19 +128,26 @@ claims:
     status: "active_hypothesis"
     confidence: "NOT VALIDATED"
     assertion: "Real hardware datasets with USB-camera + ROS recording typically show jitter CV in the range 5–25%"
-    evidence_count: 0
+    evidence_count: 1
+    evidence_datasets:
+      - lerobot/droid_100  # ✗ 6e-06
     falsification: "Any real hardware dataset with jitter CV outside 1–40%"
     pending_tests:
       - BridgeData V2
-      - DROID
+    caution: |
+      TEMP-002 does not apply to Hub-served LeRobot datasets.
+      These have timestamps resampled to a uniform grid (see TEMP-001 droid_100 evidence).
+      This claim is only testable with raw MCAP/ROS2 recordings..
 
   - id: "TEMP-003"
     metric: "dropout_rate"
     class: "any"
     status: "active_hypothesis"
-    confidence: "NOT VALIDATED"
+    confidence: "LOW-MODERATE"
     assertion: "Current dropout_rate thresholds (warning: 1%, critical: 5%) are calibrated from synthetic fixtures only and have not been validated on real hardware"
-    evidence_count: 0
+    evidence_count: 1
+    evidence_datasets:
+      - lerobot/droid_100  # ✓ 0.0
     falsification: "A real hardware dataset where dropout_rate threshold produces false positives on known-clean data"
     pending_tests:
       - BridgeData V2
@@ -150,26 +158,25 @@ claims:
     status: "active_hypothesis"
     confidence: "MEDIUM"
     assertion: "Position-command datasets have velocity discontinuity rate below 5%"
-    evidence_count: 4
+    evidence_count: 5
     evidence_datasets:
       - lerobot/aloha_sim_insertion_human  # ✓ 0.024
       - lerobot/aloha_mobile_cabinet  # ✓ 0.013
       - lerobot/aloha_sim_insertion_scripted  # ✓ 0.0075
       - lerobot/aloha_sim_transfer_cube_scripted  # ✓ 0.0075
+      - lerobot/droid_100  # ✗ 0.071
     falsification: "Any position-command hardware dataset with aggregate rate > 0.08"
     pending_tests:
       - BridgeData V2
-      - DROID
 
   - id: "VD-002"
     metric: "velocity_discontinuity_rate"
     class: "velocity"
     status: "active_hypothesis"
-    confidence: "LOW-MODERATE"
+    confidence: "LOW"
     assertion: "Velocity-command datasets have velocity discontinuity rate in the range 10–20% due to unconstrained instantaneous reversals in human teleop"
-    evidence_count: 1
+    evidence_count: 2
     evidence_datasets:
       - lerobot/pusht  # ✓ 0.167
+      - lerobot/pusht_image  # ✓ 0.111068
     falsification: "A second velocity-command dataset with rate < 0.08 or > 0.25"
-    pending_tests:
-      - Any second velocity-command dataset

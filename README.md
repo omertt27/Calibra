@@ -1,9 +1,7 @@
-w# Calibra
+# Calibra
 
 [![CI](https://github.com/omerTT/Calibra/actions/workflows/ci.yml/badge.svg)](https://github.com/omerTT/Calibra/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/calibra-robotics.svg)](https://pypi.org/project/calibra-robotics/)
-
-[![CI](https://github.com/omerTT/Calibra/actions/workflows/ci.yml/badge.svg)](https://github.com/omerTT/Calibra/actions/workflows/ci.yml)
 
 **Dataset observability and coreset selection for robotics imitation learning.**
 
@@ -369,6 +367,7 @@ Three empirical baselines are shipped:
 | `aloha_static_coffee` | position | 50 Hz | 14 | — | ✓ real |
 | `aloha_static_cups_open` | position | 50 Hz | 14 | — | ✓ real |
 | `pusht_image` | velocity | 10 Hz | 2 | — | sim |
+| `droid_100` | position | 15 Hz | 7 | 100 | ✓ real |
 | `svla_so100_pickplace` | position | 15 Hz | 6 | 50 | ✓ real |
 | `svla_so100_stacking` | position | 15 Hz | 6 | 56 | ✓ real |
 
@@ -397,9 +396,9 @@ The evidence base for `calibra compare` grows with every new reference profile. 
 
 | Dataset | Why it matters |
 |---|---|
-| `lerobot/droid_100` | Large-scale real hardware, position control — validates VD-001 at scale |
+| `lerobot/droid_100` | ✅ Profiled — large-scale real hardware, position control, validates VD-001 at scale |
 | `lerobot/svla_so100_pickplace` | ✅ Profiled — SO-100 low-cost arm, pick-and-place |
-| `nvidia/BridgeData2_LeRobot_v3` | BridgeData V2, velocity control — needed to validate JS-002, VD-002 |
+| `nvidia/BridgeData2_LeRobot_v3` | BridgeData V2, velocity control — needed to validate JS-001, VD-001 at scale |
 | Any Isaac Lab sim dataset | Validates TEMP-001 (sim jitter) across a second simulator |
 
 ```bash

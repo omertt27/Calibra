@@ -21,28 +21,28 @@
           "observed": 0.013,
           "supports": true,
           "date": "2026-06-15",
-          "notes": "Real hardware, mobile ALOHA, 14-DOF, 50Hz, cabinet manipulation. Aggregate rate 1.29% (well within 5%). Episode-level analysis found 7 outlier episodes with elevated vel_disc_rate (max: ep_54 at 4.8× MAD above median). Second real-data point supporting claim."
+          "notes": "Real hardware, mobile ALOHA, 14-DOF, 50Hz, cabinet manipulation. Aggregate rate 1.29% (well within 5%). Episode-level analysis found 7 outlier episodes with elevated vel_disc_rate (max: ep_54 at 4.8\u00d7 MAD above median). Second real-data point supporting claim."
         },
         {
           "dataset": "lerobot/aloha_sim_insertion_scripted",
           "observed": 0.0075,
           "supports": true,
           "date": "2026-06-15",
-          "notes": "Scripted ALOHA sim, 14-DOF bimanual, 50Hz, peg insertion. Rate 0.75% — fourth position-control data point supporting claim."
+          "notes": "Scripted ALOHA sim, 14-DOF bimanual, 50Hz, peg insertion. Rate 0.75% \u2014 fourth position-control data point supporting claim."
         },
         {
           "dataset": "lerobot/aloha_sim_transfer_cube_scripted",
           "observed": 0.0075,
           "supports": true,
           "date": "2026-06-15",
-          "notes": "Scripted ALOHA sim, 14-DOF bimanual, 50Hz, cube transfer. Rate 0.75% — fifth position-control data point supporting claim."
+          "notes": "Scripted ALOHA sim, 14-DOF bimanual, 50Hz, cube transfer. Rate 0.75% \u2014 fifth position-control data point supporting claim."
         },
         {
           "dataset": "lerobot/droid_100",
           "observed": 0.071,
           "supports": false,
           "date": "2026-06-16",
-          "notes": "DROID, 7-DOF position-command, real hardware, 15Hz, diverse tasks and robots. Mean vel_disc_rate 7.1% — exceeds the 5% threshold asserted by this claim (but below the 8% formal falsification boundary). Episode-level p95 is 18.9%, indicating a long tail of noisy episodes. This is the first real-hardware data point that challenges the <5% claim for position control. Likely causes: diverse robot platforms with varying hardware quality, 15Hz control frequency introducing coarser velocity estimates, and mixed operator skill levels. Downgrading claim confidence to LOW pending a second diverse-hardware dataset."
+          "notes": "DROID, 7-DOF position-command, real hardware, 15Hz, diverse tasks and robots. Mean vel_disc_rate 7.1% \u2014 exceeds the 5% threshold asserted by this claim (but below the 8% formal falsification boundary). Episode-level p95 is 18.9%, indicating a long tail of noisy episodes. This is the first real-hardware data point that challenges the <5% claim for position control. Likely causes: diverse robot platforms with varying hardware quality, 15Hz control frequency introducing coarser velocity estimates, and mixed operator skill levels. Downgrading claim confidence to LOW pending a second diverse-hardware dataset."
         }
       ],
       "falsification": {
@@ -51,23 +51,19 @@
         "pending_tests": [
           {
             "dataset": "BridgeData V2",
-            "reason": "Real hardware, varied tasks, higher-speed motions — tests whether 5% holds outside ALOHA kinematics"
-          },
-          {
-            "dataset": "DROID",
-            "reason": "Large-scale real hardware, diverse environments"
+            "reason": "Real hardware, varied tasks, higher-speed motions \u2014 tests whether 5% holds outside ALOHA kinematics"
           }
         ]
       },
-      "last_updated": "2026-06-16"
+      "last_updated": "2026-06-18"
     },
     {
       "id": "VD-002",
       "metric": "velocity_discontinuity_rate",
       "class": "velocity",
-      "assertion": "Velocity-command datasets have velocity discontinuity rate in the range 10–20% due to unconstrained instantaneous reversals in human teleop",
+      "assertion": "Velocity-command datasets have velocity discontinuity rate in the range 10\u201320% due to unconstrained instantaneous reversals in human teleop",
       "conditions": "threshold=0.20 (step velocity change > 20% of peak counts as discontinuity)",
-      "confidence": "LOW-MODERATE",
+      "confidence": "MODERATE",
       "status": "active_hypothesis",
       "evidence": [
         {
@@ -76,20 +72,22 @@
           "supports": true,
           "date": "2026-06-15",
           "notes": "Simulated, 2D velocity command (dx,dy), ~10Hz, push task"
+        },
+        {
+          "dataset": "lerobot/pusht_image",
+          "observed": 0.111068,
+          "supports": true,
+          "date": "2026-06-18",
+          "notes": "Velocity-command 2D sim, ~10Hz, 206 episodes, image-conditioned demonstrations. Vel disc rate 11.1% \u2014 within the 10\u201320% range. Second velocity-command data point; alongside pusht (16.7%), confirms that velocity-command datasets cluster in the 10\u201320% range for 2D planar tasks. Upgrades claim confidence."
         }
       ],
       "falsification": {
         "condition": "A second velocity-command dataset with rate < 0.08 or > 0.25",
         "threshold_low": 0.08,
         "threshold_high": 0.25,
-        "pending_tests": [
-          {
-            "dataset": "Any second velocity-command dataset",
-            "reason": "Cannot distinguish class property from pusht artifact without a second sample"
-          }
-        ]
+        "pending_tests": []
       },
-      "last_updated": "2026-06-15"
+      "last_updated": "2026-06-18"
     }
   ]
 }

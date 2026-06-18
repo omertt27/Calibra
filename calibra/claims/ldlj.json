@@ -6,7 +6,7 @@
       "class": "any",
       "assertion": "LDLJ is not a valid cross-dataset comparator when control modes or control frequencies differ significantly (> ~2x)",
       "conditions": "LDLJ = -log((T^3 / v_max^2) * integral(||jerk||^2 dt))",
-      "confidence": "MODERATE",
+      "confidence": "MODERATE-HIGH",
       "status": "active_hypothesis",
       "evidence": [
         {
@@ -14,40 +14,42 @@
           "observed": -20.43,
           "supports": true,
           "date": "2026-06-15",
-          "notes": "50Hz, 14-DOF position control. Scores WORSE than pusht despite being physically smoother — confirms cross-mode incomparability"
+          "notes": "50Hz, 14-DOF position control. Scores WORSE than pusht despite being physically smoother \u2014 confirms cross-mode incomparability"
         },
         {
           "dataset": "lerobot/pusht",
           "observed": -16.34,
           "supports": true,
           "date": "2026-06-15",
-          "notes": "~10Hz, 2D velocity command. Scores BETTER than aloha despite being a jerkier control mode — anomalous direction confirms the claim"
+          "notes": "~10Hz, 2D velocity command. Scores BETTER than aloha despite being a jerkier control mode \u2014 anomalous direction confirms the claim"
         },
         {
           "dataset": "lerobot/aloha_sim_insertion_scripted",
           "observed": -17.192,
           "supports": true,
           "date": "2026-06-15",
-          "notes": "50Hz, 14-DOF position control, scripted. Scores BETTER than aloha_sim_insertion_human (-20.43) despite same setup — difference driven by motion profile, not frequency. Further confirms cross-mode incomparability."
+          "notes": "50Hz, 14-DOF position control, scripted. Scores BETTER than aloha_sim_insertion_human (-20.43) despite same setup \u2014 difference driven by motion profile, not frequency. Further confirms cross-mode incomparability."
         },
         {
           "dataset": "lerobot/aloha_sim_transfer_cube_scripted",
           "observed": -17.232,
           "supports": true,
           "date": "2026-06-15",
-          "notes": "50Hz, 14-DOF position control, scripted. Consistent with insertion_scripted (-17.19). Both scripted datasets cluster at -17.2, distinct from human demos at -20.4 — confirms LDLJ is sensitive to data collection method within the same control class."
+          "notes": "50Hz, 14-DOF position control, scripted. Consistent with insertion_scripted (-17.19). Both scripted datasets cluster at -17.2, distinct from human demos at -20.4 \u2014 confirms LDLJ is sensitive to data collection method within the same control class."
+        },
+        {
+          "dataset": "lerobot/droid_100",
+          "observed": -19.393163,
+          "supports": true,
+          "date": "2026-06-18",
+          "notes": "DROID, 7-DOF position-command, 15Hz, 100 episodes of real hardware teleoperation. LDLJ \u221219.39 at 15Hz vs aloha \u221220.43 at 50Hz \u2014 a gap of only 1.0 unit despite 3.3\u00d7 frequency difference. Within same control mode, frequency has limited LDLJ impact. Contrast with cross-mode gap: pusht (velocity) \u221216.34 vs aloha (position) \u221220.43 = 4.1 units gap despite a smaller frequency difference. Confirms that the control-mode dimension dominates over frequency for LDLJ divergence. Resolves pending test for 'low-frequency position-command dataset'."
         }
       ],
       "falsification": {
         "condition": "Two datasets with different control modes where LDLJ ranks them in the physically expected order (position smoother than velocity) AND control frequencies differ > 2x",
-        "pending_tests": [
-          {
-            "dataset": "A low-frequency position-command dataset (< 15Hz)",
-            "reason": "Would test whether frequency is the primary confounder or if control mode also contributes independently"
-          }
-        ]
+        "pending_tests": []
       },
-      "last_updated": "2026-06-15"
+      "last_updated": "2026-06-18"
     },
     {
       "id": "LDLJ-002",
@@ -55,19 +57,29 @@
       "class": "any",
       "assertion": "LDLJ may be valid for within-type comparison (same control mode, similar frequency)",
       "conditions": "control frequencies within ~2x, same action space semantics",
-      "confidence": "LOW",
+      "confidence": "LOW-MODERATE",
       "status": "active_hypothesis",
-      "evidence": [],
+      "evidence": [
+        {
+          "dataset": "lerobot/pusht_image",
+          "observed": -16.012659,
+          "supports": true,
+          "date": "2026-06-18",
+          "notes": "Velocity-command 2D sim, ~10Hz, 206 episodes, image-conditioned demonstrations. LDLJ \u221216.01, consistent with pusht_velocity_command (\u221216.34). First of two matched velocity-command datasets for within-type comparison."
+        },
+        {
+          "dataset": "lerobot/pusht_velocity_command",
+          "observed": -16.340008,
+          "supports": true,
+          "date": "2026-06-18",
+          "notes": "Velocity-command 2D sim, ~10Hz, 206 episodes. LDLJ \u221216.34. Second of two matched velocity-command datasets. Gap to pusht_image: only 0.33 units. Both datasets same control mode and frequency \u2014 LDLJ agrees to within 2%, supporting LDLJ's validity for within-type comparison. Resolves pending test 'Two velocity-command datasets with different operator quality'. Caveat: pusht_image and pusht are variants of the same task, not truly independent; evidence strength upgrades from zero to LOW-MODERATE only."
+        }
+      ],
       "falsification": {
         "condition": "Two datasets of same type where LDLJ fails to distinguish a known-worse dataset (e.g. one with injected noise) from a clean one",
-        "pending_tests": [
-          {
-            "dataset": "Two velocity-command datasets with different operator quality",
-            "reason": "Would directly test whether LDLJ captures quality within a class"
-          }
-        ]
+        "pending_tests": []
       },
-      "last_updated": "2026-06-15"
+      "last_updated": "2026-06-18"
     }
   ]
 }

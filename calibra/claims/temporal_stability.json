@@ -42,7 +42,7 @@
           "observed": 6e-06,
           "supports": true,
           "date": "2026-06-16",
-          "notes": "DROID real-hardware dataset downloaded from HuggingFace Hub. Jitter CV of 6e-06 is at sim-precision level — the LeRobot Hub version resamples timestamps to a fixed grid, making jitter uninformative for hardware characterisation. Confirms TEMP-001 from the ingestion side: Hub-served datasets always show machine-precision jitter regardless of whether the underlying data came from hardware."
+          "notes": "DROID real-hardware dataset downloaded from HuggingFace Hub. Jitter CV of 6e-06 is at sim-precision level \u2014 the LeRobot Hub version resamples timestamps to a fixed grid, making jitter uninformative for hardware characterisation. Confirms TEMP-001 from the ingestion side: Hub-served datasets always show machine-precision jitter regardless of whether the underlying data came from hardware."
         }
       ],
       "falsification": {
@@ -56,25 +56,30 @@
       "id": "TEMP-002",
       "metric": "jitter_cv",
       "class": "hardware",
-      "assertion": "Real hardware datasets with USB-camera + ROS recording typically show jitter CV in the range 5–25%",
-      "conditions": "USB camera at 20–30Hz, ROS topic recording",
+      "assertion": "Real hardware datasets with USB-camera + ROS recording typically show jitter CV in the range 5\u201325%",
+      "conditions": "USB camera at 20\u201330Hz, ROS topic recording",
       "confidence": "NOT VALIDATED",
       "status": "active_hypothesis",
-      "evidence": [],
+      "evidence": [
+        {
+          "dataset": "lerobot/droid_100",
+          "observed": 6e-06,
+          "supports": false,
+          "date": "2026-06-18",
+          "notes": "DROID real hardware, 15Hz, downloaded from HuggingFace Hub in LeRobot v2 format. Jitter CV 6e-6 (0.0006%) \u2014 indistinguishable from sim-precision (see TEMP-001). This does NOT support the claim that hardware datasets show 5\u201325% jitter. The LeRobot Hub pipeline resamples all observations to a uniform timestamp grid, eliminating real-world timing variation before the dataset reaches Calibra. Conclusion: TEMP-002 applies only to raw sensor recordings (MCAP/ROS2 bags, CSV exports with original hardware timestamps). Hub-served datasets will always report machine-precision jitter regardless of hardware origin."
+        }
+      ],
       "falsification": {
-        "condition": "Any real hardware dataset with jitter CV outside 1–40%",
+        "condition": "Any real hardware dataset with jitter CV outside 1\u201340%",
         "pending_tests": [
           {
             "dataset": "BridgeData V2",
-            "reason": "Large-scale real hardware dataset — first test of temporal claims on hardware"
-          },
-          {
-            "dataset": "DROID",
-            "reason": "Real hardware, varied setups — would characterize hardware jitter range"
+            "reason": "Large-scale real hardware dataset \u2014 first test of temporal claims on hardware"
           }
         ]
       },
-      "last_updated": "2026-06-15"
+      "last_updated": "2026-06-18",
+      "caution": "TEMP-002 does not apply to Hub-served LeRobot datasets. These have timestamps resampled to a uniform grid (see TEMP-001 droid_100 evidence). This claim is only testable with raw MCAP/ROS2 recordings."
     },
     {
       "id": "TEMP-003",
@@ -84,17 +89,25 @@
       "conditions": "dropout defined as step gap > 3x median step duration",
       "confidence": "NOT VALIDATED",
       "status": "active_hypothesis",
-      "evidence": [],
+      "evidence": [
+        {
+          "dataset": "lerobot/droid_100",
+          "observed": 0.0,
+          "supports": true,
+          "date": "2026-06-18",
+          "notes": "DROID real hardware, 15Hz, Hub format, 100 episodes. dropout_rate = 0.0% \u2014 the warning threshold (1%) and critical threshold (5%) are not triggered. LeRobot Hub resampling eliminates timestamp gaps, so this data point cannot validate the thresholds for raw hardware recordings. However, it confirms that Hub-format hardware data does not produce false-positive dropout flags. Thresholds remain unvalidated for raw sensor streams."
+        }
+      ],
       "falsification": {
         "condition": "A real hardware dataset where dropout_rate threshold produces false positives on known-clean data",
         "pending_tests": [
           {
             "dataset": "BridgeData V2",
-            "reason": "Known dataset — if it fires WARNING on dataset considered clean by the community, threshold needs recalibration"
+            "reason": "Known dataset \u2014 if it fires WARNING on dataset considered clean by the community, threshold needs recalibration"
           }
         ]
       },
-      "last_updated": "2026-06-15"
+      "last_updated": "2026-06-18"
     }
   ]
 }
