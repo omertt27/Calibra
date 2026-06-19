@@ -164,6 +164,7 @@ class CoresetSelector:
     diversity_weight:     float = 0.7
     entropy_weight:       float = 0.0
     strategy:             str   = "diversity"
+    latent_space:         str   = "none"
 
     def select(
         self,
@@ -219,11 +220,21 @@ class CoresetSelector:
             keep_indices, diversity_pruned_indices, diversity_scores = _select_influence(
                 self, batch, report, quality_pass_indices, k
             )
+        elif self.strategy == "energy":
+            keep_indices, diversity_pruned_indices, diversity_scores = _select_energy(
+                self, batch, report, quality_pass_indices, k
+            )
         else:
             entropy_scores = _compute_entropy_scores(episodes) if self.entropy_weight > 0 else {}
+            latent_embeddings = None
+            if self.latent_space != "none":
+                from calibra.curation.latent_embed import extract_latent_embeddings
+                latent_embeddings = extract_latent_embeddings(batch, model_type=self.latent_space)
+
             features = _build_feature_matrix(
                 episodes, quality_pass_indices, ep_data,
                 self.diversity_weight, entropy_scores, self.entropy_weight,
+                latent_embeddings=latent_embeddings,
             )
             selected_local = _greedy_max_coverage(features, k)
             selected_global = [quality_pass_indices[i] for i in selected_local]
@@ -293,6 +304,61 @@ def _select_influence(
     
     diversity_scores = {
         episodes[i].metadata.episode_id: float(influence_data.get(episodes[i].metadata.episode_id, 0.0))
+        for i in quality_pass_indices
+    }
+    
+    return keep_indices, diversity_pruned_indices, diversity_scores
+
+
+def _select_energy(
+    self_selector: CoresetSelector,
+    batch: EpisodeBatch,
+    report: DiagnosticReport,
+    quality_pass_indices: list[int],
+    k: int,
+) -> tuple[list[int], list[int], dict[str, float]]:
+    episodes = batch.episodes
+    energy_data = {}
+    for r in report.analyzer_results:
+        if r.analyzer_name == "transition_dynamics":
+            energy_data = r.raw_metrics.get("per_episode_dynamics_error", {})
+            break
+            
+    if not energy_data:
+        from calibra.analyzers.transition_dynamics import TransitionDynamicsAnalyzer
+        analyzer = TransitionDynamicsAnalyzer()
+        res = analyzer.analyze(batch)
+        energy_data = res.raw_metrics.get("per_episode_dynamics_error", {})
+        
+    candidate_ids = [episodes[i].metadata.episode_id for i in quality_pass_indices]
+    candidate_energies = np.array([energy_data.get(cid, 0.0) for cid in candidate_ids])
+    
+    # Prune extreme outliers (top 10% highest energy is likely physics violations / noise)
+    if len(candidate_energies) > 10:
+        threshold_noise = np.percentile(candidate_energies, 90)
+        clean_mask = candidate_energies <= threshold_noise
+        clean_indices = [quality_pass_indices[i] for i, val in enumerate(clean_mask) if val]
+        clean_ids = [episodes[i].metadata.episode_id for i in clean_indices]
+        clean_energies = [energy_data.get(cid, 0.0) for cid in clean_ids]
+    else:
+        clean_indices = quality_pass_indices
+        clean_ids = candidate_ids
+        clean_energies = candidate_energies
+        
+    # Greedily select the highest dynamics error (surprisal) transitions
+    sorted_local_indices = np.argsort(clean_energies)[::-1]
+    selected_local = sorted_local_indices[:k].tolist()
+    
+    selected_global = [clean_indices[i] for i in selected_local]
+    selected_set = set(selected_global)
+
+    keep_indices = selected_global
+    diversity_pruned_indices = [
+        i for i in quality_pass_indices if i not in selected_set
+    ]
+    
+    diversity_scores = {
+        episodes[i].metadata.episode_id: float(energy_data.get(episodes[i].metadata.episode_id, 0.0))
         for i in quality_pass_indices
     }
     
@@ -397,16 +463,17 @@ def _build_feature_matrix(
     diversity_weight: float,
     entropy_scores: dict[int, float] | None = None,
     entropy_weight: float = 0.0,
+    latent_embeddings: dict[str, np.ndarray] | None = None,
 ) -> np.ndarray:
     """
     Build a (len(candidate_indices), F) feature matrix for diversity selection.
 
     Features (normalised to [0, 1]):
-      - Action-space statistics (mean + std per dimension) — behavioral diversity
+      - Latent state embeddings or Action-space statistics — behavioral representation
       - Quality metrics (spike_rate, vel_disc_rate) — quality diversity tie-breaker
       - Episode length (normalised)
 
-    diversity_weight controls the blend: 1.0 = action stats only; 0.0 = quality
+    diversity_weight controls the blend: 1.0 = action stats/latent only; 0.0 = quality
     metrics only. Default 0.7.
     """
     spike_rates = ep_data.get("per_episode_spike_rate", [])
@@ -420,10 +487,13 @@ def _build_feature_matrix(
         if acts.ndim == 1:
             acts = acts[:, np.newaxis]
 
-        # Behavioral: action mean and std per dim
-        action_mean = np.mean(acts, axis=0)
-        action_std  = np.std(acts, axis=0)
-        action_feat = np.concatenate([action_mean, action_std])
+        if latent_embeddings is not None:
+            action_feat = latent_embeddings.get(ep.metadata.episode_id, np.zeros(10, dtype=np.float32))
+        else:
+            # Behavioral: action mean and std per dim
+            action_mean = np.mean(acts, axis=0)
+            action_std  = np.std(acts, axis=0)
+            action_feat = np.concatenate([action_mean, action_std])
 
         # Quality metrics as secondary features
         spike = _safe_get(spike_rates, i) or 0.0
@@ -592,11 +662,21 @@ class ApproximateCoresetSelector(CoresetSelector):
             keep_indices, diversity_pruned_indices, diversity_scores = _select_influence(
                 self, batch, report, quality_pass_indices, k
             )
+        elif self.strategy == "energy":
+            keep_indices, diversity_pruned_indices, diversity_scores = _select_energy(
+                self, batch, report, quality_pass_indices, k
+            )
         else:
             entropy_scores = _compute_entropy_scores(episodes) if self.entropy_weight > 0 else {}
+            latent_embeddings = None
+            if self.latent_space != "none":
+                from calibra.curation.latent_embed import extract_latent_embeddings
+                latent_embeddings = extract_latent_embeddings(batch, model_type=self.latent_space)
+
             features = _build_feature_matrix(
                 episodes, quality_pass_indices, ep_data,
                 self.diversity_weight, entropy_scores, self.entropy_weight,
+                latent_embeddings=latent_embeddings,
             )
             selected_local = _approximate_max_coverage(features, k, self.batch_size)
             selected_global = [quality_pass_indices[i] for i in selected_local]

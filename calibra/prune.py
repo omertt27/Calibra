@@ -105,13 +105,17 @@ def run_prune(argv: list[str]) -> None:
                         "feature vector (0–1, default: 0). Set > 0 to preferentially "
                         "retain high-entropy (informative) episodes. "
                         "Automatically set to 0.4 when --policy gr00t is used.")
-    d.add_argument("--strategy", choices=["diversity", "influence"], default="diversity",
+    d.add_argument("--strategy", choices=["diversity", "influence", "energy"], default="diversity",
                    help="Coreset selection strategy (default: diversity)")
+    d.add_argument("--latent-space", choices=["none", "proprio", "visual", "resnet"], default="none",
+                   help="Feature representation space for diversity selection (default: none)")
     d.add_argument("--approximate", action="store_true",
                    help="Use approximate MiniBatch diversity selection (O(N×B) instead of "
                         "O(N×K)). Auto-enabled when N > 50 000. Suitable for 100k+ episodes.")
     d.add_argument("--batch-size", type=int, default=1000,
                    help="MiniBatch size for --approximate mode (default: 1000)")
+    p.add_argument("--curriculum", action="store_true",
+                   help="Slice the coreset into progressive learning curriculum stages (curriculum_index.json)")
 
     p.add_argument(
         "--export-dataset",
@@ -220,6 +224,7 @@ def run_prune(argv: list[str]) -> None:
         diversity_weight=diversity_weight,
         entropy_weight=entropy_weight,
         strategy=args.strategy,
+        latent_space=args.latent_space,
     )
     if use_approximate:
         selector_kwargs["batch_size"] = args.batch_size
@@ -234,6 +239,61 @@ def run_prune(argv: list[str]) -> None:
     with open(out_path, "w") as f:
         json.dump(out_data, f, indent=2)
     log(f"Coreset index written to {out_path}")
+
+    # Curriculum Partitioning
+    if args.curriculum:
+        contact_fractions = {}
+        for r in report.analyzer_results:
+            if r.analyzer_name == "phase_balance":
+                per_ep_contact = r.raw_metrics.get("per_episode_contact", [])
+                for ep, contact_val in zip(batch.episodes, per_ep_contact):
+                    contact_fractions[ep.metadata.episode_id] = contact_val
+                break
+
+        if not contact_fractions:
+            try:
+                from calibra.analyzers.phase_balance import PhaseBalanceAnalyzer
+                analyzer = PhaseBalanceAnalyzer()
+                res = analyzer.analyze(batch)
+                per_ep_contact = res.raw_metrics.get("per_episode_contact", [])
+                for ep, contact_val in zip(batch.episodes, per_ep_contact):
+                    contact_fractions[ep.metadata.episode_id] = contact_val
+            except Exception as exc:
+                log(f"Warning: could not compute phase balance for curriculum: {exc}")
+
+        # Sort the kept episode IDs by contact_phase_fraction descending
+        keep_ids = result.keep_episode_ids
+        sorted_keep_ids = sorted(
+            keep_ids,
+            key=lambda eid: contact_fractions.get(eid, 0.0),
+            reverse=True
+        )
+
+        # Partition into three stages:
+        # stage_1_intuitive_physics: contact-dense
+        # stage_2_spatial_planning: open-space/translation
+        # stage_3_task_completions: complex planning/completions
+        N_kept = len(sorted_keep_ids)
+        n_each = N_kept // 3
+        rem = N_kept % 3
+
+        s1_len = n_each + (1 if rem > 0 else 0)
+        s2_len = n_each + (1 if rem > 1 else 0)
+
+        stage_1 = sorted_keep_ids[:s1_len]
+        stage_2 = sorted_keep_ids[s1_len : s1_len + s2_len]
+        stage_3 = sorted_keep_ids[s1_len + s2_len:]
+
+        curriculum_data = {
+            "stage_1_intuitive_physics": stage_1,
+            "stage_2_spatial_planning": stage_2,
+            "stage_3_task_completions": stage_3,
+        }
+
+        curr_path = Path(args.out).parent / "curriculum_index.json"
+        with open(curr_path, "w") as f:
+            json.dump(curriculum_data, f, indent=2)
+        log(f"Curriculum index written to {curr_path}")
 
     # Human-readable summary to stdout
     print(result.summary())
