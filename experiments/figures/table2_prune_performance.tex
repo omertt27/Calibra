@@ -1,0 +1,14 @@
+\begin{table}[h]
+\centering
+\caption{Policy performance and compute comparison across dataset splits.}
+\label{table:prune_performance}
+\begin{tabular}{lccccc}
+\hline
+\textbf{Condition} & \textbf{Keep \%} & \textbf{Episodes} & \textbf{Success \%} & \textbf{Training Time (s)} & \textbf{Compute Saving} \\ \hline
+Full Dataset & 100\% & 100 & 80.0\% & 4.133 & Base \\ \hline
+Calibra Coreset & 50\% & 50 & 100.0\% & 2.068 & 50.0\% \\
+Random Curation & 50\% & 50 & 86.0\% & 2.027 & 51.0\% \\ \hline
+Calibra Coreset & 30\% & 30 & 72.0\% & 1.209 & 70.7\% \\
+Random Curation & 30\% & 30 & 40.0\% & 1.229 & 70.3\% \\ \hline
+\end{tabular}
+\end{table}

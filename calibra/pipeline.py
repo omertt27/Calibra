@@ -18,8 +18,10 @@ from typing import Optional
 from calibra.analyzers.base import Analyzer
 from calibra.analyzers.coverage import CoverageEntropyAnalyzer
 from calibra.analyzers.gr00t import GR00TCompatibilityAnalyzer
+from calibra.analyzers.influence import InfluenceAnalyzer
 from calibra.analyzers.octo import OctoCompatibilityAnalyzer
 from calibra.analyzers.openvla import OpenVLACompatibilityAnalyzer
+from calibra.analyzers.phase_balance import PhaseBalanceAnalyzer
 from calibra.analyzers.pi0 import Pi0CompatibilityAnalyzer
 from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
 from calibra.analyzers.task_structure import TaskStructureAnalyzer
@@ -34,6 +36,8 @@ def _default_analyzers() -> list[Analyzer]:
         ControlSmoothnessAnalyzer(),
         CoverageEntropyAnalyzer(),
         TaskStructureAnalyzer(),
+        PhaseBalanceAnalyzer(),
+        InfluenceAnalyzer(),
     ]
 
 

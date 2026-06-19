@@ -105,6 +105,8 @@ def run_prune(argv: list[str]) -> None:
                         "feature vector (0–1, default: 0). Set > 0 to preferentially "
                         "retain high-entropy (informative) episodes. "
                         "Automatically set to 0.4 when --policy gr00t is used.")
+    d.add_argument("--strategy", choices=["diversity", "influence"], default="diversity",
+                   help="Coreset selection strategy (default: diversity)")
     d.add_argument("--approximate", action="store_true",
                    help="Use approximate MiniBatch diversity selection (O(N×B) instead of "
                         "O(N×K)). Auto-enabled when N > 50 000. Suitable for 100k+ episodes.")
@@ -217,6 +219,7 @@ def run_prune(argv: list[str]) -> None:
         quality_only=args.quality_only,
         diversity_weight=diversity_weight,
         entropy_weight=entropy_weight,
+        strategy=args.strategy,
     )
     if use_approximate:
         selector_kwargs["batch_size"] = args.batch_size

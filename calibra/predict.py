@@ -61,23 +61,57 @@ _THIN  = "─" * _WIDTH
 _WEIGHTS = {
     # (metric_key, penalty at warning, penalty at critical, direction)
     # direction: 'higher_worse' or 'lower_worse'
-    "ldlj":          (10.0, 25.0, "lower_worse"),   # more negative = worse
-    "spike_rate":    (8.0,  20.0, "higher_worse"),
-    "vel_disc_rate": (8.0,  20.0, "higher_worse"),
-    "dropout_rate":  (7.0,  18.0, "higher_worse"),
-    "jitter_cv":     (5.0,  12.0, "higher_worse"),
-    "action_entropy": (10.0, 20.0, "lower_worse"),  # low entropy = less diversity
+    "ldlj":                   (10.0, 25.0, "lower_worse"),   # more negative = worse
+    "spike_rate":             (8.0,  20.0, "higher_worse"),
+    "vel_disc_rate":          (8.0,  20.0, "higher_worse"),
+    "dropout_rate":           (7.0,  18.0, "higher_worse"),
+    "jitter_cv":              (5.0,  12.0, "higher_worse"),
+    "action_entropy":         (10.0, 20.0, "lower_worse"),  # low entropy = less diversity
+    "contact_phase_fraction": (10.0, 20.0, "lower_worse"),
 }
 
 # Thresholds (mirrors analyzer constants)
 _THRESHOLDS = {
-    "ldlj":           {"warn": -10.0,  "crit": -15.0},
-    "spike_rate":     {"warn": 0.02,   "crit": 0.05},
-    "vel_disc_rate":  {"warn": 0.02,   "crit": 0.05},
-    "dropout_rate":   {"warn": 0.01,   "crit": 0.05},
-    "jitter_cv":      {"warn": 0.05,   "crit": 0.20},
-    "action_entropy": {"warn": 2.5,    "crit": 1.5},
+    "ldlj":                   {"warn": -10.0,  "crit": -15.0},
+    "spike_rate":             {"warn": 0.02,   "crit": 0.05},
+    "vel_disc_rate":          {"warn": 0.02,   "crit": 0.05},
+    "dropout_rate":           {"warn": 0.01,   "crit": 0.05},
+    "jitter_cv":              {"warn": 0.05,   "crit": 0.20},
+    "action_entropy":         {"warn": 2.5,    "crit": 1.5},
+    "contact_phase_fraction": {"warn": 0.10,   "crit": 0.05},
 }
+
+
+def get_weights_and_thresholds(policy_family: Optional[str] = None) -> tuple[dict[str, tuple[float, float, str]], dict[str, dict[str, float]]]:
+    """Retrieve weights and thresholds customized for a specific policy family."""
+    weights = dict(_WEIGHTS)
+    thresholds = dict(_THRESHOLDS)
+    if not policy_family:
+        return weights, thresholds
+
+    pf = policy_family.lower()
+    
+    # Universal calibrations from grid search
+    thresholds["action_entropy"] = {"warn": 2.0, "crit": 1.0}
+    thresholds["contact_phase_fraction"] = {"warn": 0.04, "crit": 0.02}
+
+    if "act" in pf or "pi0" in pf:
+        # ACT/pi0 use position/chunking and are highly sensitive to velocity discontinuities and jerk spikes
+        thresholds["ldlj"] = {"warn": -10.0, "crit": -15.0}
+        thresholds["spike_rate"] = {"warn": 0.005, "crit": 0.01}
+        thresholds["vel_disc_rate"] = {"warn": 0.04, "crit": 0.08}
+    elif "diffusion" in pf:
+        # Diffusion Policy handles multi-modal action trajectories and jerk, but is slightly sensitive
+        thresholds["ldlj"] = {"warn": -20.0, "crit": -25.0}
+        thresholds["spike_rate"] = {"warn": 0.05, "crit": 0.10}
+        thresholds["vel_disc_rate"] = {"warn": 0.15, "crit": 0.30}
+    else:
+        # Other policy families (e.g. Octo/VLA)
+        thresholds["ldlj"] = {"warn": -15.0, "crit": -25.0}
+        thresholds["spike_rate"] = {"warn": 0.05, "crit": 0.10}
+        thresholds["vel_disc_rate"] = {"warn": 0.05, "crit": 0.15}
+
+    return weights, thresholds
 
 
 def _raw(report: DiagnosticReport, analyzer: str) -> dict:
@@ -91,13 +125,15 @@ def _extract_metrics(report: DiagnosticReport) -> dict[str, Optional[float]]:
     t = _raw(report, "temporal_stability")
     s = _raw(report, "control_smoothness")
     c = _raw(report, "coverage_entropy")
+    pb = _raw(report, "phase_balance")
     return {
-        "ldlj":           s.get("ldlj",              {}).get("mean_ldlj"),
+        "ldlj":                   s.get("ldlj",              {}).get("mean_ldlj"),
         "spike_rate":     s.get("jerk_spikes",        {}).get("mean_spike_fraction"),
         "vel_disc_rate":  s.get("vel_discontinuities",{}).get("mean_disc_fraction"),
         "dropout_rate":   t.get("dropout",            {}).get("mean_dropout_fraction"),
         "jitter_cv":      t.get("jitter",             {}).get("mean_cv"),
         "action_entropy": c.get("action_entropy",     {}).get("entropy_bits_per_dim"),
+        "contact_phase_fraction": pb.get("mean_contact_fraction"),
     }
 
 
@@ -136,33 +172,47 @@ def predict_outcome(
     score   = 100.0
     deductions: list[dict] = []
 
-    for metric_key, (w_warn, w_crit, direction) in _WEIGHTS.items():
+    weights, thresholds = get_weights_and_thresholds(policy_family)
+    
+    is_scripted = any(
+        f.metric == "motion_collection_signature"
+        for r in report.analyzer_results
+        for f in r.flags
+    )
+
+    for metric_key, (w_warn, w_crit, direction) in weights.items():
         value = metrics.get(metric_key)
         if value is None:
             continue
 
-        thresh  = _THRESHOLDS[metric_key]
+        thresh  = thresholds[metric_key]
         warn_t  = thresh["warn"]
         crit_t  = thresh["crit"]
+
+        w_w = w_warn
+        w_c = w_crit
+        if is_scripted and metric_key in ["ldlj", "spike_rate", "vel_disc_rate"]:
+            w_w *= 0.4
+            w_c *= 0.4
 
         # Determine penalty
         if direction == "higher_worse":
             if value >= crit_t:
-                penalty = w_crit
+                penalty = w_c
                 severity = "CRITICAL"
             elif value >= warn_t:
                 frac = (value - warn_t) / max(crit_t - warn_t, 1e-9)
-                penalty = w_warn + (w_crit - w_warn) * min(frac, 1.0)
+                penalty = w_w + (w_c - w_w) * min(frac, 1.0)
                 severity = "WARNING"
             else:
                 continue
         else:  # lower_worse
             if value <= crit_t:
-                penalty = w_crit
+                penalty = w_c
                 severity = "CRITICAL"
             elif value <= warn_t:
                 frac = (warn_t - value) / max(warn_t - crit_t, 1e-9)
-                penalty = w_warn + (w_crit - w_warn) * min(frac, 1.0)
+                penalty = w_w + (w_c - w_w) * min(frac, 1.0)
                 severity = "WARNING"
             else:
                 continue
@@ -186,6 +236,7 @@ def predict_outcome(
 
     return {
         "predicted_score":    round(score, 1),
+        "predicted_success_rate": round(score / 100.0, 3),
         "predicted_range":    [round(low, 1), round(high, 1)],
         "tier":               tier,
         "deductions":         deductions,
@@ -232,6 +283,10 @@ def _deduction_reason(
         "action_entropy": (
             f"Action entropy = {value:.2f} bits/dim ({severity.lower()} threshold). "
             "Low diversity means the policy will likely fail on even small task variations."
+        ),
+        "contact_phase_fraction": (
+            f"Contact fraction = {value:.1%} ({severity.lower()} threshold). "
+            "Underrepresented contact/grasp phase means policy struggles with contact/manipulation precision."
         ),
     }
     return reasons.get(metric, f"{metric} = {value:.4g} ({severity.lower()})")

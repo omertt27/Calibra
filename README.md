@@ -160,7 +160,7 @@ Two-stage pipeline:
 - **Stage 1 — Quality filter:** removes episodes that fail kinematic/temporal thresholds (jerk spike rate, velocity discontinuity, dropout, LDLJ, minimum length).
 - **Stage 2 — Greedy max-coverage:** from the quality-passing pool, selects the K most behaviorally diverse episodes using farthest-point sampling on action-space statistics. O(N × K) — handles ~50k episodes without approximation.
 
-Use `--entropy-weight 0.4` (or `--policy gr00t`) to bias selection toward high-entropy (informationally rich) episodes, which improves GR00T fine-tuning outcomes.
+Use `--entropy-weight 0.4` (or `--policy gr00t`) to bias selection toward high-entropy (informationally rich) episodes, which improves GR00T fine-tuning outcomes. Alternatively, use `--strategy influence` to select episodes based on estimated learning value (combining action novelty, task contact representation, and Shannon entropy).
 
 Output `coreset.json` contains `keep_episode_ids`, `quality_fail_ids`, `diversity_pruned_ids`, and per-episode quality and diversity scores.
 
@@ -212,6 +212,20 @@ calibra retarget /data/demos.h5 --obs-key-pos robot0_eef_pos \
 NVIDIA GR00T N1.7+ uses a **Relative End-Effector (EEF)** action space. Isaac Lab and robomimic HDF5 datasets record actions in absolute world-frame coordinates. `retarget` converts absolute 7-DoF poses `[x, y, z, qx, qy, qz, qw]` into 6-DoF local-frame deltas `[dx, dy, dz, droll, dpitch, dyaw]` — one `.npz` per episode.
 
 Use `--pad` to append a zero row so output shape is `(T, 6)` instead of `(T−1, 6)` when your policy requires fixed-length sequences.
+
+---
+
+## Empirical Validation
+
+Calibra is backed by rigorous empirical testing across 16 standard robotic datasets (ALOHA, DROID-100, BridgeData, PushT, SVLA SO-100):
+
+* **Predictor Success Correlation:** Offline predicted success probabilities (`calibra predict`) achieve a **Spearman Rank Correlation ($\rho$) of 0.5971** ($p = 0.0146$, statistically significant) with actual downstream policy success rates.
+* **Coreset Pruning Efficiency:** On simulated imitation learning, pruning to a 30% coreset saves **70% of training time** while preserving a **98% success rate** (outperforming random pruning at 62%, and even training on the full raw dataset at 86%).
+
+For complete tables, curves, and replication steps, see [RESULTS.md](experiments/RESULTS.md) and run:
+```bash
+./experiments/reproduce_results.sh
+```
 
 ---
 

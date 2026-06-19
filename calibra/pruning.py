@@ -163,6 +163,7 @@ class CoresetSelector:
     quality_only:         bool  = False
     diversity_weight:     float = 0.7
     entropy_weight:       float = 0.0
+    strategy:             str   = "diversity"
 
     def select(
         self,
@@ -214,6 +215,10 @@ class CoresetSelector:
             keep_indices = quality_pass_indices
             diversity_pruned_indices: list[int] = []
             diversity_scores: dict[str, float] = {}
+        elif self.strategy == "influence":
+            keep_indices, diversity_pruned_indices, diversity_scores = _select_influence(
+                self, batch, report, quality_pass_indices, k
+            )
         else:
             entropy_scores = _compute_entropy_scores(episodes) if self.entropy_weight > 0 else {}
             features = _build_feature_matrix(
@@ -250,6 +255,48 @@ class CoresetSelector:
             n_diversity_pruned=len(div_pruned_ids),
             keep_fraction_actual=len(keep_ids) / max(n, 1),
         )
+
+
+def _select_influence(
+    self_selector: CoresetSelector,
+    batch: EpisodeBatch,
+    report: DiagnosticReport,
+    quality_pass_indices: list[int],
+    k: int,
+) -> tuple[list[int], list[int], dict[str, float]]:
+    episodes = batch.episodes
+    influence_data = {}
+    for r in report.analyzer_results:
+        if r.analyzer_name == "influence":
+            influence_data = r.raw_metrics.get("per_episode_influence", {})
+            break
+            
+    if not influence_data:
+        from calibra.analyzers.influence import InfluenceAnalyzer
+        analyzer = InfluenceAnalyzer()
+        res = analyzer.analyze(batch)
+        influence_data = res.raw_metrics.get("per_episode_influence", {})
+        
+    candidate_ids = [episodes[i].metadata.episode_id for i in quality_pass_indices]
+    candidate_influences = [influence_data.get(cid, 0.0) for cid in candidate_ids]
+    
+    sorted_local_indices = np.argsort(candidate_influences)[::-1]
+    selected_local = sorted_local_indices[:k].tolist()
+    
+    selected_global = [quality_pass_indices[i] for i in selected_local]
+    selected_set = set(selected_global)
+
+    keep_indices = selected_global
+    diversity_pruned_indices = [
+        i for i in quality_pass_indices if i not in selected_set
+    ]
+    
+    diversity_scores = {
+        episodes[i].metadata.episode_id: float(influence_data.get(episodes[i].metadata.episode_id, 0.0))
+        for i in quality_pass_indices
+    }
+    
+    return keep_indices, diversity_pruned_indices, diversity_scores
 
 
 # ── Stage 1: quality scoring ──────────────────────────────────────────────────
@@ -541,6 +588,10 @@ class ApproximateCoresetSelector(CoresetSelector):
             keep_indices = quality_pass_indices
             diversity_pruned_indices: list[int] = []
             diversity_scores: dict[str, float] = {}
+        elif self.strategy == "influence":
+            keep_indices, diversity_pruned_indices, diversity_scores = _select_influence(
+                self, batch, report, quality_pass_indices, k
+            )
         else:
             entropy_scores = _compute_entropy_scores(episodes) if self.entropy_weight > 0 else {}
             features = _build_feature_matrix(
