@@ -26,6 +26,7 @@ from calibra.analyzers.gr00t import GR00TCompatibilityAnalyzer
 from calibra.analyzers.pi0 import Pi0CompatibilityAnalyzer
 from calibra.analyzers.openvla import OpenVLACompatibilityAnalyzer
 from calibra.analyzers.octo import OctoCompatibilityAnalyzer
+from calibra.analyzers.latent_dynamics import LatentDynamicsAnalyzer
 from calibra.pipeline import Pipeline
 from calibra.comparison import DatasetComparator, EpisodeCurator
 from calibra.score import compute_score
@@ -61,6 +62,7 @@ __all__ = [
     "Pi0CompatibilityAnalyzer",
     "OpenVLACompatibilityAnalyzer",
     "OctoCompatibilityAnalyzer",
+    "LatentDynamicsAnalyzer",
     # pipeline
     "Pipeline",
     # phase 2

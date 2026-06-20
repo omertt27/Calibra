@@ -200,3 +200,21 @@ class TestCoresetSelector:
         # Both clusters should be represented in the selected coreset
         assert a_kept > 0, f"No episodes from cluster A kept. Kept: {kept}"
         assert b_kept > 0, f"No episodes from cluster B kept. Kept: {kept}"
+
+    def test_novelty_strategy(self, mixed_batch):
+        # Run with the novelty strategy and lenient thresholds so nothing fails quality
+        result = CoresetSelector(
+            keep_fraction=0.3,
+            strategy="novelty",
+            max_spike_rate=1.0,
+            max_vel_disc_rate=1.0,
+            max_dropout_fraction=1.0,
+            min_ldlj=-1000.0,
+        ).select(mixed_batch, Pipeline().run(mixed_batch))
+        
+        # Should keep up to 30% of quality-passing episodes
+        assert len(result.keep_episode_ids) > 0
+        assert len(result.keep_episode_ids) <= 4
+        # Assert novelty score keys exist in diversity_scores output
+        for ep_id in result.keep_episode_ids:
+            assert ep_id in result.diversity_scores

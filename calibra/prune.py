@@ -105,8 +105,8 @@ def run_prune(argv: list[str]) -> None:
                         "feature vector (0–1, default: 0). Set > 0 to preferentially "
                         "retain high-entropy (informative) episodes. "
                         "Automatically set to 0.4 when --policy gr00t is used.")
-    d.add_argument("--strategy", choices=["diversity", "influence", "energy"], default="diversity",
-                   help="Coreset selection strategy (default: diversity)")
+    d.add_argument("--strategy", choices=["diversity", "influence", "energy", "novelty"], default="diversity",
+                   help="Coreset selection strategy. Choose 'novelty' for transition-novelty pruning [Research Preview] (default: diversity)")
     d.add_argument("--latent-space", choices=["none", "proprio", "visual", "resnet"], default="none",
                    help="Feature representation space for diversity selection (default: none)")
     d.add_argument("--approximate", action="store_true",

@@ -27,6 +27,7 @@ from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
 from calibra.analyzers.task_structure import TaskStructureAnalyzer
 from calibra.analyzers.temporal import TemporalAnalyzer
 from calibra.analyzers.transition_dynamics import TransitionDynamicsAnalyzer
+from calibra.analyzers.latent_dynamics import LatentDynamicsAnalyzer
 from calibra.schema.episode import EpisodeBatch
 from calibra.schema.report import DiagnosticReport
 
@@ -40,6 +41,7 @@ def _default_analyzers() -> list[Analyzer]:
         PhaseBalanceAnalyzer(),
         InfluenceAnalyzer(),
         TransitionDynamicsAnalyzer(),
+        LatentDynamicsAnalyzer(),
     ]
 
 

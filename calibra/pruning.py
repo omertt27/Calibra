@@ -216,6 +216,23 @@ class CoresetSelector:
             keep_indices = quality_pass_indices
             diversity_pruned_indices: list[int] = []
             diversity_scores: dict[str, float] = {}
+        elif self.strategy in ("novelty", "transition_novelty"):
+            novelty_scores = {}
+            for res in report.analyzer_results:
+                if res.analyzer_name == "latent_dynamics":
+                    novelty_scores = res.raw_metrics.get("per_episode_exclusive_novelty", {})
+                    break
+            sorted_pass = sorted(
+                quality_pass_indices,
+                key=lambda idx: novelty_scores.get(episodes[idx].metadata.episode_id, 0.0),
+                reverse=True
+            )
+            keep_indices = sorted_pass[:k]
+            diversity_pruned_indices = sorted_pass[k:]
+            diversity_scores = {
+                episodes[i].metadata.episode_id: float(novelty_scores.get(episodes[i].metadata.episode_id, 0.0))
+                for i in quality_pass_indices
+            }
         elif self.strategy == "influence":
             keep_indices, diversity_pruned_indices, diversity_scores = _select_influence(
                 self, batch, report, quality_pass_indices, k
