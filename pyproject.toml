@@ -29,6 +29,9 @@ dev        = ["pytest>=7.0", "pytest-cov", "ruff", "mypy"]
 watch      = ["watchdog>=3.0"]
 all        = ["calibra-robotics[hdf5,lerobot,rlds,mcap,kinematics,watch]"]
 
+[tool.hatch.build.targets.wheel]
+packages = ["calibra"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
