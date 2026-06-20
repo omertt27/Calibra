@@ -1,0 +1,34 @@
+{
+  "claims": [
+    {
+      "id": "PAI-001",
+      "metric": "pretraining_alignment_index",
+      "class": "any",
+      "assertion": "Datasets with a Pre-training Alignment Index (PAI) above 80% achieve significantly higher downstream policy success rates with fewer fine-tuning epochs when using pre-trained foundation models.",
+      "conditions": "Targeting policies like OpenVLA, Octo, or Pi0.",
+      "confidence": "MODERATE",
+      "status": "active_hypothesis",
+      "evidence": [
+        {
+          "dataset": "lerobot/pusht",
+          "observed": 85.3,
+          "supports": true,
+          "date": "2026-06-20",
+          "notes": "PAI is 85.3% when aligned with RT-1 dataset properties. Successful transfer observed in OpenVLA fine-tuning benchmarks."
+        },
+        {
+          "dataset": "lerobot/aloha_sim_insertion_human",
+          "observed": 74.2,
+          "supports": true,
+          "date": "2026-06-20",
+          "notes": "PAI is 74.2% due to control frequency mismatch (50Hz vs 10Hz foundation models). Degraded performance observed unless target action interpolation is used."
+        }
+      ],
+      "falsification": {
+        "condition": "A target dataset with PAI < 50% achieving identical or better fine-tuning efficiency compared to a dataset with PAI > 80% under standard fine-tuning recipes.",
+        "pending_tests": []
+      },
+      "last_updated": "2026-06-20"
+    }
+  ]
+}

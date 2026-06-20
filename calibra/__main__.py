@@ -95,6 +95,11 @@ def main() -> None:
         run_predict(sys.argv[2:])
         return
 
+    if len(sys.argv) > 1 and sys.argv[1] == "cure":
+        from calibra.cure import run_cure
+        run_cure(sys.argv[2:])
+        return
+
     parser = argparse.ArgumentParser(
         prog="calibra",
         description="Calibra — dataset reliability diagnostics for robotics IL",

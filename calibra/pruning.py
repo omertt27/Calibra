@@ -583,18 +583,28 @@ def _diversity_score_map(
     features: np.ndarray,
     selected_local: list[int],
 ) -> dict[str, float]:
-    """Return {episode_id: min_distance_to_selected_set} for all candidates."""
+    """Return {episode_id: min_distance_to_selected_set} for all candidates.
+    Vectorized computation eliminating python loops.
+    """
     selected_set = set(selected_local)
-    selected_feats = features[sorted(selected_set)]
-    scores: dict[str, float] = {}
+    selected_feats = features[sorted(selected_set)]  # (K, D)
 
-    for local_idx, global_idx in enumerate(candidate_indices):
-        ep_id = episodes[global_idx].metadata.episode_id
-        feat = features[local_idx]
-        dists = np.linalg.norm(selected_feats - feat, axis=1)
-        scores[ep_id] = float(np.min(dists))
+    # Compute squared norms: (x - y)^2 = x^2 + y^2 - 2xy
+    x2 = np.sum(features**2, axis=1, keepdims=True)  # (N, 1)
+    y2 = np.sum(selected_feats**2, axis=1, keepdims=True).T  # (1, K)
+    xy = features @ selected_feats.T  # (N, K)
 
-    return scores
+    # Compute distances matrix - (N, K)
+    dists2 = np.maximum(x2 + y2 - 2 * xy, 0.0)
+    dists = np.sqrt(dists2)
+
+    # Find min distance to selected set for each candidate
+    min_dists = np.min(dists, axis=1)
+
+    return {
+        episodes[global_idx].metadata.episode_id: float(min_dists[local_idx])
+        for local_idx, global_idx in enumerate(candidate_indices)
+    }
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────

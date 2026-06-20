@@ -306,8 +306,52 @@ def analyze_gap(
     overall = max(overall_levels, key=lambda l: _level_order.get(l, 0)) \
         if overall_levels else "LOW"
 
+    # ── Pre-training Alignment Index (PAI) calculation ────────────────────────
+    pai_components = []
+    
+    # 1. Action KL alignment component
+    kl_gap = gaps.get("action_kl_divergence")
+    if kl_gap is not None:
+        val = kl_gap["value"]
+        # Scale: KL <= 0.1 -> 100%; KL >= 3.0 -> 0%
+        kl_score = max(0.0, min(100.0, 100.0 * (1.0 - (val - 0.1) / 2.9)))
+        pai_components.append(kl_score)
+        
+    # 2. Control frequency component
+    freq_gap = gaps.get("control_frequency_gap")
+    if freq_gap is not None:
+        val = freq_gap["delta"]
+        # Scale: delta = 0 -> 100%; delta >= 30 Hz -> 0%
+        freq_score = max(0.0, min(100.0, 100.0 * (1.0 - val / 30.0)))
+        pai_components.append(freq_score)
+        
+    # 3. Action coverage component
+    coverage_gap = gaps.get("sim_coverage_of_real")
+    if coverage_gap is not None:
+        cov_score = coverage_gap["value"] * 100.0
+        pai_components.append(cov_score)
+
+    # 4. Modality matching component
+    sim_obs = set()
+    real_obs = set()
+    if sim_batch:
+        sim_obs = set(sim_batch.modalities)
+    if real_batch:
+        real_obs = set(real_batch.modalities)
+        
+    if sim_obs and real_obs:
+        shared = sim_obs.intersection(real_obs)
+        union = sim_obs.union(real_obs)
+        modality_score = (len(shared) / len(union)) * 100.0 if union else 100.0
+        pai_components.append(modality_score)
+    else:
+        pai_components.append(85.0)
+
+    pai = float(np.mean(pai_components)) if pai_components else 100.0
+
     return {
         "overall_risk":  overall,
+        "pretraining_alignment_index": round(pai, 1),
         "sim_dataset":   sim_report.dataset_name,
         "real_dataset":  real_report.dataset_name,
         "sim_episodes":  sim_report.n_episodes,
@@ -321,6 +365,7 @@ def analyze_gap(
 def render_sim2real(result: dict) -> str:
     overall  = result["overall_risk"]
     icon     = _risk_icon(overall)
+    pai      = result.get("pretraining_alignment_index", 100.0)
     lines = [
         _THICK,
         "  CALIBRA SIM-TO-REAL GAP ANALYSIS",
@@ -331,6 +376,7 @@ def render_sim2real(result: dict) -> str:
         "",
         _THIN,
         f"  {icon}  Overall Transfer Risk: {overall}",
+        f"  📊  Pre-training Alignment Index (PAI): {pai}%",
         _THIN,
         "",
     ]

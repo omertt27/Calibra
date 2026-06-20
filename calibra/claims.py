@@ -33,6 +33,7 @@ _METRIC_KEYS = {
     "dropout_rate":   "dropout_rate",
     "action_entropy": "action_entropy",
     "state_entropy":  "action_entropy",   # covered by the same claim family
+    "pretraining_alignment_index": "pretraining_alignment_index",
 }
 
 

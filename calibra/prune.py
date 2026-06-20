@@ -107,7 +107,7 @@ def run_prune(argv: list[str]) -> None:
                         "Automatically set to 0.4 when --policy gr00t is used.")
     d.add_argument("--strategy", choices=["diversity", "influence", "energy", "novelty"], default="diversity",
                    help="Coreset selection strategy. Choose 'novelty' for transition-novelty pruning [Research Preview] (default: diversity)")
-    d.add_argument("--latent-space", choices=["none", "proprio", "visual", "resnet"], default="none",
+    d.add_argument("--latent-space", choices=["none", "proprio", "visual", "resnet", "clip", "vlm"], default="none",
                    help="Feature representation space for diversity selection (default: none)")
     d.add_argument("--approximate", action="store_true",
                    help="Use approximate MiniBatch diversity selection (O(N×B) instead of "
