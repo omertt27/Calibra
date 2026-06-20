@@ -1,0 +1,54 @@
+name: Bug Report
+description: File a report to help us improve Calibra
+title: "[BUG]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: textarea
+    id: describe-bug
+    attributes:
+      label: Describe the Bug
+      description: A clear and concise description of what the bug is.
+      placeholder: E.g., when running `calibra compare` on HDF5 files, it fails with a KeyError because...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1. Open terminal
+        2. Run 'calibra compare ...'
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Info
+      description: |
+        Please provide details about your environment.
+      value: |
+        - OS: [e.g. Ubuntu 22.04, macOS]
+        - Python version: [e.g. 3.10.12]
+        - Calibra version: [e.g. 0.1.2, or output of `calibra --version`]
+        - Installed extras: [e.g. `all`, `lerobot`, `hdf5`]
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or Console Outputs
+      description: Copy-paste any terminal command logs or tracebacks here.
+      render: shell

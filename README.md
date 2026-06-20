@@ -7,7 +7,13 @@
 <p align="center">
   <a href="https://github.com/omerTT/Calibra/actions/workflows/ci.yml"><img src="https://github.com/omerTT/Calibra/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
   <a href="https://pypi.org/project/calibra-robotics/"><img src="https://img.shields.io/pypi/v/calibra-robotics.svg" alt="PyPI"/></a>
+  <a href="https://pypi.org/project/calibra-robotics/"><img src="https://img.shields.io/pypi/pyversions/calibra-robotics.svg" alt="Python Support"/></a>
+  <a href="https://omerTT.github.io/Calibra/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-blue" alt="Documentation"/></a>
+  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Code Style: Ruff"/></a>
+  <a href="https://pepy.tech/project/calibra-robotics"><img src="https://pepy.tech/badge/calibra-robotics/month" alt="PyPI Downloads"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"/></a>
 </p>
+
 
 **Dataset observability and coreset selection for robotics imitation learning.**
 
@@ -411,7 +417,10 @@ Add your own with `scripts/profile_dataset.py` (see Contributing).
 
 ## Contributing
 
+Please read our [Contributing Guidelines](CONTRIBUTING.md) to get started with setting up development environments, formatting rules, testing, and submitting new dataset profiles or claims.
+
 ### Profile more datasets (highest-value contribution)
+
 
 The evidence base for `calibra compare` grows with every new reference profile. Priority targets from `calibra/claims/` pending tests:
 

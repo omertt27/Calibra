@@ -1,0 +1,64 @@
+site_name: Calibra
+site_description: Dataset observability and coreset selection for robotics imitation learning.
+site_url: https://omertt.github.io/Calibra/
+repo_url: https://github.com/omerTT/Calibra
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  logo: logo-icon.svg
+  favicon: logo-icon.svg
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: deep orange
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: deep orange
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - def_list
+  - attr_list
+
+nav:
+  - Home: index.md
+  - Claims Registry: claims.md
+  - Architecture Decision Records:
+    - Overview: adr/README.md
+    - ADR-001: EpisodeBatch format: adr/adr-001-episodebatch-interchange-format.md
+    - ADR-002: Adapter registry: adr/adr-002-adapter-registry-auto-detection.md
+    - ADR-003: Pydantic schemas: adr/adr-003-pydantic-output-schemas.md
+    - ADR-004: Stateless analyzers: adr/adr-004-stateless-analyzer-pattern.md
+    - ADR-005: Key normalization: adr/adr-005-observation-key-normalization.md
+    - ADR-006: DuckDB fast-path: adr/adr-006-duckdb-lerobot-v2-fast-path.md
+    - ADR-007: Optional dependencies: adr/adr-007-optional-format-dependencies.md
+    - ADR-008: Claims registry: adr/adr-008-claims-registry.md
+    - ADR-009: Two-phase pipeline: adr/adr-009-two-phase-pipeline.md
+    - ADR-010: Claims references parity: adr/adr-010-claims-references-parity.md
+  - Blog Post: hf_blog_post.md
+  - Contributing: contributing.md

@@ -30,5 +30,12 @@ jobs:
       - name: Lint
         run: ruff check .
 
+      - name: Format Check
+        run: ruff format --check .
+
+      - name: Verify Claims Documentation Ratio
+        run: python scripts/generate_claims_doc.py --check
+
       - name: Test
-        run: pytest tests/ -v --tb=short -q
+        run: pytest tests/ -v --tb=short --cov=calibra --cov-report=term-missing --cov-report=xml
+

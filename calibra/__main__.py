@@ -129,6 +129,11 @@ def main() -> None:
         action="store_true",
         help="Skip per-episode outlier detection (faster, aggregate flags only)",
     )
+    parser.add_argument(
+        "--html-out",
+        metavar="PATH",
+        help="Path to save the visual HTML dashboard report",
+    )
 
     args = parser.parse_args()
 
@@ -146,20 +151,28 @@ def main() -> None:
         print(f"error: {exc}", file=sys.stderr)
         sys.exit(1)
 
+    outliers = None
+    if not args.no_anomalies:
+        from calibra.anomalies import find_outliers
+        outliers = find_outliers(report)
+
+    if args.html_out:
+        from calibra.report_html import generate_html_report
+        generate_html_report(report, args.html_out, outliers=outliers)
+
     if args.json:
         print(report.model_dump_json(indent=2))
         sys.exit(_exit_code(report, strict=args.strict))
 
     print(report.summary())
 
-    if not args.no_anomalies:
-        from calibra.anomalies import find_outliers, render
-        outliers = find_outliers(report)
-        if outliers:
-            print()
-            print(render(outliers, report.n_episodes))
+    if outliers:
+        from calibra.anomalies import render
+        print()
+        print(render(outliers, report.n_episodes))
 
     sys.exit(_exit_code(report, strict=args.strict))
+
 
 
 def _exit_code(report, strict: bool = False) -> int:
