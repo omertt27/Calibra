@@ -26,6 +26,20 @@ mappings:
     - "motors/position"
     - "obs_pos"
 
+  joint_position:
+    - "joint_pos"
+    - "joint_position"
+    - "joint_positions"
+    - "robot0_joint_pos"
+    - "dof_pos"
+
+  joint_velocity:
+    - "joint_vel"
+    - "joint_velocity"
+    - "joint_velocities"
+    - "robot0_joint_vel"
+    - "dof_vel"
+
   eef_position:
     - "eef_pos"
     - "ee_pos"

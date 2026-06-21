@@ -103,9 +103,9 @@ def test_latent_embeddings_clip_fallback():
 
 
 def test_cure_cli_manifest(tmp_path):
+    h5py = pytest.importorskip("h5py")
     ep = _make_mock_episode()
     # Save a mock HDF5 file
-    import h5py
     h5_file = tmp_path / "mock.h5"
     with h5py.File(h5_file, "w") as f:
         g = f.create_group("episode_0")

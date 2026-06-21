@@ -58,7 +58,7 @@ def generate_html_report(report: DiagnosticReport, output_path: str, outliers: O
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calibra Report — __DATASET_NAME__</title>
+    <title>Mergen Report — __DATASET_NAME__</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
@@ -98,7 +98,7 @@ def generate_html_report(report: DiagnosticReport, output_path: str, outliers: O
     <!-- Header banner -->
     <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur px-6 py-4 flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-3">
-            <div class="bg-indigo-600 text-white font-bold p-2.5 rounded-lg tracking-wider text-sm shadow-lg shadow-indigo-600/20">CALIBRA</div>
+            <div class="bg-indigo-600 text-white font-bold p-2.5 rounded-lg tracking-wider text-sm shadow-lg shadow-indigo-600/20">MERGEN</div>
             <div>
                 <h1 class="text-xl font-bold tracking-tight text-white">__DATASET_NAME__</h1>
                 <p class="text-xs text-slate-400">Format: <span class="font-mono text-slate-300">__FORMAT__</span> &middot; Source: <span class="font-mono text-slate-300">__SOURCE_PATH__</span></p>
