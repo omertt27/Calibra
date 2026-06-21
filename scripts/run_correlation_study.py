@@ -179,7 +179,7 @@ def main():
 
     markdown_content = f"""# Scientific Correlation Study: Dataset Dynamics vs. Downstream World Model Quality
 
-This benchmark evaluates **12 distinct robot dataset configurations** to determine which metrics best predict downstream world-model performance.
+This benchmark evaluates **12 distinct synthetic 2D task configurations** to determine which metrics best predict downstream world-model performance.
 
 ---
 

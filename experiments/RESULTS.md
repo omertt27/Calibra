@@ -6,7 +6,7 @@ This document presents the empirical validation results of Calibra's coreset pru
 
 ## 1. Coreset Curation Performance Benchmark
 
-We evaluated policy learning efficiency on a 2D trajectory tracking task (modeled after standard manipulation benchmarks like PushT). 
+We evaluated policy learning efficiency on a synthetic 2D trajectory tracking task (modeled after standard manipulation benchmarks like PushT). 
 We generated a dataset of **100 demonstrations** consisting of:
 *   60% clean trajectories
 *   20% redundant near-duplicates

@@ -188,7 +188,7 @@ def evaluate_policy(policy, n_rollouts=50):
 # ── Main Experiment ───────────────────────────────────────────────────────────
 
 def main():
-    print("Generating synthetic robotics benchmark dataset (100 episodes) ...")
+    print("Generating synthetic 2D task benchmark dataset (100 episodes) ...")
     batch = generate_benchmark_dataset(n_episodes=100)
     
     print("Running Calibra diagnostic pipeline ...")

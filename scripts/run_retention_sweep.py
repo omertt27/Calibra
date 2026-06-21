@@ -344,9 +344,9 @@ def main():
         
     tasks_summary_markdown = "\n".join(tables_content)
 
-    markdown_content = f"""# Scientific Robustness Sweep: Coreset Retention Curves across Robotics Tasks
+    markdown_content = f"""# Scientific Robustness Sweep: Coreset Retention Curves across Simulated 2D Physics Tasks
 
-This report presents empirical benchmarking of Calibra's **Transition Novelty Pruning strategy** across 4 simulated robotics task environments and 6 retention budgets, testing the robustness of the dataset compression claims.
+This report presents empirical benchmarking of Calibra's **Transition Novelty Pruning strategy** across 4 simulated 2D physics task environments and 6 retention budgets, testing the robustness of the dataset compression claims.
 
 ---
 
@@ -372,7 +372,7 @@ This report presents empirical benchmarking of Calibra's **Transition Novelty Pr
 ## 3. Implications for Core Project Claim
 
 These multi-task results formally support our core scientific statement:
-> **"Transition Novelty Coresets successfully reduce robot dataset sizes by 75% across multiple physics manifolds with negligible loss in downstream world-model generalization."**
+> **"Transition Novelty Coresets successfully reduce synthetic dataset sizes by 75% across multiple physics manifolds with negligible loss in downstream world-model generalization."**
 """
 
     with open(artifact_path, "w") as f:
