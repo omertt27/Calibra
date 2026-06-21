@@ -282,6 +282,106 @@ def analyze_gap(
             if gaps["sim_coverage_of_real"]["risk"] != "LOW":
                 overall_levels.append(gaps["sim_coverage_of_real"]["risk"])
 
+        # ── transition dynamics gap ───────────────────────────────────────────
+        sim_states_list, sim_actions_list, sim_next_states_list = [], [], []
+        for ep in sim_batch.episodes:
+            states = ep.observations.get("proprio")
+            acts = ep.actions
+            if states is not None and len(states) > 1:
+                t_max = min(len(states) - 1, len(acts))
+                sim_states_list.append(states[:t_max])
+                sim_actions_list.append(acts[:t_max])
+                sim_next_states_list.append(states[1:t_max+1])
+
+        real_states_list, real_actions_list, real_next_states_list = [], [], []
+        for ep in real_batch.episodes:
+            states = ep.observations.get("proprio")
+            acts = ep.actions
+            if states is not None and len(states) > 1:
+                t_max = min(len(states) - 1, len(acts))
+                real_states_list.append(states[:t_max])
+                real_actions_list.append(acts[:t_max])
+                real_next_states_list.append(states[1:t_max+1])
+
+        if sim_states_list and real_states_list:
+            sim_s = np.concatenate(sim_states_list, axis=0)
+            sim_a = np.concatenate(sim_actions_list, axis=0)
+            sim_y = np.concatenate(sim_next_states_list, axis=0)
+            real_s = np.concatenate(real_states_list, axis=0)
+            real_a = np.concatenate(real_actions_list, axis=0)
+            real_y = np.concatenate(real_next_states_list, axis=0)
+
+            # Match sizes
+            min_state_dim = min(sim_s.shape[1], real_s.shape[1])
+            min_action_dim = min(sim_a.shape[1], real_a.shape[1])
+            sim_s = sim_s[:, :min_state_dim]
+            sim_a = sim_a[:, :min_action_dim]
+            sim_y = sim_y[:, :min_state_dim]
+            real_s = real_s[:, :min_state_dim]
+            real_a = real_a[:, :min_action_dim]
+            real_y = real_y[:, :min_state_dim]
+
+            # Fit dynamics: S_{t+1} - S_t = W * [S_t, A_t]
+            def fit_dynamics(X_s, X_a, Y):
+                features = np.concatenate([X_s, X_a], axis=1)
+                state_diff = Y - X_s
+                reg = 1e-4
+                identity = np.eye(features.shape[1])
+                W = np.linalg.solve(features.T @ features + reg * identity, features.T @ state_diff)
+                return W
+
+            try:
+                W_sim = fit_dynamics(sim_s, sim_a, sim_y)
+                W_real = fit_dynamics(real_s, real_a, real_y)
+                
+                # Cross prediction
+                real_features = np.concatenate([real_s, real_a], axis=1)
+                pred_real_from_real = real_s + real_features @ W_real
+                pred_real_from_sim = real_s + real_features @ W_sim
+                
+                real_rmse = float(np.sqrt(np.mean((real_y - pred_real_from_real) ** 2)))
+                cross_rmse = float(np.sqrt(np.mean((real_y - pred_real_from_sim) ** 2)))
+                dynamics_gap = float(max(0.0, cross_rmse - real_rmse))
+                
+                level = _risk_level(dynamics_gap * 10, 0.2, 0.5, 1.0)
+                gaps["transition_dynamics_gap"] = {
+                    "value": round(dynamics_gap, 4),
+                    "risk": level,
+                    "note": f"Cross-prediction error increase: {dynamics_gap:.4f} (real baseline RMSE: {real_rmse:.4f})."
+                }
+                overall_levels.append(level)
+            except Exception:
+                pass
+
+        # ── visual domain gap ────────────────────────────────────────────────
+        has_sim_cam = any("camera_rgb" in ep.observations for ep in sim_batch.episodes)
+        has_real_cam = any("camera_rgb" in ep.observations for ep in real_batch.episodes)
+        if has_sim_cam and has_real_cam:
+            try:
+                from calibra.curation.latent_embed import extract_latent_embeddings
+                # Extract visual embeddings
+                sim_visual_embs = extract_latent_embeddings(sim_batch, model_type="visual")
+                real_visual_embs = extract_latent_embeddings(real_batch, model_type="visual")
+                
+                sim_arr = np.array(list(sim_visual_embs.values()))
+                real_arr = np.array(list(real_visual_embs.values()))
+                
+                sim_mean = np.mean(sim_arr, axis=0)
+                real_mean = np.mean(real_arr, axis=0)
+                
+                denom = float(np.linalg.norm(sim_mean) * np.linalg.norm(real_mean))
+                cosine_dist = float(1.0 - (np.dot(sim_mean, real_mean) / denom) if denom > 0 else 0.0)
+                
+                level = _risk_level(cosine_dist * 10, 0.5, 1.5, 3.0)
+                gaps["visual_domain_gap"] = {
+                    "value": round(cosine_dist, 4),
+                    "risk": level,
+                    "note": f"Visual embedding cosine distance: {cosine_dist:.4f}."
+                }
+                overall_levels.append(level)
+            except Exception:
+                pass
+
     # ── frequency gap ─────────────────────────────────────────────────────────
     sim_freq  = _extract_freq(sim_report)
     real_freq = _extract_freq(real_report)
@@ -313,7 +413,6 @@ def analyze_gap(
     kl_gap = gaps.get("action_kl_divergence")
     if kl_gap is not None:
         val = kl_gap["value"]
-        # Scale: KL <= 0.1 -> 100%; KL >= 3.0 -> 0%
         kl_score = max(0.0, min(100.0, 100.0 * (1.0 - (val - 0.1) / 2.9)))
         pai_components.append(kl_score)
         
@@ -321,7 +420,6 @@ def analyze_gap(
     freq_gap = gaps.get("control_frequency_gap")
     if freq_gap is not None:
         val = freq_gap["delta"]
-        # Scale: delta = 0 -> 100%; delta >= 30 Hz -> 0%
         freq_score = max(0.0, min(100.0, 100.0 * (1.0 - val / 30.0)))
         pai_components.append(freq_score)
         
@@ -330,6 +428,20 @@ def analyze_gap(
     if coverage_gap is not None:
         cov_score = coverage_gap["value"] * 100.0
         pai_components.append(cov_score)
+
+    # 4. Dynamics gap component
+    dyn_gap = gaps.get("transition_dynamics_gap")
+    if dyn_gap is not None:
+        val = dyn_gap["value"]
+        dyn_score = max(0.0, min(100.0, 100.0 * (1.0 - val / 1.0)))
+        pai_components.append(dyn_score)
+
+    # 5. Visual gap component
+    vis_gap = gaps.get("visual_domain_gap")
+    if vis_gap is not None:
+        val = vis_gap["value"]
+        vis_score = max(0.0, min(100.0, 100.0 * (1.0 - val / 0.5)))
+        pai_components.append(vis_score)
 
     # 4. Modality matching component
     sim_obs = set()

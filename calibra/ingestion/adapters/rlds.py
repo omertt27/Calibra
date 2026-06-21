@@ -81,13 +81,26 @@ class RLDSReader(DatasetReader):
         else:
             dataset_name = path
             ds, info = tfds.load(path, split="train", with_info=True)
+            n_episodes = info.splits["train"].num_examples
 
-        episodes: list[Episode] = []
-        for i, ep in enumerate(ds):
-            episodes.append(self._episode_from_rlds(ep, i, path, tf))
+        def loader_fn(idx: int) -> Episode:
+            fresh_ds = tfds.load(path, split=f"train[{idx}:{idx+1}]")
+            ep = next(iter(fresh_ds))
+            return self._episode_from_rlds(ep, idx, path, tf)
+
+        def iterator_fn() -> Iterable[Episode]:
+            for i, ep in enumerate(ds):
+                yield self._episode_from_rlds(ep, i, path, tf)
+
+        from calibra.schema.episode import LazyEpisodeList
+        lazy_eps = LazyEpisodeList(
+            loader_fn=loader_fn,
+            length=n_episodes,
+            iterator_fn=iterator_fn,
+        )
 
         return EpisodeBatch(
-            episodes=episodes,
+            episodes=lazy_eps,
             dataset_name=dataset_name,
             format=self.format_name,
             source_path=path,

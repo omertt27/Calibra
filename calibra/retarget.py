@@ -103,6 +103,18 @@ def run_retarget(argv: list[str]) -> None:
         action="store_true",
         help="Print a JSON summary to stdout after conversion.",
     )
+    p.add_argument(
+        "--urdf",
+        metavar="FILE",
+        default=None,
+        help="Path to robot URDF model to run joint limit auditing.",
+    )
+    p.add_argument(
+        "--joint-key",
+        metavar="KEY",
+        default=None,
+        help="Observation key for joint positions (e.g. 'joint_pos').",
+    )
     args = p.parse_args(argv)
 
     dataset_path = args.path
@@ -138,6 +150,12 @@ def run_retarget(argv: list[str]) -> None:
     skipped_ids: list[str] = []
     converted_ids: list[str] = []
 
+    checker = None
+    if args.urdf:
+        from calibra.kinematics.checker import KinematicURDFChecker
+        checker = KinematicURDFChecker(args.urdf)
+        log(f"Loaded URDF from {args.urdf}. Auditing kinematic joint limits...")
+
     for ep in batch.episodes:
         ep_id = ep.metadata.episode_id
 
@@ -164,6 +182,13 @@ def run_retarget(argv: list[str]) -> None:
             skipped += 1
             skipped_ids.append(ep_id)
             continue
+
+        if checker is not None:
+            violations = checker.check_episode(ep, joint_key=args.joint_key)
+            if violations:
+                log(f"  [kinematic audit] Warning: Episode {ep_id!r} violated joint limits:")
+                for joint, vios in violations.items():
+                    log(f"    - {joint}: {len(vios)} violations (types: {set(v[2] for v in vios)})")
 
         if args.pad:
             zero_row = np.zeros((1, rel_actions.shape[1]), dtype=rel_actions.dtype)

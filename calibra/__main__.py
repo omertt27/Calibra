@@ -100,6 +100,11 @@ def main() -> None:
         run_cure(sys.argv[2:])
         return
 
+    if len(sys.argv) > 1 and sys.argv[1] == "benchmark":
+        from calibra.benchmark import run_benchmark
+        run_benchmark(sys.argv[2:])
+        return
+
     parser = argparse.ArgumentParser(
         prog="calibra",
         description="Calibra — dataset reliability diagnostics for robotics IL",

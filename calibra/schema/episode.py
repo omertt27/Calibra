@@ -5,7 +5,8 @@ No format-specific logic belongs here.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Union, Callable, Iterable
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -56,6 +57,64 @@ class Episode:
         return self.actions.shape[1] if self.actions.ndim > 1 else 1
 
 
+class LazyEpisodeList(Sequence):
+    """
+    A list-like interface that loads episodes lazily on demand.
+    Supports random access via loader_fn(idx) and sequential streaming
+    via iterator_fn() to optimize tf.data.Dataset iterations.
+    """
+
+    def __init__(
+        self,
+        loader_fn: Callable[[int], Episode],
+        length: int,
+        iterator_fn: Optional[Callable[[], Iterable[Episode]]] = None,
+        cache_size: int = 100,
+    ) -> None:
+        self._loader_fn = loader_fn
+        self._length = length
+        self._iterator_fn = iterator_fn
+        self._cache: dict[int, Episode] = {}
+        self._cache_size = cache_size
+        self._access_order: list[int] = []
+
+    def __len__(self) -> int:
+        return self._length
+
+    def __iter__(self) -> Iterable[Episode]:
+        if self._iterator_fn is not None:
+            yield from self._iterator_fn()
+        else:
+            for i in range(self._length):
+                yield self[i]
+
+    def __getitem__(self, idx: int | slice) -> Union[Episode, list[Episode]]:
+        if isinstance(idx, slice):
+            indices = idx.indices(self._length)
+            # Safe downcast to handle slice
+            res = [self[i] for i in range(*indices)]
+            return res  # type: ignore
+        if idx < 0:
+            idx += self._length
+        if idx < 0 or idx >= self._length:
+            raise IndexError("Episode index out of range")
+
+        if idx in self._cache:
+            self._access_order.remove(idx)
+            self._access_order.append(idx)
+            return self._cache[idx]
+
+        ep = self._loader_fn(idx)
+        self._cache[idx] = ep
+        self._access_order.append(idx)
+
+        if len(self._cache) > self._cache_size:
+            oldest = self._access_order.pop(0)
+            self._cache.pop(oldest, None)
+
+        return ep
+
+
 @dataclass
 class EpisodeBatch:
     """
@@ -63,7 +122,7 @@ class EpisodeBatch:
     This is the only type that analyzers accept; they never see raw format data.
     """
 
-    episodes: list[Episode]
+    episodes: Union[list[Episode], LazyEpisodeList]
     dataset_name: str
     format: str        # "rlds" | "lerobot" | "hdf5" | "mcap"
     source_path: str
