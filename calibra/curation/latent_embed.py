@@ -15,6 +15,8 @@ def extract_latent_embeddings(batch: EpisodeBatch, model_type: str = "proprio") 
       - 'visual': lightweight spatial statistics (pixel mean/std/PCA) of camera observations.
       - 'resnet': extracts ResNet features using PyTorch (if torch/torchvision is installed).
       - 'clip' / 'vlm': extracts CLIP/VLM visual semantic features using PyTorch and Hugging Face Transformers.
+      - 'dinov2': extracts Dinov2 visual features using PyTorch and Hugging Face Transformers.
+      - 'siglip': extracts SigLIP visual features using PyTorch and Hugging Face Transformers.
     """
     embeddings = {}
     
@@ -58,7 +60,7 @@ def extract_latent_embeddings(batch: EpisodeBatch, model_type: str = "proprio") 
                     normalize = transforms.Normalize(
                         mean=[0.485, 0.456, 0.406],
                         std=[0.229, 0.224, 0.225]
-                    )
+                     )
                     tensor = normalize(tensor)
                     
                     # Disable torchvision download logging
@@ -111,6 +113,74 @@ def extract_latent_embeddings(batch: EpisodeBatch, model_type: str = "proprio") 
                     emb = np.zeros(1024, dtype=np.float32)
             except Exception:
                 # Fallback to resnet if transformers fails, then visual
+                try:
+                    emb = extract_latent_embeddings(EpisodeBatch(episodes=[ep], dataset_name="fallback"), model_type="resnet")[ep.metadata.episode_id]
+                except Exception:
+                    emb = extract_latent_embeddings(EpisodeBatch(episodes=[ep], dataset_name="fallback"), model_type="visual")[ep.metadata.episode_id]
+                    
+        elif model_type == "dinov2":
+            try:
+                import torch
+                from PIL import Image
+                from transformers import AutoImageProcessor, AutoModel
+                
+                cam = obs.get("camera_rgb")
+                if cam is not None and cam.size > 0:
+                    device = "cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu")
+                    model = AutoModel.from_pretrained("facebook/dinov2-base").to(device)
+                    processor = AutoImageProcessor.from_pretrained("facebook/dinov2-base")
+                    
+                    indices = np.linspace(0, len(cam) - 1, min(10, len(cam)), dtype=int)
+                    sampled_frames = [Image.fromarray(cam[i].astype(np.uint8)) for i in indices]
+                    
+                    inputs = processor(images=sampled_frames, return_tensors="pt").to(device)
+                    with torch.no_grad():
+                        outputs = model(**inputs)
+                        # DINOv2 returns last_hidden_state (batch, seq_len, dim); take the CLS token
+                        image_features = outputs.last_hidden_state[:, 0, :]
+                        image_features = image_features / image_features.norm(dim=-1, keepdim=True)
+                        mean_features = torch.mean(image_features, dim=0).cpu().numpy()
+                        std_features = torch.std(image_features, dim=0).cpu().numpy()
+                        emb = np.concatenate([mean_features, std_features])
+                else:
+                    emb = np.zeros(1536, dtype=np.float32)
+            except Exception:
+                try:
+                    emb = extract_latent_embeddings(EpisodeBatch(episodes=[ep], dataset_name="fallback"), model_type="resnet")[ep.metadata.episode_id]
+                except Exception:
+                    emb = extract_latent_embeddings(EpisodeBatch(episodes=[ep], dataset_name="fallback"), model_type="visual")[ep.metadata.episode_id]
+                    
+        elif model_type == "siglip":
+            try:
+                import torch
+                from PIL import Image
+                from transformers import AutoImageProcessor, AutoModel
+                
+                cam = obs.get("camera_rgb")
+                if cam is not None and cam.size > 0:
+                    device = "cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu")
+                    model = AutoModel.from_pretrained("google/siglip-base-patch16-224").to(device)
+                    processor = AutoImageProcessor.from_pretrained("google/siglip-base-patch16-224")
+                    
+                    indices = np.linspace(0, len(cam) - 1, min(10, len(cam)), dtype=int)
+                    sampled_frames = [Image.fromarray(cam[i].astype(np.uint8)) for i in indices]
+                    
+                    inputs = processor(images=sampled_frames, return_tensors="pt").to(device)
+                    with torch.no_grad():
+                        outputs = model(**inputs)
+                        # SiglipModel is a vision-language model, or we can use get_image_features if it exists
+                        if hasattr(model, "get_image_features"):
+                            image_features = model.get_image_features(**inputs)
+                        else:
+                            # fallback: if AutoModel returns vision output structure directly
+                            image_features = outputs.pooler_output
+                        image_features = image_features / image_features.norm(dim=-1, keepdim=True)
+                        mean_features = torch.mean(image_features, dim=0).cpu().numpy()
+                        std_features = torch.std(image_features, dim=0).cpu().numpy()
+                        emb = np.concatenate([mean_features, std_features])
+                else:
+                    emb = np.zeros(1536, dtype=np.float32)
+            except Exception:
                 try:
                     emb = extract_latent_embeddings(EpisodeBatch(episodes=[ep], dataset_name="fallback"), model_type="resnet")[ep.metadata.episode_id]
                 except Exception:

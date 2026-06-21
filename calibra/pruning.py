@@ -552,11 +552,36 @@ def _greedy_max_coverage(features: np.ndarray, k: int) -> list[int]:
     Time: O(N × K)  — suitable for N up to ~50k, K up to ~5k.
     For larger datasets, consider approximate methods (random projection + greedy).
 
-    Seed: the episode farthest from the empirical centroid of the candidate set.
+    Attempts PyTorch GPU acceleration if torch and a GPU (CUDA/MPS) are available.
+    Falls back to NumPy.
     """
     n = len(features)
     if k >= n:
         return list(range(n))
+
+    try:
+        import torch
+        device = "cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu")
+        if device in ("cuda", "mps"):
+            feats_t = torch.tensor(features, dtype=torch.float32, device=device)
+            centroid = feats_t.mean(dim=0)
+            dists_to_centroid = torch.linalg.norm(feats_t - centroid, dim=1)
+            seed = int(torch.argmax(dists_to_centroid).item())
+
+            selected = [seed]
+            min_dists = torch.linalg.norm(feats_t - feats_t[seed], dim=1).clone()
+            min_dists[seed] = -float("inf")
+
+            for _ in range(k - 1):
+                next_idx = int(torch.argmax(min_dists).item())
+                selected.append(next_idx)
+                dists_to_new = torch.linalg.norm(feats_t - feats_t[next_idx], dim=1)
+                min_dists = torch.minimum(min_dists, dists_to_new)
+                min_dists[next_idx] = -float("inf")
+
+            return selected
+    except Exception:
+        pass
 
     centroid = features.mean(axis=0)
     dists_to_centroid = np.linalg.norm(features - centroid, axis=1)

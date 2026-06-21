@@ -102,6 +102,26 @@ def test_latent_embeddings_clip_fallback():
     assert embs[ep.metadata.episode_id].ndim == 1
 
 
+def test_latent_embeddings_dinov2_fallback():
+    ep = _make_mock_episode()
+    batch = EpisodeBatch(episodes=[ep], dataset_name="test", format="hdf5", source_path="/tmp/test.h5")
+    
+    # Should run dinov2 type and gracefully fall back if transformers is not present
+    embs = extract_latent_embeddings(batch, model_type="dinov2")
+    assert ep.metadata.episode_id in embs
+    assert embs[ep.metadata.episode_id].ndim == 1
+
+
+def test_latent_embeddings_siglip_fallback():
+    ep = _make_mock_episode()
+    batch = EpisodeBatch(episodes=[ep], dataset_name="test", format="hdf5", source_path="/tmp/test.h5")
+    
+    # Should run siglip type and gracefully fall back if transformers is not present
+    embs = extract_latent_embeddings(batch, model_type="siglip")
+    assert ep.metadata.episode_id in embs
+    assert embs[ep.metadata.episode_id].ndim == 1
+
+
 def test_cure_cli_manifest(tmp_path):
     h5py = pytest.importorskip("h5py")
     ep = _make_mock_episode()
