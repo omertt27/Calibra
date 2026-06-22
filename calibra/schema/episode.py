@@ -4,6 +4,7 @@ No format-specific logic belongs here.
 """
 from __future__ import annotations
 
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from typing import Optional, Union, Callable, Iterable
 from collections.abc import Sequence
@@ -70,13 +71,15 @@ class LazyEpisodeList(Sequence):
         length: int,
         iterator_fn: Optional[Callable[[], Iterable[Episode]]] = None,
         cache_size: int = 100,
+        n_samples_hint: Optional[int] = None,
     ) -> None:
         self._loader_fn = loader_fn
         self._length = length
         self._iterator_fn = iterator_fn
-        self._cache: dict[int, Episode] = {}
+        # OrderedDict gives O(1) move_to_end, replacing the O(N) list.remove() pattern.
+        self._cache: OrderedDict[int, Episode] = OrderedDict()
         self._cache_size = cache_size
-        self._access_order: list[int] = []
+        self._n_samples_hint = n_samples_hint
 
     def __len__(self) -> int:
         return self._length
@@ -91,7 +94,6 @@ class LazyEpisodeList(Sequence):
     def __getitem__(self, idx: int | slice) -> Union[Episode, list[Episode]]:
         if isinstance(idx, slice):
             indices = idx.indices(self._length)
-            # Safe downcast to handle slice
             res = [self[i] for i in range(*indices)]
             return res  # type: ignore
         if idx < 0:
@@ -100,17 +102,15 @@ class LazyEpisodeList(Sequence):
             raise IndexError("Episode index out of range")
 
         if idx in self._cache:
-            self._access_order.remove(idx)
-            self._access_order.append(idx)
+            self._cache.move_to_end(idx)
             return self._cache[idx]
 
         ep = self._loader_fn(idx)
         self._cache[idx] = ep
-        self._access_order.append(idx)
+        self._cache.move_to_end(idx)
 
         if len(self._cache) > self._cache_size:
-            oldest = self._access_order.pop(0)
-            self._cache.pop(oldest, None)
+            self._cache.popitem(last=False)  # evict least-recently-used
 
         return ep
 
@@ -120,6 +120,10 @@ class EpisodeBatch:
     """
     Collection of normalized episodes from a single dataset load.
     This is the only type that analyzers accept; they never see raw format data.
+
+    Pass `_n_samples_hint` when loading lazily to avoid materialising every
+    episode just to count steps. Adapters that know the total step count from
+    metadata (e.g. Parquet stats) should supply it here.
     """
 
     episodes: Union[list[Episode], LazyEpisodeList]
@@ -127,6 +131,7 @@ class EpisodeBatch:
     format: str        # "rlds" | "lerobot" | "hdf5" | "mcap"
     source_path: str
     extra: dict = field(default_factory=dict)
+    _n_samples_hint: Optional[int] = field(default=None, repr=False)
 
     @property
     def n_episodes(self) -> int:
@@ -134,6 +139,11 @@ class EpisodeBatch:
 
     @property
     def n_samples(self) -> int:
+        if self._n_samples_hint is not None:
+            return self._n_samples_hint
+        # For LazyEpisodeLists, check if a hint was stored there.
+        if isinstance(self.episodes, LazyEpisodeList) and self.episodes._n_samples_hint is not None:
+            return self.episodes._n_samples_hint
         return sum(ep.n_steps for ep in self.episodes)
 
     @property
