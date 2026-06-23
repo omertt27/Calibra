@@ -105,6 +105,26 @@ def main() -> None:
         run_benchmark(sys.argv[2:])
         return
 
+    if len(sys.argv) > 1 and sys.argv[1] == "card":
+        from calibra.card import run_card
+        run_card(sys.argv[2:])
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "calibrate":
+        from calibra.outcome_db import OutcomeDatabase
+        db = OutcomeDatabase()
+        print(db.summary())
+        suggested = db.calibrate_weights()
+        if suggested:
+            print("\nSuggested penalty weights from accumulated outcomes:")
+            for metric, weight in suggested.items():
+                print(f"  {metric:<30} {weight:.2f}")
+            print("\nTo apply: update _WEIGHTS in calibra/predict.py with these values.")
+        else:
+            print("\nNeed ≥10 recorded outcomes to calibrate weights.")
+            print("Run `calibra predict <dataset> --record-outcome <rate>` after each training run.")
+        return
+
     parser = argparse.ArgumentParser(
         prog="calibra",
         description="Calibra — dataset reliability diagnostics for robotics IL",

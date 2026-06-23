@@ -74,6 +74,63 @@ def _verdict_icon(verdict: str) -> str:
     return {"PASS": "✅", "WARN": "⚠️ ", "FAIL": "❌"}.get(verdict, "?")
 
 
+def _remediation_advice(metric: str, value: float, verdict: str) -> str:
+    """Return a one-sentence operator instruction for the top failure metric."""
+    is_crit = verdict == "FAIL"
+    prefix = "RE-RECORD: " if is_crit else "Consider: "
+    advice = {
+        "jerk_spike_rate": (
+            f"{prefix}Move more smoothly — avoid abrupt stops and direction changes. "
+            f"Spike rate {value:.1%} exceeds threshold."
+        ),
+        "spike_rate": (
+            f"{prefix}Move more smoothly — avoid abrupt stops and direction changes. "
+            f"Spike rate {value:.1%} exceeds threshold."
+        ),
+        "velocity_discontinuity_rate": (
+            f"{prefix}Keep wrist/arm motion continuous. Avoid hesitation or sudden reversal. "
+            f"Discontinuity rate {value:.1%} is too high."
+        ),
+        "vel_disc_rate": (
+            f"{prefix}Keep wrist/arm motion continuous. Avoid hesitation or sudden reversal. "
+            f"Discontinuity rate {value:.1%} is too high."
+        ),
+        "mean_ldlj": (
+            f"{prefix}Slow down and smooth the trajectory — especially during approach and release. "
+            f"LDLJ {value:.2f} indicates excessive jerk."
+        ),
+        "ldlj": (
+            f"{prefix}Slow down and smooth the trajectory — especially during approach and release. "
+            f"LDLJ {value:.2f} indicates excessive jerk."
+        ),
+        "timestamp_dropout_rate": (
+            f"{prefix}Check robot connection — frame dropout detected ({value:.1%} of frames). "
+            "Retry after verifying USB/Ethernet link."
+        ),
+        "dropout": (
+            f"{prefix}Check robot connection — frame dropout detected ({value:.1%} of frames). "
+            "Retry after verifying USB/Ethernet link."
+        ),
+        "jitter_cv": (
+            f"{prefix}Control loop timing is irregular (CV={value:.4f}). "
+            "Check for background processes throttling the control loop."
+        ),
+        "action_entropy": (
+            f"{'Consider varying the demonstration — ' if not is_crit else 'RE-RECORD: '}"
+            f"action entropy {value:.2f} bits/dim is very low. "
+            "Try a different grasp or approach path."
+        ),
+    }
+    metric_lower = metric.lower()
+    for key, msg in advice.items():
+        if key in metric_lower:
+            return msg
+    return (
+        f"{prefix}Episode failed on '{metric}' = {value:.4g}. "
+        "Review the motion and re-record if it felt incorrect."
+    )
+
+
 def _score_episode_file(path: Path, policy_family: Optional[str], reader=None):
     """Load a single-file episode and run the pipeline on it."""
     from calibra.ingestion.registry import load as _load
@@ -102,7 +159,7 @@ class WatchSession:
         return self.n_pass + self.n_warn + self.n_fail
 
     def record(self, path: Path, verdict: str, details: str,
-               report=None) -> None:
+               report=None, remediate: bool = False) -> None:
         icon = _verdict_icon(verdict)
         elapsed = time.monotonic() - self._start
 
@@ -113,13 +170,27 @@ class WatchSession:
             "details": details,
         }
 
+        remediation = ""
         if report is not None:
             from calibra.score import compute_score
+            from calibra.schema.report import RiskLevel
             try:
                 sc = compute_score(report)
                 entry["calibra_score"] = sc["total_score"]
             except Exception:
                 pass
+
+            if remediate and verdict in ("FAIL", "WARN"):
+                flags = (
+                    report.flags_at_level(RiskLevel.CRITICAL)
+                    or report.flags_at_level(RiskLevel.WARNING)
+                )
+                if flags:
+                    top = flags[0]
+                    remediation = _remediation_advice(
+                        top.metric, float(top.observed.value), verdict
+                    )
+                    entry["remediation"] = remediation
 
         self.episodes.append(entry)
 
@@ -139,6 +210,8 @@ class WatchSession:
                 f"  {icon} [{self.total:>4}] {path.name:<40} "
                 f"{verdict:<4} — {details}{score_str}"
             )
+            if remediation:
+                print(f"       ↳ {remediation}")
             if verdict == "FAIL" and self.bell:
                 print("\a", end="", flush=True)
 
@@ -167,7 +240,7 @@ class WatchSession:
         print("━" * 60)
 
 
-# ── polling watcher (no third-party dependency) ───────────────────────────────
+# ── polling watcher ────────────────────────────────────────────────────────────
 
 def _poll_watch(
     directory: Path,
@@ -176,18 +249,17 @@ def _poll_watch(
     policy_family: Optional[str],
     reader,
     max_episodes: Optional[int],
+    remediate: bool = False,
 ) -> None:
-    """
-    Poll-based watcher. Detects new files by tracking the set of known paths.
-    Works on all OS without extra dependencies.
-    """
+    """Poll for new episode files. Works on all OS without extra dependencies."""
     known: set[Path] = set()
-    # Pre-populate with existing files so we don't score old data on startup
     for ext in _WATCH_EXTENSIONS:
         known.update(directory.glob(f"*{ext}"))
 
     print(f"  Watching: {directory}")
     print(f"  Poll interval: {poll_interval:.1f}s  |  Ctrl+C to stop")
+    if remediate:
+        print("  Remediation advice: ON")
     print()
 
     while True:
@@ -200,17 +272,107 @@ def _poll_watch(
 
         new_files = sorted(current - known)
         for path in new_files:
-            # Wait a moment to ensure the write is complete
             time.sleep(0.5)
             try:
                 report = _score_episode_file(path, policy_family, reader)
                 verdict, details = _episode_verdict(report)
-                session.record(path, verdict, details, report)
+                session.record(path, verdict, details, report, remediate=remediate)
             except Exception as exc:
                 session.record(path, "FAIL", f"load error: {exc}")
             known.add(path)
 
         time.sleep(poll_interval)
+
+
+# ── stream mode ────────────────────────────────────────────────────────────────
+
+def _stream_watch(session: WatchSession, remediate: bool = False) -> None:
+    """
+    Read episode metric JSON from stdin (one line per episode).
+
+    Expected fields: file, ldlj, spike_rate, vel_disc_rate, dropout_rate, jitter_cv.
+
+    Example usage:
+        python examples/lerobot_watch_integration.py | calibra watch --stream --remediate
+    """
+    print("  Stream mode: reading episode metrics from stdin (one JSON per line)")
+    print("  Expected fields: file, ldlj, spike_rate, vel_disc_rate, dropout_rate, jitter_cv")
+    print()
+
+    _SPIKE_FAIL_S   = 0.05
+    _SPIKE_WARN_S   = 0.02
+    _VD_FAIL_S      = 0.05
+    _VD_WARN_S      = 0.02
+    _DROPOUT_FAIL_S = 0.05
+    _DROPOUT_WARN_S = 0.01
+    _LDLJ_FAIL_S    = -15.0
+    _LDLJ_WARN_S    = -10.0
+
+    for raw_line in sys.stdin:
+        raw_line = raw_line.strip()
+        if not raw_line:
+            continue
+        try:
+            data = json.loads(raw_line)
+        except json.JSONDecodeError:
+            print(f"  [skip] invalid JSON: {raw_line[:60]}", flush=True)
+            continue
+
+        fname = data.get("file", "episode")
+        path = Path(fname)
+
+        verdict = "PASS"
+        top_metric = ""
+        top_value = 0.0
+        details = "all metrics OK"
+
+        checks = [
+            ("spike_rate",    data.get("spike_rate"),    _SPIKE_WARN_S,   _SPIKE_FAIL_S,   "higher"),
+            ("vel_disc_rate", data.get("vel_disc_rate"), _VD_WARN_S,      _VD_FAIL_S,      "higher"),
+            ("dropout_rate",  data.get("dropout_rate"),  _DROPOUT_WARN_S, _DROPOUT_FAIL_S, "higher"),
+            ("ldlj",          data.get("ldlj"),          _LDLJ_WARN_S,    _LDLJ_FAIL_S,    "lower"),
+        ]
+        for metric, val, warn_t, fail_t, direction in checks:
+            if val is None:
+                continue
+            is_fail = val >= fail_t if direction == "higher" else val <= fail_t
+            is_warn = val >= warn_t if direction == "higher" else val <= warn_t
+            if is_fail and verdict != "FAIL":
+                verdict = "FAIL"
+                top_metric, top_value = metric, val
+                details = f"{metric} = {val:.4g}"
+            elif is_warn and verdict == "PASS":
+                verdict = "WARN"
+                top_metric, top_value = metric, val
+                details = f"{metric} = {val:.4g}"
+
+        icon = _verdict_icon(verdict)
+        elapsed = time.monotonic() - session._start
+        entry: dict = {"t": round(elapsed, 2), "file": fname, "verdict": verdict, "details": details}
+
+        remediation = ""
+        if remediate and verdict in ("FAIL", "WARN") and top_metric:
+            remediation = _remediation_advice(top_metric, top_value, verdict)
+            entry["remediation"] = remediation
+
+        if verdict == "PASS":
+            session.n_pass += 1
+        elif verdict == "WARN":
+            session.n_warn += 1
+        else:
+            session.n_fail += 1
+        session.episodes.append(entry)
+
+        if not session.quiet:
+            print(f"  {icon} [{session.total:>4}] {fname:<40} {verdict:<4} — {details}")
+            if remediation:
+                print(f"       ↳ {remediation}")
+            if verdict == "FAIL" and session.bell:
+                print("\a", end="", flush=True)
+
+        if session.log_file:
+            with open(session.log_file, "a") as f:
+                f.write(json.dumps(entry) + "\n")
 
 
 # ── optional watchdog integration ─────────────────────────────────────────────
@@ -235,7 +397,9 @@ def run_watch(argv: list[str]) -> None:
     )
     p.add_argument(
         "directory",
-        help="Directory to watch for new episode files",
+        nargs="?",
+        default=None,
+        help="Directory to watch for new episode files (not required with --stream)",
     )
     p.add_argument(
         "--format", "-f",
@@ -276,29 +440,56 @@ def run_watch(argv: list[str]) -> None:
         action="store_true",
         help="Only print summary, not per-episode lines",
     )
+    p.add_argument(
+        "--remediate",
+        action="store_true",
+        help=(
+            "Print a specific operator instruction on FAIL/WARN episodes: "
+            "what caused the failure and how to fix it. "
+            "Recommended for live teleoperation sessions."
+        ),
+    )
+    p.add_argument(
+        "--stream",
+        action="store_true",
+        help=(
+            "Read episode metric JSON from stdin instead of watching a directory. "
+            "Each line: JSON object with fields file, ldlj, spike_rate, vel_disc_rate, "
+            "dropout_rate, jitter_cv. "
+            "Example: python collect.py | calibra watch --stream --remediate"
+        ),
+    )
     args = p.parse_args(argv)
+
+    log_file = Path(args.log_file) if args.log_file else None
+    session = WatchSession(log_file=log_file, quiet=args.quiet, bell=not args.no_bell)
+
+    print("━" * 60)
+    print("  CALIBRA WATCH — real-time data quality monitor")
+    print("━" * 60)
+
+    if args.stream:
+        try:
+            _stream_watch(session, remediate=args.remediate)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            session.print_summary()
+        sys.exit(0)
+
+    if args.directory is None:
+        print("error: a directory argument is required unless --stream is used", file=sys.stderr)
+        sys.exit(1)
 
     directory = Path(args.directory).expanduser().resolve()
     if not directory.is_dir():
         print(f"error: {directory} is not a directory", file=sys.stderr)
         sys.exit(1)
 
-    log_file = Path(args.log_file) if args.log_file else None
-
     reader = None
     if args.format:
         from calibra.__main__ import _get_reader
         reader = _get_reader(args.format)
-
-    session = WatchSession(
-        log_file=log_file,
-        quiet=args.quiet,
-        bell=not args.no_bell,
-    )
-
-    print("━" * 60)
-    print("  CALIBRA WATCH — real-time data quality monitor")
-    print("━" * 60)
 
     try:
         _poll_watch(
@@ -308,6 +499,7 @@ def run_watch(argv: list[str]) -> None:
             policy_family=args.policy,
             reader=reader,
             max_episodes=args.max_episodes,
+            remediate=args.remediate,
         )
     except KeyboardInterrupt:
         pass

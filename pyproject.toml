@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "calibra-robotics"
-version = "0.5.0"
+version = "0.6.0"
 description = "Dataset reliability and risk profiling for robotics imitation learning"
 requires-python = ">=3.10"
 dependencies = [

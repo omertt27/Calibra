@@ -162,9 +162,14 @@ def _tier_icon(tier: str) -> str:
 def predict_outcome(
     report: DiagnosticReport,
     policy_family: Optional[str] = None,
+    use_outcome_db: bool = True,
 ) -> dict:
     """
     Compute the predicted training outcome from a DiagnosticReport.
+
+    When use_outcome_db=True (default), blends the heuristic score with
+    empirically observed outcomes from similar past datasets stored in
+    ~/.calibra/outcomes.jsonl.
 
     Returns a dict with predicted_score, tier, deductions, and metric_values.
     """
@@ -173,7 +178,7 @@ def predict_outcome(
     deductions: list[dict] = []
 
     weights, thresholds = get_weights_and_thresholds(policy_family)
-    
+
     is_scripted = any(
         f.metric == "motion_collection_signature"
         for r in report.analyzer_results
@@ -226,32 +231,72 @@ def predict_outcome(
             "reason":   _deduction_reason(metric_key, value, severity, direction),
         })
 
-    score = max(0.0, min(100.0, score))
-    tier  = _tier(score)
+    heuristic_score = max(0.0, min(100.0, score))
 
-    # Confidence interval (±10 pts, wider for more deductions)
+    # ── empirical blending from outcome DB ───────────────────────────────────
+    empirical_weight = 0.0
+    similar_outcomes: list[dict] = []
+    blended_score = heuristic_score
+
+    if use_outcome_db:
+        try:
+            from calibra.outcome_db import OutcomeDatabase
+            db = OutcomeDatabase()
+            fp = {k: v for k, v in metrics.items() if v is not None}
+            similar = db.find_similar(fp, policy_family=policy_family)
+            if similar:
+                blended_score, empirical_weight = db.blend_prediction(heuristic_score, similar)
+                similar_outcomes = [
+                    {
+                        "dataset": rec.dataset_name,
+                        "actual_rate": rec.actual_success_rate,
+                        "distance": round(dist, 3),
+                        "policy": rec.policy_family,
+                    }
+                    for rec, dist in similar
+                ]
+        except Exception:
+            pass
+
+    final_score = blended_score
+    tier = _tier(final_score)
+
     uncertainty = min(15.0, 5.0 + len(deductions) * 2.0)
-    low  = max(0.0,   score - uncertainty)
-    high = min(100.0, score + uncertainty)
+    if empirical_weight > 0:
+        uncertainty *= (1.0 - empirical_weight * 0.5)
+    low  = max(0.0,   final_score - uncertainty)
+    high = min(100.0, final_score + uncertainty)
 
-    return {
-        "predicted_score":    round(score, 1),
-        "predicted_success_rate": round(score / 100.0, 3),
-        "predicted_range":    [round(low, 1), round(high, 1)],
-        "tier":               tier,
-        "deductions":         deductions,
-        "metric_values":      {k: v for k, v in metrics.items() if v is not None},
-        "n_critical_flags":   len(report.flags_at_level(RiskLevel.CRITICAL)),
-        "n_warning_flags":    len(report.flags_at_level(RiskLevel.WARNING)),
-        "n_episodes":         report.n_episodes,
-        "n_samples":          report.n_samples,
-        "dataset_name":       report.dataset_name,
-        "policy_family":      policy_family or "generic",
-        "note": (
+    if empirical_weight > 0:
+        note = (
+            f"Score blended: {round(empirical_weight * 100)}% empirical weight from "
+            f"{len(similar_outcomes)} similar past dataset(s). "
+            "Record outcomes with `calibra predict --record-outcome RATE` to improve future predictions."
+        )
+    else:
+        note = (
             "Prediction is a heuristic estimate based on Calibra's evidence base. "
             "Actual success rates depend on policy architecture, training recipe, "
             "and task difficulty."
-        ),
+        )
+
+    return {
+        "predicted_score":        round(final_score, 1),
+        "heuristic_score":        round(heuristic_score, 1),
+        "empirical_weight":       round(empirical_weight, 3),
+        "similar_outcomes":       similar_outcomes,
+        "predicted_success_rate": round(final_score / 100.0, 3),
+        "predicted_range":        [round(low, 1), round(high, 1)],
+        "tier":                   tier,
+        "deductions":             deductions,
+        "metric_values":          {k: v for k, v in metrics.items() if v is not None},
+        "n_critical_flags":       len(report.flags_at_level(RiskLevel.CRITICAL)),
+        "n_warning_flags":        len(report.flags_at_level(RiskLevel.WARNING)),
+        "n_episodes":             report.n_episodes,
+        "n_samples":              report.n_samples,
+        "dataset_name":           report.dataset_name,
+        "policy_family":          policy_family or "generic",
+        "note":                   note,
     }
 
 
@@ -299,6 +344,7 @@ def render_prediction(result: dict) -> str:
     score = result["predicted_score"]
     lo, hi = result["predicted_range"]
     icon  = _tier_icon(tier)
+    emp_w = result.get("empirical_weight", 0.0)
 
     lines = [
         _THICK,
@@ -312,18 +358,27 @@ def render_prediction(result: dict) -> str:
         _THIN,
         f"  {icon}  Predicted Success: {score:.0f}%  "
         f"[range {lo:.0f}%–{hi:.0f}%]  —  {tier}",
-        _THIN,
-        "",
     ]
+
+    if emp_w > 0:
+        heuristic = result.get("heuristic_score", score)
+        lines.append(
+            f"  📊  Empirical blend: {round(emp_w * 100)}% observed / "
+            f"{round((1 - emp_w) * 100)}% heuristic  (heuristic alone: {heuristic:.0f}%)"
+        )
+        for s in result.get("similar_outcomes", [])[:3]:
+            lines.append(
+                f"    ↳ {s['dataset']} [{s['policy']}]  "
+                f"actual={s['actual_rate']:.0%}  dist={s['distance']:.2f}"
+            )
+
+    lines += [_THIN, ""]
 
     if result["deductions"]:
         lines.append("  Deductions from baseline (100 pts):")
         for d in result["deductions"]:
             sev_icon = "❌" if d["severity"] == "CRITICAL" else "⚠️ "
-            lines.append(
-                f"  {sev_icon} -{d['penalty']:4.1f}pt  {d['metric']}"
-            )
-            # Wrap reason to width
+            lines.append(f"  {sev_icon} -{d['penalty']:4.1f}pt  {d['metric']}")
             reason = d["reason"]
             lines.append(f"     {reason[:80]}")
             if len(reason) > 80:
@@ -337,36 +392,28 @@ def render_prediction(result: dict) -> str:
     lines.append("  NEXT STEPS")
     lines.append(_THIN)
     if tier in ("STRONG", "GOOD"):
-        lines.append(
-            "  ✓ Data quality is sufficient. Proceed with training."
-        )
-        lines.append(
-            "  Use `calibra prune --keep 0.5` to select the best 50% of episodes."
-        )
+        lines.append("  ✓ Data quality is sufficient. Proceed with training.")
+        lines.append("  Use `calibra prune --keep 0.5` to select the best 50% of episodes.")
+        lines.append("  After training, close the loop:")
+        lines.append("    calibra predict <dataset> --record-outcome <actual_success_rate>")
     elif tier == "MARGINAL":
-        # Find top deductions
         top = sorted(result["deductions"], key=lambda d: d["penalty"], reverse=True)[:2]
         lines.append("  Priority fixes:")
         for d in top:
             lines.append(f"  • Fix {d['metric']}: {d['reason'][:70]}")
         lines.append("  Then re-run `calibra predict` to verify improvement.")
     else:
-        lines.append(
-            "  ✗ Data quality issues are too severe for reliable training."
-        )
+        lines.append("  ✗ Data quality issues are too severe for reliable training.")
         all_d = sorted(result["deductions"], key=lambda d: d["penalty"], reverse=True)
         lines.append("  Critical fixes required:")
         for d in all_d[:3]:
             lines.append(f"  • {d['metric']}: {d['reason'][:65]}")
         lines.append("")
-        lines.append(
-            "  Run `calibra prune` to remove the worst episodes, "
-            "or recollect data."
-        )
+        lines.append("  Run `calibra prune` to remove the worst episodes, or recollect data.")
 
     lines += [
         "",
-        f"  Note: {result['note'][:80]}",
+        f"  Note: {result['note'][:90]}",
         _THICK,
     ]
     return "\n".join(lines)
@@ -413,6 +460,20 @@ def run_predict(argv: list[str]) -> None:
         action="store_true",
         help="Output full prediction as JSON",
     )
+    p.add_argument(
+        "--record-outcome",
+        metavar="RATE",
+        type=float,
+        help=(
+            "After training, record the observed success rate (0.0–1.0) to improve "
+            "future predictions on similar datasets. Example: --record-outcome 0.82"
+        ),
+    )
+    p.add_argument(
+        "--no-empirical",
+        action="store_true",
+        help="Disable empirical blending from outcome database (pure heuristic).",
+    )
     args = p.parse_args(argv)
 
     dataset_path = args.path
@@ -441,7 +502,33 @@ def run_predict(argv: list[str]) -> None:
 
     log(f"  {report.n_episodes} episodes  ·  {report.n_samples} steps")
 
-    result = predict_outcome(report, policy_family=args.policy)
+    use_db = not args.no_empirical
+    result = predict_outcome(report, policy_family=args.policy, use_outcome_db=use_db)
+
+    if args.record_outcome is not None:
+        actual_rate = float(args.record_outcome)
+        if not (0.0 <= actual_rate <= 1.0):
+            print("error: --record-outcome must be between 0.0 and 1.0", file=sys.stderr)
+            sys.exit(2)
+        try:
+            from calibra.outcome_db import OutcomeDatabase
+            db = OutcomeDatabase()
+            rec = db.record(
+                fingerprint=result["metric_values"],
+                predicted_score=result["heuristic_score"],
+                actual_success_rate=actual_rate,
+                policy_family=result["policy_family"],
+                n_episodes=result["n_episodes"],
+                dataset_name=result["dataset_name"],
+            )
+            log(
+                f"  Outcome recorded (id={rec.record_id}): "
+                f"predicted={result['heuristic_score']:.0f}%  actual={actual_rate:.0%}  "
+                f"error={abs(result['heuristic_score'] / 100.0 - actual_rate) * 100:.1f}%"
+            )
+            log(f"  {db.summary()}")
+        except Exception as exc:
+            log(f"  Warning: could not record outcome: {exc}")
 
     if args.json:
         print(json.dumps(result, indent=2))

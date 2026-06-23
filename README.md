@@ -25,6 +25,14 @@ calibra compare hf://lerobot/my_dataset aloha
 calibra certify /data/my_demos --reference aloha --policy diffusion
 calibra prune   /data/100k_episodes --keep 0.3 --out coreset.json
 calibra retarget /data/isaac_lab.h5 --out retargeted/
+
+# New in v0.6.0
+calibra predict /data/my_demos.h5 --policy gr00t          # predict training success before training
+calibra predict /data/my_demos.h5 --record-outcome 0.82   # close the loop after training
+calibra card    /data/my_demos.h5 --push                   # push quality card to HuggingFace Hub
+calibra watch   /data/session/ --remediate                 # real-time operator feedback
+calibra watch   --stream --remediate                       # pipe metrics from collect script
+calibra calibrate                                          # re-fit weights from training history
 ```
 
 ---
@@ -41,7 +49,7 @@ Calibra solves the data side.
 
 ---
 
-## Six commands
+## Commands
 
 ### 1. `audit` — full diagnostic report
 
@@ -218,6 +226,72 @@ calibra retarget /data/demos.h5 --obs-key-pos robot0_eef_pos \
 NVIDIA GR00T N1.7+ uses a **Relative End-Effector (EEF)** action space. Isaac Lab and robomimic HDF5 datasets record actions in absolute world-frame coordinates. `retarget` converts absolute 7-DoF poses `[x, y, z, qx, qy, qz, qw]` into 6-DoF local-frame deltas `[dx, dy, dz, droll, dpitch, dyaw]` — one `.npz` per episode.
 
 Use `--pad` to append a zero row so output shape is `(T, 6)` instead of `(T−1, 6)` when your policy requires fixed-length sequences.
+
+### 7. `predict` — predict training outcome before spending GPU time
+
+```bash
+calibra predict /data/my_demos.h5
+calibra predict lerobot/my_dataset --policy diffusion --reference aloha
+calibra predict /data/my_demos.h5 --policy gr00t --record-outcome 0.82
+```
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CALIBRA TRAINING OUTCOME PREDICTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Dataset  : my_demos  ·  Episodes: 120  ·  Policy: gr00t
+  🟢  Predicted Success: 81%  [range 71%–91%]  —  GOOD
+  ──────────────────────────────────────────────────────────
+  ⚠️  -8.0pt  ldlj
+     Mean LDLJ = -12.4. High jerk forces discontinuous action transitions.
+  ──────────────────────────────────────────────────────────
+  NEXT STEPS
+  ✓ Data quality is sufficient. Proceed with training.
+  After training, close the loop:
+    calibra predict <dataset> --record-outcome <actual_success_rate>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+`--record-outcome RATE` stores the observed training success rate alongside the diagnostic fingerprint in `~/.calibra/outcomes.jsonl`. Future predictions on similar datasets blend the heuristic score with these empirical observations via inverse-distance weighting. Run `calibra calibrate` after 10+ outcomes to re-fit the prediction weights from your lab's actual training history.
+
+### 8. `card` — HuggingFace dataset quality card
+
+```bash
+calibra card /data/my_demos.h5
+calibra card lerobot/my_dataset --policy diffusion --out quality_card.md
+calibra card /data/my_demos.h5 --push   # push directly to HuggingFace Hub README
+```
+
+Generates a structured Markdown quality card with certification badge, per-metric status table, and predicted training outcome. Embed it in your dataset's HuggingFace Hub README so other researchers can see data quality at a glance.
+
+### 9. `watch` — real-time teleoperation quality monitor
+
+```bash
+calibra watch /data/collection_session/
+calibra watch /data/session/ --remediate          # print fix instructions on failure
+calibra watch /data/session/ --log-file session.jsonl
+
+# Stream mode: pipe metrics from your collection script
+python collect_demos.py | calibra watch --stream --remediate
+```
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CALIBRA WATCH — real-time data quality monitor
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Remediation advice: ON
+  Watching: /data/collection_session/
+
+  ✅ [   1] ep_001.h5         PASS — all metrics OK
+  ✅ [   2] ep_002.h5         PASS — all metrics OK
+  ❌ [   3] ep_003.h5         FAIL — jerk_spike_rate = 0.087
+       ↳ RE-RECORD: Move more smoothly — avoid abrupt stops and direction changes.
+  ✅ [   4] ep_004.h5         PASS — all metrics OK
+```
+
+`--remediate` prints a specific operator instruction on every FAIL/WARN: what caused the failure and exactly how to fix the motion. Operators get feedback within seconds of saving an episode instead of discovering problems during training hours later.
+
+`--stream` reads JSON metric lines from stdin, enabling integration with teleoperation software without filesystem round-trips. See `examples/lerobot_watch_integration.py` for a drop-in integration snippet.
 
 ---
 
