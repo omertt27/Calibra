@@ -301,48 +301,133 @@ class RobotJEPA:
 
         return scores
 
-    def predict_next_latent(self, state: np.ndarray, action: np.ndarray) -> np.ndarray:
+    def encode(self, state: np.ndarray) -> np.ndarray:
         """
-        Single-step latent prediction for model-predictive planning.
+        Encode a state vector into the JEPA latent space.
 
         Parameters
         ----------
-        state  : (state_dim,) current state
-        action : (action_dim,) proposed action
+        state : (state_dim,)
 
         Returns
         -------
-        predicted next state latent : (latent_dim,)
+        latent : (latent_dim,)
         """
-        if self._model is None:
-            raise RuntimeError("Call fit() before predict_next_latent().")
-
-        import torch
-        with torch.no_grad():
-            s = torch.from_numpy(
-                state.astype(np.float32)
-            ).unsqueeze(0).to(self._device)
-            a = torch.from_numpy(
-                action.astype(np.float32)
-            ).unsqueeze(0).to(self._device)
-
-            s_n = (s - self._s_mean) / self._s_std
-            a_n = (a - self._a_mean) / self._a_std
-
-            z = self._model["encoder"](s_n)
-            z_next = self._model["predictor"](torch.cat([z, a_n], dim=-1))
-            return z_next.squeeze(0).cpu().numpy()
-
-    def encode(self, state: np.ndarray) -> np.ndarray:
-        """Encode a state (state_dim,) into the latent space (latent_dim,)."""
         if self._model is None:
             raise RuntimeError("Call fit() before encode().")
 
         import torch
         with torch.no_grad():
-            s = torch.from_numpy(
-                state.astype(np.float32)
-            ).unsqueeze(0).to(self._device)
+            s = torch.from_numpy(state.astype(np.float32)).unsqueeze(0).to(self._device)
+            s_n = (s - self._s_mean) / self._s_std
+            return self._model["encoder"](s_n).squeeze(0).cpu().numpy()
+
+    def predict_from_latent(self, z: np.ndarray, action: np.ndarray) -> np.ndarray:
+        """
+        One-step latent transition: z_t, a_t → z_{t+1}.
+
+        This is the correct method for multi-step rollouts in the planner.
+        It stays entirely in latent space — no encode/decode round-trip —
+        so rollout error does not compound through the encoder.
+
+        Parameters
+        ----------
+        z      : (latent_dim,)  current latent
+        action : (action_dim,)  proposed action
+
+        Returns
+        -------
+        z_next : (latent_dim,)  predicted next latent
+        """
+        if self._model is None:
+            raise RuntimeError("Call fit() before predict_from_latent().")
+
+        import torch
+        with torch.no_grad():
+            z_t = torch.from_numpy(z.astype(np.float32)).unsqueeze(0).to(self._device)
+            a = torch.from_numpy(action.astype(np.float32)).unsqueeze(0).to(self._device)
+            a_n = (a - self._a_mean) / self._a_std
+            z_next = self._model["predictor"](torch.cat([z_t, a_n], dim=-1))
+            return z_next.squeeze(0).cpu().numpy()
+
+    def rollout_latent(
+        self,
+        state: np.ndarray,
+        actions: np.ndarray,
+    ) -> np.ndarray:
+        """
+        Roll out a sequence of actions entirely in latent space.
+
+        Parameters
+        ----------
+        state   : (state_dim,)         initial observation (encoded once)
+        actions : (H, action_dim)      action sequence of horizon H
+
+        Returns
+        -------
+        latents : (H+1, latent_dim)    latent trajectory
+                  latents[0]  = encode(state)
+                  latents[k]  = predict_from_latent(latents[k-1], actions[k-1])
+        """
+        if self._model is None:
+            raise RuntimeError("Call fit() before rollout_latent().")
+
+        import torch
+        H = len(actions)
+        latents = np.empty((H + 1, self.config.latent_dim), dtype=np.float32)
+
+        with torch.no_grad():
+            s = torch.from_numpy(state.astype(np.float32)).unsqueeze(0).to(self._device)
             s_n = (s - self._s_mean) / self._s_std
             z = self._model["encoder"](s_n)
-            return z.squeeze(0).cpu().numpy()
+            latents[0] = z.squeeze(0).cpu().numpy()
+
+            for k in range(H):
+                a = torch.from_numpy(
+                    actions[k].astype(np.float32)
+                ).unsqueeze(0).to(self._device)
+                a_n = (a - self._a_mean) / self._a_std
+                z = self._model["predictor"](torch.cat([z, a_n], dim=-1))
+                latents[k + 1] = z.squeeze(0).cpu().numpy()
+
+        return latents
+
+    def rollout_latent_batch(
+        self,
+        state: np.ndarray,
+        action_seqs: np.ndarray,
+    ) -> np.ndarray:
+        """
+        Batch rollout of N action sequences in latent space (vectorised).
+
+        Parameters
+        ----------
+        state       : (state_dim,)
+        action_seqs : (N, H, action_dim)
+
+        Returns
+        -------
+        final_latents : (N, latent_dim)  — predicted latent after H steps
+        """
+        if self._model is None:
+            raise RuntimeError("Call fit() before rollout_latent_batch().")
+
+        import torch
+        N, H, _ = action_seqs.shape
+
+        with torch.no_grad():
+            s = torch.from_numpy(state.astype(np.float32)).unsqueeze(0).to(self._device)
+            s_n = (s - self._s_mean) / self._s_std
+            z0 = self._model["encoder"](s_n)          # (1, L)
+            z = z0.expand(N, -1).clone()               # (N, L)
+
+            acts = torch.from_numpy(
+                action_seqs.astype(np.float32)
+            ).to(self._device)                          # (N, H, A)
+            a_n = (acts - self._a_mean) / self._a_std  # normalise
+
+            for k in range(H):
+                inp = torch.cat([z, a_n[:, k, :]], dim=-1)  # (N, L+A)
+                z = self._model["predictor"](inp)            # (N, L)
+
+        return z.cpu().numpy()
