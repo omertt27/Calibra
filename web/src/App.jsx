@@ -1328,6 +1328,23 @@ export default function App() {
                   </p>
                 </div>
 
+                {/* Keyboard Shortcuts Helper */}
+                <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left', padding: '16px', fontSize: '11px', color: 'var(--text-muted)', border: '1px dashed rgba(255,255,255,0.06)' }}>
+                  <div style={{ fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Sliders size={12} /> Keyboard Shortcuts
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 12px' }}>
+                    <span><kbd style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 4px', borderRadius: '4px', fontFamily: 'var(--font-mono)', border: '1px solid rgba(255,255,255,0.1)' }}>←</kbd> / <kbd style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 4px', borderRadius: '4px', fontFamily: 'var(--font-mono)', border: '1px solid rgba(255,255,255,0.1)' }}>→</kbd></span>
+                    <span>Step through episodes</span>
+
+                    <span><kbd style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 4px', borderRadius: '4px', fontFamily: 'var(--font-mono)', border: '1px solid rgba(255,255,255,0.1)' }}>1</kbd>–<kbd style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 4px', borderRadius: '4px', fontFamily: 'var(--font-mono)', border: '1px solid rgba(255,255,255,0.1)' }}>4</kbd></span>
+                    <span>Switch sub-panels</span>
+
+                    <span><kbd style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 4px', borderRadius: '4px', fontFamily: 'var(--font-mono)', border: '1px solid rgba(255,255,255,0.1)' }}>Esc</kbd></span>
+                    <span>Reset locked episode</span>
+                  </div>
+                </div>
+
               </div>
 
               {/* Right Panel: Workspace Tabs & Visualizations */}
