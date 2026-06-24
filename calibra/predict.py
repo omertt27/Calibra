@@ -68,6 +68,9 @@ _WEIGHTS = {
     "jitter_cv":              (5.0,  12.0, "higher_worse"),
     "action_entropy":         (10.0, 20.0, "lower_worse"),  # low entropy = less diversity
     "contact_phase_fraction": (10.0, 20.0, "lower_worse"),
+    # World-model learnability (from WorldModelConsistencyAnalyzer / RobotJEPA)
+    # High mean JEPA surprise → world model can't predict the data → poor generalisation
+    "jepa_surprise":          (8.0,  18.0, "higher_worse"),
 }
 
 # Thresholds (mirrors analyzer constants)
@@ -79,6 +82,8 @@ _THRESHOLDS = {
     "jitter_cv":              {"warn": 0.05,   "crit": 0.20},
     "action_entropy":         {"warn": 2.5,    "crit": 1.5},
     "contact_phase_fraction": {"warn": 0.10,   "crit": 0.05},
+    # JEPA surprise is normalised to [0, 1]; above 0.4 signals poor learnability
+    "jepa_surprise":          {"warn": 0.40,   "crit": 0.70},
 }
 
 
@@ -122,10 +127,11 @@ def _raw(report: DiagnosticReport, analyzer: str) -> dict:
 
 
 def _extract_metrics(report: DiagnosticReport) -> dict[str, Optional[float]]:
-    t = _raw(report, "temporal_stability")
-    s = _raw(report, "control_smoothness")
-    c = _raw(report, "coverage_entropy")
+    t  = _raw(report, "temporal_stability")
+    s  = _raw(report, "control_smoothness")
+    c  = _raw(report, "coverage_entropy")
     pb = _raw(report, "phase_balance")
+    wm = _raw(report, "world_model_consistency")
     return {
         "ldlj":                   s.get("ldlj",              {}).get("mean_ldlj"),
         "spike_rate":     s.get("jerk_spikes",        {}).get("mean_spike_fraction"),
@@ -134,6 +140,8 @@ def _extract_metrics(report: DiagnosticReport) -> dict[str, Optional[float]]:
         "jitter_cv":      t.get("jitter",             {}).get("mean_cv"),
         "action_entropy": c.get("action_entropy",     {}).get("entropy_bits_per_dim"),
         "contact_phase_fraction": pb.get("mean_contact_fraction"),
+        # JEPA world-model surprise (only present if WorldModelConsistencyAnalyzer ran)
+        "jepa_surprise":  wm.get("mean_surprise"),
     }
 
 
@@ -333,6 +341,12 @@ def _deduction_reason(
             f"Contact fraction = {value:.1%} ({severity.lower()} threshold). "
             "Underrepresented contact/grasp phase means policy struggles with contact/manipulation precision."
         ),
+        "jepa_surprise": (
+            f"Mean JEPA surprise = {value:.3f} ({severity.lower()} threshold). "
+            "The RobotJEPA world model cannot reliably predict state transitions in this dataset. "
+            "High surprise correlates with corrupted or inconsistent dynamics that cause IL policies "
+            "to fail on novel start states outside the training distribution."
+        ),
     }
     return reasons.get(metric, f"{metric} = {value:.4g} ({severity.lower()})")
 
@@ -474,6 +488,15 @@ def run_predict(argv: list[str]) -> None:
         action="store_true",
         help="Disable empirical blending from outcome database (pure heuristic).",
     )
+    p.add_argument(
+        "--world-model",
+        action="store_true",
+        help=(
+            "Train a RobotJEPA world model on the dataset and include "
+            "the JEPA surprise score in the prediction. Requires PyTorch. "
+            "Adds ~1-2 min runtime on M2 Pro."
+        ),
+    )
     args = p.parse_args(argv)
 
     dataset_path = args.path
@@ -491,7 +514,9 @@ def run_predict(argv: list[str]) -> None:
     log(f"Analyzing {dataset_path!r} ...")
 
     try:
-        report: DiagnosticReport = Pipeline().analyze_path(
+        report: DiagnosticReport = Pipeline(
+            world_model=getattr(args, "world_model", False)
+        ).analyze_path(
             dataset_path,
             policy_family=args.policy,
             reader=reader,

@@ -30,6 +30,7 @@ from calibra.analyzers.transition_dynamics import TransitionDynamicsAnalyzer
 from calibra.analyzers.latent_dynamics import LatentDynamicsAnalyzer
 from calibra.analyzers.ssl_embed import SSLTrajectoryEmbedderAnalyzer
 from calibra.analyzers.force_torque import ForceTorqueContactAnalyzer
+from calibra.analyzers.world_model import WorldModelConsistencyAnalyzer
 from calibra.schema.episode import EpisodeBatch
 from calibra.schema.report import DiagnosticReport
 
@@ -62,10 +63,16 @@ class Pipeline:
                 CoverageEntropyAnalyzer].
     """
 
-    def __init__(self, analyzers: Optional[list[Analyzer]] = None) -> None:
+    def __init__(
+        self,
+        analyzers: Optional[list[Analyzer]] = None,
+        world_model: bool = False,
+    ) -> None:
         self.analyzers: list[Analyzer] = (
             analyzers if analyzers is not None else _default_analyzers()
         )
+        if world_model:
+            self.analyzers = list(self.analyzers) + [WorldModelConsistencyAnalyzer()]
 
     def run(
         self,
