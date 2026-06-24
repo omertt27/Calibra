@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 100">
+  <!--
+    Calibra horizontal lockup — 480×100.
+
+    Layout: dark card bg │ icon (caliper) │ wordmark + tagline.
+    Icon center: (50, 50) inside the 76×76 inner card at (12, 12).
+
+    Icon geometry (same concept as logo-icon.svg, scaled to r=26):
+      C-arc: center (50,50), r=26, ±38° gap.
+        Bottom: (70.5, 66.0)   Top: (70.5, 34.0)
+      Jaw lines extend right to x=82.
+
+    Inspired by the Astral ecosystem's dark-background lockup style (uv, Ruff).
+    Single color #F59E0B on dark. No gradients.
+  -->
+
+  <!-- Card background -->
+  <rect width="480" height="100" rx="16" fill="#0F172A"/>
+
+  <!-- Icon inner card -->
+  <rect x="12" y="12" width="76" height="76" rx="14" fill="#1A2535"/>
+
+  <!-- C-arc: center (50,50), r=26, clockwise large arc -->
+  <path
+    d="M 70.5 66 A 26 26 0 1 1 70.5 34"
+    fill="none"
+    stroke="#F59E0B"
+    stroke-width="4.5"
+    stroke-linecap="round"/>
+
+  <!-- Upper jaw -->
+  <line x1="70.5" y1="34" x2="82" y2="34"
+        stroke="#F59E0B" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Lower jaw -->
+  <line x1="70.5" y1="66" x2="82" y2="66"
+        stroke="#F59E0B" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Wordmark -->
+  <text
+    x="107" y="58"
+    font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif"
+    font-weight="800"
+    font-size="40"
+    fill="#F8FAFC"
+    letter-spacing="-1.5">Calibra</text>
+
+  <!-- Tagline -->
+  <text
+    x="108" y="76"
+    font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif"
+    font-weight="400"
+    font-size="13"
+    fill="#64748B"
+    letter-spacing="0.3">dataset observability for robotics</text>
+</svg>
