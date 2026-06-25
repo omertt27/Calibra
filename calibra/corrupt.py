@@ -49,6 +49,7 @@ Exit codes
     1  One or more expected metric responses were not detected (useful in CI).
     2  Dataset could not be loaded or corruptions could not be applied.
 """
+
 from __future__ import annotations
 
 import copy
@@ -63,21 +64,29 @@ from calibra.schema.episode import Episode, EpisodeBatch
 
 # ── corruption transforms ─────────────────────────────────────────────────────
 
+
 @dataclass
 class CorruptionConfig:
     """Parameters controlling what corruptions to apply."""
-    drop_frames:       Optional[float] = None   # fraction of steps to drop [0, 1)
-    add_jitter_ms:     Optional[float] = None   # timestamp noise std (ms)
-    inject_spikes:     Optional[float] = None   # fraction of steps to spike [0, 1)
-    delay_episode:     Optional[float] = None   # fraction of episodes to delay [0, 1)
-    truncate_episodes: Optional[float] = None   # fraction of episodes to truncate [0, 1)
-    seed:              int = 42
+
+    drop_frames: Optional[float] = None  # fraction of steps to drop [0, 1)
+    add_jitter_ms: Optional[float] = None  # timestamp noise std (ms)
+    inject_spikes: Optional[float] = None  # fraction of steps to spike [0, 1)
+    delay_episode: Optional[float] = None  # fraction of episodes to delay [0, 1)
+    truncate_episodes: Optional[float] = None  # fraction of episodes to truncate [0, 1)
+    seed: int = 42
 
     def is_empty(self) -> bool:
-        return all(v is None for v in [
-            self.drop_frames, self.add_jitter_ms, self.inject_spikes,
-            self.delay_episode, self.truncate_episodes,
-        ])
+        return all(
+            v is None
+            for v in [
+                self.drop_frames,
+                self.add_jitter_ms,
+                self.inject_spikes,
+                self.delay_episode,
+                self.truncate_episodes,
+            ]
+        )
 
     def describe(self) -> list[str]:
         parts = []
@@ -138,8 +147,9 @@ def _copy_episode(ep: Episode) -> Episode:
         observations={k: v.copy() for k, v in ep.observations.items()},
         actions=ep.actions.copy(),
         obs_timestamps={k: v.copy() for k, v in ep.obs_timestamps.items()},
-        action_timestamps=(ep.action_timestamps.copy()
-                           if ep.action_timestamps is not None else None),
+        action_timestamps=(
+            ep.action_timestamps.copy() if ep.action_timestamps is not None else None
+        ),
     )
 
 
@@ -162,7 +172,7 @@ def _add_jitter(ep: Episode, std_ms: float, rng: np.random.Generator) -> Episode
     std_s = std_ms / 1000.0
     noise = rng.normal(0, std_s, size=ep.timestamps.shape)
     ep.timestamps = ep.timestamps + noise
-    ep.timestamps = np.sort(ep.timestamps)   # keep monotonically increasing
+    ep.timestamps = np.sort(ep.timestamps)  # keep monotonically increasing
     return ep
 
 
@@ -212,21 +222,22 @@ def _truncate_episode(ep: Episode) -> Episode:
 # ── metric extraction ─────────────────────────────────────────────────────────
 
 _METRIC_LABELS: dict[str, tuple[str, str]] = {
-    "jitter_cv":     ("Timestamp jitter CV",      "temporal_stability"),
-    "dropout_rate":  ("Timestamp dropout rate",   "temporal_stability"),
-    "spike_rate":    ("Jerk spike rate",           "control_smoothness"),
-    "vel_disc_rate": ("Velocity discontinuity",    "control_smoothness"),
-    "ldlj":          ("LDLJ smoothness",           "control_smoothness"),
-    "action_entropy":("Action entropy (bits/dim)", "coverage_entropy"),
+    "jitter_cv": ("Timestamp jitter CV", "temporal_stability"),
+    "dropout_rate": ("Timestamp dropout rate", "temporal_stability"),
+    "spike_rate": ("Jerk spike rate", "control_smoothness"),
+    "vel_disc_rate": ("Velocity discontinuity", "control_smoothness"),
+    "ldlj": ("LDLJ smoothness", "control_smoothness"),
+    "action_entropy": ("Action entropy (bits/dim)", "coverage_entropy"),
 }
 
 # Which direction is "worse" for each metric.
 _WORSE_IS_HIGHER = {"jitter_cv", "dropout_rate", "spike_rate", "vel_disc_rate"}
-_WORSE_IS_LOWER  = {"ldlj", "action_entropy"}
+_WORSE_IS_LOWER = {"ldlj", "action_entropy"}
 
 
 def _extract_metrics(report) -> dict[str, Optional[float]]:
     from calibra.compare import metrics_from_report
+
     return metrics_from_report(report)
 
 
@@ -253,7 +264,7 @@ def _react_symbol(delta: Optional[float], key: str) -> str:
     magnitude = abs(delta)
     threshold = 0.001 if key == "jitter_cv" else (0.005 if "rate" in key else 0.1)
     if magnitude < threshold:
-        return "  —"   # no meaningful response
+        return "  —"  # no meaningful response
     worse = (key in _WORSE_IS_HIGHER and delta > 0) or (key in _WORSE_IS_LOWER and delta < 0)
     if worse:
         return " 🔴" if magnitude > threshold * 5 else " 🟡"
@@ -287,14 +298,17 @@ def render_corruption_report(
         corr = corrupt_metrics.get(key)
         delta = (corr - orig) if (orig is not None and corr is not None) else None
         delta_str = (
-            f"{delta:+.1%}" if delta is not None and "rate" in key
-            else (f"{delta:+.2e}" if delta is not None and key == "jitter_cv"
-                  else (f"{delta:+.2f}" if delta is not None else "n/a"))
+            f"{delta:+.1%}"
+            if delta is not None and "rate" in key
+            else (
+                f"{delta:+.2e}"
+                if delta is not None and key == "jitter_cv"
+                else (f"{delta:+.2f}" if delta is not None else "n/a")
+            )
         )
         react = _react_symbol(delta, key)
         lines.append(
-            f"  {label:<30}  {_fmt(orig, key):>10}  {_fmt(corr, key):>10}  "
-            f"{delta_str:>10}  {react}"
+            f"  {label:<30}  {_fmt(orig, key):>10}  {_fmt(corr, key):>10}  {delta_str:>10}  {react}"
         )
 
     lines += [
@@ -316,9 +330,11 @@ def render_corruption_report(
         threshold = 0.001 if key == "jitter_cv" else (0.005 if "rate" in key else 0.1)
         if abs(delta) >= threshold:
             responded.append(label)
-        elif (cfg.drop_frames and key == "dropout_rate") \
-                or (cfg.add_jitter_ms and key == "jitter_cv") \
-                or (cfg.inject_spikes and key in ("spike_rate", "vel_disc_rate")):
+        elif (
+            (cfg.drop_frames and key == "dropout_rate")
+            or (cfg.add_jitter_ms and key == "jitter_cv")
+            or (cfg.inject_spikes and key in ("spike_rate", "vel_disc_rate"))
+        ):
             missed.append(label)
 
     if responded:
@@ -337,6 +353,7 @@ def render_corruption_report(
 
 
 # ── CLI entry point ───────────────────────────────────────────────────────────
+
 
 def run_corrupt(argv: list[str]) -> None:
     import argparse
@@ -362,23 +379,52 @@ def run_corrupt(argv: list[str]) -> None:
         ),
     )
     p.add_argument("path", help="Path or Hub ID of dataset to corrupt")
-    p.add_argument("--drop-frames",       type=float, metavar="RATE",
-                   help="Fraction of steps to randomly drop (e.g. 0.10 = 10%%)")
-    p.add_argument("--add-jitter-ms",     type=float, metavar="STD",
-                   help="Std-dev of Gaussian timestamp noise in milliseconds")
-    p.add_argument("--inject-spikes",     type=float, metavar="RATE",
-                   help="Fraction of steps to inject as jerk spikes")
-    p.add_argument("--delay-episode",     type=float, metavar="FRAC",
-                   help="Fraction of episodes to apply a synthetic delay offset to")
-    p.add_argument("--truncate-episodes", type=float, metavar="FRAC",
-                   help="Fraction of episodes to truncate at 80%% length")
-    p.add_argument("--format", "-f", metavar="FMT",
-                   choices=["hdf5", "lerobot", "rlds", "mcap"],
-                   help="Force a format adapter")
-    p.add_argument("--seed", type=int, default=42,
-                   help="Random seed for reproducibility (default: 42)")
-    p.add_argument("--gripper-dims", metavar="DIMS", default=None,
-                   help="Comma-separated gripper dims to exclude from smoothness")
+    p.add_argument(
+        "--drop-frames",
+        type=float,
+        metavar="RATE",
+        help="Fraction of steps to randomly drop (e.g. 0.10 = 10%%)",
+    )
+    p.add_argument(
+        "--add-jitter-ms",
+        type=float,
+        metavar="STD",
+        help="Std-dev of Gaussian timestamp noise in milliseconds",
+    )
+    p.add_argument(
+        "--inject-spikes",
+        type=float,
+        metavar="RATE",
+        help="Fraction of steps to inject as jerk spikes",
+    )
+    p.add_argument(
+        "--delay-episode",
+        type=float,
+        metavar="FRAC",
+        help="Fraction of episodes to apply a synthetic delay offset to",
+    )
+    p.add_argument(
+        "--truncate-episodes",
+        type=float,
+        metavar="FRAC",
+        help="Fraction of episodes to truncate at 80%% length",
+    )
+    p.add_argument(
+        "--format",
+        "-f",
+        metavar="FMT",
+        choices=["hdf5", "lerobot", "rlds", "mcap"],
+        help="Force a format adapter",
+    )
+    p.add_argument(
+        "--seed", type=int, default=42, help="Random seed for reproducibility (default: 42)"
+    )
+    p.add_argument(
+        "--gripper-dims",
+        metavar="DIMS",
+        default=None,
+        help="Comma-separated gripper dims to exclude from smoothness",
+    )
     args = p.parse_args(argv)
 
     cfg = CorruptionConfig(
@@ -400,13 +446,14 @@ def run_corrupt(argv: list[str]) -> None:
     reader = None
     if args.format:
         from calibra.__main__ import _get_reader
+
         reader = _get_reader(args.format)
 
     def log(msg: str) -> None:
         print(msg, file=sys.stderr, flush=True)
 
     # Strip hf:// prefix
-    path = args.path[len("hf://"):] if args.path.startswith("hf://") else args.path
+    path = args.path[len("hf://") :] if args.path.startswith("hf://") else args.path
 
     log(f"Loading {path!r} ...")
     try:
@@ -432,7 +479,7 @@ def run_corrupt(argv: list[str]) -> None:
     log("Running pipeline on corrupted ...")
     corrupt_report = pipeline.run(corrupt_batch)
 
-    orig_metrics    = _extract_metrics(orig_report)
+    orig_metrics = _extract_metrics(orig_report)
     corrupt_metrics = _extract_metrics(corrupt_report)
 
     output = render_corruption_report(

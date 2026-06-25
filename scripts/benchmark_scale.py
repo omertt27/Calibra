@@ -13,6 +13,7 @@ Usage:
     python scripts/benchmark_scale.py --json benchmark_results.json
     python scripts/benchmark_scale.py --no-pipeline   # pruning only
 """
+
 from __future__ import annotations
 
 import argparse
@@ -91,23 +92,29 @@ def main() -> None:
         "--sizes",
         default="1000,5000,10000,50000,100000",
         help="Comma-separated episode counts to benchmark "
-             "(default: 1000,5000,10000,50000,100000). "
-             "Warning: 500k may take several minutes for the exact selector.",
+        "(default: 1000,5000,10000,50000,100000). "
+        "Warning: 500k may take several minutes for the exact selector.",
     )
     parser.add_argument(
-        "--steps", type=int, default=200,
+        "--steps",
+        type=int,
+        default=200,
         help="Steps per episode (default: 200)",
     )
     parser.add_argument(
-        "--action-dim", type=int, default=7,
+        "--action-dim",
+        type=int,
+        default=7,
         help="Action dimensionality (default: 7, matching GR00T single-arm)",
     )
     parser.add_argument(
-        "--no-pipeline", action="store_true",
+        "--no-pipeline",
+        action="store_true",
         help="Skip Pipeline.run() timing (pruning-only benchmark)",
     )
     parser.add_argument(
-        "--json", metavar="PATH",
+        "--json",
+        metavar="PATH",
         help="Write results to a JSON file in addition to stdout",
     )
     args = parser.parse_args()
@@ -120,10 +127,7 @@ def main() -> None:
     print(f"  steps_per_episode={args.steps}  action_dim={args.action_dim}")
     print()
 
-    header = (
-        f"  {'Episodes':>10}  {'Pipeline':>10}  {'Prune (exact)':>14}  "
-        f"{'Prune (approx)':>15}"
-    )
+    header = f"  {'Episodes':>10}  {'Pipeline':>10}  {'Prune (exact)':>14}  {'Prune (approx)':>15}"
     print(header)
     print("  " + "─" * (len(header) - 2))
 
@@ -137,9 +141,11 @@ def main() -> None:
         if not args.no_pipeline:
             pipeline_s, per_analyzer = _time_pipeline(batch)
             from calibra.pipeline import Pipeline as _P
+
             report = _P().run(batch)
         else:
             from calibra.pipeline import Pipeline as _P
+
             report = _P().run(batch)
 
         # Exact selector (skip for N > 100k — too slow to be useful as benchmark)
@@ -153,28 +159,32 @@ def main() -> None:
         exact_str = _fmt(exact_s) if exact_s is not None else "  (skipped)"
         pipeline_str = _fmt(pipeline_s) if pipeline_s is not None else "    (skipped)"
 
-        print(
-            f"  {n:>10,}  {pipeline_str:>10}  {exact_str:>14}  {_fmt(approx_s):>15}"
-        )
+        print(f"  {n:>10,}  {pipeline_str:>10}  {exact_str:>14}  {_fmt(approx_s):>15}")
 
-        rows.append({
-            "n_episodes": n,
-            "steps_per_episode": args.steps,
-            "action_dim": args.action_dim,
-            "pipeline_s": pipeline_s,
-            "per_analyzer_s": per_analyzer,
-            "exact_prune_s": exact_s,
-            "approx_prune_s": approx_s,
-        })
+        rows.append(
+            {
+                "n_episodes": n,
+                "steps_per_episode": args.steps,
+                "action_dim": args.action_dim,
+                "pipeline_s": pipeline_s,
+                "per_analyzer_s": per_analyzer,
+                "exact_prune_s": exact_s,
+                "approx_prune_s": approx_s,
+            }
+        )
 
     print()
 
     if rows:
         # Show at what size approximate beats exact
         crossover = next(
-            (r["n_episodes"] for r in rows
-             if r["exact_prune_s"] is not None and r["approx_prune_s"] is not None
-             and r["approx_prune_s"] < r["exact_prune_s"]),
+            (
+                r["n_episodes"]
+                for r in rows
+                if r["exact_prune_s"] is not None
+                and r["approx_prune_s"] is not None
+                and r["approx_prune_s"] < r["exact_prune_s"]
+            ),
             None,
         )
         if crossover:

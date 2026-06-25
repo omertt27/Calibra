@@ -1,4 +1,5 @@
 """Tests for the LatentDynamicsAnalyzer and State Encoders."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -17,6 +18,7 @@ from calibra.schema.report import RiskLevel
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
+
 
 def _make_batch(
     n_eps: int = 3,
@@ -37,13 +39,15 @@ def _make_batch(
             # Normal varying trajectory
             obs = {"proprio": rng.normal(0, 1.0, (n_steps, state_dim)).astype(np.float32)}
             acts = rng.uniform(-1, 1, (n_steps, action_dim)).astype(np.float32)
-            
-        episodes.append(Episode(
-            metadata=EpisodeMetadata(episode_id=f"ep_{i}"),
-            timestamps=ts,
-            observations=obs,
-            actions=acts,
-        ))
+
+        episodes.append(
+            Episode(
+                metadata=EpisodeMetadata(episode_id=f"ep_{i}"),
+                timestamps=ts,
+                observations=obs,
+                actions=acts,
+            )
+        )
     return EpisodeBatch(
         episodes=episodes,
         dataset_name="latent_test",
@@ -53,6 +57,7 @@ def _make_batch(
 
 
 # ── tests ────────────────────────────────────────────────────────────────────
+
 
 class TestJointStateEncoder:
     def test_concatenates_multiple_keys(self):
@@ -68,7 +73,7 @@ class TestJointStateEncoder:
 
     def test_flattens_multi_dim_tensors(self):
         obs = {
-            "state_3d": np.arange(12).reshape(2, 2, 3), # (T, 2, 3)
+            "state_3d": np.arange(12).reshape(2, 2, 3),  # (T, 2, 3)
         }
         encoder = JointStateEncoder(["state_3d"])
         encoded = encoder.encode(obs)
@@ -89,7 +94,7 @@ class TestNumericalHelpers:
         data_2d = rng.normal(0, 1.0, (10, 2))
         data_5d = np.zeros((10, 5))
         data_5d[:, :2] = data_2d
-        
+
         proj, var_ratio = _pca_project_kd(data_5d, k=2)
         assert proj.shape == (10, 2)
         assert var_ratio > 0.99  # Top-2 variance explains everything
@@ -109,7 +114,7 @@ class TestNumericalHelpers:
     def test_compute_knn_density(self):
         # Too few samples
         assert _compute_knn_density(np.zeros((3, 2)), k=5) == 0.0
-        
+
         # Grid of coordinates
         points = np.array([[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]])
         # Distance to 1st nearest neighbor is 1.0
@@ -126,7 +131,7 @@ class TestNumericalHelpers:
 
         # 2. Highly dependent data
         X_dep = rng.normal(0, 1, (100, 2))
-        Y_dep = X_dep ** 2 + rng.normal(0, 0.05, (100, 2))
+        Y_dep = X_dep**2 + rng.normal(0, 0.05, (100, 2))
         hsic_dep = _compute_normalized_hsic(X_dep, Y_dep)
         assert hsic_dep > 0.3
         assert hsic_dep > hsic_ind
@@ -137,11 +142,11 @@ class TestLatentDynamicsAnalyzer:
         batch = _make_batch()
         analyzer = LatentDynamicsAnalyzer()
         result = analyzer.analyze(batch)
-        
+
         assert result.analyzer_name == "latent_dynamics"
         # 5 flags: latent_state_entropy, transition_redundancy, dynamics_predictability_r2, causal_action_effect_mi, outlier_transition_fraction
         assert len(result.flags) == 5
-        
+
         # Verify metrics keys
         metrics = result.raw_metrics
         assert "state_space_entropy_2d" in metrics
@@ -152,7 +157,7 @@ class TestLatentDynamicsAnalyzer:
         assert "state_redundancy" in metrics
         assert "transition_redundancy" in metrics
         assert "per_episode_exclusive_novelty" in metrics
-        
+
         # Exclusive novelty maps to the episode keys in the batch
         novelty_dict = metrics["per_episode_exclusive_novelty"]
         assert len(novelty_dict) == 3
@@ -166,12 +171,12 @@ class TestLatentDynamicsAnalyzer:
         batch = _make_batch(collapsed=True)
         analyzer = LatentDynamicsAnalyzer()
         result = analyzer.analyze(batch)
-        
+
         # State space entropy should trigger WARNING
         state_flags = [f for f in result.flags if f.metric == "latent_state_entropy"]
         assert len(state_flags) == 1
         assert state_flags[0].level == RiskLevel.WARNING
-        
+
         # State redundancy should be extremely high (near 1.0)
         assert result.raw_metrics["state_redundancy"] > 0.95
 

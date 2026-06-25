@@ -1,4 +1,5 @@
 """Tests for episode-level anomaly detection (calibra/anomalies.py)."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -20,6 +21,7 @@ from calibra.schema.report import DiagnosticReport
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
+
 
 def _episode(
     n_steps: int = 100,
@@ -93,6 +95,7 @@ def _report_from_batch(batch: EpisodeBatch) -> DiagnosticReport:
 
 # ── unit tests: _consecutive_groups ──────────────────────────────────────────
 
+
 def test_consecutive_groups_empty():
     assert _consecutive_groups([]) == []
 
@@ -116,6 +119,7 @@ def test_consecutive_groups_gaps():
 
 
 # ── unit tests: _heuristic_label ─────────────────────────────────────────────
+
 
 def _make_anomaly(idx: int, metric: str = "spike_rate") -> EpisodeAnomaly:
     flag = EpisodeFlag(
@@ -161,6 +165,7 @@ def test_heuristic_label_dropout():
 
 
 # ── integration: find_outliers ────────────────────────────────────────────────
+
 
 def test_no_outliers_on_uniform_batch():
     report = _report_from_batch(_smooth_batch(n=20))
@@ -235,34 +240,60 @@ def test_constant_metric_produces_no_flags():
 
 # ── unit tests: EpisodeFlag ───────────────────────────────────────────────────
 
+
 def test_episode_flag_direction_above():
     flag = EpisodeFlag(
-        episode_idx=0, episode_id="ep_0", metric="spike_rate",
-        observed=0.5, median=0.1, deviation_mads=4.0, higher_is_worse=True,
+        episode_idx=0,
+        episode_id="ep_0",
+        metric="spike_rate",
+        observed=0.5,
+        median=0.1,
+        deviation_mads=4.0,
+        higher_is_worse=True,
     )
     assert flag.direction == "above"
 
 
 def test_episode_flag_direction_below():
     flag = EpisodeFlag(
-        episode_idx=0, episode_id="ep_0", metric="ldlj",
-        observed=-30.0, median=-15.0, deviation_mads=5.0, higher_is_worse=False,
+        episode_idx=0,
+        episode_id="ep_0",
+        metric="ldlj",
+        observed=-30.0,
+        median=-15.0,
+        deviation_mads=5.0,
+        higher_is_worse=False,
     )
     assert flag.direction == "below"
 
 
 def test_episode_anomaly_severity_is_max_flag():
     flags = [
-        EpisodeFlag(episode_idx=0, episode_id="ep_0", metric="spike_rate",
-                    observed=1.0, median=0.1, deviation_mads=3.5, higher_is_worse=True),
-        EpisodeFlag(episode_idx=0, episode_id="ep_0", metric="vel_disc_rate",
-                    observed=1.0, median=0.1, deviation_mads=6.2, higher_is_worse=True),
+        EpisodeFlag(
+            episode_idx=0,
+            episode_id="ep_0",
+            metric="spike_rate",
+            observed=1.0,
+            median=0.1,
+            deviation_mads=3.5,
+            higher_is_worse=True,
+        ),
+        EpisodeFlag(
+            episode_idx=0,
+            episode_id="ep_0",
+            metric="vel_disc_rate",
+            observed=1.0,
+            median=0.1,
+            deviation_mads=6.2,
+            higher_is_worse=True,
+        ),
     ]
     a = EpisodeAnomaly(episode_idx=0, episode_id="ep_0", flags=flags)
     assert a.severity == pytest.approx(6.2)
 
 
 # ── integration: render ───────────────────────────────────────────────────────
+
 
 def test_render_empty():
     assert render([], n_episodes=100) == ""

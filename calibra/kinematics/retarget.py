@@ -32,6 +32,7 @@ has no "next" state to compute a delta against.
 
 Dependency: pip install 'calibra[kinematics]'  (scipy>=1.10)
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -40,6 +41,7 @@ import numpy as np
 def _require_scipy():
     try:
         from scipy.spatial.transform import Rotation
+
         return Rotation
     except ImportError:
         raise ImportError(
@@ -88,24 +90,22 @@ def absolute_to_relative_eef(poses: np.ndarray) -> np.ndarray:
             "Expected columns: [x, y, z, qx, qy, qz, qw]."
         )
     if len(poses) < 2:
-        raise ValueError(
-            f"Need at least 2 poses to compute a delta, got {len(poses)}."
-        )
+        raise ValueError(f"Need at least 2 poses to compute a delta, got {len(poses)}.")
 
-    positions = poses[:, :3]       # (T, 3)
-    quaternions = poses[:, 3:]     # (T, 4)  scalar-last
+    positions = poses[:, :3]  # (T, 3)
+    quaternions = poses[:, 3:]  # (T, 4)  scalar-last
 
     # Build Rotation objects for all steps at once (scipy handles the array).
     all_rots = Rotation.from_quat(quaternions)  # (T,)
-    r_curr = all_rots[:-1]   # (T-1,)
-    r_next = all_rots[1:]    # (T-1,)
+    r_curr = all_rots[:-1]  # (T-1,)
+    r_next = all_rots[1:]  # (T-1,)
 
     # Position delta expressed in the current EEF frame.
-    dp_world = np.diff(positions, axis=0)       # (T-1, 3)
-    dp_local = r_curr.inv().apply(dp_world)     # (T-1, 3)
+    dp_world = np.diff(positions, axis=0)  # (T-1, 3)
+    dp_local = r_curr.inv().apply(dp_world)  # (T-1, 3)
 
     # Rotation delta expressed in the current EEF frame, as Euler angles.
-    dr_local = r_curr.inv() * r_next            # (T-1,) composed Rotation
+    dr_local = r_curr.inv() * r_next  # (T-1,) composed Rotation
     euler_local = dr_local.as_euler("xyz", degrees=False)  # (T-1, 3) radians
 
     return np.concatenate([dp_local, euler_local], axis=1).astype(np.float32)
@@ -127,7 +127,7 @@ def retarget_episode_eef(
     -------
     np.ndarray, shape (T−1, 6) — relative EEF deltas.
     """
-    eef_pos  = np.asarray(eef_pos,  dtype=np.float64)
+    eef_pos = np.asarray(eef_pos, dtype=np.float64)
     eef_quat = np.asarray(eef_quat, dtype=np.float64)
     if eef_pos.shape[0] != eef_quat.shape[0]:
         raise ValueError(

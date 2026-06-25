@@ -22,6 +22,7 @@ Calibra quality scores (low jerk, low dropout) also have low JEPA surprise —
 they are more learnable by a world model. This validates that hand-crafted
 diagnostic metrics are offline proxies for world-model predictability.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -29,8 +30,7 @@ from typing import Optional
 
 import numpy as np
 
-_PROPRIO_KEYS = ("proprio", "state", "joint_state", "joint_pos",
-                 "robot_state", "qpos", "obs")
+_PROPRIO_KEYS = ("proprio", "state", "joint_state", "joint_pos", "robot_state", "qpos", "obs")
 
 
 @dataclass
@@ -41,8 +41,8 @@ class RobotJEPAConfig:
     lr: float = 3e-4
     n_epochs: int = 60
     batch_size: int = 512
-    vicreg_lambda: float = 25.0   # variance loss weight
-    vicreg_mu: float = 1.0        # covariance loss weight
+    vicreg_lambda: float = 25.0  # variance loss weight
+    vicreg_mu: float = 1.0  # covariance loss weight
     grad_clip: float = 1.0
     warmup_epochs: int = 5
 
@@ -82,6 +82,7 @@ class RobotJEPA:
     @staticmethod
     def _get_device():
         import torch
+
         if torch.backends.mps.is_available():
             return torch.device("mps")
         if torch.cuda.is_available():
@@ -92,6 +93,7 @@ class RobotJEPA:
 
     def _build_model(self, state_dim: int, action_dim: int):
         import torch.nn as nn
+
         cfg = self.config
         D, H = cfg.latent_dim, cfg.hidden_dim
 
@@ -102,10 +104,12 @@ class RobotJEPA:
             layers.append(nn.Linear(H, out_d))
             return nn.Sequential(*layers)
 
-        return nn.ModuleDict({
-            "encoder":   mlp(state_dim, D),
-            "predictor": mlp(D + action_dim, D),
-        })
+        return nn.ModuleDict(
+            {
+                "encoder": mlp(state_dim, D),
+                "predictor": mlp(D + action_dim, D),
+            }
+        )
 
     # ── data extraction ───────────────────────────────────────────────────────
 
@@ -148,9 +152,7 @@ class RobotJEPA:
             import torch
             import torch.nn.functional as F
         except ImportError as e:
-            raise ImportError(
-                "RobotJEPA requires PyTorch. Install with: pip install torch"
-            ) from e
+            raise ImportError("RobotJEPA requires PyTorch. Install with: pip install torch") from e
 
         states, actions, next_states, _ = self._extract_transitions(batch)
         if states is None:
@@ -187,7 +189,7 @@ class RobotJEPA:
             n_batches = 0
 
             for i in range(0, N, cfg.batch_size):
-                idx = perm[i:i + cfg.batch_size]
+                idx = perm[i : i + cfg.batch_size]
                 s_b, a_b, ns_b = S_n[idx], A_n[idx], NS_n[idx]
 
                 z_t = model["encoder"](s_b)
@@ -211,9 +213,7 @@ class RobotJEPA:
                 diag_mask = torch.eye(cov.shape[0], device=self._device, dtype=torch.bool)
                 cov_loss = cov[~diag_mask].pow(2).sum() / cfg.latent_dim
 
-                loss = (inv_loss
-                        + cfg.vicreg_lambda * var_loss
-                        + cfg.vicreg_mu * cov_loss)
+                loss = inv_loss + cfg.vicreg_lambda * var_loss + cfg.vicreg_mu * cov_loss
 
                 opt.zero_grad()
                 loss.backward()
@@ -281,9 +281,7 @@ class RobotJEPA:
                 a_n = (a_t - self._a_mean) / self._a_std
 
                 z_t = self._model["encoder"](s_n[:-1])
-                z_t1_pred = self._model["predictor"](
-                    torch.cat([z_t, a_n[:-1]], dim=-1)
-                )
+                z_t1_pred = self._model["predictor"](torch.cat([z_t, a_n[:-1]], dim=-1))
                 z_t1_target = self._model["encoder"](s_n[1:])
 
                 # Surprise = mean cosine distance between predicted and actual
@@ -317,6 +315,7 @@ class RobotJEPA:
             raise RuntimeError("Call fit() before encode().")
 
         import torch
+
         with torch.no_grad():
             s = torch.from_numpy(state.astype(np.float32)).unsqueeze(0).to(self._device)
             s_n = (s - self._s_mean) / self._s_std
@@ -343,6 +342,7 @@ class RobotJEPA:
             raise RuntimeError("Call fit() before predict_from_latent().")
 
         import torch
+
         with torch.no_grad():
             z_t = torch.from_numpy(z.astype(np.float32)).unsqueeze(0).to(self._device)
             a = torch.from_numpy(action.astype(np.float32)).unsqueeze(0).to(self._device)
@@ -373,6 +373,7 @@ class RobotJEPA:
             raise RuntimeError("Call fit() before rollout_latent().")
 
         import torch
+
         H = len(actions)
         latents = np.empty((H + 1, self.config.latent_dim), dtype=np.float32)
 
@@ -383,9 +384,7 @@ class RobotJEPA:
             latents[0] = z.squeeze(0).cpu().numpy()
 
             for k in range(H):
-                a = torch.from_numpy(
-                    actions[k].astype(np.float32)
-                ).unsqueeze(0).to(self._device)
+                a = torch.from_numpy(actions[k].astype(np.float32)).unsqueeze(0).to(self._device)
                 a_n = (a - self._a_mean) / self._a_std
                 z = self._model["predictor"](torch.cat([z, a_n], dim=-1))
                 latents[k + 1] = z.squeeze(0).cpu().numpy()
@@ -413,21 +412,20 @@ class RobotJEPA:
             raise RuntimeError("Call fit() before rollout_latent_batch().")
 
         import torch
+
         N, H, _ = action_seqs.shape
 
         with torch.no_grad():
             s = torch.from_numpy(state.astype(np.float32)).unsqueeze(0).to(self._device)
             s_n = (s - self._s_mean) / self._s_std
-            z0 = self._model["encoder"](s_n)          # (1, L)
-            z = z0.expand(N, -1).clone()               # (N, L)
+            z0 = self._model["encoder"](s_n)  # (1, L)
+            z = z0.expand(N, -1).clone()  # (N, L)
 
-            acts = torch.from_numpy(
-                action_seqs.astype(np.float32)
-            ).to(self._device)                          # (N, H, A)
+            acts = torch.from_numpy(action_seqs.astype(np.float32)).to(self._device)  # (N, H, A)
             a_n = (acts - self._a_mean) / self._a_std  # normalise
 
             for k in range(H):
                 inp = torch.cat([z, a_n[:, k, :]], dim=-1)  # (N, L+A)
-                z = self._model["predictor"](inp)            # (N, L)
+                z = self._model["predictor"](inp)  # (N, L)
 
         return z.cpu().numpy()

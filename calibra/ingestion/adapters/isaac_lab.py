@@ -38,6 +38,7 @@ HDF5Reader because it is registered first.
 
 Dependency: pip install 'calibra[hdf5]'  (h5py)
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -56,6 +57,7 @@ if TYPE_CHECKING:
 def _require_h5py() -> "_h5py":
     try:
         import h5py
+
         return h5py
     except ImportError:
         raise ImportError(
@@ -87,6 +89,7 @@ class IsaacLabReader(DatasetReader):
     def _is_isaac_lab_file(path: str) -> bool:
         try:
             import h5py
+
             with h5py.File(path, "r") as f:
                 if "data" not in f:
                     return False
@@ -124,9 +127,7 @@ class IsaacLabReader(DatasetReader):
 
     # ── internal ────────────────────────────────────────────────────────────
 
-    def _read_file(
-        self, h5py: "_h5py", path: str
-    ) -> tuple[list[Episode], str]:
+    def _read_file(self, h5py: "_h5py", path: str) -> tuple[list[Episode], str]:
         with h5py.File(path, "r") as f:
             env_name = str(f.attrs.get("env", "") or f.attrs.get("env_name", ""))
             success_mask = self._load_success_mask(f)
@@ -192,6 +193,7 @@ class IsaacLabReader(DatasetReader):
     @staticmethod
     def _load_obs(demo: "_h5py.Group") -> dict[str, np.ndarray]:
         import h5py
+
         obs: dict[str, np.ndarray] = {}
         if "obs" not in demo:
             return obs

@@ -1,4 +1,5 @@
 """Tests for calibra.curation.entropy — trajectory entropy scoring."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -15,6 +16,7 @@ from calibra.schema.report import DiagnosticReport
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
+
 
 def _make_ep(actions: np.ndarray, ep_id: str = "ep") -> Episode:
     T = len(actions)
@@ -34,6 +36,7 @@ def _make_batch(episodes: list[Episode]) -> EpisodeBatch:
 
 # ── compute_trajectory_entropy ────────────────────────────────────────────────
 
+
 class TestComputeTrajectoryEntropy:
     def test_constant_actions_have_zero_entropy(self):
         acts = np.ones((100, 7))
@@ -52,7 +55,7 @@ class TestComputeTrajectoryEntropy:
         # (low entropy) vs. a true uniform (high entropy) instead.
         rng = np.random.default_rng(0)
         concentrated = rng.normal(0, 0.01, (500, 4))  # most values in few bins
-        uniform      = rng.uniform(-1.0, 1.0, (500, 4))
+        uniform = rng.uniform(-1.0, 1.0, (500, 4))
         assert compute_trajectory_entropy(concentrated) < compute_trajectory_entropy(uniform)
 
     def test_1d_actions_accepted(self):
@@ -75,13 +78,14 @@ class TestComputeTrajectoryEntropy:
 
 # ── score_batch_entropy / rank_by_entropy ─────────────────────────────────────
 
+
 class TestScoreAndRank:
     def _make_diverse_batch(self):
         rng = np.random.default_rng(0)
         eps = [
-            _make_ep(np.ones((100, 4)),                          "constant"),
-            _make_ep(rng.uniform(-1, 1, (100, 4)),               "random"),
-            _make_ep(rng.uniform(-0.1, 0.1, (100, 4)),           "narrow"),
+            _make_ep(np.ones((100, 4)), "constant"),
+            _make_ep(rng.uniform(-1, 1, (100, 4)), "random"),
+            _make_ep(rng.uniform(-0.1, 0.1, (100, 4)), "narrow"),
         ]
         return _make_batch(eps)
 
@@ -121,16 +125,18 @@ class TestScoreAndRank:
 
 # ── CoresetSelector with entropy_weight ──────────────────────────────────────
 
+
 class TestCoresetSelectorEntropy:
     def _make_mixed_batch(self, n: int = 20) -> tuple[EpisodeBatch, DiagnosticReport]:
         from calibra.pipeline import Pipeline
+
         rng = np.random.default_rng(0)
         eps = []
         for i in range(n):
             if i < n // 2:
-                acts = np.ones((60, 7)) * 0.5   # low-entropy episodes
+                acts = np.ones((60, 7)) * 0.5  # low-entropy episodes
             else:
-                acts = rng.uniform(-1, 1, (60, 7))   # high-entropy episodes
+                acts = rng.uniform(-1, 1, (60, 7))  # high-entropy episodes
             ep = _make_ep(acts, ep_id=f"ep_{i}")
             eps.append(ep)
         batch = _make_batch(eps)
@@ -163,7 +169,9 @@ class TestCoresetSelectorEntropy:
         """
         batch, report = self._make_mixed_batch(n=20)
         result = CoresetSelector(
-            keep_fraction=0.5, entropy_weight=0.4, diversity_weight=0.3,
+            keep_fraction=0.5,
+            entropy_weight=0.4,
+            diversity_weight=0.3,
         ).select(batch, report)
         assert result.n_kept == 10
         assert result.n_original == 20
@@ -194,6 +202,7 @@ class TestCoresetSelectorEntropy:
             eps.append(_make_ep(a, ep_id=f"ep_{i}"))
 
         from calibra.pipeline import Pipeline
+
         batch = _make_batch(eps)
         report = Pipeline().run(batch)
 

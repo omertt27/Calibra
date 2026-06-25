@@ -3,6 +3,7 @@ Tests for EpisodeCurator (Phase 2).
 
 All fixtures are synthetic — no real dataset files required.
 """
+
 from __future__ import annotations
 
 
@@ -15,6 +16,7 @@ from calibra.comparison.curator import EpisodeCurator
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
+
 
 def _make_ep(
     n_steps: int = 100,
@@ -39,19 +41,27 @@ def _make_ep(
 def _batch_with_one_short(n_episodes: int = 10, short_steps: int = 10) -> EpisodeBatch:
     """Batch where episode 0 is much shorter than the rest."""
     episodes = [_make_ep(n_steps=short_steps, seed=0, episode_id="ep_0")]
-    episodes += [_make_ep(n_steps=100, seed=i + 1, episode_id=f"ep_{i+1}")
-                 for i in range(n_episodes - 1)]
-    return EpisodeBatch(episodes=episodes, dataset_name="mixed",
-                        format="hdf5", source_path="/tmp/mixed.h5")
+    episodes += [
+        _make_ep(n_steps=100, seed=i + 1, episode_id=f"ep_{i + 1}") for i in range(n_episodes - 1)
+    ]
+    return EpisodeBatch(
+        episodes=episodes, dataset_name="mixed", format="hdf5", source_path="/tmp/mixed.h5"
+    )
 
 
 def _batch_with_one_jittery(n_episodes: int = 10) -> EpisodeBatch:
     """Batch where episode 0 has very high jitter; the rest are clean."""
     episodes = [_make_ep(jitter_std=0.040, seed=0, episode_id="ep_0")]
-    episodes += [_make_ep(jitter_std=0.0, seed=i + 1, episode_id=f"ep_{i+1}")
-                 for i in range(n_episodes - 1)]
-    return EpisodeBatch(episodes=episodes, dataset_name="mostly_clean",
-                        format="hdf5", source_path="/tmp/mostly_clean.h5")
+    episodes += [
+        _make_ep(jitter_std=0.0, seed=i + 1, episode_id=f"ep_{i + 1}")
+        for i in range(n_episodes - 1)
+    ]
+    return EpisodeBatch(
+        episodes=episodes,
+        dataset_name="mostly_clean",
+        format="hdf5",
+        source_path="/tmp/mostly_clean.h5",
+    )
 
 
 @pytest.fixture
@@ -60,6 +70,7 @@ def default_pipeline() -> Pipeline:
 
 
 # ── basic behaviour ───────────────────────────────────────────────────────────
+
 
 def test_no_thresholds_keeps_all_episodes(default_pipeline):
     """Curator with all None thresholds retains every episode."""
@@ -115,9 +126,7 @@ def test_retained_indices_consistent(default_pipeline):
     curator = EpisodeCurator(min_length=50)
     filtered, curation_report = curator.curate(batch, report)
 
-    all_indices = sorted(
-        curation_report.retained_indices + curation_report.dropped_indices
-    )
+    all_indices = sorted(curation_report.retained_indices + curation_report.dropped_indices)
     assert all_indices == list(range(batch.n_episodes))
 
 
@@ -234,8 +243,9 @@ def test_mismatched_report_warns(default_pipeline):
 
 def test_empty_batch_no_error(default_pipeline):
     """Curating an empty batch returns empty filtered batch and report."""
-    batch = EpisodeBatch(episodes=[], dataset_name="empty",
-                         format="hdf5", source_path="/tmp/empty.h5")
+    batch = EpisodeBatch(
+        episodes=[], dataset_name="empty", format="hdf5", source_path="/tmp/empty.h5"
+    )
     report = default_pipeline.run(batch)
 
     curator = EpisodeCurator(min_length=50)

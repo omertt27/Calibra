@@ -35,6 +35,7 @@ Exit codes
     1  HIGH risk
     2  CRITICAL risk
 """
+
 from __future__ import annotations
 
 import argparse
@@ -49,21 +50,21 @@ from calibra.schema.report import DiagnosticReport
 
 # ── thresholds ────────────────────────────────────────────────────────────────
 
-_KL_MEDIUM:   float = 0.5
-_KL_HIGH:     float = 1.5
+_KL_MEDIUM: float = 0.5
+_KL_HIGH: float = 1.5
 _KL_CRITICAL: float = 3.0
 
-_SMOOTHNESS_MEDIUM:   float = 3.0   # |Δ LDLJ|
-_SMOOTHNESS_HIGH:     float = 8.0
+_SMOOTHNESS_MEDIUM: float = 3.0  # |Δ LDLJ|
+_SMOOTHNESS_HIGH: float = 8.0
 _SMOOTHNESS_CRITICAL: float = 15.0
 
-_FREQ_MEDIUM:   float = 5.0    # Hz delta
-_FREQ_HIGH:     float = 15.0
+_FREQ_MEDIUM: float = 5.0  # Hz delta
+_FREQ_HIGH: float = 15.0
 _FREQ_CRITICAL: float = 30.0
 
 _WIDTH = 60
 _THICK = "━" * _WIDTH
-_THIN  = "─" * _WIDTH
+_THIN = "─" * _WIDTH
 
 
 def _raw(report: DiagnosticReport, analyzer: str) -> dict:
@@ -89,6 +90,7 @@ def _risk_icon(level: str) -> str:
 
 # ── KL divergence helper ──────────────────────────────────────────────────────
 
+
 def _kl_divergence_marginal(a: np.ndarray, b: np.ndarray, n_bins: int = 50) -> float:
     """
     Estimate mean per-dimension KL(A || B) using histogram binning.
@@ -99,8 +101,8 @@ def _kl_divergence_marginal(a: np.ndarray, b: np.ndarray, n_bins: int = 50) -> f
     if b.ndim == 1:
         b = b[:, None]
 
-    a = a[:, :b.shape[1]]
-    b = b[:, :a.shape[1]]
+    a = a[:, : b.shape[1]]
+    b = b[:, : a.shape[1]]
 
     kl_vals: list[float] = []
     for d in range(a.shape[1]):
@@ -132,8 +134,8 @@ def _coverage_overlap(sim: np.ndarray, real: np.ndarray, n_bins: int = 20) -> fl
     if real.ndim == 1:
         real = real[:, None]
 
-    sim  = sim[:, :real.shape[1]]
-    real = real[:, :sim.shape[1]]
+    sim = sim[:, : real.shape[1]]
+    real = real[:, : sim.shape[1]]
 
     overlaps: list[float] = []
     for d in range(real.shape[1]):
@@ -143,9 +145,9 @@ def _coverage_overlap(sim: np.ndarray, real: np.ndarray, n_bins: int = 20) -> fl
             continue
         bins = np.linspace(lo, hi, n_bins + 1)
         real_hist, _ = np.histogram(real[:, d], bins=bins)
-        sim_hist,  _ = np.histogram(sim[:, d],  bins=bins)
+        sim_hist, _ = np.histogram(sim[:, d], bins=bins)
         real_occupied = real_hist > 0
-        sim_covered   = (sim_hist > 0) & real_occupied
+        sim_covered = (sim_hist > 0) & real_occupied
         overlap = float(sim_covered.sum()) / max(real_occupied.sum(), 1)
         overlaps.append(overlap)
 
@@ -153,6 +155,7 @@ def _coverage_overlap(sim: np.ndarray, real: np.ndarray, n_bins: int = 20) -> fl
 
 
 # ── gap analysis ──────────────────────────────────────────────────────────────
+
 
 def _extract_actions(report: DiagnosticReport) -> Optional[np.ndarray]:
     """Pull per-episode raw action arrays if stored in raw_metrics."""
@@ -190,81 +193,95 @@ def analyze_gap(
     overall_levels: list[str] = []
 
     # ── smoothness gap ────────────────────────────────────────────────────────
-    sim_s  = _raw(sim_report,  "control_smoothness")
+    sim_s = _raw(sim_report, "control_smoothness")
     real_s = _raw(real_report, "control_smoothness")
 
-    sim_ldlj  = sim_s.get("ldlj",  {}).get("mean_ldlj")
+    sim_ldlj = sim_s.get("ldlj", {}).get("mean_ldlj")
     real_ldlj = real_s.get("ldlj", {}).get("mean_ldlj")
     if sim_ldlj is not None and real_ldlj is not None:
         delta_ldlj = abs(sim_ldlj - real_ldlj)
         level = _risk_level(delta_ldlj, _SMOOTHNESS_MEDIUM, _SMOOTHNESS_HIGH, _SMOOTHNESS_CRITICAL)
         gaps["ldlj_gap"] = {
-            "sim":   round(sim_ldlj, 3),
-            "real":  round(real_ldlj, 3),
+            "sim": round(sim_ldlj, 3),
+            "real": round(real_ldlj, 3),
             "delta": round(delta_ldlj, 3),
-            "risk":  level,
+            "risk": level,
             "note": (
-                "Sim motions are much smoother than real." if sim_ldlj > real_ldlj
+                "Sim motions are much smoother than real."
+                if sim_ldlj > real_ldlj
                 else "Real motions are smoother than sim."
             ),
         }
         overall_levels.append(level)
 
-    sim_spike  = sim_s.get("jerk_spikes",  {}).get("mean_spike_fraction")
+    sim_spike = sim_s.get("jerk_spikes", {}).get("mean_spike_fraction")
     real_spike = real_s.get("jerk_spikes", {}).get("mean_spike_fraction")
     if sim_spike is not None and real_spike is not None:
         delta_spike = abs(sim_spike - real_spike)
         level = _risk_level(delta_spike * 20, 1.0, 2.0, 4.0)  # scale to 0–20 range
         gaps["spike_rate_gap"] = {
-            "sim":   round(sim_spike, 4),
-            "real":  round(real_spike, 4),
+            "sim": round(sim_spike, 4),
+            "real": round(real_spike, 4),
             "delta": round(delta_spike, 4),
-            "risk":  level,
+            "risk": level,
         }
         overall_levels.append(level)
 
     # ── temporal gap ──────────────────────────────────────────────────────────
-    sim_t  = _raw(sim_report,  "temporal_stability")
+    sim_t = _raw(sim_report, "temporal_stability")
     real_t = _raw(real_report, "temporal_stability")
 
-    sim_jitter  = sim_t.get("jitter",  {}).get("mean_cv")
+    sim_jitter = sim_t.get("jitter", {}).get("mean_cv")
     real_jitter = real_t.get("jitter", {}).get("mean_cv")
     if sim_jitter is not None and real_jitter is not None:
         delta_j = abs(sim_jitter - real_jitter)
         level = _risk_level(delta_j * 10, 0.5, 1.5, 3.0)
         gaps["jitter_cv_gap"] = {
-            "sim":   round(sim_jitter, 5),
-            "real":  round(real_jitter, 5),
+            "sim": round(sim_jitter, 5),
+            "real": round(real_jitter, 5),
             "delta": round(delta_j, 5),
-            "risk":  level,
+            "risk": level,
             "note": (
-                "Real data has much higher timing jitter than sim — "
-                "typical for hardware." if real_jitter > sim_jitter else
-                "Unusually noisy sim timestamps."
+                "Real data has much higher timing jitter than sim — typical for hardware."
+                if real_jitter > sim_jitter
+                else "Unusually noisy sim timestamps."
             ),
         }
         overall_levels.append(level)
 
     # ── coverage / action distribution ───────────────────────────────────────
     if sim_batch is not None and real_batch is not None:
-        sim_actions  = np.concatenate(
-            [ep.actions for ep in sim_batch.episodes if ep.actions.ndim > 1], axis=0
-        ) if sim_batch.episodes else None
-        real_actions = np.concatenate(
-            [ep.actions for ep in real_batch.episodes if ep.actions.ndim > 1], axis=0
-        ) if real_batch.episodes else None
+        sim_actions = (
+            np.concatenate([ep.actions for ep in sim_batch.episodes if ep.actions.ndim > 1], axis=0)
+            if sim_batch.episodes
+            else None
+        )
+        real_actions = (
+            np.concatenate(
+                [ep.actions for ep in real_batch.episodes if ep.actions.ndim > 1], axis=0
+            )
+            if real_batch.episodes
+            else None
+        )
 
-        if sim_actions is not None and real_actions is not None and \
-                sim_actions.size > 0 and real_actions.size > 0:
+        if (
+            sim_actions is not None
+            and real_actions is not None
+            and sim_actions.size > 0
+            and real_actions.size > 0
+        ):
             kl = _kl_divergence_marginal(sim_actions, real_actions)
             level = _risk_level(kl, _KL_MEDIUM, _KL_HIGH, _KL_CRITICAL)
             gaps["action_kl_divergence"] = {
                 "value": round(kl, 4),
-                "risk":  level,
+                "risk": level,
                 "note": (
                     f"KL(sim||real) = {kl:.3f}. "
-                    + ("Distributions are similar." if kl < _KL_MEDIUM
-                       else "Significant action distribution mismatch.")
+                    + (
+                        "Distributions are similar."
+                        if kl < _KL_MEDIUM
+                        else "Significant action distribution mismatch."
+                    )
                 ),
             }
             overall_levels.append(level)
@@ -272,11 +289,14 @@ def analyze_gap(
             overlap = _coverage_overlap(sim_actions, real_actions)
             gaps["sim_coverage_of_real"] = {
                 "value": round(overlap, 3),
-                "risk":  "LOW" if overlap >= 0.7 else ("MEDIUM" if overlap >= 0.4 else "HIGH"),
+                "risk": "LOW" if overlap >= 0.7 else ("MEDIUM" if overlap >= 0.4 else "HIGH"),
                 "note": (
                     f"Sim covers {overlap:.0%} of the real action space. "
-                    + ("Good coverage." if overlap >= 0.7
-                       else "Sim is missing real-world action modes.")
+                    + (
+                        "Good coverage."
+                        if overlap >= 0.7
+                        else "Sim is missing real-world action modes."
+                    )
                 ),
             }
             if gaps["sim_coverage_of_real"]["risk"] != "LOW":
@@ -291,7 +311,7 @@ def analyze_gap(
                 t_max = min(len(states) - 1, len(acts))
                 sim_states_list.append(states[:t_max])
                 sim_actions_list.append(acts[:t_max])
-                sim_next_states_list.append(states[1:t_max+1])
+                sim_next_states_list.append(states[1 : t_max + 1])
 
         real_states_list, real_actions_list, real_next_states_list = [], [], []
         for ep in real_batch.episodes:
@@ -301,7 +321,7 @@ def analyze_gap(
                 t_max = min(len(states) - 1, len(acts))
                 real_states_list.append(states[:t_max])
                 real_actions_list.append(acts[:t_max])
-                real_next_states_list.append(states[1:t_max+1])
+                real_next_states_list.append(states[1 : t_max + 1])
 
         if sim_states_list and real_states_list:
             sim_s = np.concatenate(sim_states_list, axis=0)
@@ -333,21 +353,21 @@ def analyze_gap(
             try:
                 W_sim = fit_dynamics(sim_s, sim_a, sim_y)
                 W_real = fit_dynamics(real_s, real_a, real_y)
-                
+
                 # Cross prediction
                 real_features = np.concatenate([real_s, real_a], axis=1)
                 pred_real_from_real = real_s + real_features @ W_real
                 pred_real_from_sim = real_s + real_features @ W_sim
-                
+
                 real_rmse = float(np.sqrt(np.mean((real_y - pred_real_from_real) ** 2)))
                 cross_rmse = float(np.sqrt(np.mean((real_y - pred_real_from_sim) ** 2)))
                 dynamics_gap = float(max(0.0, cross_rmse - real_rmse))
-                
+
                 level = _risk_level(dynamics_gap * 10, 0.2, 0.5, 1.0)
                 gaps["transition_dynamics_gap"] = {
                     "value": round(dynamics_gap, 4),
                     "risk": level,
-                    "note": f"Cross-prediction error increase: {dynamics_gap:.4f} (real baseline RMSE: {real_rmse:.4f})."
+                    "note": f"Cross-prediction error increase: {dynamics_gap:.4f} (real baseline RMSE: {real_rmse:.4f}).",
                 }
                 overall_levels.append(level)
             except Exception:
@@ -359,70 +379,77 @@ def analyze_gap(
         if has_sim_cam and has_real_cam:
             try:
                 from calibra.curation.latent_embed import extract_latent_embeddings
+
                 # Extract visual embeddings
                 sim_visual_embs = extract_latent_embeddings(sim_batch, model_type="visual")
                 real_visual_embs = extract_latent_embeddings(real_batch, model_type="visual")
-                
+
                 sim_arr = np.array(list(sim_visual_embs.values()))
                 real_arr = np.array(list(real_visual_embs.values()))
-                
+
                 sim_mean = np.mean(sim_arr, axis=0)
                 real_mean = np.mean(real_arr, axis=0)
-                
+
                 denom = float(np.linalg.norm(sim_mean) * np.linalg.norm(real_mean))
-                cosine_dist = float(1.0 - (np.dot(sim_mean, real_mean) / denom) if denom > 0 else 0.0)
-                
+                cosine_dist = float(
+                    1.0 - (np.dot(sim_mean, real_mean) / denom) if denom > 0 else 0.0
+                )
+
                 level = _risk_level(cosine_dist * 10, 0.5, 1.5, 3.0)
                 gaps["visual_domain_gap"] = {
                     "value": round(cosine_dist, 4),
                     "risk": level,
-                    "note": f"Visual embedding cosine distance: {cosine_dist:.4f}."
+                    "note": f"Visual embedding cosine distance: {cosine_dist:.4f}.",
                 }
                 overall_levels.append(level)
             except Exception:
                 pass
 
     # ── frequency gap ─────────────────────────────────────────────────────────
-    sim_freq  = _extract_freq(sim_report)
+    sim_freq = _extract_freq(sim_report)
     real_freq = _extract_freq(real_report)
     if sim_freq is not None and real_freq is not None:
         delta_f = abs(sim_freq - real_freq)
         level = _risk_level(delta_f, _FREQ_MEDIUM, _FREQ_HIGH, _FREQ_CRITICAL)
         gaps["control_frequency_gap"] = {
-            "sim":   round(sim_freq, 1),
-            "real":  round(real_freq, 1),
+            "sim": round(sim_freq, 1),
+            "real": round(real_freq, 1),
             "delta": round(delta_f, 1),
-            "risk":  level,
+            "risk": level,
             "note": (
                 f"Sim runs at {sim_freq:.0f} Hz, real at {real_freq:.0f} Hz. "
-                + ("Frequency match is good." if delta_f < _FREQ_MEDIUM
-                   else "Frequency mismatch may affect temporal features.")
+                + (
+                    "Frequency match is good."
+                    if delta_f < _FREQ_MEDIUM
+                    else "Frequency mismatch may affect temporal features."
+                )
             ),
         }
         overall_levels.append(level)
 
     # ── overall risk ──────────────────────────────────────────────────────────
     _level_order = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
-    overall = max(overall_levels, key=lambda l: _level_order.get(l, 0)) \
-        if overall_levels else "LOW"
+    overall = (
+        max(overall_levels, key=lambda lvl: _level_order.get(lvl, 0)) if overall_levels else "LOW"
+    )
 
     # ── Pre-training Alignment Index (PAI) calculation ────────────────────────
     pai_components = []
-    
+
     # 1. Action KL alignment component
     kl_gap = gaps.get("action_kl_divergence")
     if kl_gap is not None:
         val = kl_gap["value"]
         kl_score = max(0.0, min(100.0, 100.0 * (1.0 - (val - 0.1) / 2.9)))
         pai_components.append(kl_score)
-        
+
     # 2. Control frequency component
     freq_gap = gaps.get("control_frequency_gap")
     if freq_gap is not None:
         val = freq_gap["delta"]
         freq_score = max(0.0, min(100.0, 100.0 * (1.0 - val / 30.0)))
         pai_components.append(freq_score)
-        
+
     # 3. Action coverage component
     coverage_gap = gaps.get("sim_coverage_of_real")
     if coverage_gap is not None:
@@ -450,7 +477,7 @@ def analyze_gap(
         sim_obs = set(sim_batch.modalities)
     if real_batch:
         real_obs = set(real_batch.modalities)
-        
+
     if sim_obs and real_obs:
         shared = sim_obs.intersection(real_obs)
         union = sim_obs.union(real_obs)
@@ -462,22 +489,23 @@ def analyze_gap(
     pai = float(np.mean(pai_components)) if pai_components else 100.0
 
     return {
-        "overall_risk":  overall,
+        "overall_risk": overall,
         "pretraining_alignment_index": round(pai, 1),
-        "sim_dataset":   sim_report.dataset_name,
-        "real_dataset":  real_report.dataset_name,
-        "sim_episodes":  sim_report.n_episodes,
+        "sim_dataset": sim_report.dataset_name,
+        "real_dataset": real_report.dataset_name,
+        "sim_episodes": sim_report.n_episodes,
         "real_episodes": real_report.n_episodes,
-        "gaps":          gaps,
+        "gaps": gaps,
     }
 
 
 # ── rendering ─────────────────────────────────────────────────────────────────
 
+
 def render_sim2real(result: dict) -> str:
-    overall  = result["overall_risk"]
-    icon     = _risk_icon(overall)
-    pai      = result.get("pretraining_alignment_index", 100.0)
+    overall = result["overall_risk"]
+    icon = _risk_icon(overall)
+    pai = result.get("pretraining_alignment_index", 100.0)
     lines = [
         _THICK,
         "  CALIBRA SIM-TO-REAL GAP ANALYSIS",
@@ -499,8 +527,10 @@ def render_sim2real(result: dict) -> str:
         gap_icon = _risk_icon(gap_risk)
         lines.append(f"  {gap_icon} {label:<35} [{gap_risk}]")
         if "sim" in gap_data and "real" in gap_data:
-            lines.append(f"     Sim: {gap_data['sim']}   Real: {gap_data['real']}"
-                         f"   Δ = {gap_data.get('delta', '?')}")
+            lines.append(
+                f"     Sim: {gap_data['sim']}   Real: {gap_data['real']}"
+                f"   Δ = {gap_data.get('delta', '?')}"
+            )
         elif "value" in gap_data:
             lines.append(f"     Value: {gap_data['value']}")
         if "note" in gap_data:
@@ -512,9 +542,7 @@ def render_sim2real(result: dict) -> str:
     lines.append("  RECOMMENDATIONS")
     lines.append(_THIN)
     if overall == "LOW":
-        lines.append(
-            "  ✓ Sim-to-real gap is small. Zero-shot transfer is likely viable."
-        )
+        lines.append("  ✓ Sim-to-real gap is small. Zero-shot transfer is likely viable.")
     elif overall == "MEDIUM":
         lines += [
             "  • Consider collecting a small real dataset (50–200 episodes) for",
@@ -542,6 +570,7 @@ def render_sim2real(result: dict) -> str:
 
 # ── CLI entry point ───────────────────────────────────────────────────────────
 
+
 def run_sim2real(argv: list[str]) -> None:
     p = argparse.ArgumentParser(
         prog="calibra sim2real",
@@ -550,7 +579,7 @@ def run_sim2real(argv: list[str]) -> None:
             "to predict sim-to-real transfer risk."
         ),
     )
-    p.add_argument("sim_path",  help="Path or HF Hub ID of the simulation dataset")
+    p.add_argument("sim_path", help="Path or HF Hub ID of the simulation dataset")
     p.add_argument("real_path", help="Path or HF Hub ID of the real-robot dataset")
     p.add_argument(
         "--sim-format",
@@ -565,21 +594,23 @@ def run_sim2real(argv: list[str]) -> None:
         help="Force a format adapter for the real dataset",
     )
     p.add_argument(
-        "--policy", "-p",
+        "--policy",
+        "-p",
         metavar="FAMILY",
         help="Target policy family for conditioned hints",
     )
     p.add_argument(
-        "--json", "-j",
+        "--json",
+        "-j",
         action="store_true",
         help="Output gap analysis as JSON",
     )
     args = p.parse_args(argv)
 
     def strip_hf(path: str) -> str:
-        return path[len("hf://"):] if path.startswith("hf://") else path
+        return path[len("hf://") :] if path.startswith("hf://") else path
 
-    sim_path  = strip_hf(args.sim_path)
+    sim_path = strip_hf(args.sim_path)
     real_path = strip_hf(args.real_path)
 
     def log(msg: str) -> None:
@@ -591,7 +622,7 @@ def run_sim2real(argv: list[str]) -> None:
     log(f"Loading sim dataset:  {sim_path!r} ...")
     try:
         sim_reader = _get_reader(args.sim_format) if args.sim_format else None
-        sim_batch  = _load(sim_path, reader=sim_reader)
+        sim_batch = _load(sim_path, reader=sim_reader)
     except Exception as exc:
         print(f"error loading sim dataset: {exc}", file=sys.stderr)
         sys.exit(2)
@@ -600,7 +631,7 @@ def run_sim2real(argv: list[str]) -> None:
     log(f"Loading real dataset: {real_path!r} ...")
     try:
         real_reader = _get_reader(args.real_format) if args.real_format else None
-        real_batch  = _load(real_path, reader=real_reader)
+        real_batch = _load(real_path, reader=real_reader)
     except Exception as exc:
         print(f"error loading real dataset: {exc}", file=sys.stderr)
         sys.exit(2)
@@ -608,7 +639,7 @@ def run_sim2real(argv: list[str]) -> None:
 
     log("Running diagnostic pipeline on both datasets ...")
     pipeline = Pipeline()
-    sim_report  = pipeline.run(sim_batch,  policy_family=args.policy)
+    sim_report = pipeline.run(sim_batch, policy_family=args.policy)
     real_report = pipeline.run(real_batch, policy_family=args.policy)
 
     result = analyze_gap(sim_report, real_report, sim_batch, real_batch)

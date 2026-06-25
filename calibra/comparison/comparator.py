@@ -9,6 +9,7 @@ Permutation tests use per-episode values stored in raw_metrics under the
 batch-level metrics without per-episode data (e.g. entropy, PCA variance),
 the comparator falls back to a CI non-overlap significance heuristic.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -24,20 +25,20 @@ from calibra.schema.comparison import ComparisonReport, DriftFlag
 # or "ambiguous" (no inherent good direction).
 
 _DIRECTION_RULES: list[tuple[str, str]] = [
-    ("ldlj",                        "up_better"),
-    ("action_entropy",              "up_better"),
-    ("state_entropy",               "up_better"),
-    ("timestamp_jitter_cv",         "down_better"),
-    ("timestamp_dropout_rate",      "down_better"),
-    ("jerk_spike_rate",             "down_better"),
+    ("ldlj", "up_better"),
+    ("action_entropy", "up_better"),
+    ("state_entropy", "up_better"),
+    ("timestamp_jitter_cv", "down_better"),
+    ("timestamp_dropout_rate", "down_better"),
+    ("jerk_spike_rate", "down_better"),
     ("velocity_discontinuity_rate", "down_better"),
-    ("pca_top2_variance_fraction",  "down_better"),
-    ("short_episode_fraction",      "down_better"),
-    ("trajectory_diversity",        "down_better"),   # lower sep_score = more unimodal = better
-    ("camera_lag_std",              "down_better"),
-    ("action_obs_misalignment",     "down_better"),
-    ("contact_density",             "ambiguous"),
-    ("grasp_events_per_episode",    "ambiguous"),
+    ("pca_top2_variance_fraction", "down_better"),
+    ("short_episode_fraction", "down_better"),
+    ("trajectory_diversity", "down_better"),  # lower sep_score = more unimodal = better
+    ("camera_lag_std", "down_better"),
+    ("action_obs_misalignment", "down_better"),
+    ("contact_density", "ambiguous"),
+    ("grasp_events_per_episode", "ambiguous"),
     ("episode_length_distribution", "ambiguous"),
 ]
 
@@ -86,15 +87,15 @@ def _extract_ep_data(report: DiagnosticReport) -> dict[str, list]:
 # Only metrics with a natural per-episode decomposition are listed.
 # Metrics absent from this map fall back to CI-overlap significance.
 _METRIC_TO_EP_KEY: dict[str, str] = {
-    "timestamp_jitter_cv":         "per_episode_jitter_cv",
-    "timestamp_dropout_rate":      "per_episode_dropout_fraction",
-    "ldlj":                        "per_episode_ldlj",
-    "jerk_spike_rate":             "per_episode_spike_rate",
+    "timestamp_jitter_cv": "per_episode_jitter_cv",
+    "timestamp_dropout_rate": "per_episode_dropout_fraction",
+    "ldlj": "per_episode_ldlj",
+    "jerk_spike_rate": "per_episode_spike_rate",
     "velocity_discontinuity_rate": "per_episode_vel_disc_rate",
-    "contact_density":             "per_episode_contact_fraction",
-    "grasp_events_per_episode":    "per_episode_grasp_count",
+    "contact_density": "per_episode_contact_fraction",
+    "grasp_events_per_episode": "per_episode_grasp_count",
     "episode_length_distribution": "per_episode_length",
-    "short_episode_fraction":      "per_episode_length",
+    "short_episode_fraction": "per_episode_length",
 }
 
 
@@ -150,16 +151,14 @@ def _ci_overlap_significant(flag_a: RiskFlag, flag_b: RiskFlag) -> bool:
     return bool((hi_a < lo_b) or (hi_b < lo_a))
 
 
-def _drift_risk_level(
-    direction: str, significant: bool, candidate_level: RiskLevel
-) -> RiskLevel:
+def _drift_risk_level(direction: str, significant: bool, candidate_level: RiskLevel) -> RiskLevel:
     """Assign a DriftFlag risk level based on direction and significance."""
     if not significant:
         return RiskLevel.INFO
     if direction == "improved":
         return RiskLevel.OK
     if direction == "degraded":
-        return candidate_level   # absolute severity tracks the candidate's state
+        return candidate_level  # absolute severity tracks the candidate's state
     return RiskLevel.INFO
 
 
@@ -174,8 +173,9 @@ def _drift_texts(
     candidate_name: str,
 ) -> tuple[str, str]:
     sig_str = "significantly " if significant else ""
-    dir_word = {"degraded": "worsened", "improved": "improved",
-                "ambiguous": "changed"}.get(direction, "changed")
+    dir_word = {"degraded": "worsened", "improved": "improved", "ambiguous": "changed"}.get(
+        direction, "changed"
+    )
     interp = (
         f"{metric} has {sig_str}{dir_word}: "
         f"{baseline_name}={b_val:.4g} → {candidate_name}={c_val:.4g} "
@@ -219,8 +219,8 @@ class DatasetComparator:
         particularly when small regressions in safety-critical metrics matter.
     """
 
-    alpha:          float = 0.05
-    n_permutations: int   = 199
+    alpha: float = 0.05
+    n_permutations: int = 199
 
     def compare(
         self,
@@ -281,24 +281,32 @@ class DatasetComparator:
             direction = _infer_flag_direction(metric, delta)
             level = _drift_risk_level(direction, significant, cand_flag.level)
             interp, impl = _drift_texts(
-                metric, b_val, c_val, delta, direction, significant,
-                baseline.dataset_name, candidate.dataset_name,
+                metric,
+                b_val,
+                c_val,
+                delta,
+                direction,
+                significant,
+                baseline.dataset_name,
+                candidate.dataset_name,
             )
 
-            drift_flags.append(DriftFlag(
-                metric=metric,
-                analyzer_name=analyzer_name,
-                baseline_observed=base_flag.observed,
-                candidate_observed=cand_flag.observed,
-                delta=delta,
-                relative_change=rel,
-                p_value=p_value,
-                significant=significant,
-                direction=direction,
-                level=level,
-                interpretation=interp,
-                implication=impl,
-            ))
+            drift_flags.append(
+                DriftFlag(
+                    metric=metric,
+                    analyzer_name=analyzer_name,
+                    baseline_observed=base_flag.observed,
+                    candidate_observed=cand_flag.observed,
+                    delta=delta,
+                    relative_change=rel,
+                    p_value=p_value,
+                    significant=significant,
+                    direction=direction,
+                    level=level,
+                    interpretation=interp,
+                    implication=impl,
+                )
+            )
 
         return ComparisonReport(
             baseline_name=baseline.dataset_name,

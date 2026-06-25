@@ -24,10 +24,10 @@ Exit codes
     0  CERTIFIED or PROVISIONALLY CERTIFIED
     1  NOT CERTIFIED (critical quality failures)
 """
+
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from datetime import date
 from typing import Optional
@@ -42,8 +42,14 @@ _WIDTH = 60
 _THICK = "━" * _WIDTH
 
 
-def _metric_row(name: str, value: Optional[float], unit: str,
-                warn: float, crit: float, direction: str = "higher_worse") -> str:
+def _metric_row(
+    name: str,
+    value: Optional[float],
+    unit: str,
+    warn: float,
+    crit: float,
+    direction: str = "higher_worse",
+) -> str:
     """Return a markdown table row with a status icon."""
     if value is None:
         return f"| {name} | — | {unit} | ✅ |"
@@ -76,7 +82,7 @@ def generate_card(
     The output is designed to be appended to (or embedded in) a dataset's
     README.md on HuggingFace Hub.
     """
-    from calibra.predict import _extract_metrics, _THRESHOLDS
+    from calibra.predict import _extract_metrics
 
     metrics = _extract_metrics(report)
     pred = predict_outcome(report, policy_family=policy_family, use_outcome_db=False)
@@ -92,26 +98,37 @@ def generate_card(
         badge = "![Calibra: PROVISIONALLY CERTIFIED](https://img.shields.io/badge/Calibra-PROVISIONAL-yellow)"
     else:
         status = "NOT CERTIFIED"
-        badge = "![Calibra: NOT CERTIFIED](https://img.shields.io/badge/Calibra-NOT%20CERTIFIED-red)"
+        badge = (
+            "![Calibra: NOT CERTIFIED](https://img.shields.io/badge/Calibra-NOT%20CERTIFIED-red)"
+        )
 
     today = date.today().isoformat()
     policy_str = policy_family or "generic"
 
     rows = [
-        _metric_row("Jerk spike rate",         metrics.get("spike_rate"),
-                    "fraction", 0.02, 0.05),
-        _metric_row("Velocity discontinuity",  metrics.get("vel_disc_rate"),
-                    "fraction", 0.02, 0.05),
-        _metric_row("LDLJ smoothness",         metrics.get("ldlj"),
-                    "score",    -10.0, -15.0,  direction="lower_worse"),
-        _metric_row("Timestamp dropout",       metrics.get("dropout_rate"),
-                    "fraction", 0.01, 0.05),
-        _metric_row("Jitter CV",               metrics.get("jitter_cv"),
-                    "CV",       0.05, 0.20),
-        _metric_row("Action entropy",          metrics.get("action_entropy"),
-                    "bits/dim", 2.5, 1.5,      direction="lower_worse"),
-        _metric_row("Contact phase fraction",  metrics.get("contact_phase_fraction"),
-                    "fraction", 0.10, 0.05,    direction="lower_worse"),
+        _metric_row("Jerk spike rate", metrics.get("spike_rate"), "fraction", 0.02, 0.05),
+        _metric_row("Velocity discontinuity", metrics.get("vel_disc_rate"), "fraction", 0.02, 0.05),
+        _metric_row(
+            "LDLJ smoothness", metrics.get("ldlj"), "score", -10.0, -15.0, direction="lower_worse"
+        ),
+        _metric_row("Timestamp dropout", metrics.get("dropout_rate"), "fraction", 0.01, 0.05),
+        _metric_row("Jitter CV", metrics.get("jitter_cv"), "CV", 0.05, 0.20),
+        _metric_row(
+            "Action entropy",
+            metrics.get("action_entropy"),
+            "bits/dim",
+            2.5,
+            1.5,
+            direction="lower_worse",
+        ),
+        _metric_row(
+            "Contact phase fraction",
+            metrics.get("contact_phase_fraction"),
+            "fraction",
+            0.10,
+            0.05,
+            direction="lower_worse",
+        ),
     ]
 
     pred_score = pred["predicted_score"]
@@ -171,7 +188,7 @@ def generate_yaml_frontmatter(report: DiagnosticReport) -> str:
 
     return (
         f"calibra_certified: {certified}\n"
-        f"calibra_version: \"{__version__}\"\n"
+        f'calibra_version: "{__version__}"\n'
         f"calibra_n_episodes: {report.n_episodes}\n"
     )
 
@@ -186,8 +203,7 @@ def push_to_hub(card_text: str, repo_id: str) -> None:
         from huggingface_hub import HfApi
     except ImportError:
         print(
-            "error: huggingface_hub is not installed. "
-            "Run: pip install huggingface_hub",
+            "error: huggingface_hub is not installed. Run: pip install huggingface_hub",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -218,6 +234,7 @@ def push_to_hub(card_text: str, repo_id: str) -> None:
 
 # ── CLI entry point ───────────────────────────────────────────────────────────
 
+
 def run_card(argv: list[str]) -> None:
     p = argparse.ArgumentParser(
         prog="calibra card",
@@ -228,32 +245,41 @@ def run_card(argv: list[str]) -> None:
     )
     p.add_argument("path", help="Dataset path or HuggingFace Hub ID")
     p.add_argument(
-        "--policy", "-p", metavar="FAMILY", default=None,
+        "--policy",
+        "-p",
+        metavar="FAMILY",
+        default=None,
         help="Target policy family (e.g. 'diffusion', 'act', 'gr00t')",
     )
     p.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         choices=["hdf5", "isaac_lab", "lerobot", "rlds", "mcap"],
         help="Force format adapter",
     )
     p.add_argument(
-        "--out", "-o", metavar="PATH",
+        "--out",
+        "-o",
+        metavar="PATH",
         help="Write card to a file instead of stdout",
     )
     p.add_argument(
-        "--push", action="store_true",
+        "--push",
+        action="store_true",
         help="Push the quality card to the dataset's HuggingFace Hub README. "
-             "Requires huggingface_hub and HF_TOKEN environment variable.",
+        "Requires huggingface_hub and HF_TOKEN environment variable.",
     )
     p.add_argument(
-        "--json", "-j", action="store_true",
+        "--json",
+        "-j",
+        action="store_true",
         help="Output full diagnostic report as JSON",
     )
     args = p.parse_args(argv)
 
     dataset_path = args.path
     if dataset_path.startswith("hf://"):
-        dataset_path = dataset_path[len("hf://"):]
+        dataset_path = dataset_path[len("hf://") :]
 
     def log(msg: str) -> None:
         print(msg, file=sys.stderr, flush=True)
@@ -263,6 +289,7 @@ def run_card(argv: list[str]) -> None:
     reader = None
     if args.format:
         from calibra.__main__ import _get_reader
+
         reader = _get_reader(args.format)
 
     try:
@@ -285,6 +312,7 @@ def run_card(argv: list[str]) -> None:
 
     if args.out:
         from pathlib import Path
+
         Path(args.out).write_text(card)
         log(f"  Card written to {args.out}")
     else:

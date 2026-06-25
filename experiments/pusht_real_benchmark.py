@@ -39,6 +39,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # ── Data loading ──────────────────────────────────────────────────────────────
 
+
 def load_pusht_tensors(episode_indices=None):
     """Load PushT actions and observations as numpy arrays."""
     from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
@@ -63,6 +64,7 @@ def load_pusht_tensors(episode_indices=None):
 
 # ── Calibra coreset selection ─────────────────────────────────────────────────
 
+
 def get_calibra_coreset(keep_fraction=KEEP_FRACTION):
     """Run Calibra pruning on lerobot/pusht and return kept episode indices."""
     from calibra.ingestion.registry import load
@@ -86,12 +88,15 @@ def get_random_baseline(n_episodes_total, keep_fraction=KEEP_FRACTION):
 
 # ── Policy and training ───────────────────────────────────────────────────────
 
+
 class BCPolicy(nn.Module):
     def __init__(self, obs_dim, act_dim):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(obs_dim, 256), nn.ReLU(),
-            nn.Linear(256, 256),     nn.ReLU(),
+            nn.Linear(obs_dim, 256),
+            nn.ReLU(),
+            nn.Linear(256, 256),
+            nn.ReLU(),
             nn.Linear(256, act_dim),
         )
 
@@ -124,6 +129,7 @@ def train_policy(states, actions, label):
 
 
 # ── Evaluation in PushT simulator ────────────────────────────────────────────
+
 
 def evaluate_policy(policy, n_episodes=N_EVAL_EPISODES):
     """Run policy in the PushT gym environment and return success rate."""
@@ -158,6 +164,7 @@ def evaluate_policy(policy, n_episodes=N_EVAL_EPISODES):
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
+
 def main():
     torch.manual_seed(SEED)
     np.random.seed(SEED)
@@ -171,6 +178,7 @@ def main():
     calibra_indices = get_calibra_coreset(KEEP_FRACTION)
 
     from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
+
     n_total = LeRobotDataset("lerobot/pusht").num_episodes
 
     random_indices = get_random_baseline(n_total, KEEP_FRACTION)
@@ -182,14 +190,14 @@ def main():
 
     # ── Step 2: load tensors for each condition ───────────────────────────────
     print("\nStep 2: Loading data tensors...")
-    full_states,    full_actions    = load_pusht_tensors(full_indices)
+    full_states, full_actions = load_pusht_tensors(full_indices)
     calibra_states, calibra_actions = load_pusht_tensors(calibra_indices)
-    random_states,  random_actions  = load_pusht_tensors(random_indices)
+    random_states, random_actions = load_pusht_tensors(random_indices)
 
     conditions = [
-        ("Full dataset (100%)",          full_states,    full_actions),
-        (f"Calibra {int(KEEP_FRACTION*100)}% coreset", calibra_states, calibra_actions),
-        (f"Random  {int(KEEP_FRACTION*100)}% baseline", random_states,  random_actions),
+        ("Full dataset (100%)", full_states, full_actions),
+        (f"Calibra {int(KEEP_FRACTION * 100)}% coreset", calibra_states, calibra_actions),
+        (f"Random  {int(KEEP_FRACTION * 100)}% baseline", random_states, random_actions),
     ]
 
     # ── Step 3: train and evaluate ────────────────────────────────────────────
@@ -208,13 +216,15 @@ def main():
             full_time = elapsed
         compute_savings = 1.0 - (elapsed / full_time) if full_time else 0.0
 
-        results.append({
-            "label": label,
-            "n_steps": len(states),
-            "train_time_s": elapsed,
-            "compute_savings": compute_savings,
-            "success_rate": success_rate,
-        })
+        results.append(
+            {
+                "label": label,
+                "n_steps": len(states),
+                "train_time_s": elapsed,
+                "compute_savings": compute_savings,
+                "success_rate": success_rate,
+            }
+        )
 
     # ── Step 4: print results table ───────────────────────────────────────────
     print("\n" + "=" * 72)
@@ -223,8 +233,8 @@ def main():
     print(f"  {'Condition':<35} {'Steps':>7} {'Success':>8} {'Compute saved':>14}")
     print("  " + "-" * 68)
     for r in results:
-        sr = f"{r['success_rate']*100:.1f}%" if r["success_rate"] is not None else "N/A"
-        print(f"  {r['label']:<35} {r['n_steps']:>7} {sr:>8} {r['compute_savings']*100:>13.1f}%")
+        sr = f"{r['success_rate'] * 100:.1f}%" if r["success_rate"] is not None else "N/A"
+        print(f"  {r['label']:<35} {r['n_steps']:>7} {sr:>8} {r['compute_savings'] * 100:>13.1f}%")
     print("=" * 72)
     print()
     print("To reproduce:")

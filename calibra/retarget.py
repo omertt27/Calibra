@@ -28,6 +28,7 @@ Exit codes:
     1  Error loading dataset.
     2  EEF observation keys not found in any episode.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -40,13 +41,21 @@ import numpy as np
 
 # Candidate observation key names for EEF position and quaternion.
 # Searched in order — first match wins.
-_POS_CANDIDATES  = [
-    "eef_pos", "robot0_eef_pos", "ee_pos", "end_effector_pos",
-    "obs/robot0_eef_pos", "observation.eef_pos",
+_POS_CANDIDATES = [
+    "eef_pos",
+    "robot0_eef_pos",
+    "ee_pos",
+    "end_effector_pos",
+    "obs/robot0_eef_pos",
+    "observation.eef_pos",
 ]
 _QUAT_CANDIDATES = [
-    "eef_quat", "robot0_eef_quat", "ee_quat", "end_effector_quat",
-    "obs/robot0_eef_quat", "observation.eef_quat",
+    "eef_quat",
+    "robot0_eef_quat",
+    "ee_quat",
+    "end_effector_quat",
+    "obs/robot0_eef_quat",
+    "observation.eef_quat",
 ]
 
 
@@ -61,7 +70,8 @@ def run_retarget(argv: list[str]) -> None:
     )
     p.add_argument("path", help="Path or Hub ID of the source dataset")
     p.add_argument(
-        "--out", "-o",
+        "--out",
+        "-o",
         metavar="DIR",
         default="retargeted",
         help="Output directory for .npz files (default: ./retargeted/)",
@@ -93,13 +103,15 @@ def run_retarget(argv: list[str]) -> None:
         ),
     )
     p.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         metavar="FMT",
         choices=["hdf5", "isaac_lab", "lerobot", "rlds", "mcap"],
         help="Force a format adapter (default: auto-detect)",
     )
     p.add_argument(
-        "--json", "-j",
+        "--json",
+        "-j",
         action="store_true",
         help="Print a JSON summary to stdout after conversion.",
     )
@@ -119,11 +131,12 @@ def run_retarget(argv: list[str]) -> None:
 
     dataset_path = args.path
     if dataset_path.startswith("hf://"):
-        dataset_path = dataset_path[len("hf://"):]
+        dataset_path = dataset_path[len("hf://") :]
 
     reader = None
     if args.format:
         from calibra.__main__ import _get_reader
+
         reader = _get_reader(args.format)
 
     def log(msg: str) -> None:
@@ -133,6 +146,7 @@ def run_retarget(argv: list[str]) -> None:
 
     try:
         from calibra.ingestion.registry import load
+
         batch = load(dataset_path, reader=reader)
     except Exception as exc:
         print(f"error loading dataset: {exc}", file=sys.stderr)
@@ -146,13 +160,14 @@ def run_retarget(argv: list[str]) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     converted = 0
-    skipped   = 0
+    skipped = 0
     skipped_ids: list[str] = []
     converted_ids: list[str] = []
 
     checker = None
     if args.urdf:
         from calibra.kinematics.checker import KinematicURDFChecker
+
         checker = KinematicURDFChecker(args.urdf)
         log(f"Loaded URDF from {args.urdf}. Auditing kinematic joint limits...")
 
@@ -172,11 +187,11 @@ def run_retarget(argv: list[str]) -> None:
             skipped_ids.append(ep_id)
             continue
 
-        eef_pos  = ep.observations[pos_key]
+        eef_pos = ep.observations[pos_key]
         eef_quat = ep.observations[quat_key]
 
         try:
-            rel_actions = retarget_episode_eef(eef_pos, eef_quat)   # (T-1, 6)
+            rel_actions = retarget_episode_eef(eef_pos, eef_quat)  # (T-1, 6)
         except Exception as exc:
             log(f"  skip episode {ep_id!r} — retarget failed: {exc}")
             skipped += 1
@@ -230,14 +245,14 @@ def run_retarget(argv: list[str]) -> None:
 
     if args.json:
         summary = {
-            "dataset":       batch.dataset_name,
-            "n_converted":   converted,
-            "n_skipped":     skipped,
-            "out_dir":       str(out_dir.resolve()),
-            "action_shape":  [None, 6],
-            "padded":        args.pad,
+            "dataset": batch.dataset_name,
+            "n_converted": converted,
+            "n_skipped": skipped,
+            "out_dir": str(out_dir.resolve()),
+            "action_shape": [None, 6],
+            "padded": args.pad,
             "converted_ids": converted_ids,
-            "skipped_ids":   skipped_ids,
+            "skipped_ids": skipped_ids,
         }
         print(json.dumps(summary, indent=2))
 

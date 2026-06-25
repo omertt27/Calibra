@@ -1,16 +1,15 @@
 """
 calibra benchmark — Closed-loop policy training benchmark and simulation.
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import random
 import sys
-from pathlib import Path
 from typing import List
 
-import numpy as np
 
 from calibra.pipeline import Pipeline
 from calibra.pruning import CoresetSelector
@@ -20,7 +19,7 @@ from calibra.schema.episode import EpisodeBatch
 
 _WIDTH = 60
 _THICK = "━" * _WIDTH
-_THIN  = "─" * _WIDTH
+_THIN = "─" * _WIDTH
 
 
 def run_benchmark(argv: List[str]) -> None:
@@ -34,7 +33,8 @@ def run_benchmark(argv: List[str]) -> None:
     )
     p.add_argument("path", help="Path of the source dataset to benchmark")
     p.add_argument(
-        "--keep", "-k",
+        "--keep",
+        "-k",
         type=float,
         default=0.3,
         help="Fraction of episodes to retain in the pruned coresets (default: 0.3)",
@@ -46,12 +46,14 @@ def run_benchmark(argv: List[str]) -> None:
         help="Target policy family for success prediction (default: diffusion)",
     )
     p.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         choices=["hdf5", "isaac_lab", "lerobot", "rlds", "mcap"],
         help="Force a format adapter (default: auto-detect)",
     )
     p.add_argument(
-        "--json", "-j",
+        "--json",
+        "-j",
         action="store_true",
         help="Print raw metrics in JSON format to stdout.",
     )
@@ -71,6 +73,7 @@ def run_benchmark(argv: List[str]) -> None:
     # 1. Load dataset
     try:
         from calibra.ingestion.registry import load
+
         batch = load(args.path, reader=args.format)
     except Exception as exc:
         print(f"error loading dataset: {exc}", file=sys.stderr)
@@ -78,7 +81,10 @@ def run_benchmark(argv: List[str]) -> None:
 
     n_total = batch.n_episodes
     if n_total < 5:
-        print(f"error: Dataset has only {n_total} episodes. Need at least 5 to run benchmarks.", file=sys.stderr)
+        print(
+            f"error: Dataset has only {n_total} episodes. Need at least 5 to run benchmarks.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     k_size = max(1, round(n_total * args.keep))
@@ -95,15 +101,17 @@ def run_benchmark(argv: List[str]) -> None:
     log(f"Running Calibra coreset selection (keep fraction: {args.keep:.2f}) ...")
     selector = CoresetSelector(keep_fraction=args.keep)
     prune_res = selector.select(batch, raw_report)
-    
-    calibra_episodes = [ep for ep in batch.episodes if ep.metadata.episode_id in prune_res.keep_episode_ids]
+
+    calibra_episodes = [
+        ep for ep in batch.episodes if ep.metadata.episode_id in prune_res.keep_episode_ids
+    ]
     calibra_batch = EpisodeBatch(
         episodes=calibra_episodes,
         dataset_name=f"{batch.dataset_name}_calibra_coreset",
         format=batch.format,
         source_path=batch.source_path,
     )
-    
+
     log("Running diagnostics on Calibra coreset ...")
     calibra_report = pipeline.run(calibra_batch, policy_family=args.policy)
     calibra_pred = predict_outcome(calibra_report, policy_family=args.policy)
@@ -151,22 +159,25 @@ def run_benchmark(argv: List[str]) -> None:
                 "n_episodes": len(calibra_episodes),
                 "gpu_hours": round(calibra_hours, 1),
                 "predicted_success_rate": round(calibra_score, 1),
-            }
+            },
         },
-        "compute_savings_pct": round(compute_savings, 1)
+        "compute_savings_pct": round(compute_savings, 1),
     }
 
     # Render training integration code block recommendations
-    kept_indices_str = ",".join(str(i) for i, ep in enumerate(batch.episodes) if ep.metadata.episode_id in prune_res.keep_episode_ids)
+    kept_indices_str = ",".join(
+        str(i)
+        for i, ep in enumerate(batch.episodes)
+        if ep.metadata.episode_id in prune_res.keep_episode_ids
+    )
     if batch.format == "lerobot":
         lerobot_cmd = (
             f"lerobot-train --dataset.repo_id {batch.dataset_name} "
-            f"--dataset.episodes \"[{kept_indices_str}]\""
+            f'--dataset.episodes "[{kept_indices_str}]"'
         )
     else:
         lerobot_cmd = (
-            f"python train.py --dataset {args.path} "
-            f"--coreset-indices \"{kept_indices_str}\""
+            f'python train.py --dataset {args.path} --coreset-indices "{kept_indices_str}"'
         )
 
     if args.json:
@@ -188,12 +199,12 @@ def run_benchmark(argv: List[str]) -> None:
         f"     - Training Time: {raw_hours:.1f} GPU-hours\n"
         f"     - Predicted Success Rate: {raw_score:.1f}%\n"
         f"\n"
-        f"  2. RANDOM PRUNED ({(k_size/n_total):.0%})\n"
+        f"  2. RANDOM PRUNED ({(k_size / n_total):.0%})\n"
         f"     - Size: {k_size} episodes\n"
         f"     - Training Time: {random_hours:.1f} GPU-hours\n"
         f"     - Predicted Success Rate: {random_score:.1f}%\n"
         f"\n"
-        f"  3. CALIBRA CORESET ({(len(calibra_episodes)/n_total):.0%})\n"
+        f"  3. CALIBRA CORESET ({(len(calibra_episodes) / n_total):.0%})\n"
         f"     - Size: {len(calibra_episodes)} episodes\n"
         f"     - Training Time: {calibra_hours:.1f} GPU-hours\n"
         f"     - Predicted Success Rate: {calibra_score:.1f}%\n"

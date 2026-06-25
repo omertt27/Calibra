@@ -37,6 +37,7 @@ Exit codes
     1  DIFFICULT
     2  INCOMPATIBLE
 """
+
 from __future__ import annotations
 
 import argparse
@@ -51,7 +52,7 @@ from calibra.schema.report import DiagnosticReport
 
 _WIDTH = 60
 _THICK = "━" * _WIDTH
-_THIN  = "─" * _WIDTH
+_THIN = "─" * _WIDTH
 
 
 def _raw(report: DiagnosticReport, analyzer: str) -> dict:
@@ -63,14 +64,15 @@ def _raw(report: DiagnosticReport, analyzer: str) -> dict:
 
 def _risk_icon(level: str) -> str:
     return {
-        "DIRECT":        "✅",
-        "ADAPT":         "🟡",
-        "DIFFICULT":     "🟠",
-        "INCOMPATIBLE":  "🔴",
+        "DIRECT": "✅",
+        "ADAPT": "🟡",
+        "DIFFICULT": "🟠",
+        "INCOMPATIBLE": "🔴",
     }.get(level, "❓")
 
 
 # ── scoring helpers ───────────────────────────────────────────────────────────
+
 
 def _action_dim_compatibility(src_dim: int, tgt_dim: int) -> tuple[str, str]:
     """
@@ -109,7 +111,9 @@ def _frequency_compatibility(src_hz: Optional[float], tgt_hz: Optional[float]) -
     )
 
 
-def _smoothness_compatibility(src_ldlj: Optional[float], tgt_ldlj: Optional[float]) -> tuple[str, str]:
+def _smoothness_compatibility(
+    src_ldlj: Optional[float], tgt_ldlj: Optional[float]
+) -> tuple[str, str]:
     if src_ldlj is None or tgt_ldlj is None:
         return "ADAPT", "LDLJ not available for one or both datasets."
     delta = abs(src_ldlj - tgt_ldlj)
@@ -193,10 +197,11 @@ _LEVEL_ORDER = {"DIRECT": 0, "ADAPT": 1, "DIFFICULT": 2, "INCOMPATIBLE": 3}
 
 
 def _worst(levels: list[str]) -> str:
-    return max(levels, key=lambda l: _LEVEL_ORDER.get(l, 0)) if levels else "DIRECT"
+    return max(levels, key=lambda lvl: _LEVEL_ORDER.get(lvl, 0)) if levels else "DIRECT"
 
 
 # ── main analysis ─────────────────────────────────────────────────────────────
+
 
 def analyze_transfer(
     src_report: DiagnosticReport,
@@ -213,8 +218,11 @@ def analyze_transfer(
     levels: list[str] = []
 
     # ── action dimensionality ─────────────────────────────────────────────────
-    src_dim = src_report.analyzer_results[0].raw_metrics.get("action_dim") if \
-        src_report.analyzer_results else None
+    src_dim = (
+        src_report.analyzer_results[0].raw_metrics.get("action_dim")
+        if src_report.analyzer_results
+        else None
+    )
     # Try to get from coverage analyzer
     for r in src_report.analyzer_results:
         d = r.raw_metrics.get("action_entropy", {}).get("action_dim")
@@ -238,8 +246,10 @@ def analyze_transfer(
     if src_dim is not None and tgt_dim is not None:
         level, note = _action_dim_compatibility(src_dim, tgt_dim)
         dimensions["action_dim_compatibility"] = {
-            "source_dim": src_dim, "target_dim": tgt_dim,
-            "level": level, "note": note,
+            "source_dim": src_dim,
+            "target_dim": tgt_dim,
+            "level": level,
+            "note": note,
         }
         if level == "INCOMPATIBLE":
             return {
@@ -263,8 +273,10 @@ def analyze_transfer(
     tgt_hz = _get_hz(tgt_report)
     level, note = _frequency_compatibility(src_hz, tgt_hz)
     dimensions["frequency_compatibility"] = {
-        "source_hz": src_hz, "target_hz": tgt_hz,
-        "level": level, "note": note,
+        "source_hz": src_hz,
+        "target_hz": tgt_hz,
+        "level": level,
+        "note": note,
     }
     levels.append(level)
 
@@ -273,8 +285,10 @@ def analyze_transfer(
     tgt_ldlj = _raw(tgt_report, "control_smoothness").get("ldlj", {}).get("mean_ldlj")
     level, note = _smoothness_compatibility(src_ldlj, tgt_ldlj)
     dimensions["smoothness_match"] = {
-        "source_ldlj": src_ldlj, "target_ldlj": tgt_ldlj,
-        "level": level, "note": note,
+        "source_ldlj": src_ldlj,
+        "target_ldlj": tgt_ldlj,
+        "level": level,
+        "note": note,
     }
     levels.append(level)
 
@@ -285,7 +299,8 @@ def analyze_transfer(
     dimensions["episode_length_parity"] = {
         "source_mean_steps": src_ep_len,
         "target_mean_steps": tgt_ep_len,
-        "level": level, "note": note,
+        "level": level,
+        "note": note,
     }
     levels.append(level)
 
@@ -298,20 +313,21 @@ def analyze_transfer(
     overall = _worst(levels)
 
     return {
-        "overall_level":   overall,
-        "source_dataset":  src_report.dataset_name,
-        "target_dataset":  tgt_report.dataset_name,
+        "overall_level": overall,
+        "source_dataset": src_report.dataset_name,
+        "target_dataset": tgt_report.dataset_name,
         "source_episodes": src_report.n_episodes,
         "target_episodes": tgt_report.n_episodes,
-        "dimensions":      dimensions,
+        "dimensions": dimensions,
     }
 
 
 # ── rendering ─────────────────────────────────────────────────────────────────
 
+
 def render_transfer(result: dict) -> str:
     overall = result["overall_level"]
-    icon    = _risk_icon(overall)
+    icon = _risk_icon(overall)
     lines = [
         _THICK,
         "  CALIBRA CROSS-EMBODIMENT TRANSFER SCORE",
@@ -327,17 +343,17 @@ def render_transfer(result: dict) -> str:
     ]
 
     _labels = {
-        "action_dim_compatibility":  "Action Dimensionality",
-        "frequency_compatibility":   "Control Frequency",
-        "smoothness_match":          "Trajectory Smoothness",
-        "episode_length_parity":     "Episode Length",
-        "action_range_overlap":      "Action Range Overlap",
+        "action_dim_compatibility": "Action Dimensionality",
+        "frequency_compatibility": "Control Frequency",
+        "smoothness_match": "Trajectory Smoothness",
+        "episode_length_parity": "Episode Length",
+        "action_range_overlap": "Action Range Overlap",
     }
 
     for dim_key, dim_data in result["dimensions"].items():
-        label      = _labels.get(dim_key, dim_key.replace("_", " ").title())
-        dim_level  = dim_data.get("level", "?")
-        dim_icon   = _risk_icon(dim_level)
+        label = _labels.get(dim_key, dim_key.replace("_", " ").title())
+        dim_level = dim_data.get("level", "?")
+        dim_icon = _risk_icon(dim_level)
         lines.append(f"  {dim_icon} {label:<35} [{dim_level}]")
         lines.append(f"     {dim_data.get('note', '')}")
         lines.append("")
@@ -346,12 +362,8 @@ def render_transfer(result: dict) -> str:
     lines.append("  RECOMMENDATIONS")
     lines.append(_THIN)
     if overall == "DIRECT":
-        lines.append(
-            "  ✓ Source data is highly compatible. Direct mixing is recommended."
-        )
-        lines.append(
-            "  Use `calibra prune` on the source to select the most diverse episodes."
-        )
+        lines.append("  ✓ Source data is highly compatible. Direct mixing is recommended.")
+        lines.append("  Use `calibra prune` on the source to select the most diverse episodes.")
     elif overall == "ADAPT":
         lines += [
             "  • Normalise action spaces before mixing source and target data.",
@@ -378,6 +390,7 @@ def render_transfer(result: dict) -> str:
 
 # ── CLI entry point ───────────────────────────────────────────────────────────
 
+
 def run_transfer(argv: list[str]) -> None:
     p = argparse.ArgumentParser(
         prog="calibra transfer",
@@ -403,7 +416,7 @@ def run_transfer(argv: list[str]) -> None:
     args = p.parse_args(argv)
 
     def strip_hf(path: str) -> str:
-        return path[len("hf://"):] if path.startswith("hf://") else path
+        return path[len("hf://") :] if path.startswith("hf://") else path
 
     src_path = strip_hf(args.source_path)
     tgt_path = strip_hf(args.target_path)
@@ -417,7 +430,7 @@ def run_transfer(argv: list[str]) -> None:
     log(f"Loading source dataset: {src_path!r} ...")
     try:
         src_reader = _get_reader(args.source_format) if args.source_format else None
-        src_batch  = _load(src_path, reader=src_reader)
+        src_batch = _load(src_path, reader=src_reader)
     except Exception as exc:
         print(f"error loading source dataset: {exc}", file=sys.stderr)
         sys.exit(2)
@@ -425,13 +438,13 @@ def run_transfer(argv: list[str]) -> None:
     log(f"Loading target dataset: {tgt_path!r} ...")
     try:
         tgt_reader = _get_reader(args.target_format) if args.target_format else None
-        tgt_batch  = _load(tgt_path, reader=tgt_reader)
+        tgt_batch = _load(tgt_path, reader=tgt_reader)
     except Exception as exc:
         print(f"error loading target dataset: {exc}", file=sys.stderr)
         sys.exit(2)
 
     log("Running diagnostic pipeline ...")
-    pipeline   = Pipeline()
+    pipeline = Pipeline()
     src_report = pipeline.run(src_batch, policy_family=args.policy)
     tgt_report = pipeline.run(tgt_batch, policy_family=args.policy)
 

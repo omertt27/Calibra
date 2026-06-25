@@ -1,4 +1,5 @@
 """Tests for the control smoothness analyzer."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -15,6 +16,7 @@ from calibra.schema.report import RiskLevel
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
+
 def _sine_episode(
     n_steps: int = 100,
     dt: float = 0.05,
@@ -26,10 +28,9 @@ def _sine_episode(
     """Smooth sinusoidal action trajectory (position)."""
     t = np.arange(n_steps) * dt
     ts = t.copy()
-    actions = np.column_stack([
-        amplitude * np.sin(2 * np.pi * freq * t + d * 0.3)
-        for d in range(action_dim)
-    ]).astype(np.float32)
+    actions = np.column_stack(
+        [amplitude * np.sin(2 * np.pi * freq * t + d * 0.3) for d in range(action_dim)]
+    ).astype(np.float32)
     return Episode(
         metadata=EpisodeMetadata(episode_id=ep_id),
         timestamps=ts,
@@ -61,18 +62,20 @@ def _jerky_episode(
 
 
 def _batch_of(episodes) -> EpisodeBatch:
-    return EpisodeBatch(episodes=list(episodes), dataset_name="test",
-                        format="hdf5", source_path="/tmp/x.h5")
+    return EpisodeBatch(
+        episodes=list(episodes), dataset_name="test", format="hdf5", source_path="/tmp/x.h5"
+    )
 
 
 # ── unit tests: LDLJ ─────────────────────────────────────────────────────────
 
+
 class TestLDLJ:
     def test_smooth_sine_is_less_negative_than_jerky(self):
         smooth = _sine_episode(200, dt=0.05)
-        jerky  = _jerky_episode(200, dt=0.05, n_spikes=10)
+        jerky = _jerky_episode(200, dt=0.05, n_spikes=10)
         ldlj_smooth = _episode_ldlj(smooth, "position", list(range(3)))
-        ldlj_jerky  = _episode_ldlj(jerky,  "position", list(range(3)))
+        ldlj_jerky = _episode_ldlj(jerky, "position", list(range(3)))
         assert ldlj_smooth is not None and ldlj_jerky is not None
         assert ldlj_smooth > ldlj_jerky  # less negative = smoother
 
@@ -85,7 +88,8 @@ class TestLDLJ:
         acts = np.ones((50, 3), dtype=np.float32)
         ep = Episode(
             metadata=EpisodeMetadata(episode_id="ep"),
-            timestamps=t, observations={},
+            timestamps=t,
+            observations={},
             actions=acts,
         )
         assert _episode_ldlj(ep, "position", [0, 1, 2]) is None
@@ -104,7 +108,9 @@ class TestLDLJ:
             acts = rng.random((100, 4)).astype(np.float32)
             ep = Episode(
                 metadata=EpisodeMetadata(episode_id="ep"),
-                timestamps=t, observations={}, actions=acts,
+                timestamps=t,
+                observations={},
+                actions=acts,
             )
             v = _episode_ldlj(ep, "position", [0, 1, 2, 3])
             if v is not None:
@@ -112,6 +118,7 @@ class TestLDLJ:
 
 
 # ── unit tests: jerk spike fraction ──────────────────────────────────────────
+
 
 class TestJerkSpikeFraction:
     def test_smooth_has_low_spike_fraction(self):
@@ -133,6 +140,7 @@ class TestJerkSpikeFraction:
 
 # ── unit tests: velocity discontinuity fraction ───────────────────────────────
 
+
 class TestVelDiscFraction:
     def test_smooth_no_discontinuities(self):
         ep = _sine_episode(200, dt=0.05, freq=0.1)  # slow oscillation
@@ -146,7 +154,9 @@ class TestVelDiscFraction:
         acts = np.column_stack([np.sign(np.sin(np.pi * np.arange(50)))] * 3).astype(np.float32)
         ep = Episode(
             metadata=EpisodeMetadata(episode_id="ep"),
-            timestamps=t, observations={}, actions=acts,
+            timestamps=t,
+            observations={},
+            actions=acts,
         )
         frac = _episode_vel_disc_fraction(ep, "position", [0, 1, 2], threshold=0.01)
         assert frac is not None
@@ -159,12 +169,13 @@ class TestVelDiscFraction:
 
 # ── unit tests: active_dims (gripper exclusion) ───────────────────────────────
 
+
 class TestGetVelocity:
     def test_excludes_correct_dims(self):
         ep = _sine_episode(50, action_dim=7)
         analyzer = ControlSmoothnessAnalyzer(gripper_dims=[-1])
         active = analyzer._active_dims(ep)
-        assert 6 not in active   # last dim (gripper) excluded
+        assert 6 not in active  # last dim (gripper) excluded
         assert 0 in active
 
     def test_no_exclusion(self):
@@ -175,6 +186,7 @@ class TestGetVelocity:
 
 
 # ── integration: ControlSmoothnessAnalyzer ───────────────────────────────────
+
 
 class TestControlSmoothnessAnalyzerSmooth:
     def test_smooth_batch_no_critical_flags(self):
@@ -202,21 +214,17 @@ class TestControlSmoothnessAnalyzerSmooth:
 
 class TestControlSmoothnessAnalyzerJerky:
     def test_jerky_batch_flags_ldlj(self):
-        eps = [_jerky_episode(200, dt=0.05, n_spikes=20, ep_id=str(i))
-               for i in range(8)]
-        result = ControlSmoothnessAnalyzer(
-            ldlj_warning=-1.0, ldlj_critical=-3.0
-        ).analyze(_batch_of(eps))
+        eps = [_jerky_episode(200, dt=0.05, n_spikes=20, ep_id=str(i)) for i in range(8)]
+        result = ControlSmoothnessAnalyzer(ldlj_warning=-1.0, ldlj_critical=-3.0).analyze(
+            _batch_of(eps)
+        )
         ldlj_flags = [f for f in result.flags if f.metric == "ldlj"]
         assert ldlj_flags
         assert ldlj_flags[0].level in (RiskLevel.WARNING, RiskLevel.CRITICAL)
 
     def test_jerky_batch_flags_spikes(self):
-        eps = [_jerky_episode(200, dt=0.05, n_spikes=20, ep_id=str(i))
-               for i in range(8)]
-        result = ControlSmoothnessAnalyzer(
-            jerk_spike_warning=0.001
-        ).analyze(_batch_of(eps))
+        eps = [_jerky_episode(200, dt=0.05, n_spikes=20, ep_id=str(i)) for i in range(8)]
+        result = ControlSmoothnessAnalyzer(jerk_spike_warning=0.001).analyze(_batch_of(eps))
         spike_flags = [f for f in result.flags if "spike" in f.metric]
         assert spike_flags
         assert spike_flags[0].level in (RiskLevel.WARNING, RiskLevel.CRITICAL)
@@ -239,14 +247,13 @@ class TestControlSmoothnessAnalyzerEdgeCases:
 
     def test_diffusion_hint_emitted_with_policy(self):
         eps = [_sine_episode(100, ep_id=str(i)) for i in range(3)]
-        result = ControlSmoothnessAnalyzer().analyze(
-            _batch_of(eps), policy_family="diffusion"
-        )
+        result = ControlSmoothnessAnalyzer().analyze(_batch_of(eps), policy_family="diffusion")
         dp_hints = [h for h in result.hints if "Diffusion" in h.policy_family]
         assert dp_hints
 
 
 # ── scripted motion signature ─────────────────────────────────────────────────
+
 
 def _scripted_episode(n_steps: int = 200, dt: float = 0.02, ep_id: str = "ep_0") -> Episode:
     """
@@ -268,9 +275,7 @@ def _scripted_episode(n_steps: int = 200, dt: float = 0.02, ep_id: str = "ep_0")
         end = min((i + 1) * seg_len, n_steps)
         # Smooth linear interpolation within segment
         t_seg = np.linspace(0, 1, end - start)
-        actions[start:end] = (
-            waypoints[i] * (1 - t_seg[:, None]) + waypoints[i + 1] * t_seg[:, None]
-        )
+        actions[start:end] = waypoints[i] * (1 - t_seg[:, None]) + waypoints[i + 1] * t_seg[:, None]
     # Inject abrupt spikes at waypoint boundaries
     for i in range(1, 5):
         idx = i * seg_len
@@ -308,8 +313,8 @@ class TestScriptedMotionSignature:
         # Lower thresholds to ensure detection regardless of synthetic data specifics.
         analyzer = ControlSmoothnessAnalyzer(
             action_type="position",
-            scripted_spike_min=0.01,       # very sensitive for synthetic data
-            scripted_vel_disc_max=0.20,    # relaxed — synthetic vel_disc varies
+            scripted_spike_min=0.01,  # very sensitive for synthetic data
+            scripted_vel_disc_max=0.20,  # relaxed — synthetic vel_disc varies
         )
         result = analyzer.analyze(_batch_of(eps))
         sig_flags = [f for f in result.flags if f.metric == "motion_collection_signature"]
@@ -320,8 +325,9 @@ class TestScriptedMotionSignature:
         """The scripted signature flag must always be INFO, never WARNING/CRITICAL."""
         # Patch the analyzer to force the flag to fire.
         from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
+
         spike_raw = {"mean_spike_fraction": 0.25}
-        disc_raw  = {"mean_disc_fraction": 0.005}
+        disc_raw = {"mean_disc_fraction": 0.005}
         analyzer = ControlSmoothnessAnalyzer(action_type="position")
         flag = analyzer._check_scripted_motion_signature(spike_raw, disc_raw)
         assert flag is not None
@@ -341,7 +347,7 @@ class TestScriptedMotionSignature:
         analyzer = ControlSmoothnessAnalyzer(action_type="position")
         flag = analyzer._check_scripted_motion_signature(
             {"mean_spike_fraction": 0.25},
-            {"mean_disc_fraction": 0.05},   # above default 0.015
+            {"mean_disc_fraction": 0.05},  # above default 0.015
         )
         assert flag is None
 
@@ -363,10 +369,14 @@ class TestScriptedMotionSignature:
             {"mean_disc_fraction": 0.007},
         )
         assert flag is not None
-        hints = analyzer._policy_hints([flag], "diffusion", {
-            "ldlj": {"mean_ldlj": -5.0},
-            "jerk_spikes": {"mean_spike_fraction": 0.22},
-        })
+        hints = analyzer._policy_hints(
+            [flag],
+            "diffusion",
+            {
+                "ldlj": {"mean_ldlj": -5.0},
+                "jerk_spikes": {"mean_spike_fraction": 0.22},
+            },
+        )
         dp_hints = [h for h in hints if "Diffusion" in h.policy_family]
         assert dp_hints
         scripted_caveats = [c for c in dp_hints[0].caveats if "cripted" in c]
@@ -375,10 +385,13 @@ class TestScriptedMotionSignature:
 
 # ── action-state divergence validation ───────────────────────────────────────
 
+
 class TestActionStateDivergenceValidation:
     """Tests for the recalibrated action-state divergence metric."""
 
-    def _batch_with_state(self, divergence_level: float, n=5, action_type="position") -> EpisodeBatch:
+    def _batch_with_state(
+        self, divergence_level: float, n=5, action_type="position"
+    ) -> EpisodeBatch:
         """Create a batch with position control and a controlled divergence level."""
         rng = np.random.default_rng(99)
         episodes = []
@@ -388,15 +401,16 @@ class TestActionStateDivergenceValidation:
             # State = action + controlled offset
             noise_scale = divergence_level / np.sqrt(d)
             state = actions + rng.normal(0, noise_scale, (n_steps, d)).astype(np.float32)
-            episodes.append(Episode(
-                metadata=EpisodeMetadata(episode_id=f"ep_{i}"),
-                timestamps=np.arange(n_steps) * 0.02,
-                observations={"state": state},
-                actions=actions,
-            ))
+            episodes.append(
+                Episode(
+                    metadata=EpisodeMetadata(episode_id=f"ep_{i}"),
+                    timestamps=np.arange(n_steps) * 0.02,
+                    observations={"state": state},
+                    actions=actions,
+                )
+            )
         return EpisodeBatch(
-            episodes=episodes, dataset_name="test",
-            format="hdf5", source_path="/tmp/test"
+            episodes=episodes, dataset_name="test", format="hdf5", source_path="/tmp/test"
         )
 
     def test_velocity_datasets_skip_divergence(self):
@@ -431,7 +445,7 @@ class TestActionStateDivergenceValidation:
         # Generate planner-like data: constant blocks → high spike, low vel_disc
         actions = np.zeros((n_steps, d), dtype=np.float32)
         for i in range(0, n_steps, 15):
-            actions[i:i+15] = rng.uniform(-1, 1, d).astype(np.float32)
+            actions[i : i + 15] = rng.uniform(-1, 1, d).astype(np.float32)
         # Large waypoint tracking error (>0.35 L2)
         state = actions + rng.normal(0, 0.25, (n_steps, d)).astype(np.float32)
         ep = Episode(
@@ -441,8 +455,7 @@ class TestActionStateDivergenceValidation:
             actions=actions,
         )
         batch = EpisodeBatch(
-            episodes=[ep] * 4, dataset_name="test",
-            format="hdf5", source_path="/tmp/test"
+            episodes=[ep] * 4, dataset_name="test", format="hdf5", source_path="/tmp/test"
         )
         result = ControlSmoothnessAnalyzer().analyze(batch)
         div_flags = [f for f in result.flags if f.metric == "action_state_divergence"]
@@ -466,8 +479,7 @@ class TestActionStateDivergenceValidation:
             actions=actions,
         )
         batch = EpisodeBatch(
-            episodes=[ep], dataset_name="test",
-            format="hdf5", source_path="/tmp/test"
+            episodes=[ep], dataset_name="test", format="hdf5", source_path="/tmp/test"
         )
         div_flag, _ = ControlSmoothnessAnalyzer()._check_action_state_divergence(batch)
         assert div_flag is None
@@ -475,14 +487,20 @@ class TestActionStateDivergenceValidation:
 
 # ── certify scripted-aware grading ───────────────────────────────────────────
 
+
 class TestCertifyScriptedGrading:
     """Tests for scripted-aware certification grading."""
 
     def _scripted_report(self):
         """Build a minimal DiagnosticReport with scripted signature + spike CRITICAL."""
         from calibra.schema.report import (
-            AnalyzerResult, DiagnosticReport, ObservedValue, RiskFlag, RiskLevel
+            AnalyzerResult,
+            DiagnosticReport,
+            ObservedValue,
+            RiskFlag,
+            RiskLevel,
         )
+
         spike_flag = RiskFlag(
             level=RiskLevel.CRITICAL,
             metric="spike_rate",
@@ -514,6 +532,7 @@ class TestCertifyScriptedGrading:
 
     def test_scripted_spike_critical_does_not_fail_grade(self):
         from calibra.certify import _grade
+
         report = self._scripted_report()
         grade, code = _grade(report)
         assert grade == "CERTIFIED"
@@ -522,8 +541,13 @@ class TestCertifyScriptedGrading:
     def test_non_scripted_spike_critical_fails_grade(self):
         from calibra.certify import _grade
         from calibra.schema.report import (
-            AnalyzerResult, DiagnosticReport, ObservedValue, RiskFlag, RiskLevel
+            AnalyzerResult,
+            DiagnosticReport,
+            ObservedValue,
+            RiskFlag,
+            RiskLevel,
         )
+
         spike_flag = RiskFlag(
             level=RiskLevel.CRITICAL,
             metric="spike_rate",
@@ -550,6 +574,7 @@ class TestCertifyScriptedGrading:
 
     def test_certificate_shows_scripted_note(self):
         from calibra.certify import render_certificate
+
         report = self._scripted_report()
         cert = render_certificate(report, "CERTIFIED", None)
         assert "SCRIPTED DATA NOTE" in cert
@@ -557,12 +582,14 @@ class TestCertifyScriptedGrading:
 
     def test_certificate_shows_scripted_source_line(self):
         from calibra.certify import render_certificate
+
         report = self._scripted_report()
         cert = render_certificate(report, "CERTIFIED", None)
         assert "Source" in cert and "scripted" in cert.lower()
 
 
 # ── compare mismatch banner ───────────────────────────────────────────────────
+
 
 class TestCompareMismatchBanner:
     """Tests for the collection-method mismatch warning in calibra compare."""
@@ -586,6 +613,7 @@ class TestCompareMismatchBanner:
 
     def _render(self, yours_is_scripted: bool, ref_scripted: bool) -> str:
         from calibra.compare import render_comparison
+
         if yours_is_scripted:
             your_m = self._metrics(spike=0.22, vel_disc=0.007)
         else:
@@ -625,21 +653,28 @@ class TestCompareMismatchBanner:
 
     def test_scripted_spike_interp_explains_planner(self):
         from calibra.compare import _interp_spike_rate
+
         interp, conf = _interp_spike_rate(
-            0.22, 0.005, "position", "aloha",
-            yours_is_scripted=True, ref_is_scripted=False,
+            0.22,
+            0.005,
+            "position",
+            "aloha",
+            yours_is_scripted=True,
+            ref_is_scripted=False,
         )
         assert "scripted" in interp.lower() or "planner" in interp.lower()
         assert "0.30" in interp  # prune guidance
 
     def test_ref_is_scripted_detection(self):
         from calibra.compare import _ref_is_scripted
+
         assert _ref_is_scripted({"spike_rate": 0.22, "vel_disc_rate": 0.007})
         assert not _ref_is_scripted({"spike_rate": 0.005, "vel_disc_rate": 0.03})
         assert not _ref_is_scripted({"spike_rate": 0.22, "vel_disc_rate": 0.05})
 
 
 # ── prune scripted auto-adjust ────────────────────────────────────────────────
+
 
 class TestPruneScriptedAutoAdjust:
     """Tests for the scripted-data spike threshold auto-adjustment in prune CLI."""
@@ -649,6 +684,7 @@ class TestPruneScriptedAutoAdjust:
         # parse help to get argument spec
         import calibra.prune as prune_module
         import inspect
+
         src = inspect.getsource(prune_module.run_prune)
         # Just verify the default in the code is None
         assert "default=None" in src, "Expected --max-spike-rate default=None for auto-adjust"
@@ -657,6 +693,7 @@ class TestPruneScriptedAutoAdjust:
         """The auto-adjust log message must explain what happened."""
         import calibra.prune as prune_module
         import inspect
+
         src = inspect.getsource(prune_module.run_prune)
         assert "scripted" in src.lower()
         assert "0.30" in src or "_SCRIPTED_AUTO_SPIKE" in src

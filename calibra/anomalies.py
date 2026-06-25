@@ -14,6 +14,7 @@ bad episodes doesn't inflate the threshold and hide itself.
 OUTLIER_K=3.0 means "three median-absolute-deviations from the median" —
 roughly equivalent to 3σ on a normal distribution but distribution-free.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -26,23 +27,24 @@ OUTLIER_K = 3.0
 
 # (analyzer_name, raw_metrics_key, display_label, higher_is_worse)
 _EPISODE_METRICS: list[tuple[str, str, str, bool]] = [
-    ("temporal_stability", "per_episode_jitter_cv",        "jitter_cv",    True),
+    ("temporal_stability", "per_episode_jitter_cv", "jitter_cv", True),
     ("temporal_stability", "per_episode_dropout_fraction", "dropout_rate", True),
-    ("control_smoothness", "per_episode_spike_rate",       "spike_rate",   True),
-    ("control_smoothness", "per_episode_vel_disc_rate",    "vel_disc_rate",True),
-    ("control_smoothness", "per_episode_ldlj",             "ldlj",         False),
+    ("control_smoothness", "per_episode_spike_rate", "spike_rate", True),
+    ("control_smoothness", "per_episode_vel_disc_rate", "vel_disc_rate", True),
+    ("control_smoothness", "per_episode_ldlj", "ldlj", False),
 ]
 
 # How many MADs above/below median before we call it an outlier.
 # Separate thresholds for LDLJ (already noisy across episodes).
 _OUTLIER_K_BY_METRIC: dict[str, float] = {
-    "ldlj": 4.0,   # LDLJ has high natural variance; be more conservative
+    "ldlj": 4.0,  # LDLJ has high natural variance; be more conservative
 }
 
 
 @dataclass
 class EpisodeFlag:
     """A single per-episode anomaly signal."""
+
     episode_idx: int
     episode_id: str
     metric: str
@@ -64,6 +66,7 @@ class EpisodeFlag:
 @dataclass
 class EpisodeAnomaly:
     """All flags for a single episode, grouped."""
+
     episode_idx: int
     episode_id: str
     flags: list[EpisodeFlag] = field(default_factory=list)
@@ -129,9 +132,8 @@ def find_outliers(
             if np.isnan(v):
                 continue
             deviation = (v - median) / scale
-            is_anomaly = (
-                (higher_is_worse and deviation > threshold_k)
-                or (not higher_is_worse and deviation < -threshold_k)
+            is_anomaly = (higher_is_worse and deviation > threshold_k) or (
+                not higher_is_worse and deviation < -threshold_k
             )
             if not is_anomaly:
                 continue
@@ -160,6 +162,7 @@ def find_outliers(
 
 
 # ── rendering ─────────────────────────────────────────────────────────────────
+
 
 def _consecutive_groups(indices: list[int]) -> list[list[int]]:
     """Group a sorted list of integers into consecutive runs."""

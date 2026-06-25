@@ -10,6 +10,7 @@ Run from the repo root:
 The generated file is committed to docs/claims.md so contributors and
 researchers can read the knowledge base without needing to parse JSON.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -23,21 +24,21 @@ sys.path.insert(0, str(_REPO))
 from calibra.claims import _derive_confidence  # noqa: E402  # reuse the same scale
 
 _STATUS_EMOJI = {
-    "validated":        "✅ validated",
-    "active_hypothesis":"🔬 active hypothesis",
-    "provisional":      "⚠️  provisional",
-    "falsified":        "❌ falsified",
-    "updated":          "🔄 updated",
-    "superseded":       "🔁 superseded",
+    "validated": "✅ validated",
+    "active_hypothesis": "🔬 active hypothesis",
+    "provisional": "⚠️  provisional",
+    "falsified": "❌ falsified",
+    "updated": "🔄 updated",
+    "superseded": "🔁 superseded",
 }
 
 _CONFIDENCE_BADGE = {
-    "STRONG":        "🟢 STRONG",
-    "HIGH":          "🟢 HIGH",
-    "MEDIUM":        "🟡 MEDIUM",
-    "MODERATE":      "🟡 MODERATE",
-    "LOW-MODERATE":  "🟠 LOW-MODERATE",
-    "LOW":           "🟠 LOW",
+    "STRONG": "🟢 STRONG",
+    "HIGH": "🟢 HIGH",
+    "MEDIUM": "🟡 MEDIUM",
+    "MODERATE": "🟡 MODERATE",
+    "LOW-MODERATE": "🟠 LOW-MODERATE",
+    "LOW": "🟠 LOW",
     "NOT VALIDATED": "⬜ NOT VALIDATED",
 }
 
@@ -200,13 +201,13 @@ def _render_claims_yaml(claims: list[dict]) -> str:
     ]
     for claim in claims:
         cid = claim.get("id", "?")
-        lines.append(f"  - id: \"{cid}\"")
-        lines.append(f"    metric: \"{claim.get('metric', '')}\"")
-        lines.append(f"    class: \"{claim.get('class', 'any')}\"")
-        lines.append(f"    status: \"{claim.get('status', '')}\"")
-        lines.append(f"    confidence: \"{claim.get('confidence', '')}\"")
+        lines.append(f'  - id: "{cid}"')
+        lines.append(f'    metric: "{claim.get("metric", "")}"')
+        lines.append(f'    class: "{claim.get("class", "any")}"')
+        lines.append(f'    status: "{claim.get("status", "")}"')
+        lines.append(f'    confidence: "{claim.get("confidence", "")}"')
         assertion = claim.get("assertion", "").replace('"', "'")
-        lines.append(f"    assertion: \"{assertion}\"")
+        lines.append(f'    assertion: "{assertion}"')
         evidence = claim.get("evidence", [])
         lines.append(f"    evidence_count: {len(evidence)}")
         if evidence:
@@ -218,7 +219,7 @@ def _render_claims_yaml(claims: list[dict]) -> str:
         falsify = claim.get("falsification", {})
         if falsify.get("condition"):
             cond = falsify["condition"].replace('"', "'")
-            lines.append(f"    falsification: \"{cond}\"")
+            lines.append(f'    falsification: "{cond}"')
         pending = falsify.get("pending_tests", [])
         if pending:
             lines.append("    pending_tests:")
@@ -235,22 +236,25 @@ def _render_claims_yaml(claims: list[dict]) -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--out", default="docs/claims.md",
-                        help="Output path (default: docs/claims.md)")
-    parser.add_argument("--check", action="store_true",
-                        help="Exit 1 if references < claims (CI guard)")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--out", default="docs/claims.md", help="Output path (default: docs/claims.md)"
+    )
+    parser.add_argument(
+        "--check", action="store_true", help="Exit 1 if references < claims (CI guard)"
+    )
     args = parser.parse_args()
 
     claims_dir = _REPO / "calibra" / "claims"
-    refs_dir   = _REPO / "calibra" / "references"
+    refs_dir = _REPO / "calibra" / "references"
 
-    claims    = load_claims(claims_dir)
+    claims = load_claims(claims_dir)
     references = load_references(refs_dir)
 
     n_claims = len(claims)
-    n_refs   = len(references)
+    n_refs = len(references)
 
     if args.check:
         if n_refs < n_claims:
@@ -275,7 +279,9 @@ def main() -> None:
     yaml_path.parent.mkdir(parents=True, exist_ok=True)
     yaml_path.write_text(_render_claims_yaml(claims))
     print(f"Written to {out_path}  +  {yaml_path}")
-    print(f"  {n_claims} claims  ·  {n_refs} references  ·  ratio {'✅' if n_refs >= n_claims else '⚠️ inverted'}")
+    print(
+        f"  {n_claims} claims  ·  {n_refs} references  ·  ratio {'✅' if n_refs >= n_claims else '⚠️ inverted'}"
+    )
 
 
 if __name__ == "__main__":

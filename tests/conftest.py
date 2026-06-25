@@ -4,6 +4,7 @@ Shared fixtures for Calibra tests.
 All fixtures produce synthetic EpisodeBatch objects so tests run without
 any real dataset files or optional format dependencies.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -69,18 +70,18 @@ def _make_episode(
 def clean_batch() -> EpisodeBatch:
     """10 episodes with perfectly uniform timestamps."""
     episodes = [_make_episode(episode_id=f"ep_{i}") for i in range(10)]
-    return EpisodeBatch(episodes=episodes, dataset_name="clean",
-                        format="hdf5", source_path="/tmp/clean.h5")
+    return EpisodeBatch(
+        episodes=episodes, dataset_name="clean", format="hdf5", source_path="/tmp/clean.h5"
+    )
 
 
 @pytest.fixture
 def jittery_batch() -> EpisodeBatch:
     """Episodes with high timing jitter (CV > WARNING threshold)."""
-    episodes = [
-        _make_episode(jitter_std=0.025, episode_id=f"ep_{i}") for i in range(10)
-    ]
-    return EpisodeBatch(episodes=episodes, dataset_name="jittery",
-                        format="hdf5", source_path="/tmp/jittery.h5")
+    episodes = [_make_episode(jitter_std=0.025, episode_id=f"ep_{i}") for i in range(10)]
+    return EpisodeBatch(
+        episodes=episodes, dataset_name="jittery", format="hdf5", source_path="/tmp/jittery.h5"
+    )
 
 
 @pytest.fixture
@@ -93,25 +94,27 @@ def dropout_batch() -> EpisodeBatch:
         )
         for i in range(10)
     ]
-    return EpisodeBatch(episodes=episodes, dataset_name="dropout",
-                        format="hdf5", source_path="/tmp/dropout.h5")
+    return EpisodeBatch(
+        episodes=episodes, dataset_name="dropout", format="hdf5", source_path="/tmp/dropout.h5"
+    )
 
 
 @pytest.fixture
 def cam_lag_batch() -> EpisodeBatch:
     """Episodes with camera lag std well above CRITICAL threshold (50 ms > 20 ms)."""
-    episodes = [
-        _make_episode(cam_lag_std=0.050, episode_id=f"ep_{i}") for i in range(10)
-    ]
-    return EpisodeBatch(episodes=episodes, dataset_name="cam_lag",
-                        format="hdf5", source_path="/tmp/cam_lag.h5")
+    episodes = [_make_episode(cam_lag_std=0.050, episode_id=f"ep_{i}") for i in range(10)]
+    return EpisodeBatch(
+        episodes=episodes, dataset_name="cam_lag", format="hdf5", source_path="/tmp/cam_lag.h5"
+    )
 
 
 @pytest.fixture
 def misaligned_batch() -> EpisodeBatch:
     """Episodes with action timestamps offset by 10 ms (> WARNING threshold)."""
-    episodes = [
-        _make_episode(action_offset=0.010, episode_id=f"ep_{i}") for i in range(10)
-    ]
-    return EpisodeBatch(episodes=episodes, dataset_name="misaligned",
-                        format="hdf5", source_path="/tmp/misaligned.h5")
+    episodes = [_make_episode(action_offset=0.010, episode_id=f"ep_{i}") for i in range(10)]
+    return EpisodeBatch(
+        episodes=episodes,
+        dataset_name="misaligned",
+        format="hdf5",
+        source_path="/tmp/misaligned.h5",
+    )

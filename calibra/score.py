@@ -37,46 +37,45 @@ Exit codes
     1  Score 40–74 (Fair or Poor)
     2  Score < 40 (Critical)
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import sys
-from pathlib import Path
-from typing import Optional
 
 from calibra.pipeline import Pipeline
 from calibra.schema.report import DiagnosticReport, RiskLevel
 
 # ── scoring constants ─────────────────────────────────────────────────────────
 
-_MAX_TEMPORAL   = 25.0
+_MAX_TEMPORAL = 25.0
 _MAX_SMOOTHNESS = 35.0
-_MAX_COVERAGE   = 25.0
-_MAX_STRUCTURE  = 15.0
-_MAX_TOTAL      = _MAX_TEMPORAL + _MAX_SMOOTHNESS + _MAX_COVERAGE + _MAX_STRUCTURE
+_MAX_COVERAGE = 25.0
+_MAX_STRUCTURE = 15.0
+_MAX_TOTAL = _MAX_TEMPORAL + _MAX_SMOOTHNESS + _MAX_COVERAGE + _MAX_STRUCTURE
 
 # Metric thresholds used to deduct points
-_JITTER_CV_WARNING   = 0.05
-_JITTER_CV_CRITICAL  = 0.20
-_DROPOUT_WARNING     = 0.01
-_DROPOUT_CRITICAL    = 0.05
+_JITTER_CV_WARNING = 0.05
+_JITTER_CV_CRITICAL = 0.20
+_DROPOUT_WARNING = 0.01
+_DROPOUT_CRITICAL = 0.05
 
-_LDLJ_GOOD     = -7.0
-_LDLJ_WARNING  = -10.0
+_LDLJ_GOOD = -7.0
+_LDLJ_WARNING = -10.0
 _LDLJ_CRITICAL = -15.0
 
-_SPIKE_WARNING  = 0.02
+_SPIKE_WARNING = 0.02
 _SPIKE_CRITICAL = 0.05
 
-_VEL_DISC_WARNING  = 0.02
+_VEL_DISC_WARNING = 0.02
 _VEL_DISC_CRITICAL = 0.05
 
-_ENTROPY_GOOD     = 4.0   # bits/dim
-_ENTROPY_WARNING  = 2.5
+_ENTROPY_GOOD = 4.0  # bits/dim
+_ENTROPY_WARNING = 2.5
 _ENTROPY_CRITICAL = 1.5
 
-_TRAJ_DIV_GOOD    = 0.4   # trajectory diversity score
+_TRAJ_DIV_GOOD = 0.4  # trajectory diversity score
 _SHORT_EP_WARNING = 0.05
 
 
@@ -93,10 +92,11 @@ def _raw(report: DiagnosticReport, analyzer: str) -> dict:
 
 # ── dimension scorers ─────────────────────────────────────────────────────────
 
+
 def _score_temporal(report: DiagnosticReport) -> tuple[float, dict]:
     """Returns (score 0–25, details dict)."""
     t = _raw(report, "temporal_stability")
-    jitter  = t.get("jitter",  {}).get("mean_cv",             None)
+    jitter = t.get("jitter", {}).get("mean_cv", None)
     dropout = t.get("dropout", {}).get("mean_dropout_fraction", None)
 
     deduction = 0.0
@@ -125,9 +125,9 @@ def _score_temporal(report: DiagnosticReport) -> tuple[float, dict]:
 def _score_smoothness(report: DiagnosticReport) -> tuple[float, dict]:
     """Returns (score 0–35, details dict)."""
     s = _raw(report, "control_smoothness")
-    ldlj      = s.get("ldlj",             {}).get("mean_ldlj",         None)
-    spike     = s.get("jerk_spikes",      {}).get("mean_spike_fraction", None)
-    vel_disc  = s.get("vel_discontinuities", {}).get("mean_disc_fraction", None)
+    ldlj = s.get("ldlj", {}).get("mean_ldlj", None)
+    spike = s.get("jerk_spikes", {}).get("mean_spike_fraction", None)
+    vel_disc = s.get("vel_discontinuities", {}).get("mean_disc_fraction", None)
 
     deduction = 0.0
     details: dict = {}
@@ -170,7 +170,7 @@ def _score_coverage(report: DiagnosticReport) -> tuple[float, dict]:
     """Returns (score 0–25, details dict)."""
     c = _raw(report, "coverage_entropy")
     entropy = c.get("action_entropy", {}).get("entropy_bits_per_dim", None)
-    ep_cv   = c.get("episode_lengths", {}).get("cv",                 None)
+    ep_cv = c.get("episode_lengths", {}).get("cv", None)
 
     deduction = 0.0
     details: dict = {}
@@ -203,8 +203,8 @@ def _score_coverage(report: DiagnosticReport) -> tuple[float, dict]:
 def _score_structure(report: DiagnosticReport) -> tuple[float, dict]:
     """Returns (score 0–15, details dict)."""
     ts = _raw(report, "task_structure")
-    traj_div   = ts.get("trajectory_diversity", {}).get("separation_score",        None)
-    short_frac = ts.get("short_episodes",       {}).get("short_episode_fraction",  None)
+    traj_div = ts.get("trajectory_diversity", {}).get("separation_score", None)
+    short_frac = ts.get("short_episodes", {}).get("short_episode_fraction", None)
 
     deduction = 0.0
     details: dict = {}
@@ -228,6 +228,7 @@ def _score_structure(report: DiagnosticReport) -> tuple[float, dict]:
 
 # ── category labelling ────────────────────────────────────────────────────────
 
+
 def _category(score: float) -> str:
     if score >= 90:
         return "Excellent"
@@ -250,6 +251,7 @@ def _exit_code(score: float) -> int:
 
 # ── public API ────────────────────────────────────────────────────────────────
 
+
 def compute_score(report: DiagnosticReport) -> dict:
     """
     Compute the composite Calibra Score from a DiagnosticReport.
@@ -261,9 +263,9 @@ def compute_score(report: DiagnosticReport) -> dict:
         n_critical_flags : int
         n_warning_flags  : int
     """
-    t_score,  t_details  = _score_temporal(report)
-    s_score,  s_details  = _score_smoothness(report)
-    c_score,  c_details  = _score_coverage(report)
+    t_score, t_details = _score_temporal(report)
+    s_score, s_details = _score_smoothness(report)
+    c_score, c_details = _score_coverage(report)
     st_score, st_details = _score_structure(report)
 
     total = (t_score + s_score + c_score + st_score) / _MAX_TOTAL * 100.0
@@ -271,35 +273,35 @@ def compute_score(report: DiagnosticReport) -> dict:
 
     return {
         "total_score": total,
-        "category":    _category(total),
+        "category": _category(total),
         "dimensions": {
             "temporal_stability": {
                 "score": round(t_score, 2),
-                "max":   _MAX_TEMPORAL,
+                "max": _MAX_TEMPORAL,
                 "details": t_details,
             },
             "control_smoothness": {
                 "score": round(s_score, 2),
-                "max":   _MAX_SMOOTHNESS,
+                "max": _MAX_SMOOTHNESS,
                 "details": s_details,
             },
             "coverage_diversity": {
                 "score": round(c_score, 2),
-                "max":   _MAX_COVERAGE,
+                "max": _MAX_COVERAGE,
                 "details": c_details,
             },
             "task_structure": {
                 "score": round(st_score, 2),
-                "max":   _MAX_STRUCTURE,
+                "max": _MAX_STRUCTURE,
                 "details": st_details,
             },
         },
         "n_critical_flags": len(report.flags_at_level(RiskLevel.CRITICAL)),
-        "n_warning_flags":  len(report.flags_at_level(RiskLevel.WARNING)),
-        "n_episodes":       report.n_episodes,
-        "n_samples":        report.n_samples,
-        "dataset_name":     report.dataset_name,
-        "source_path":      report.source_path,
+        "n_warning_flags": len(report.flags_at_level(RiskLevel.WARNING)),
+        "n_episodes": report.n_episodes,
+        "n_samples": report.n_samples,
+        "dataset_name": report.dataset_name,
+        "source_path": report.source_path,
     }
 
 
@@ -307,28 +309,28 @@ def compute_score(report: DiagnosticReport) -> dict:
 
 _WIDTH = 60
 _THICK = "━" * _WIDTH
-_THIN  = "─" * _WIDTH
+_THIN = "─" * _WIDTH
 
 _CATEGORY_ICON = {
     "Excellent": "✅",
-    "Good":      "🟢",
-    "Fair":      "🟡",
-    "Poor":      "🟠",
-    "Critical":  "🔴",
+    "Good": "🟢",
+    "Fair": "🟡",
+    "Poor": "🟠",
+    "Critical": "🔴",
 }
 
 _DIM_LABELS = {
     "temporal_stability": "Temporal Stability",
     "control_smoothness": "Control Smoothness",
     "coverage_diversity": "Coverage / Diversity",
-    "task_structure":     "Task Structure",
+    "task_structure": "Task Structure",
 }
 
 
 def render_score(result: dict) -> str:
-    score    = result["total_score"]
+    score = result["total_score"]
     category = result["category"]
-    icon     = _CATEGORY_ICON[category]
+    icon = _CATEGORY_ICON[category]
 
     lines = [
         _THICK,
@@ -345,12 +347,12 @@ def render_score(result: dict) -> str:
     ]
 
     for dim_key, dim_data in result["dimensions"].items():
-        label   = _DIM_LABELS.get(dim_key, dim_key)
-        s       = dim_data["score"]
-        mx      = dim_data["max"]
-        pct     = s / mx * 100 if mx else 0
+        label = _DIM_LABELS.get(dim_key, dim_key)
+        s = dim_data["score"]
+        mx = dim_data["max"]
+        pct = s / mx * 100 if mx else 0
         bar_len = int(pct / 5)
-        bar     = "█" * bar_len + "░" * (20 - bar_len)
+        bar = "█" * bar_len + "░" * (20 - bar_len)
         lines.append(f"  {label:<22} {s:5.1f}/{mx:.0f}  [{bar}] {pct:4.0f}%")
         for k, v in dim_data["details"].items():
             lines.append(f"     {k}: {v:.4g}")
@@ -365,14 +367,14 @@ def render_score(result: dict) -> str:
 
 def render_badge(result: dict) -> str:
     """Render a markdown snippet suitable for a README or HuggingFace dataset card."""
-    score    = result["total_score"]
+    score = result["total_score"]
     category = result["category"]
     color_map = {
         "Excellent": "brightgreen",
-        "Good":      "green",
-        "Fair":      "yellow",
-        "Poor":      "orange",
-        "Critical":  "red",
+        "Good": "green",
+        "Fair": "yellow",
+        "Poor": "orange",
+        "Critical": "red",
     }
     color = color_map[category]
     label = f"Calibra%20Score-{score:.0f}%2F100-{color}"
@@ -382,6 +384,7 @@ def render_badge(result: dict) -> str:
 
 # ── CLI entry point ───────────────────────────────────────────────────────────
 
+
 def run_score(argv: list[str]) -> None:
     p = argparse.ArgumentParser(
         prog="calibra score",
@@ -389,18 +392,21 @@ def run_score(argv: list[str]) -> None:
     )
     p.add_argument("path", help="Path or HF Hub ID of the dataset to score")
     p.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         metavar="FMT",
         choices=["hdf5", "isaac_lab", "lerobot", "rlds", "mcap"],
         help="Force a format adapter (default: auto-detect)",
     )
     p.add_argument(
-        "--policy", "-p",
+        "--policy",
+        "-p",
         metavar="FAMILY",
         help="Policy family for conditioned hints (e.g. 'diffusion', 'pi0', 'octo')",
     )
     p.add_argument(
-        "--json", "-j",
+        "--json",
+        "-j",
         action="store_true",
         help="Output full score breakdown as JSON",
     )
@@ -410,7 +416,8 @@ def run_score(argv: list[str]) -> None:
         help="Print a markdown badge snippet for README / dataset cards",
     )
     p.add_argument(
-        "--reference", "-r",
+        "--reference",
+        "-r",
         metavar="REF",
         help="Optional reference profile for context (e.g. 'aloha', 'pusht')",
     )
@@ -418,11 +425,12 @@ def run_score(argv: list[str]) -> None:
 
     dataset_path = args.path
     if dataset_path.startswith("hf://"):
-        dataset_path = dataset_path[len("hf://"):]
+        dataset_path = dataset_path[len("hf://") :]
 
     reader = None
     if args.format:
         from calibra.__main__ import _get_reader
+
         reader = _get_reader(args.format)
 
     def log(msg: str) -> None:
@@ -448,10 +456,11 @@ def run_score(argv: list[str]) -> None:
     if args.reference:
         try:
             from calibra.compare import load_reference, metrics_from_reference
+
             ref_data = load_reference(args.reference)
-            ref_m    = metrics_from_reference(ref_data)
+            ref_m = metrics_from_reference(ref_data)
             result["reference"] = {
-                "name":    args.reference,
+                "name": args.reference,
                 "metrics": ref_m,
             }
         except Exception as e:

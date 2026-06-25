@@ -6,6 +6,7 @@ ComparisonReport : collection of DriftFlags produced by DatasetComparator.
 EpisodeFlag    : a quality signal attached to one episode in a curation pass.
 CurationReport : audit trail from EpisodeCurator.curate().
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -16,14 +17,14 @@ from calibra.schema.report import ObservedValue, RiskLevel
 
 _LEVEL_ICONS = {
     RiskLevel.CRITICAL: "❌",
-    RiskLevel.WARNING:  "⚠️ ",
-    RiskLevel.OK:       "✅",
-    RiskLevel.INFO:     "ℹ️ ",
+    RiskLevel.WARNING: "⚠️ ",
+    RiskLevel.OK: "✅",
+    RiskLevel.INFO: "ℹ️ ",
 }
 
 _DIRECTION_ICONS = {
-    "degraded":  "↓",
-    "improved":  "↑",
+    "degraded": "↓",
+    "improved": "↑",
     "ambiguous": "~",
 }
 
@@ -45,11 +46,11 @@ class DriftFlag(BaseModel):
     analyzer_name: str
     baseline_observed: ObservedValue
     candidate_observed: ObservedValue
-    delta: Optional[float] = None               # candidate.value - baseline.value
-    relative_change: Optional[float] = None     # delta / |baseline.value|
-    p_value: Optional[float] = None             # permutation test; None = CI fallback
+    delta: Optional[float] = None  # candidate.value - baseline.value
+    relative_change: Optional[float] = None  # delta / |baseline.value|
+    p_value: Optional[float] = None  # permutation test; None = CI fallback
     significant: bool = False
-    direction: str = "ambiguous"                # "degraded" | "improved" | "ambiguous"
+    direction: str = "ambiguous"  # "degraded" | "improved" | "ambiguous"
     level: RiskLevel = RiskLevel.INFO
     interpretation: str = ""
     implication: str = ""
@@ -115,13 +116,12 @@ class ComparisonReport(BaseModel):
 
         n_deg = len(self.degraded)
         n_imp = len(self.improved)
-        lines.append(
-            f"{n_deg} significant regressions  ·  {n_imp} significant improvements"
-        )
+        lines.append(f"{n_deg} significant regressions  ·  {n_imp} significant improvements")
         return "\n".join(lines)
 
 
 # ── curation schema ───────────────────────────────────────────────────────────
+
 
 class EpisodeFlag(BaseModel):
     """
@@ -131,13 +131,13 @@ class EpisodeFlag(BaseModel):
     episode's removal so users can audit or override decisions.
     """
 
-    episode_index: int       # position in the original EpisodeBatch
-    episode_id: str          # from EpisodeMetadata
-    metric: str              # e.g. "timestamp_jitter_cv", "length"
-    observed_value: float    # the episode-level value that triggered removal
-    threshold: float         # the configured threshold
-    direction: str           # "too_high" | "too_low" | "too_short"
-    interpretation: str      # human-readable explanation
+    episode_index: int  # position in the original EpisodeBatch
+    episode_id: str  # from EpisodeMetadata
+    metric: str  # e.g. "timestamp_jitter_cv", "length"
+    observed_value: float  # the episode-level value that triggered removal
+    threshold: float  # the configured threshold
+    direction: str  # "too_high" | "too_low" | "too_short"
+    interpretation: str  # human-readable explanation
 
 
 class CurationReport(BaseModel):
@@ -151,8 +151,8 @@ class CurationReport(BaseModel):
 
     original_n_episodes: int
     retained_n_episodes: int
-    retained_indices: list[int] = []    # indices in original batch that are kept
-    dropped_indices: list[int] = []     # indices in original batch that are dropped
+    retained_indices: list[int] = []  # indices in original batch that are kept
+    dropped_indices: list[int] = []  # indices in original batch that are dropped
     episode_flags: list[EpisodeFlag] = []  # one per (episode, metric) violation
 
     @property
@@ -169,8 +169,7 @@ class CurationReport(BaseModel):
             "=== Calibra Curation Report ===",
             f"Original  : {self.original_n_episodes} episodes",
             f"Retained  : {self.retained_n_episodes} episodes",
-            f"Dropped   : {len(self.dropped_indices)} "
-            f"({self.drop_fraction:.1%})",
+            f"Dropped   : {len(self.dropped_indices)} ({self.drop_fraction:.1%})",
             "",
         ]
         if self.dropped_indices:

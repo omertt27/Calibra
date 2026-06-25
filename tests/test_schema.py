@@ -1,4 +1,5 @@
 """Tests for the data model layer (schema)."""
+
 from __future__ import annotations
 
 import pytest
@@ -22,8 +23,9 @@ class TestObservedValue:
         assert "CI" not in str(v)
 
     def test_renders_with_ci(self):
-        v = ObservedValue(value=118.0, unit="ms", ci_lower=105.0, ci_upper=131.0,
-                          ci_method="bootstrap")
+        v = ObservedValue(
+            value=118.0, unit="ms", ci_lower=105.0, ci_upper=131.0, ci_method="bootstrap"
+        )
         s = str(v)
         assert "118" in s
         assert "105" in s

@@ -16,7 +16,7 @@ import pathlib
 import sys
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
-REF_DIR   = REPO_ROOT / "calibra" / "references"
+REF_DIR = REPO_ROOT / "calibra" / "references"
 
 METRIC_PREFIXES = [
     "control_smoothness/",
@@ -25,6 +25,7 @@ METRIC_PREFIXES = [
     "temporal_stability/",
     "",
 ]
+
 
 def get_mean(dist: dict, key: str) -> float | None:
     for pfx in METRIC_PREFIXES:
@@ -40,16 +41,18 @@ def load_profiles() -> list[dict]:
         d = json.loads(f.read_text())
         meta = d.get("meta", {})
         dist = d.get("per_episode_distributions", {})
-        rows.append(dict(
-            dataset    = meta.get("dataset", f.stem),
-            n_episodes = meta.get("n_episodes", "-"),
-            ctrl       = meta.get("control_mode", "?"),
-            is_scripted= "scripted" in f.stem,
-            spike      = get_mean(dist, "per_episode_spike_rate"),
-            vel_disc   = get_mean(dist, "per_episode_vel_disc_rate"),
-            jitter_cv  = get_mean(dist, "per_episode_jitter_cv"),
-            ldlj       = get_mean(dist, "per_episode_ldlj"),
-        ))
+        rows.append(
+            dict(
+                dataset=meta.get("dataset", f.stem),
+                n_episodes=meta.get("n_episodes", "-"),
+                ctrl=meta.get("control_mode", "?"),
+                is_scripted="scripted" in f.stem,
+                spike=get_mean(dist, "per_episode_spike_rate"),
+                vel_disc=get_mean(dist, "per_episode_vel_disc_rate"),
+                jitter_cv=get_mean(dist, "per_episode_jitter_cv"),
+                ldlj=get_mean(dist, "per_episode_ldlj"),
+            )
+        )
     return rows
 
 

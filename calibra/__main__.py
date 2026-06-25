@@ -30,6 +30,7 @@ Exit codes:
     1  One or more CRITICAL flags or severe episode outliers detected.
        (With --strict: exits 1 on WARNING too.)
 """
+
 from __future__ import annotations
 
 import argparse
@@ -47,71 +48,85 @@ def main() -> None:
 
     if len(sys.argv) > 1 and sys.argv[1] == "compare":
         from calibra.compare import run_compare
+
         run_compare(sys.argv[2:])
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "certify":
         from calibra.certify import run_certify
+
         run_certify(sys.argv[2:])
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "prune":
         from calibra.prune import run_prune
+
         run_prune(sys.argv[2:])
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "corrupt":
         from calibra.corrupt import run_corrupt
+
         run_corrupt(sys.argv[2:])
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "retarget":
         from calibra.retarget import run_retarget
+
         run_retarget(sys.argv[2:])
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "score":
         from calibra.score import run_score
+
         run_score(sys.argv[2:])
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "sim2real":
         from calibra.sim2real import run_sim2real
+
         run_sim2real(sys.argv[2:])
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "transfer":
         from calibra.transfer import run_transfer
+
         run_transfer(sys.argv[2:])
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "watch":
         from calibra.watch import run_watch
+
         run_watch(sys.argv[2:])
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "predict":
         from calibra.predict import run_predict
+
         run_predict(sys.argv[2:])
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "cure":
         from calibra.cure import run_cure
+
         run_cure(sys.argv[2:])
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "benchmark":
         from calibra.benchmark import run_benchmark
+
         run_benchmark(sys.argv[2:])
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "card":
         from calibra.card import run_card
+
         run_card(sys.argv[2:])
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "calibrate":
         from calibra.outcome_db import OutcomeDatabase
+
         db = OutcomeDatabase()
         print(db.summary())
         suggested = db.calibrate_weights()
@@ -122,7 +137,9 @@ def main() -> None:
             print("\nTo apply: update _WEIGHTS in calibra/predict.py with these values.")
         else:
             print("\nNeed ≥10 recorded outcomes to calibrate weights.")
-            print("Run `calibra predict <dataset> --record-outcome <rate>` after each training run.")
+            print(
+                "Run `calibra predict <dataset> --record-outcome <rate>` after each training run."
+            )
         return
 
     parser = argparse.ArgumentParser(
@@ -133,18 +150,20 @@ def main() -> None:
     parser.add_argument("--version", "-V", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("path", help="Path to dataset (file or directory)")
     parser.add_argument(
-        "--policy", "-p",
+        "--policy",
+        "-p",
         metavar="FAMILY",
-        help="Target policy family for conditioned hints "
-             "(e.g. 'diffusion', 'act', 'transformer')",
+        help="Target policy family for conditioned hints (e.g. 'diffusion', 'act', 'transformer')",
     )
     parser.add_argument(
-        "--json", "-j",
+        "--json",
+        "-j",
         action="store_true",
         help="Output DiagnosticReport as JSON instead of human-readable text",
     )
     parser.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         metavar="FORMAT",
         choices=["hdf5", "isaac_lab", "lerobot", "rlds", "mcap"],
         help="Force a specific format adapter (default: auto-detect)",
@@ -184,10 +203,12 @@ def main() -> None:
     outliers = None
     if not args.no_anomalies:
         from calibra.anomalies import find_outliers
+
         outliers = find_outliers(report)
 
     if args.html_out:
         from calibra.report_html import generate_html_report
+
         generate_html_report(report, args.html_out, outliers=outliers)
 
     if args.json:
@@ -198,11 +219,11 @@ def main() -> None:
 
     if outliers:
         from calibra.anomalies import render
+
         print()
         print(render(outliers, report.n_episodes))
 
     sys.exit(_exit_code(report, strict=args.strict))
-
 
 
 def _exit_code(report, strict: bool = False) -> int:
@@ -216,17 +237,17 @@ def _exit_code(report, strict: bool = False) -> int:
 def _get_reader(format_name: str):
     from calibra.ingestion import isaac_lab, hdf5, lerobot, rlds, mcap  # noqa: F401
     from calibra.ingestion.adapters.isaac_lab import IsaacLabReader
-    from calibra.ingestion.adapters.hdf5      import HDF5Reader
-    from calibra.ingestion.adapters.lerobot   import LeRobotReader
-    from calibra.ingestion.adapters.rlds      import RLDSReader
-    from calibra.ingestion.adapters.mcap      import MCAPReader
+    from calibra.ingestion.adapters.hdf5 import HDF5Reader
+    from calibra.ingestion.adapters.lerobot import LeRobotReader
+    from calibra.ingestion.adapters.rlds import RLDSReader
+    from calibra.ingestion.adapters.mcap import MCAPReader
 
     mapping = {
         "isaac_lab": IsaacLabReader,
-        "hdf5":      HDF5Reader,
-        "lerobot":   LeRobotReader,
-        "rlds":      RLDSReader,
-        "mcap":      MCAPReader,
+        "hdf5": HDF5Reader,
+        "lerobot": LeRobotReader,
+        "rlds": RLDSReader,
+        "mcap": MCAPReader,
     }
     return mapping[format_name]()
 

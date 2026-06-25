@@ -1,8 +1,8 @@
 """Unit tests for the ForceTorqueContactAnalyzer."""
+
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from calibra.analyzers.force_torque import ForceTorqueContactAnalyzer
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
@@ -67,7 +67,7 @@ class TestForceTorqueContactAnalyzer:
         batch = _make_ft_batch(include_ft=True, include_contact=True)
         analyzer = ForceTorqueContactAnalyzer()
         result = analyzer.analyze(batch)
-        
+
         assert result.analyzer_name == "force_torque"
         assert "force_keys_found" in result.raw_metrics
         assert "contact_keys_found" in result.raw_metrics
@@ -78,7 +78,7 @@ class TestForceTorqueContactAnalyzer:
         batch = _make_ft_batch(include_ft=True, include_contact=True, inject_spikes=True)
         analyzer = ForceTorqueContactAnalyzer()
         result = analyzer.analyze(batch)
-        
+
         # Should flag force spike warnings
         spike_flags = [f for f in result.flags if f.metric == "force_spike_rate"]
         assert len(spike_flags) > 0
@@ -88,7 +88,7 @@ class TestForceTorqueContactAnalyzer:
         batch = _make_ft_batch(include_ft=True, include_contact=True, stuck_contact=True)
         analyzer = ForceTorqueContactAnalyzer()
         result = analyzer.analyze(batch)
-        
+
         # Should flag contact dropout critical
         dropout_flags = [f for f in result.flags if f.metric == "contact_dropout"]
         assert len(dropout_flags) > 0

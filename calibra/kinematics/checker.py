@@ -1,6 +1,7 @@
 """
 calibra.kinematics.checker — URDF joint limit and velocity verification.
 """
+
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
@@ -40,6 +41,7 @@ class KinematicURDFChecker:
         except Exception as e:
             # Graceful warning if parsing fails or file is not found
             import sys
+
             print(f"Warning: Failed to parse URDF {path}: {e}", file=sys.stderr)
         return limits
 
@@ -68,7 +70,8 @@ class KinematicURDFChecker:
 
         # Filter to active joints (joints with limits defined in URDF)
         active_joints = [
-            name for name, lim in self.joint_limits.items()
+            name
+            for name, lim in self.joint_limits.items()
             if lim["lower"] != -np.inf or lim["upper"] != np.inf or lim["velocity"] != np.inf
         ]
 

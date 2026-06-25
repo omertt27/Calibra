@@ -45,6 +45,7 @@ After profiling, open calibra/claims/*.json and check whether the observed
 values support or falsify any claim whose pending_tests list includes this
 dataset or a dataset of this class.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -69,6 +70,7 @@ PERCENTILES = [5, 10, 25, 50, 75, 90, 95]
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
+
 
 def distribution(values: list) -> dict:
     arr = np.array([v for v in values if v is not None], dtype=np.float64)
@@ -119,19 +121,22 @@ def flag_summary(report: DiagnosticReport) -> list[dict]:
     rows = []
     for result in report.analyzer_results:
         for flag in result.flags:
-            rows.append({
-                "analyzer": result.analyzer_name,
-                "metric": flag.metric,
-                "level": flag.level.value,
-                "observed": flag.observed.value,
-                "ci_lower": flag.observed.ci_lower,
-                "ci_upper": flag.observed.ci_upper,
-                "interpretation": flag.interpretation,
-            })
+            rows.append(
+                {
+                    "analyzer": result.analyzer_name,
+                    "metric": flag.metric,
+                    "level": flag.level.value,
+                    "observed": flag.observed.value,
+                    "ci_lower": flag.observed.ci_lower,
+                    "ci_upper": flag.observed.ci_upper,
+                    "interpretation": flag.interpretation,
+                }
+            )
     return rows
 
 
 # ── main ──────────────────────────────────────────────────────────────────────
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -143,32 +148,42 @@ def main() -> None:
         help="Hub ID, hf:// URI, or local path to profile",
     )
     parser.add_argument(
-        "--format", "-f", metavar="FMT",
+        "--format",
+        "-f",
+        metavar="FMT",
         choices=["hdf5", "lerobot", "rlds", "mcap"],
         help="Force a format adapter (default: auto-detect)",
     )
     parser.add_argument(
-        "--control-mode", metavar="MODE",
+        "--control-mode",
+        metavar="MODE",
         choices=["position", "velocity", "torque", "unknown"],
         default="unknown",
         help="Action space control mode — recorded in meta and used by compare. "
-             "Required for accurate cross-dataset interpretation. (default: unknown)",
+        "Required for accurate cross-dataset interpretation. (default: unknown)",
     )
     parser.add_argument(
-        "--gripper-dims", metavar="DIMS", default=None,
+        "--gripper-dims",
+        metavar="DIMS",
+        default=None,
         help="Comma-separated indices of gripper dimensions to exclude from "
-             "smoothness metrics. Use '' to include all. Default: last dim (-1).",
+        "smoothness metrics. Use '' to include all. Default: last dim (-1).",
     )
     parser.add_argument(
-        "--out", metavar="PATH", default=None,
+        "--out",
+        metavar="PATH",
+        default=None,
         help="Write JSON to this path. Default: calibra/references/<dataset_name>.json",
     )
     parser.add_argument(
-        "--note", metavar="TEXT", default="",
+        "--note",
+        metavar="TEXT",
+        default="",
         help="Free-text note recorded in meta.note (e.g. hardware type, task, Hz).",
     )
     parser.add_argument(
-        "--dry-run", action="store_true",
+        "--dry-run",
+        action="store_true",
         help="Run pipeline but print JSON to stdout instead of writing to disk.",
     )
     args = parser.parse_args()
@@ -179,7 +194,7 @@ def main() -> None:
     # Strip hf:// prefix
     dataset = args.dataset
     if dataset.startswith("hf://"):
-        dataset = dataset[len("hf://"):]
+        dataset = dataset[len("hf://") :]
 
     dataset_name = dataset.split("/")[-1]
 
@@ -196,6 +211,7 @@ def main() -> None:
     reader = None
     if args.format:
         from calibra.__main__ import _get_reader
+
         reader = _get_reader(args.format)
 
     # Resolve gripper dims
@@ -217,27 +233,28 @@ def main() -> None:
         log(f"  action_dim={ep0.action_dim}  modalities={sorted(batch.modalities)}")
 
     log("Running Calibra pipeline ...")
-    pipeline = Pipeline(analyzers=[
-        TemporalAnalyzer(),
-        ControlSmoothnessAnalyzer(gripper_dims=gripper_dims),
-        CoverageEntropyAnalyzer(),
-        TaskStructureAnalyzer(),
-    ])
+    pipeline = Pipeline(
+        analyzers=[
+            TemporalAnalyzer(),
+            ControlSmoothnessAnalyzer(gripper_dims=gripper_dims),
+            CoverageEntropyAnalyzer(),
+            TaskStructureAnalyzer(),
+        ]
+    )
     report = pipeline.run(batch)
     log("Pipeline complete.")
 
-    ep_lengths   = [ep.n_steps for ep in batch.episodes]
+    ep_lengths = [ep.n_steps for ep in batch.episodes]
     ep_durations = [ep.duration_s for ep in batch.episodes]
-    action_dim   = batch.episodes[0].action_dim if batch.episodes else None
+    action_dim = batch.episodes[0].action_dim if batch.episodes else None
 
     note = args.note or (
-        f"Profiled by scripts/profile_dataset.py. "
-        f"control_mode={args.control_mode}."
+        f"Profiled by scripts/profile_dataset.py. control_mode={args.control_mode}."
     )
 
     output = {
         "meta": {
-            "dataset": args.dataset,          # preserve original (including hf://)
+            "dataset": args.dataset,  # preserve original (including hf://)
             "n_episodes": batch.n_episodes,
             "n_steps_total": batch.n_samples,
             "action_dim": action_dim,
@@ -247,7 +264,7 @@ def main() -> None:
             "note": note,
         },
         "episode_structure": {
-            "length_steps":    distribution(ep_lengths),
+            "length_steps": distribution(ep_lengths),
             "duration_seconds": distribution(ep_durations),
         },
         "per_episode_distributions": per_episode_distributions(report),

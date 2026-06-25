@@ -1,4 +1,5 @@
 """Tests for calibra.kinematics.retarget — EEF action space converter."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -10,6 +11,7 @@ from calibra.kinematics.retarget import absolute_to_relative_eef, retarget_episo
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
+
 
 def _identity_pose(n: int) -> np.ndarray:
     """Return n poses all at origin with identity quaternion [0,0,0,1]."""
@@ -29,6 +31,7 @@ def _pure_translation(dx: float, dy: float, dz: float, n: int = 5) -> np.ndarray
 
 
 # ── shape and type ────────────────────────────────────────────────────────────
+
 
 class TestRetargetShape:
     def test_output_shape(self):
@@ -57,14 +60,15 @@ class TestRetargetShape:
 
 # ── pure translation (no rotation) ───────────────────────────────────────────
 
+
 class TestPureTranslation:
     def test_x_translation_maps_to_dx(self):
         poses = _pure_translation(0.1, 0.0, 0.0, n=5)
         out = absolute_to_relative_eef(poses)
         # At identity rotation, local frame == world frame
-        np.testing.assert_allclose(out[:, 0], 0.1, atol=1e-5)   # dx
-        np.testing.assert_allclose(out[:, 1], 0.0, atol=1e-5)   # dy
-        np.testing.assert_allclose(out[:, 2], 0.0, atol=1e-5)   # dz
+        np.testing.assert_allclose(out[:, 0], 0.1, atol=1e-5)  # dx
+        np.testing.assert_allclose(out[:, 1], 0.0, atol=1e-5)  # dy
+        np.testing.assert_allclose(out[:, 2], 0.0, atol=1e-5)  # dz
 
     def test_y_translation_maps_to_dy(self):
         poses = _pure_translation(0.0, 0.2, 0.0, n=5)
@@ -83,6 +87,7 @@ class TestPureTranslation:
 
 
 # ── rotation expressed in local frame ────────────────────────────────────────
+
 
 class TestRotationInLocalFrame:
     def test_90deg_rotation_followed_by_x_translation_becomes_rotated(self):
@@ -113,16 +118,18 @@ class TestRotationInLocalFrame:
         # Step 2 delta: +0.1 world X in 90°-yawed frame.
         # After 90° CCW yaw, robot's local Y axis points in world -X direction,
         # so world +X = local -Y.
-        np.testing.assert_allclose(out[1, 0],  0.0, atol=1e-5)   # local dx ≈ 0
-        np.testing.assert_allclose(out[1, 1], -0.1, atol=1e-5)   # local dy ≈ -0.1
+        np.testing.assert_allclose(out[1, 0], 0.0, atol=1e-5)  # local dx ≈ 0
+        np.testing.assert_allclose(out[1, 1], -0.1, atol=1e-5)  # local dy ≈ -0.1
 
 
 # ── convenience wrapper ───────────────────────────────────────────────────────
+
 
 class TestRetargetEpisodeEEF:
     def test_matches_absolute_to_relative(self):
         rng = np.random.default_rng(0)
         from scipy.spatial.transform import Rotation as R
+
         n = 20
         positions = rng.random((n, 3)).astype(np.float64) * 0.5
         quats = R.random(n, random_state=0).as_quat()

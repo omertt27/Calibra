@@ -1,6 +1,7 @@
 """
 Tests for calibra.corrupt — corruption transforms and CLI rendering.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -20,6 +21,7 @@ from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 
 
 # ── fixtures ──────────────────────────────────────────────────────────────────
+
 
 def _episode(n_steps: int = 60, action_dim: int = 4, seed: int = 0) -> Episode:
     rng = np.random.default_rng(seed)
@@ -43,6 +45,7 @@ def _batch(n_episodes: int = 8, n_steps: int = 60) -> EpisodeBatch:
 
 # ── CorruptionConfig ──────────────────────────────────────────────────────────
 
+
 def test_config_is_empty_when_no_flags():
     assert CorruptionConfig().is_empty()
 
@@ -64,6 +67,7 @@ def test_config_describe_lists_active():
 
 
 # ── individual transforms ─────────────────────────────────────────────────────
+
 
 def test_drop_frames_reduces_steps():
     rng = np.random.default_rng(42)
@@ -146,6 +150,7 @@ def test_truncate_episode_keeps_arrays_aligned():
 
 # ── apply_corruptions ─────────────────────────────────────────────────────────
 
+
 def test_apply_corruptions_does_not_modify_original():
     batch = _batch()
     original_n = batch.n_samples
@@ -195,13 +200,14 @@ def test_apply_corruptions_reproducible_with_seed():
 
 # ── render_corruption_report ──────────────────────────────────────────────────
 
+
 def _dummy_metrics(base: float = 0.0) -> dict:
     return {
-        "jitter_cv":     base + 0.01,
-        "dropout_rate":  base + 0.02,
-        "spike_rate":    base + 0.03,
+        "jitter_cv": base + 0.01,
+        "dropout_rate": base + 0.02,
+        "spike_rate": base + 0.03,
         "vel_disc_rate": base + 0.04,
-        "ldlj":          -(5.0 + base),
+        "ldlj": -(5.0 + base),
         "action_entropy": 4.5 - base,
     }
 
@@ -209,8 +215,12 @@ def _dummy_metrics(base: float = 0.0) -> dict:
 def test_render_contains_header():
     cfg = CorruptionConfig(drop_frames=0.10)
     output = render_corruption_report(
-        "my_dataset", cfg,
-        _dummy_metrics(0), _dummy_metrics(0.05), 10, 10,
+        "my_dataset",
+        cfg,
+        _dummy_metrics(0),
+        _dummy_metrics(0.05),
+        10,
+        10,
     )
     assert "calibra corrupt" in output
     assert "drop_frames" in output
@@ -219,7 +229,12 @@ def test_render_contains_header():
 def test_render_contains_all_metric_labels():
     cfg = CorruptionConfig(inject_spikes=0.05)
     output = render_corruption_report(
-        "ds", cfg, _dummy_metrics(), _dummy_metrics(0.1), 5, 5,
+        "ds",
+        cfg,
+        _dummy_metrics(),
+        _dummy_metrics(0.1),
+        5,
+        5,
     )
     assert "Jerk spike rate" in output
     assert "Timestamp dropout" in output
@@ -228,7 +243,16 @@ def test_render_contains_all_metric_labels():
 
 def test_render_with_none_metrics():
     cfg = CorruptionConfig(drop_frames=0.05)
-    metrics = {k: None for k in ["jitter_cv", "dropout_rate", "spike_rate",
-                                  "vel_disc_rate", "ldlj", "action_entropy"]}
+    metrics = {
+        k: None
+        for k in [
+            "jitter_cv",
+            "dropout_rate",
+            "spike_rate",
+            "vel_disc_rate",
+            "ldlj",
+            "action_entropy",
+        ]
+    }
     output = render_corruption_report("ds", cfg, metrics, metrics, 5, 5)
     assert "n/a" in output

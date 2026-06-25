@@ -19,23 +19,35 @@ Usage
     translation = n.map_columns(["observation.state", "joint_cmd"])
     # → {"observation.state": "observation_joints", "joint_cmd": "action_joints"}
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
 
-
 _DEFAULT_MAPPINGS: dict[str, list[str]] = {
-    "action_joints":       ["action", "joint_cmd", "joint_command", "motors/target"],
-    "observation_joints":  ["observation.state", "joint_state", "joint_states", "motors/position"],
-    "eef_position":        ["eef_pos", "ee_pos", "end_effector_position", "robot0_eef_pos"],
-    "eef_orientation":     ["eef_quat", "ee_quat", "end_effector_quat", "robot0_eef_quat"],
-    "gripper_state":       ["gripper", "gripper_pos", "gripper_state", "robot0_gripper_qpos"],
-    "joint_position":      ["joint_pos", "joint_position", "joint_positions", "robot0_joint_pos", "dof_pos"],
-    "joint_velocity":      ["joint_vel", "joint_velocity", "joint_velocities", "robot0_joint_vel", "dof_vel"],
-    "camera_top":          ["observation.images.top", "images.top", "cam_top"],
-    "camera_wrist":        ["observation.images.wrist", "images.wrist", "wrist_camera"],
-    "proprio":             ["observation.proprio", "proprio_state", "proprioception"],
+    "action_joints": ["action", "joint_cmd", "joint_command", "motors/target"],
+    "observation_joints": ["observation.state", "joint_state", "joint_states", "motors/position"],
+    "eef_position": ["eef_pos", "ee_pos", "end_effector_position", "robot0_eef_pos"],
+    "eef_orientation": ["eef_quat", "ee_quat", "end_effector_quat", "robot0_eef_quat"],
+    "gripper_state": ["gripper", "gripper_pos", "gripper_state", "robot0_gripper_qpos"],
+    "joint_position": [
+        "joint_pos",
+        "joint_position",
+        "joint_positions",
+        "robot0_joint_pos",
+        "dof_pos",
+    ],
+    "joint_velocity": [
+        "joint_vel",
+        "joint_velocity",
+        "joint_velocities",
+        "robot0_joint_vel",
+        "dof_vel",
+    ],
+    "camera_top": ["observation.images.top", "images.top", "cam_top"],
+    "camera_wrist": ["observation.images.wrist", "images.wrist", "wrist_camera"],
+    "proprio": ["observation.proprio", "proprio_state", "proprioception"],
 }
 
 

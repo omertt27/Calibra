@@ -33,6 +33,7 @@ Minimum sustained contact: a contact block must span >= min_contact_run steps
 to count as the start/end of the contact zone. This prevents brief spurious
 gripper activations from distorting phase boundaries.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -43,7 +44,6 @@ import numpy as np
 from calibra.analyzers.base import Analyzer
 from calibra.analyzers.task_structure import (
     _detect_gripper_dims,
-    _episode_contact_fraction,
 )
 from calibra.analyzers.temporal import _bootstrap_ci
 from calibra.schema.episode import Episode, EpisodeBatch
@@ -56,11 +56,11 @@ from calibra.schema.report import (
 
 # ── thresholds ────────────────────────────────────────────────────────────────
 
-_CONTACT_WARNING  = 0.10   # <10% of steps in contact → WARNING
-_CONTACT_CRITICAL = 0.05   # <5%  → CRITICAL
-_APPROACH_HEAVY   = 0.80   # >80% approach → INFO (structural note)
+_CONTACT_WARNING = 0.10  # <10% of steps in contact → WARNING
+_CONTACT_CRITICAL = 0.05  # <5%  → CRITICAL
+_APPROACH_HEAVY = 0.80  # >80% approach → INFO (structural note)
 
-_MIN_CONTACT_RUN  = 3      # minimum consecutive contact steps to mark phase boundary
+_MIN_CONTACT_RUN = 3  # minimum consecutive contact steps to mark phase boundary
 
 
 @dataclass
@@ -78,14 +78,14 @@ class PhaseBalanceAnalyzer(Analyzer):
     n_bootstrap, ci_level : bootstrap CI parameters.
     """
 
-    gripper_dims:       Optional[list[int]] = None
+    gripper_dims: Optional[list[int]] = None
     vel_slow_threshold: float = 0.08
-    action_type:        str   = "position"
-    min_contact_run:    int   = _MIN_CONTACT_RUN
-    contact_warning:    float = _CONTACT_WARNING
-    contact_critical:   float = _CONTACT_CRITICAL
-    n_bootstrap:        int   = 500
-    ci_level:           float = 0.95
+    action_type: str = "position"
+    min_contact_run: int = _MIN_CONTACT_RUN
+    contact_warning: float = _CONTACT_WARNING
+    contact_critical: float = _CONTACT_CRITICAL
+    n_bootstrap: int = 500
+    ci_level: float = 0.95
 
     @property
     def name(self) -> str:
@@ -100,6 +100,7 @@ class PhaseBalanceAnalyzer(Analyzer):
             return AnalyzerResult(analyzer_name=self.name)
 
         from calibra.analyzers.task_structure import _collect_actions
+
         actions_all = _collect_actions(batch)
         g_dims = (
             self.gripper_dims
@@ -108,36 +109,36 @@ class PhaseBalanceAnalyzer(Analyzer):
         )
 
         episode_phases = [
-            _episode_phase_fractions(ep, g_dims, self.vel_slow_threshold,
-                                     self.action_type, self.min_contact_run)
+            _episode_phase_fractions(
+                ep, g_dims, self.vel_slow_threshold, self.action_type, self.min_contact_run
+            )
             for ep in batch.episodes
         ]
 
         approach_vals = np.array([p["approach"] for p in episode_phases])
-        contact_vals  = np.array([p["contact"]  for p in episode_phases])
-        retract_vals  = np.array([p["retract"]  for p in episode_phases])
+        contact_vals = np.array([p["contact"] for p in episode_phases])
+        retract_vals = np.array([p["retract"] for p in episode_phases])
 
-        contact_mean, c_lo, c_hi = _bootstrap_ci(contact_vals, np.mean,
-                                                   self.n_bootstrap, self.ci_level)
+        contact_mean, c_lo, c_hi = _bootstrap_ci(
+            contact_vals, np.mean, self.n_bootstrap, self.ci_level
+        )
         approach_mean = float(np.mean(approach_vals))
-        retract_mean  = float(np.mean(retract_vals))
+        retract_mean = float(np.mean(retract_vals))
 
         raw: dict = {
             "mean_approach_fraction": float(approach_mean),
-            "mean_contact_fraction":  float(contact_mean),
-            "mean_retract_fraction":  float(retract_mean),
-            "contact_ci_lower":  float(c_lo),
-            "contact_ci_upper":  float(c_hi),
-            "n_episodes":        batch.n_episodes,
+            "mean_contact_fraction": float(contact_mean),
+            "mean_retract_fraction": float(retract_mean),
+            "contact_ci_lower": float(c_lo),
+            "contact_ci_upper": float(c_hi),
+            "n_episodes": batch.n_episodes,
             "gripper_dims_used": g_dims,
             "per_episode_approach": approach_vals.tolist(),
-            "per_episode_contact":  contact_vals.tolist(),
-            "per_episode_retract":  retract_vals.tolist(),
+            "per_episode_contact": contact_vals.tolist(),
+            "per_episode_retract": retract_vals.tolist(),
         }
 
-        contact_flag = self._check_contact_phase(
-            contact_mean, c_lo, c_hi, approach_mean
-        )
+        contact_flag = self._check_contact_phase(contact_mean, c_lo, c_hi, approach_mean)
         approach_flag = self._check_approach_dominance(approach_mean)
 
         return AnalyzerResult(
@@ -158,9 +159,12 @@ class PhaseBalanceAnalyzer(Analyzer):
         level = _level_lower(contact_mean, self.contact_warning, self.contact_critical)
 
         observed = ObservedValue(
-            value=contact_mean, unit="fraction",
-            ci_lower=c_lo, ci_upper=c_hi,
-            ci_level=self.ci_level, ci_method="bootstrap",
+            value=contact_mean,
+            unit="fraction",
+            ci_lower=c_lo,
+            ci_upper=c_hi,
+            ci_level=self.ci_level,
+            ci_method="bootstrap",
         )
 
         if level == RiskLevel.OK:
@@ -220,14 +224,13 @@ class PhaseBalanceAnalyzer(Analyzer):
             level=RiskLevel.OK,
             metric="approach_phase_dominance",
             observed=ObservedValue(value=approach_mean, unit="fraction"),
-            interpretation=(
-                f"Phase distribution is balanced: approach {approach_mean:.1%}."
-            ),
+            interpretation=(f"Phase distribution is balanced: approach {approach_mean:.1%}."),
             implication="No approach-dominance bias detected.",
         )
 
 
 # ── per-episode phase segmentation ───────────────────────────────────────────
+
 
 def _episode_phase_fractions(
     ep: Episode,
@@ -249,21 +252,21 @@ def _episode_phase_fractions(
     smoothed = _smooth_mask(contact_mask, window=min_contact_run)
 
     first_contact = _first_sustained_run(smoothed, min_contact_run)
-    last_contact  = _last_sustained_run(smoothed, min_contact_run)
+    last_contact = _last_sustained_run(smoothed, min_contact_run)
 
     if first_contact is None or last_contact is None:
         # No sustained contact — all approach
         return {"approach": 1.0, "contact": 0.0, "retract": 0.0}
 
     approach_steps = first_contact
-    contact_steps  = last_contact - first_contact + 1
-    retract_steps  = n - last_contact - 1
+    contact_steps = last_contact - first_contact + 1
+    retract_steps = n - last_contact - 1
 
     total = float(n)
     return {
         "approach": approach_steps / total,
-        "contact":  contact_steps  / total,
-        "retract":  retract_steps  / total,
+        "contact": contact_steps / total,
+        "retract": retract_steps / total,
     }
 
 
@@ -286,16 +289,16 @@ def _compute_contact_mask(
         if hi - lo < 1e-8:
             continue
         col_norm = (col - lo) / (hi - lo)
-        frac_low  = float(np.mean(col_norm < 0.3))
+        frac_low = float(np.mean(col_norm < 0.3))
         frac_high = float(np.mean(col_norm > 0.7))
         contact |= col_norm > 0.5 if frac_high >= frac_low else col_norm < 0.5
 
     active = [d for d in range(acts.shape[1]) if d not in gripper_dims]
     if active and action_type == "position" and len(ep.timestamps) >= 2:
         sub = acts[:, active].astype(np.float64)
-        dt  = float(np.median(np.diff(ep.timestamps)))
+        dt = float(np.median(np.diff(ep.timestamps)))
         if dt > 0 and len(sub) >= 2:
-            vel   = np.diff(sub, axis=0) / dt
+            vel = np.diff(sub, axis=0) / dt
             speed = np.linalg.norm(vel, axis=-1)
             v_max = float(np.max(speed))
             if v_max > 0:
@@ -309,7 +312,6 @@ def _smooth_mask(mask: np.ndarray, window: int) -> np.ndarray:
     """Majority-vote smoothing over a sliding window."""
     if window <= 1 or len(mask) < window:
         return mask.copy()
-    out = mask.copy().astype(np.float64)
     kernel = np.ones(window) / window
     smoothed = np.convolve(mask.astype(np.float64), kernel, mode="same")
     return smoothed >= 0.5
@@ -351,6 +353,7 @@ def _last_sustained_run(mask: np.ndarray, min_run: int) -> Optional[int]:
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
+
 
 def _level_lower(value: float, warning: float, critical: float) -> RiskLevel:
     if value <= critical:

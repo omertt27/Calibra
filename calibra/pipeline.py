@@ -10,6 +10,7 @@ Usage:
     # Or from a file path (auto-detects format):
     report = Pipeline().analyze_path("/data/my_dataset.h5", policy_family="act")
 """
+
 from __future__ import annotations
 
 import time
@@ -48,7 +49,6 @@ def _default_analyzers() -> list[Analyzer]:
         SSLTrajectoryEmbedderAnalyzer(),
         ForceTorqueContactAnalyzer(),
     ]
-
 
 
 class Pipeline:
@@ -134,5 +134,6 @@ class Pipeline:
         reader        : optional DatasetReader instance to bypass auto-detection.
         """
         from calibra.ingestion.registry import load
+
         batch = load(path, reader=reader)
         return self.run(batch, policy_family=policy_family)

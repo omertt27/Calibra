@@ -33,6 +33,7 @@ Calibration note:
   judge reliability. With < 200 total steps, entropy estimates are
   unreliable and we emit INFO rather than WARNING/CRITICAL.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -52,19 +53,18 @@ from calibra.schema.report import (
 
 # ── thresholds ───────────────────────────────────────────────────────────────
 
-_ACTION_ENTROPY_WARNING  = 3.5   # bits/dim — low diversity (< ~12 out of 50 bins occupied)
-_ACTION_ENTROPY_CRITICAL = 2.0   # bits/dim — very low (< ~4 bins occupied)
+_ACTION_ENTROPY_WARNING = 3.5  # bits/dim — low diversity (< ~12 out of 50 bins occupied)
+_ACTION_ENTROPY_CRITICAL = 2.0  # bits/dim — very low (< ~4 bins occupied)
 
-_STATE_ENTROPY_WARNING   = 3.5
-_STATE_ENTROPY_CRITICAL  = 2.0
+_STATE_ENTROPY_WARNING = 3.5
+_STATE_ENTROPY_CRITICAL = 2.0
 
-_PCA2_WARNING  = 0.90   # top-2 PCs explain > 90% → low-rank warning
-_PCA2_CRITICAL = 0.97   # top-2 PCs explain > 97% → near-rank-2 collapse
+_PCA2_WARNING = 0.90  # top-2 PCs explain > 90% → low-rank warning
+_PCA2_CRITICAL = 0.97  # top-2 PCs explain > 97% → near-rank-2 collapse
 
-_MIN_SAMPLES_FOR_ENTROPY = 200   # below this, flag INFO not WARNING/CRITICAL
+_MIN_SAMPLES_FOR_ENTROPY = 200  # below this, flag INFO not WARNING/CRITICAL
 
-_PROPRIO_KEYS = ("proprio", "state", "joint_state", "joint_pos",
-                 "robot_state", "qpos", "obs")
+_PROPRIO_KEYS = ("proprio", "state", "joint_state", "joint_pos", "robot_state", "qpos", "obs")
 
 
 @dataclass
@@ -84,18 +84,18 @@ class CoverageEntropyAnalyzer(Analyzer):
     n_bootstrap, ci_level : bootstrap CI parameters (over episodes).
     """
 
-    n_bins:                   int   = 50
-    action_entropy_warning:   float = _ACTION_ENTROPY_WARNING
-    action_entropy_critical:  float = _ACTION_ENTROPY_CRITICAL
-    state_entropy_warning:    float = _STATE_ENTROPY_WARNING
-    state_entropy_critical:   float = _STATE_ENTROPY_CRITICAL
-    pca2_warning:             float = _PCA2_WARNING
-    pca2_critical:            float = _PCA2_CRITICAL
-    proprio_keys:             tuple = _PROPRIO_KEYS
-    n_bootstrap:              int   = 500
-    ci_level:                 float = 0.95
+    n_bins: int = 50
+    action_entropy_warning: float = _ACTION_ENTROPY_WARNING
+    action_entropy_critical: float = _ACTION_ENTROPY_CRITICAL
+    state_entropy_warning: float = _STATE_ENTROPY_WARNING
+    state_entropy_critical: float = _STATE_ENTROPY_CRITICAL
+    pca2_warning: float = _PCA2_WARNING
+    pca2_critical: float = _PCA2_CRITICAL
+    proprio_keys: tuple = _PROPRIO_KEYS
+    n_bootstrap: int = 500
+    ci_level: float = 0.95
     action_range: Optional[tuple[float, float]] = None
-    state_range:  Optional[tuple[float, float]] = None
+    state_range: Optional[tuple[float, float]] = None
 
     @property
     def name(self) -> str:
@@ -151,17 +151,19 @@ class CoverageEntropyAnalyzer(Analyzer):
 
     # ── metric: action entropy ───────────────────────────────────────────────
 
-    def _check_action_entropy(
-        self, actions: np.ndarray, n_samples: int
-    ) -> tuple[RiskFlag, dict]:
+    def _check_action_entropy(self, actions: np.ndarray, n_samples: int) -> tuple[RiskFlag, dict]:
         if actions.shape[0] < 10:
-            return self._skip_flag("action_entropy_bits_per_dim",
-                                   "fewer than 10 action samples"), {}
+            return self._skip_flag(
+                "action_entropy_bits_per_dim", "fewer than 10 action samples"
+            ), {}
 
         entropy = _marginal_entropy_bits(actions, self.n_bins, self.action_range)
-        raw = {"entropy_bits_per_dim": float(entropy), "n_samples": n_samples,
-               "action_dim": actions.shape[1] if actions.ndim > 1 else 1,
-               "action_range": self.action_range}
+        raw = {
+            "entropy_bits_per_dim": float(entropy),
+            "n_samples": n_samples,
+            "action_dim": actions.shape[1] if actions.ndim > 1 else 1,
+            "action_range": self.action_range,
+        }
 
         # Down-grade to INFO if sample count is too low for reliable estimation.
         if n_samples < _MIN_SAMPLES_FOR_ENTROPY:
@@ -190,9 +192,7 @@ class CoverageEntropyAnalyzer(Analyzer):
                 metric="action_entropy_bits_per_dim",
                 observed=ObservedValue(value=entropy, unit="bits/dim"),
                 threshold=self.action_entropy_warning,
-                interpretation=(
-                    f"Action-space coverage is healthy ({entropy:.2f} bits/dim)."
-                ),
+                interpretation=(f"Action-space coverage is healthy ({entropy:.2f} bits/dim)."),
                 implication="No mode collapse risk detected in action space.",
             ), raw
 
@@ -217,16 +217,14 @@ class CoverageEntropyAnalyzer(Analyzer):
 
     # ── metric: PCA variance concentration ──────────────────────────────────
 
-    def _check_pca_concentration(
-        self, actions: np.ndarray
-    ) -> tuple[RiskFlag, dict]:
+    def _check_pca_concentration(self, actions: np.ndarray) -> tuple[RiskFlag, dict]:
         if actions.shape[0] < 10 or (actions.ndim > 1 and actions.shape[1] < 3):
-            return self._skip_flag("pca_top2_variance_fraction",
-                                   "action space is < 3-dimensional"), {}
+            return self._skip_flag(
+                "pca_top2_variance_fraction", "action space is < 3-dimensional"
+            ), {}
 
         frac, explained = _pca_top_k_fraction(actions, k=2)
-        raw = {"top2_fraction": float(frac),
-               "explained_per_pc": [float(v) for v in explained]}
+        raw = {"top2_fraction": float(frac), "explained_per_pc": [float(v) for v in explained]}
 
         level = _threshold_level_upper(frac, self.pca2_warning, self.pca2_critical)
 
@@ -237,8 +235,7 @@ class CoverageEntropyAnalyzer(Analyzer):
                 observed=ObservedValue(value=frac, unit="fraction"),
                 threshold=self.pca2_warning,
                 interpretation=(
-                    f"Action variance is spread across many PCs "
-                    f"(top-2 explain {frac:.1%})."
+                    f"Action variance is spread across many PCs (top-2 explain {frac:.1%})."
                 ),
                 implication="No low-rank action collapse detected.",
             ), raw
@@ -267,21 +264,24 @@ class CoverageEntropyAnalyzer(Analyzer):
         self, state: np.ndarray, n_samples: int, key: str
     ) -> tuple[RiskFlag, dict]:
         if state.shape[0] < 10:
-            return self._skip_flag(f"state_entropy_bits_per_dim[{key}]",
-                                   "fewer than 10 state samples"), {}
+            return self._skip_flag(
+                f"state_entropy_bits_per_dim[{key}]", "fewer than 10 state samples"
+            ), {}
 
         entropy = _marginal_entropy_bits(state, self.n_bins, self.state_range)
-        raw = {"entropy_bits_per_dim": float(entropy), "key": key,
-               "n_samples": n_samples, "state_range": self.state_range}
+        raw = {
+            "entropy_bits_per_dim": float(entropy),
+            "key": key,
+            "n_samples": n_samples,
+            "state_range": self.state_range,
+        }
 
         if n_samples < _MIN_SAMPLES_FOR_ENTROPY:
             return RiskFlag(
                 level=RiskLevel.INFO,
                 metric=f"state_entropy_bits_per_dim[{key}]",
                 observed=ObservedValue(value=entropy, unit="bits/dim"),
-                interpretation=(
-                    f"State entropy = {entropy:.2f} bits/dim ({n_samples} samples)."
-                ),
+                interpretation=(f"State entropy = {entropy:.2f} bits/dim ({n_samples} samples)."),
                 implication="Insufficient samples for reliable state entropy estimate.",
             ), raw
 
@@ -321,22 +321,21 @@ class CoverageEntropyAnalyzer(Analyzer):
         lengths = np.array([ep.n_steps for ep in batch.episodes], dtype=np.float64)
 
         if len(lengths) < 2:
-            return self._skip_flag("episode_length_distribution",
-                                   "need at least 2 episodes"), {}
+            return self._skip_flag("episode_length_distribution", "need at least 2 episodes"), {}
 
         mean_len = float(np.mean(lengths))
-        std_len  = float(np.std(lengths))
-        cv       = std_len / mean_len if mean_len > 0 else 0.0
-        bimodal  = _is_bimodal_heuristic(lengths)
+        std_len = float(np.std(lengths))
+        cv = std_len / mean_len if mean_len > 0 else 0.0
+        bimodal = _is_bimodal_heuristic(lengths)
 
         raw = {
-            "mean_steps":   mean_len,
-            "std_steps":    std_len,
-            "min_steps":    float(np.min(lengths)),
-            "max_steps":    float(np.max(lengths)),
-            "cv":           cv,
+            "mean_steps": mean_len,
+            "std_steps": std_len,
+            "min_steps": float(np.min(lengths)),
+            "max_steps": float(np.max(lengths)),
+            "cv": cv,
             "bimodal_hint": bimodal,
-            "n_episodes":   len(lengths),
+            "n_episodes": len(lengths),
         }
 
         if bimodal:
@@ -378,9 +377,7 @@ class CoverageEntropyAnalyzer(Analyzer):
             level=RiskLevel.OK,
             metric="episode_length_distribution",
             observed=ObservedValue(value=cv, unit="CV"),
-            interpretation=(
-                f"Episode lengths are consistent (mean={mean_len:.0f}, CV={cv:.2f})."
-            ),
+            interpretation=(f"Episode lengths are consistent (mean={mean_len:.0f}, CV={cv:.2f})."),
             implication="No episode length irregularity detected.",
         ), raw
 
@@ -411,12 +408,14 @@ class CoverageEntropyAnalyzer(Analyzer):
                     "dimensions, producing erratic samples outside the training manifold."
                 )
                 compatible = None
-            hints.append(CompatibilityHint(
-                policy_family="Diffusion Policy",
-                compatible=compatible,
-                explanation="Diffusion scores benefit from well-spread action distributions.",
-                caveats=caveats,
-            ))
+            hints.append(
+                CompatibilityHint(
+                    policy_family="Diffusion Policy",
+                    compatible=compatible,
+                    explanation="Diffusion scores benefit from well-spread action distributions.",
+                    caveats=caveats,
+                )
+            )
 
         if pf in ("act", "action chunking"):
             caveats = []
@@ -428,12 +427,14 @@ class CoverageEntropyAnalyzer(Analyzer):
                     "near-constant and the style variable uninformative."
                 )
                 compatible = None
-            hints.append(CompatibilityHint(
-                policy_family="ACT",
-                compatible=compatible,
-                explanation="ACT benefits from diverse action chunks for meaningful latent compression.",
-                caveats=caveats,
-            ))
+            hints.append(
+                CompatibilityHint(
+                    policy_family="ACT",
+                    compatible=compatible,
+                    explanation="ACT benefits from diverse action chunks for meaningful latent compression.",
+                    caveats=caveats,
+                )
+            )
 
         return hints
 
@@ -452,6 +453,7 @@ class CoverageEntropyAnalyzer(Analyzer):
 
 # ── data collection helpers ──────────────────────────────────────────────────
 
+
 def _collect_actions(batch: EpisodeBatch) -> np.ndarray:
     """Stack all actions across all episodes → (N_total, action_dim)."""
     parts = [ep.actions for ep in batch.episodes if ep.n_steps > 0]
@@ -461,9 +463,7 @@ def _collect_actions(batch: EpisodeBatch) -> np.ndarray:
     return stacked.astype(np.float64)
 
 
-def _collect_state(
-    batch: EpisodeBatch, keys: tuple
-) -> tuple[Optional[str], Optional[np.ndarray]]:
+def _collect_state(batch: EpisodeBatch, keys: tuple) -> tuple[Optional[str], Optional[np.ndarray]]:
     """Find the first proprioceptive key present and stack across episodes."""
     target_key = None
     for key in keys:
@@ -487,6 +487,7 @@ def _collect_state(
 
 
 # ── statistical helpers ──────────────────────────────────────────────────────
+
 
 def _marginal_entropy_bits(
     data: np.ndarray,
@@ -553,7 +554,7 @@ def _pca_top_k_fraction(data: np.ndarray, k: int = 2) -> tuple[float, list[float
     except np.linalg.LinAlgError:
         return 1.0, []  # treat SVD failure as fully concentrated (conservative)
 
-    var = s ** 2
+    var = s**2
     total_var = float(var.sum())
     if total_var <= 0:
         return 1.0, [1.0]
@@ -576,8 +577,8 @@ def _is_bimodal_heuristic(lengths: np.ndarray) -> bool:
         return False
 
     mean = float(np.mean(lengths))
-    std  = float(np.std(lengths))
-    cv   = std / mean if mean > 0 else 0.0
+    std = float(np.std(lengths))
+    cv = std / mean if mean > 0 else 0.0
 
     if cv < 0.3:
         return False
@@ -588,9 +589,7 @@ def _is_bimodal_heuristic(lengths: np.ndarray) -> bool:
     return bool(valley_fraction < 0.15)
 
 
-def _threshold_level_upper(
-    value: float, warning: float, critical: float
-) -> RiskLevel:
+def _threshold_level_upper(value: float, warning: float, critical: float) -> RiskLevel:
     if value >= critical:
         return RiskLevel.CRITICAL
     if value >= warning:
@@ -598,9 +597,7 @@ def _threshold_level_upper(
     return RiskLevel.OK
 
 
-def _threshold_level_lower(
-    value: float, warning: float, critical: float
-) -> RiskLevel:
+def _threshold_level_lower(value: float, warning: float, critical: float) -> RiskLevel:
     if value <= critical:
         return RiskLevel.CRITICAL
     if value <= warning:

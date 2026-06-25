@@ -23,13 +23,18 @@ Run
     pip install calibra-robotics torch matplotlib
     python experiments/il_ceiling_pusht.py
 """
+
 from __future__ import annotations
 
 import pathlib
 import sys
 import time
+from typing import TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from calibra.schema.episode import EpisodeBatch
 
 # ── environment paths ──────────────────────────────────────────────────────────
 REPO_ROOT = pathlib.Path(__file__).parent.parent
@@ -39,11 +44,13 @@ FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── simulation environment ─────────────────────────────────────────────────────
 
+
 class PointMassEnv:
     """
     2D point-mass environment for robot reach/manipulation tasks.
     Lightweight, no external dependencies.
     """
+
     DT = 0.05
     MAX_VEL = 2.0
     DAMPING = 0.85
@@ -94,6 +101,7 @@ def scripted_policy(state: np.ndarray, goal: np.ndarray) -> np.ndarray:
 
 
 # ── dataset generation ─────────────────────────────────────────────────────────
+
 
 def generate_episode(
     seed: int,
@@ -161,28 +169,32 @@ def build_dataset(
     episodes = []
 
     for i in range(n_clean):
-        states, actions, ts = generate_episode(
-            seed=i, goal=goal, corruption_rate=corruption_rate
+        states, actions, ts = generate_episode(seed=i, goal=goal, corruption_rate=corruption_rate)
+        episodes.append(
+            Episode(
+                metadata=EpisodeMetadata(episode_id=f"ep_{i:04d}"),
+                timestamps=ts,
+                observations={"proprio": states},
+                actions=actions,
+            )
         )
-        episodes.append(Episode(
-            metadata=EpisodeMetadata(episode_id=f"ep_{i:04d}"),
-            timestamps=ts,
-            observations={"proprio": states},
-            actions=actions,
-        ))
 
     for i in range(n_redundant):
         states, actions, ts = generate_episode(
-            seed=n_clean + i, goal=goal,
+            seed=n_clean + i,
+            goal=goal,
             corruption_rate=corruption_rate,
-            is_redundant=True, ref_seed=i % 5,
+            is_redundant=True,
+            ref_seed=i % 5,
         )
-        episodes.append(Episode(
-            metadata=EpisodeMetadata(episode_id=f"redundant_{i:04d}"),
-            timestamps=ts,
-            observations={"proprio": states},
-            actions=actions,
-        ))
+        episodes.append(
+            Episode(
+                metadata=EpisodeMetadata(episode_id=f"redundant_{i:04d}"),
+                timestamps=ts,
+                observations={"proprio": states},
+                actions=actions,
+            )
+        )
 
     return EpisodeBatch(
         episodes=episodes,
@@ -194,6 +206,7 @@ def build_dataset(
 
 # ── BC policy ──────────────────────────────────────────────────────────────────
 
+
 def train_bc(
     batch: "EpisodeBatch",
     n_epochs: int = 100,
@@ -204,8 +217,10 @@ def train_bc(
     import torch.nn as nn
 
     device = (
-        torch.device("mps") if torch.backends.mps.is_available()
-        else torch.device("cuda") if torch.cuda.is_available()
+        torch.device("mps")
+        if torch.backends.mps.is_available()
+        else torch.device("cuda")
+        if torch.cuda.is_available()
         else torch.device("cpu")
     )
 
@@ -225,8 +240,12 @@ def train_bc(
     S_n = (S - s_mean) / s_std
 
     net = nn.Sequential(
-        nn.Linear(4, 128), nn.LayerNorm(128), nn.ReLU(),
-        nn.Linear(128, 128), nn.LayerNorm(128), nn.ReLU(),
+        nn.Linear(4, 128),
+        nn.LayerNorm(128),
+        nn.ReLU(),
+        nn.Linear(128, 128),
+        nn.LayerNorm(128),
+        nn.ReLU(),
         nn.Linear(128, 2),
     ).to(device)
 
@@ -236,7 +255,7 @@ def train_bc(
     for _ in range(n_epochs):
         perm = torch.randperm(N, device=device)
         for i in range(0, N, 256):
-            idx = perm[i:i + 256]
+            idx = perm[i : i + 256]
             pred = net(S_n[idx])
             loss = ((pred - (A[idx] - a_mean) / a_std) ** 2).mean()
             opt.zero_grad()
@@ -247,7 +266,12 @@ def train_bc(
 
 
 def evaluate_bc(
-    net, s_mean, s_std, a_mean, a_std, device,
+    net,
+    s_mean,
+    s_std,
+    a_mean,
+    a_std,
+    device,
     goal: np.ndarray,
     n_trials: int = 200,
     ood: bool = False,
@@ -292,6 +316,7 @@ def evaluate_bc(
 
 # ── Calibra quality score ──────────────────────────────────────────────────────
 
+
 def calibra_quality_score(batch: "EpisodeBatch") -> float:
     """Run Calibra pipeline and return composite quality score (0-100)."""
     from calibra.pipeline import Pipeline
@@ -303,6 +328,7 @@ def calibra_quality_score(batch: "EpisodeBatch") -> float:
 
 
 # ── main experiment ────────────────────────────────────────────────────────────
+
 
 def run_il_ceiling_experiment():
     import torch  # noqa: F401 — guard early
@@ -345,13 +371,15 @@ def run_il_ceiling_experiment():
         success_ood = evaluate_bc(*bc_artifacts, goal=goal, n_trials=N_TRIALS_EVAL, ood=True)
         print(f"{success_ood:.1%}")
 
-        results.append({
-            "corruption_rate": rate,
-            "calibra_score": quality,
-            "bc_success_id": success_id,
-            "bc_success_ood": success_ood,
-            "elapsed_s": round(time.perf_counter() - t0, 1),
-        })
+        results.append(
+            {
+                "corruption_rate": rate,
+                "calibra_score": quality,
+                "bc_success_id": success_id,
+                "bc_success_ood": success_ood,
+                "elapsed_s": round(time.perf_counter() - t0, 1),
+            }
+        )
 
     # ── print results table ───────────────────────────────────────────────────
     print("\n")
@@ -397,7 +425,8 @@ def run_il_ceiling_experiment():
 
         ax1.set_title(
             "IL Ceiling Experiment — Calibra quality score tracks BC success ceiling",
-            fontsize=12, pad=10
+            fontsize=12,
+            pad=10,
         )
         ax1.grid(True, alpha=0.3)
 

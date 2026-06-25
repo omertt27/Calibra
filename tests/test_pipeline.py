@@ -1,4 +1,5 @@
 """Tests for the Pipeline assembly layer."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -11,6 +12,7 @@ from calibra.schema.report import DiagnosticReport, RiskLevel
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
+
 def _make_batch(
     n_eps: int = 5,
     n_steps: int = 100,
@@ -22,12 +24,14 @@ def _make_batch(
         ts = np.arange(n_steps, dtype=np.float64) * 0.1
         acts = rng.uniform(-1, 1, (n_steps, action_dim)).astype(np.float32)
         obs = {"proprio": rng.uniform(-1, 1, (n_steps, 8)).astype(np.float32)}
-        episodes.append(Episode(
-            metadata=EpisodeMetadata(episode_id=f"ep_{i}"),
-            timestamps=ts,
-            observations=obs,
-            actions=acts,
-        ))
+        episodes.append(
+            Episode(
+                metadata=EpisodeMetadata(episode_id=f"ep_{i}"),
+                timestamps=ts,
+                observations=obs,
+                actions=acts,
+            )
+        )
     return EpisodeBatch(
         episodes=episodes,
         dataset_name="pipeline_test",
@@ -37,6 +41,7 @@ def _make_batch(
 
 
 # ── tests ────────────────────────────────────────────────────────────────────
+
 
 class TestPipelineRun:
     def test_returns_diagnostic_report(self):
@@ -113,8 +118,9 @@ class TestPipelineCustomAnalyzers:
 
 class TestPipelineEmptyBatch:
     def test_empty_batch_no_crash(self):
-        empty = EpisodeBatch(episodes=[], dataset_name="empty",
-                             format="hdf5", source_path="/tmp/empty.h5")
+        empty = EpisodeBatch(
+            episodes=[], dataset_name="empty", format="hdf5", source_path="/tmp/empty.h5"
+        )
         report = Pipeline().run(empty)
         assert isinstance(report, DiagnosticReport)
         assert report.n_episodes == 0

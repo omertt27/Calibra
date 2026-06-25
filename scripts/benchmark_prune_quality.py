@@ -21,6 +21,7 @@ Usage:
     python scripts/benchmark_prune_quality.py /data/my_dataset.h5 --keep 0.5 --format hdf5
     python scripts/benchmark_prune_quality.py lerobot/pusht --json results.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -65,14 +66,14 @@ def _aggregate_per_episode(report: DiagnosticReport, key: str) -> float | None:
 
 def _get_metrics(report: DiagnosticReport) -> dict[str, float | None]:
     return {
-        "jerk_spike_rate":        _aggregate_per_episode(report, "per_episode_spike_rate"),
-        "vel_disc_rate":          _aggregate_per_episode(report, "per_episode_vel_disc_rate"),
-        "ldlj":                   _aggregate_per_episode(report, "per_episode_ldlj"),
-        "jitter_cv":              _aggregate_per_episode(report, "per_episode_jitter_cv"),
-        "dropout_rate":           _aggregate_per_episode(report, "per_episode_dropout_fraction"),
-        "action_entropy (bits/d)":_extract_scalar(report, "action_entropy_bits_per_dim"),
-        "n_critical":             float(len(report.flags_at_level(RiskLevel.CRITICAL))),
-        "n_warning":              float(len(report.flags_at_level(RiskLevel.WARNING))),
+        "jerk_spike_rate": _aggregate_per_episode(report, "per_episode_spike_rate"),
+        "vel_disc_rate": _aggregate_per_episode(report, "per_episode_vel_disc_rate"),
+        "ldlj": _aggregate_per_episode(report, "per_episode_ldlj"),
+        "jitter_cv": _aggregate_per_episode(report, "per_episode_jitter_cv"),
+        "dropout_rate": _aggregate_per_episode(report, "per_episode_dropout_fraction"),
+        "action_entropy (bits/d)": _extract_scalar(report, "action_entropy_bits_per_dim"),
+        "n_critical": float(len(report.flags_at_level(RiskLevel.CRITICAL))),
+        "n_warning": float(len(report.flags_at_level(RiskLevel.WARNING))),
     }
 
 
@@ -138,24 +139,29 @@ def main() -> None:
         help="Dataset path or Hub ID (default: lerobot/pusht)",
     )
     parser.add_argument(
-        "--keep", "-k",
+        "--keep",
+        "-k",
         type=float,
         default=0.3,
         metavar="FRACTION",
         help="Coreset keep fraction (default: 0.3)",
     )
     parser.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         metavar="FMT",
         choices=["hdf5", "isaac_lab", "lerobot", "rlds", "mcap"],
         help="Force a format adapter (default: auto-detect)",
     )
     parser.add_argument(
-        "--seed", type=int, default=42,
+        "--seed",
+        type=int,
+        default=42,
         help="Random seed for random coreset (default: 42)",
     )
     parser.add_argument(
-        "--json", metavar="PATH",
+        "--json",
+        metavar="PATH",
         help="Write results to a JSON file",
     )
     args = parser.parse_args()
@@ -163,6 +169,7 @@ def main() -> None:
     reader = None
     if args.format:
         from calibra.__main__ import _get_reader
+
         reader = _get_reader(args.format)
 
     def log(msg: str) -> None:
@@ -181,7 +188,9 @@ def main() -> None:
     selector = CoresetSelector(keep_fraction=args.keep)
     result = selector.select(batch, full_report)
     calibra_batch = _subsample_batch(batch, result.keep_episode_ids)
-    log(f"  Calibra coreset: {calibra_batch.n_episodes} episodes ({args.keep:.0%} of {batch.n_episodes})")
+    log(
+        f"  Calibra coreset: {calibra_batch.n_episodes} episodes ({args.keep:.0%} of {batch.n_episodes})"
+    )
 
     rng = random.Random(args.seed)
     all_ids = [ep.metadata.episode_id for ep in batch.episodes]
@@ -192,17 +201,16 @@ def main() -> None:
 
     log("Running pipeline on coresets ...")
     calibra_report = pipeline.run(calibra_batch)
-    random_report  = pipeline.run(random_batch)
+    random_report = pipeline.run(random_batch)
 
     calibra_metrics = _get_metrics(calibra_report)
-    random_metrics  = _get_metrics(random_report)
+    random_metrics = _get_metrics(random_report)
 
     # ── print comparison table ────────────────────────────────────────────────
     print()
     print("━" * 72)
     print(f"  Calibra Quality Benchmark — {args.dataset}")
-    print(f"  Keep fraction: {args.keep:.0%}  "
-          f"({n_keep} of {batch.n_episodes} episodes)")
+    print(f"  Keep fraction: {args.keep:.0%}  ({n_keep} of {batch.n_episodes} episodes)")
     print("━" * 72)
 
     w = max(len(m) for m in full_metrics)
@@ -214,19 +222,16 @@ def main() -> None:
     print("  " + "─" * (len(header) - 2))
 
     for metric, full_val in full_metrics.items():
-        rand_val    = random_metrics.get(metric)
+        rand_val = random_metrics.get(metric)
         calibra_val = calibra_metrics.get(metric)
         lower_is_better = _LOWER_BETTER.get(metric, True)
 
-        full_str    = _fmt(full_val,    metric)
-        rand_str    = _fmt(rand_val,    metric)
+        full_str = _fmt(full_val, metric)
+        rand_str = _fmt(rand_val, metric)
         calibra_str = _fmt(calibra_val, metric)
-        arrow       = _delta_arrow(rand_val, calibra_val, lower_is_better)
+        arrow = _delta_arrow(rand_val, calibra_val, lower_is_better)
 
-        print(
-            f"  {metric:<{w}}   {full_str:>12}   {rand_str:>12}   "
-            f"{calibra_str:>12}  {arrow}"
-        )
+        print(f"  {metric:<{w}}   {full_str:>12}   {rand_str:>12}   {calibra_str:>12}  {arrow}")
 
     print("━" * 72)
     print()

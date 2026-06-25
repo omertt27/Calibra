@@ -3,6 +3,7 @@ Visual HTML Report Generator.
 
 Converts a DiagnosticReport into an interactive, visual dashboard page.
 """
+
 from __future__ import annotations
 
 import json
@@ -12,13 +13,15 @@ from typing import Optional
 from calibra.schema.report import DiagnosticReport, RiskLevel
 
 
-def generate_html_report(report: DiagnosticReport, output_path: str, outliers: Optional[dict] = None) -> None:
+def generate_html_report(
+    report: DiagnosticReport, output_path: str, outliers: Optional[dict] = None
+) -> None:
     """
     Generate a standalone HTML dashboard report and write it to `output_path`.
     """
     # Extract metrics for charts
     labels = [f"Ep {i}" for i in range(report.n_episodes)]
-    
+
     # Safely get per-episode lists from raw_metrics
     def get_metric_values(key: str) -> list[float]:
         for res in report.analyzer_results:
@@ -34,24 +37,30 @@ def generate_html_report(report: DiagnosticReport, output_path: str, outliers: O
     # Build flags list for JS
     flags_data = []
     for flag in report.flags:
-        flags_data.append({
-            "level": flag.level.value,
-            "metric": flag.metric,
-            "observed": str(flag.observed),
-            "threshold": flag.threshold,
-            "interpretation": flag.interpretation,
-            "implication": flag.implication,
-        })
+        flags_data.append(
+            {
+                "level": flag.level.value,
+                "metric": flag.metric,
+                "observed": str(flag.observed),
+                "threshold": flag.threshold,
+                "interpretation": flag.interpretation,
+                "implication": flag.implication,
+            }
+        )
 
     # Build outliers list
     outlier_list = []
     if outliers:
         for ep_idx, reasons in outliers.items():
-            outlier_list.append({
-                "index": ep_idx,
-                "episode_id": report.episode_ids[ep_idx] if ep_idx < len(report.episode_ids) else f"Ep {ep_idx}",
-                "reasons": reasons
-            })
+            outlier_list.append(
+                {
+                    "index": ep_idx,
+                    "episode_id": report.episode_ids[ep_idx]
+                    if ep_idx < len(report.episode_ids)
+                    else f"Ep {ep_idx}",
+                    "reasons": reasons,
+                }
+            )
 
     html_template = """<!DOCTYPE html>
 <html lang="en" class="h-full bg-slate-950 text-slate-100">

@@ -7,6 +7,7 @@ custom scripts without the full Pipeline/EpisodeBatch machinery.
 For pipeline-integrated versions with bootstrap CI and AnalyzerResult output,
 use calibra.analyzers.temporal.TemporalAnalyzer.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -86,22 +87,28 @@ def compute_frame_rate_stability(
       n_frames    : number of frames
     """
     if len(timestamps) < 2:
-        return {"mean_fps": 0.0, "std_fps": 0.0, "cv": 0.0, "dropout_rate": 0.0, "n_frames": len(timestamps)}
+        return {
+            "mean_fps": 0.0,
+            "std_fps": 0.0,
+            "cv": 0.0,
+            "dropout_rate": 0.0,
+            "n_frames": len(timestamps),
+        }
 
     deltas = np.diff(timestamps.astype(np.float64))
     fps_inst = 1.0 / np.where(deltas > 0, deltas, np.nan)
 
     mean_fps = float(np.nanmean(fps_inst))
-    std_fps  = float(np.nanstd(fps_inst))
-    cv       = compute_jitter_cv(timestamps)
-    dropout  = compute_dropout_rate(timestamps)
+    std_fps = float(np.nanstd(fps_inst))
+    cv = compute_jitter_cv(timestamps)
+    dropout = compute_dropout_rate(timestamps)
 
     return {
-        "mean_fps":     mean_fps,
-        "std_fps":      std_fps,
-        "cv":           cv,
+        "mean_fps": mean_fps,
+        "std_fps": std_fps,
+        "cv": cv,
         "dropout_rate": dropout,
-        "n_frames":     len(timestamps),
+        "n_frames": len(timestamps),
     }
 
 
@@ -134,8 +141,8 @@ def compute_multimodal_lag(
     lags_ms = lags_s * 1000.0
 
     return {
-        "mean_lag_ms":          float(np.mean(lags_ms)),
-        "std_lag_ms":           float(np.std(lags_ms)),
-        "max_lag_ms":           float(np.max(np.abs(lags_ms))),
-        "misaligned_fraction":  float(np.mean(np.abs(lags_ms) > 5.0)),
+        "mean_lag_ms": float(np.mean(lags_ms)),
+        "std_lag_ms": float(np.std(lags_ms)),
+        "max_lag_ms": float(np.max(np.abs(lags_ms))),
+        "misaligned_fraction": float(np.mean(np.abs(lags_ms) > 5.0)),
     }

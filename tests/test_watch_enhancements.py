@@ -1,14 +1,12 @@
 """Tests for watch.py enhancements: remediation advice, stream mode, --remediate flag."""
+
 from __future__ import annotations
 
 import io
 import json
-import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import numpy as np
-import pytest
 
 from calibra.watch import (
     WatchSession,
@@ -19,6 +17,7 @@ from calibra.watch import (
 
 
 # ── _remediation_advice ───────────────────────────────────────────────────────
+
 
 class TestRemediationAdvice:
     def test_jerk_spike_fail(self):
@@ -33,7 +32,9 @@ class TestRemediationAdvice:
     def test_velocity_discontinuity(self):
         msg = _remediation_advice("velocity_discontinuity_rate", 0.07, "FAIL")
         assert "RE-RECORD" in msg
-        assert "continuous" in msg.lower() or "discontinu" in msg.lower() or "reversal" in msg.lower()
+        assert (
+            "continuous" in msg.lower() or "discontinu" in msg.lower() or "reversal" in msg.lower()
+        )
 
     def test_ldlj(self):
         msg = _remediation_advice("ldlj", -18.0, "FAIL")
@@ -57,6 +58,7 @@ class TestRemediationAdvice:
 
 
 # ── WatchSession.record with remediate ────────────────────────────────────────
+
 
 def _make_mock_report(verdict: str):
     """Build a minimal mock DiagnosticReport."""
@@ -86,16 +88,16 @@ class TestWatchSessionRecord:
     def test_pass_no_remediation(self, capsys, tmp_path):
         session = WatchSession(log_file=None, quiet=False, bell=False)
         report = _make_mock_report("PASS")
-        session.record(Path("ep_001.h5"), "PASS", "all metrics OK",
-                       report=report, remediate=True)
+        session.record(Path("ep_001.h5"), "PASS", "all metrics OK", report=report, remediate=True)
         out = capsys.readouterr().out
         assert "↳" not in out
 
     def test_fail_remediation_printed(self, capsys, tmp_path):
         session = WatchSession(log_file=None, quiet=False, bell=False)
         report = _make_mock_report("FAIL")
-        session.record(Path("ep_002.h5"), "FAIL", "jerk_spike_rate = 0.08",
-                       report=report, remediate=True)
+        session.record(
+            Path("ep_002.h5"), "FAIL", "jerk_spike_rate = 0.08", report=report, remediate=True
+        )
         out = capsys.readouterr().out
         assert "↳" in out
         assert "RE-RECORD" in out
@@ -103,8 +105,9 @@ class TestWatchSessionRecord:
     def test_warn_remediation_printed(self, capsys):
         session = WatchSession(log_file=None, quiet=False, bell=False)
         report = _make_mock_report("WARN")
-        session.record(Path("ep_003.h5"), "WARN", "jerk_spike_rate = 0.03",
-                       report=report, remediate=True)
+        session.record(
+            Path("ep_003.h5"), "WARN", "jerk_spike_rate = 0.03", report=report, remediate=True
+        )
         out = capsys.readouterr().out
         assert "↳" in out
 
@@ -112,17 +115,19 @@ class TestWatchSessionRecord:
         log = tmp_path / "session.jsonl"
         session = WatchSession(log_file=log, quiet=True, bell=False)
         report = _make_mock_report("FAIL")
-        session.record(Path("ep_004.h5"), "FAIL", "jerk_spike_rate = 0.08",
-                       report=report, remediate=True)
-        lines = [json.loads(l) for l in log.read_text().strip().splitlines()]
+        session.record(
+            Path("ep_004.h5"), "FAIL", "jerk_spike_rate = 0.08", report=report, remediate=True
+        )
+        lines = [json.loads(ln) for ln in log.read_text().strip().splitlines()]
         assert len(lines) == 1
         assert "remediation" in lines[0]
 
     def test_no_remediation_flag_omits_advice(self, capsys):
         session = WatchSession(log_file=None, quiet=False, bell=False)
         report = _make_mock_report("FAIL")
-        session.record(Path("ep_005.h5"), "FAIL", "jerk_spike_rate = 0.08",
-                       report=report, remediate=False)
+        session.record(
+            Path("ep_005.h5"), "FAIL", "jerk_spike_rate = 0.08", report=report, remediate=False
+        )
         out = capsys.readouterr().out
         assert "↳" not in out
 
@@ -146,14 +151,14 @@ class TestWatchSessionRecord:
 
 # ── _stream_watch ─────────────────────────────────────────────────────────────
 
+
 def _run_stream(lines: list[str], remediate: bool = False) -> tuple[WatchSession, str]:
     """Helper: feed lines to _stream_watch via stdin mock, return session + stdout."""
     session = WatchSession(log_file=None, quiet=False, bell=False)
     stdin_text = "\n".join(lines) + "\n"
 
     captured_out = io.StringIO()
-    with patch("sys.stdin", io.StringIO(stdin_text)), \
-         patch("sys.stdout", captured_out):
+    with patch("sys.stdin", io.StringIO(stdin_text)), patch("sys.stdout", captured_out):
         _stream_watch(session, remediate=remediate)
 
     return session, captured_out.getvalue()
@@ -161,69 +166,74 @@ def _run_stream(lines: list[str], remediate: bool = False) -> tuple[WatchSession
 
 class TestStreamWatch:
     def test_pass_episode(self):
-        session, out = _run_stream([
-            json.dumps({"file": "ep_001.h5", "spike_rate": 0.01, "vel_disc_rate": 0.01,
-                        "dropout_rate": 0.0, "ldlj": -5.0})
-        ])
+        session, out = _run_stream(
+            [
+                json.dumps(
+                    {
+                        "file": "ep_001.h5",
+                        "spike_rate": 0.01,
+                        "vel_disc_rate": 0.01,
+                        "dropout_rate": 0.0,
+                        "ldlj": -5.0,
+                    }
+                )
+            ]
+        )
         assert session.n_pass == 1
         assert session.n_fail == 0
         assert "PASS" in out
 
     def test_warn_episode_spike(self):
-        session, out = _run_stream([
-            json.dumps({"file": "ep_002.h5", "spike_rate": 0.03, "ldlj": -5.0})
-        ])
+        session, out = _run_stream(
+            [json.dumps({"file": "ep_002.h5", "spike_rate": 0.03, "ldlj": -5.0})]
+        )
         assert session.n_warn == 1
         assert "WARN" in out
 
     def test_fail_episode_spike(self):
-        session, out = _run_stream([
-            json.dumps({"file": "ep_003.h5", "spike_rate": 0.08})
-        ])
+        session, out = _run_stream([json.dumps({"file": "ep_003.h5", "spike_rate": 0.08})])
         assert session.n_fail == 1
         assert "FAIL" in out
 
     def test_fail_episode_vel_disc(self):
-        session, out = _run_stream([
-            json.dumps({"file": "ep_004.h5", "vel_disc_rate": 0.07})
-        ])
+        session, out = _run_stream([json.dumps({"file": "ep_004.h5", "vel_disc_rate": 0.07})])
         assert session.n_fail == 1
 
     def test_fail_episode_dropout(self):
-        session, out = _run_stream([
-            json.dumps({"file": "ep_005.h5", "dropout_rate": 0.06})
-        ])
+        session, out = _run_stream([json.dumps({"file": "ep_005.h5", "dropout_rate": 0.06})])
         assert session.n_fail == 1
 
     def test_fail_episode_ldlj(self):
-        session, out = _run_stream([
-            json.dumps({"file": "ep_006.h5", "ldlj": -18.0})
-        ])
+        session, out = _run_stream([json.dumps({"file": "ep_006.h5", "ldlj": -18.0})])
         assert session.n_fail == 1
 
     def test_multiple_episodes_tallied(self):
-        lines = [
-            json.dumps({"file": f"ep_{i:03d}.h5", "spike_rate": 0.01}) for i in range(3)
-        ] + [json.dumps({"file": "ep_bad.h5", "spike_rate": 0.09})]
+        lines = [json.dumps({"file": f"ep_{i:03d}.h5", "spike_rate": 0.01}) for i in range(3)] + [
+            json.dumps({"file": "ep_bad.h5", "spike_rate": 0.09})
+        ]
         session, _ = _run_stream(lines)
         assert session.total == 4
         assert session.n_pass == 3
         assert session.n_fail == 1
 
     def test_invalid_json_skipped(self):
-        session, out = _run_stream([
-            "NOT JSON",
-            json.dumps({"file": "ep_ok.h5", "spike_rate": 0.01}),
-        ])
+        session, out = _run_stream(
+            [
+                "NOT JSON",
+                json.dumps({"file": "ep_ok.h5", "spike_rate": 0.01}),
+            ]
+        )
         assert session.total == 1
         assert session.n_pass == 1
 
     def test_empty_line_skipped(self):
-        session, _ = _run_stream([
-            "",
-            "   ",
-            json.dumps({"file": "ep_ok.h5", "spike_rate": 0.01}),
-        ])
+        session, _ = _run_stream(
+            [
+                "",
+                "   ",
+                json.dumps({"file": "ep_ok.h5", "spike_rate": 0.01}),
+            ]
+        )
         assert session.total == 1
 
     def test_remediate_prints_advice_on_fail(self):
@@ -247,7 +257,7 @@ class TestStreamWatch:
         lines_str = json.dumps({"file": "ep_001.h5", "spike_rate": 0.01}) + "\n"
         with patch("sys.stdin", io.StringIO(lines_str)):
             _stream_watch(session, remediate=False)
-        entries = [json.loads(l) for l in log.read_text().strip().splitlines()]
+        entries = [json.loads(ln) for ln in log.read_text().strip().splitlines()]
         assert len(entries) == 1
         assert entries[0]["file"] == "ep_001.h5"
 

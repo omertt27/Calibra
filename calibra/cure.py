@@ -10,6 +10,7 @@ Usage:
     calibra cure /path/to/dataset --remedy smooth,interpolate,trim --out cured_dataset/
     calibra cure lerobot/pusht --hz 10 --out cured/ --format lerobot
 """
+
 from __future__ import annotations
 
 import argparse
@@ -19,7 +20,6 @@ from pathlib import Path
 import numpy as np
 
 from calibra.pipeline import Pipeline
-from calibra.schema.episode import EpisodeBatch
 
 
 def smooth_actions(actions: np.ndarray, window_len: int = 7, polyorder: int = 2) -> np.ndarray:
@@ -33,6 +33,7 @@ def smooth_actions(actions: np.ndarray, window_len: int = 7, polyorder: int = 2)
 
     try:
         from scipy.signal import savgol_filter
+
         return savgol_filter(actions, window_length=window_len, polyorder=polyorder, axis=0)
     except ImportError:
         # Fallback to simple 1D moving average filter
@@ -136,7 +137,8 @@ def run_cure(argv: list[str]) -> None:
         help="Comma-separated remedies to apply (smooth, interpolate, trim)",
     )
     p.add_argument(
-        "--out", "-o",
+        "--out",
+        "-o",
         metavar="DIR",
         default="cured_dataset",
         help="Output directory for cured per-episode .npz files",
@@ -148,7 +150,8 @@ def run_cure(argv: list[str]) -> None:
         help="Target control frequency in Hz for interpolation (default: auto-detected)",
     )
     p.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         metavar="FMT",
         choices=["hdf5", "isaac_lab", "lerobot", "rlds", "mcap"],
         help="Force a format adapter (default: auto-detect)",
@@ -163,11 +166,12 @@ def run_cure(argv: list[str]) -> None:
 
     dataset_path = args.path
     if dataset_path.startswith("hf://"):
-        dataset_path = dataset_path[len("hf://"):]
+        dataset_path = dataset_path[len("hf://") :]
 
     reader = None
     if args.format:
         from calibra.__main__ import _get_reader
+
         reader = _get_reader(args.format)
 
     def log(msg: str) -> None:
@@ -176,6 +180,7 @@ def run_cure(argv: list[str]) -> None:
     log(f"Loading {dataset_path!r} ...")
     try:
         from calibra.ingestion.registry import load
+
         batch = load(dataset_path, reader=reader)
     except Exception as exc:
         print(f"error loading dataset: {exc}", file=sys.stderr)
@@ -184,7 +189,7 @@ def run_cure(argv: list[str]) -> None:
     log(f"  {batch.n_episodes} episodes  ·  {batch.n_samples} steps")
     log("Running diagnostics to check anomaly states ...")
     try:
-        report = Pipeline().run(batch)
+        Pipeline().run(batch)
     except Exception as exc:
         print(f"error running diagnostic check: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -238,23 +243,29 @@ def run_cure(argv: list[str]) -> None:
         np.savez_compressed(out_path, **save_data)
         cured_count += 1
 
-        metadata_log.append({
-            "episode_id": ep_id,
-            "original_steps": orig_steps,
-            "original_hz": round(orig_hz, 1),
-            "cured_steps": new_steps,
-            "cured_hz": round(new_hz, 1),
-            "saved_file": str(out_path.name),
-        })
+        metadata_log.append(
+            {
+                "episode_id": ep_id,
+                "original_steps": orig_steps,
+                "original_hz": round(orig_hz, 1),
+                "cured_steps": new_steps,
+                "cured_hz": round(new_hz, 1),
+                "saved_file": str(out_path.name),
+            }
+        )
 
     # Write summary manifest file
     with open(out_dir / "cure_manifest.json", "w") as f:
-        json.dump({
-            "dataset_name": batch.dataset_name,
-            "cured_episodes": cured_count,
-            "remedies_applied": remedies,
-            "episodes": metadata_log,
-        }, f, indent=2)
+        json.dump(
+            {
+                "dataset_name": batch.dataset_name,
+                "cured_episodes": cured_count,
+                "remedies_applied": remedies,
+                "episodes": metadata_log,
+            },
+            f,
+            indent=2,
+        )
 
     print(
         f"\n{'━' * 56}\n"

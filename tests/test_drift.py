@@ -1,4 +1,5 @@
 """Tests for calibra.temporal.drift — camera-physics lag detection."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -12,6 +13,7 @@ from calibra.temporal.drift import (
 
 
 # ── compute_visual_activity ───────────────────────────────────────────────────
+
 
 class TestComputeVisualActivity:
     def test_output_shape_4d(self):
@@ -51,6 +53,7 @@ class TestComputeVisualActivity:
 
 # ── estimate_sensor_command_latency ──────────────────────────────────────────
 
+
 class TestEstimateLag:
     def test_zero_lag_for_identical_signals(self):
         rng = np.random.default_rng(42)
@@ -64,7 +67,7 @@ class TestEstimateLag:
         k = 3
         base = rng.random(80)
         physical = base
-        visual   = base[k:]      # visual is k steps behind (lags)
+        visual = base[k:]  # visual is k steps behind (lags)
         lag = estimate_sensor_command_latency(physical, visual)
         # numpy convention: visual lags → k < 0; abs should equal k
         assert abs(lag) == k
@@ -75,7 +78,7 @@ class TestEstimateLag:
         k = 2
         base = rng.random(80)
         physical = base[k:]
-        visual   = base           # visual is k steps ahead
+        visual = base  # visual is k steps ahead
         lag = estimate_sensor_command_latency(physical, visual)
         assert abs(lag) == k
 
@@ -88,13 +91,12 @@ class TestEstimateLag:
 
     def test_constant_signal_returns_zero(self):
         """Constant signals have no correlation structure."""
-        lag = estimate_sensor_command_latency(
-            np.ones(50), np.ones(50)
-        )
+        lag = estimate_sensor_command_latency(np.ones(50), np.ones(50))
         assert lag == 0
 
 
 # ── estimate_visual_physics_lag ───────────────────────────────────────────────
+
 
 class TestEstimateVisualPhysicsLag:
     def test_returns_int(self):
@@ -117,13 +119,14 @@ class TestEstimateVisualPhysicsLag:
         base_vel[10:30, :] = 2.0
         imgs = np.full((T, 8, 8, 3), 128, dtype=np.uint8)
         # Visual window shifted k steps (visual lags → peak at -k by convention)
-        imgs[10 + k:30 + k] = rng.integers(0, 255, (20, 8, 8, 3), dtype=np.uint8)
+        imgs[10 + k : 30 + k] = rng.integers(0, 255, (20, 8, 8, 3), dtype=np.uint8)
         lag = estimate_visual_physics_lag(imgs, base_vel)
         # The estimated abs lag should be substantial (> 2 frames at minimum)
         assert abs(lag) > 2
 
 
 # ── GR00T drift check ─────────────────────────────────────────────────────────
+
 
 class TestGR00TDriftCheck:
     def _make_batch_with_drift(self, lag_frames: int):
@@ -139,7 +142,7 @@ class TestGR00TDriftCheck:
         # transition is large → sustained visual_activity matching the burst.
         imgs = np.full((T, 8, 8, 3), 128, dtype=np.uint8)
         start = max(0, 15 + lag_frames)
-        end   = min(T, 35 + lag_frames)
+        end = min(T, 35 + lag_frames)
         imgs[start:end] = rng.integers(0, 255, (end - start, 8, 8, 3), dtype=np.uint8)
 
         ep = Episode(
@@ -152,14 +155,14 @@ class TestGR00TDriftCheck:
             actions=rng.random((T, 7)).astype(np.float32),
         )
         return EpisodeBatch(
-            episodes=[ep] * 5, dataset_name="test",
-            format="isaac_lab", source_path="/tmp/test"
+            episodes=[ep] * 5, dataset_name="test", format="isaac_lab", source_path="/tmp/test"
         )
 
     def test_drift_flag_present_when_data_available(self):
         """When both image and velocity obs are present, a drift flag is produced."""
         from calibra.analyzers.gr00t import GR00TCompatibilityAnalyzer
         from calibra.schema.report import RiskLevel
+
         batch = self._make_batch_with_drift(0)
         result = GR00TCompatibilityAnalyzer().analyze(batch, policy_family="gr00t")
         drift_flags = [f for f in result.flags if "drift" in f.metric]
@@ -170,6 +173,7 @@ class TestGR00TDriftCheck:
     def test_large_drift_produces_nonzero_lag(self):
         """Large visual lag should produce a non-zero observed lag value."""
         from calibra.analyzers.gr00t import GR00TCompatibilityAnalyzer
+
         batch = self._make_batch_with_drift(8)
         result = GR00TCompatibilityAnalyzer().analyze(batch, policy_family="gr00t")
         drift_flags = [f for f in result.flags if "drift" in f.metric]
@@ -179,6 +183,7 @@ class TestGR00TDriftCheck:
     def test_skipped_without_image_obs(self):
         from calibra.analyzers.gr00t import GR00TCompatibilityAnalyzer
         from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
+
         rng = np.random.default_rng(0)
         T = 20
         ep = Episode(
@@ -188,8 +193,7 @@ class TestGR00TDriftCheck:
             actions=rng.random((T, 7)).astype(np.float32),
         )
         batch = EpisodeBatch(
-            episodes=[ep], dataset_name="no_image",
-            format="isaac_lab", source_path="/tmp"
+            episodes=[ep], dataset_name="no_image", format="isaac_lab", source_path="/tmp"
         )
         result = GR00TCompatibilityAnalyzer().analyze(batch, policy_family="gr00t")
         drift_flags = [f for f in result.flags if "drift" in f.metric]

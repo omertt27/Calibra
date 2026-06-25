@@ -31,6 +31,7 @@ Exit codes
     0  Session ended cleanly (Ctrl+C or --max-episodes reached)
     1  Error starting the watcher
 """
+
 from __future__ import annotations
 
 import argparse
@@ -42,14 +43,14 @@ from typing import Optional
 
 # ── thresholds (mirrors ControlSmoothnessAnalyzer / TemporalAnalyzer) ─────────
 
-_SPIKE_WARN     = 0.02
-_SPIKE_FAIL     = 0.05
-_VEL_DISC_WARN  = 0.02
-_VEL_DISC_FAIL  = 0.05
-_DROPOUT_WARN   = 0.01
-_DROPOUT_FAIL   = 0.05
-_LDLJ_WARN      = -10.0
-_LDLJ_FAIL      = -15.0
+_SPIKE_WARN = 0.02
+_SPIKE_FAIL = 0.05
+_VEL_DISC_WARN = 0.02
+_VEL_DISC_FAIL = 0.05
+_DROPOUT_WARN = 0.01
+_DROPOUT_FAIL = 0.05
+_LDLJ_WARN = -10.0
+_LDLJ_FAIL = -15.0
 
 # File extensions to watch for new episode files
 _WATCH_EXTENSIONS = frozenset([".h5", ".hdf5", ".npz", ".mcap", ".bag"])
@@ -61,6 +62,7 @@ def _episode_verdict(report) -> tuple[str, str]:
     verdict is one of 'PASS', 'WARN', 'FAIL'.
     """
     from calibra.schema.report import RiskLevel
+
     if report.flags_at_level(RiskLevel.CRITICAL):
         top = report.flags_at_level(RiskLevel.CRITICAL)[0]
         return "FAIL", f"{top.metric} = {top.observed.value:.4g} (threshold {top.threshold})"
@@ -143,23 +145,25 @@ def _score_episode_file(path: Path, policy_family: Optional[str], reader=None):
 
 # ── session state ─────────────────────────────────────────────────────────────
 
+
 class WatchSession:
     def __init__(self, log_file: Optional[Path], quiet: bool, bell: bool):
-        self.log_file  = log_file
-        self.quiet     = quiet
-        self.bell      = bell
-        self.n_pass    = 0
-        self.n_warn    = 0
-        self.n_fail    = 0
-        self.episodes:  list[dict] = []
-        self._start    = time.monotonic()
+        self.log_file = log_file
+        self.quiet = quiet
+        self.bell = bell
+        self.n_pass = 0
+        self.n_warn = 0
+        self.n_fail = 0
+        self.episodes: list[dict] = []
+        self._start = time.monotonic()
 
     @property
     def total(self) -> int:
         return self.n_pass + self.n_warn + self.n_fail
 
-    def record(self, path: Path, verdict: str, details: str,
-               report=None, remediate: bool = False) -> None:
+    def record(
+        self, path: Path, verdict: str, details: str, report=None, remediate: bool = False
+    ) -> None:
         icon = _verdict_icon(verdict)
         elapsed = time.monotonic() - self._start
 
@@ -174,6 +178,7 @@ class WatchSession:
         if report is not None:
             from calibra.score import compute_score
             from calibra.schema.report import RiskLevel
+
             try:
                 sc = compute_score(report)
                 entry["calibra_score"] = sc["total_score"]
@@ -181,9 +186,8 @@ class WatchSession:
                 pass
 
             if remediate and verdict in ("FAIL", "WARN"):
-                flags = (
-                    report.flags_at_level(RiskLevel.CRITICAL)
-                    or report.flags_at_level(RiskLevel.WARNING)
+                flags = report.flags_at_level(RiskLevel.CRITICAL) or report.flags_at_level(
+                    RiskLevel.WARNING
                 )
                 if flags:
                     top = flags[0]
@@ -202,14 +206,8 @@ class WatchSession:
             self.n_fail += 1
 
         if not self.quiet:
-            score_str = (
-                f"  score={entry['calibra_score']:.0f}"
-                if "calibra_score" in entry else ""
-            )
-            print(
-                f"  {icon} [{self.total:>4}] {path.name:<40} "
-                f"{verdict:<4} — {details}{score_str}"
-            )
+            score_str = f"  score={entry['calibra_score']:.0f}" if "calibra_score" in entry else ""
+            print(f"  {icon} [{self.total:>4}] {path.name:<40} {verdict:<4} — {details}{score_str}")
             if remediation:
                 print(f"       ↳ {remediation}")
             if verdict == "FAIL" and self.bell:
@@ -226,21 +224,20 @@ class WatchSession:
         print("  SESSION SUMMARY")
         print("━" * 60)
         print(f"  Duration : {elapsed:.0f}s")
-        print(f"  Episodes : {self.total}  "
-              f"(✅ {self.n_pass}  ⚠️  {self.n_warn}  ❌ {self.n_fail})")
+        print(f"  Episodes : {self.total}  (✅ {self.n_pass}  ⚠️  {self.n_warn}  ❌ {self.n_fail})")
         if self.total > 0:
             pass_rate = self.n_pass / self.total * 100
             print(f"  Pass rate: {pass_rate:.0f}%")
         if self.n_fail > 0:
             failed = [e["file"] for e in self.episodes if e["verdict"] == "FAIL"]
-            print(f"  Failed   : {', '.join(failed[:5])}"
-                  + (" ..." if len(failed) > 5 else ""))
+            print(f"  Failed   : {', '.join(failed[:5])}" + (" ..." if len(failed) > 5 else ""))
         if self.log_file:
             print(f"  Log      : {self.log_file}")
         print("━" * 60)
 
 
 # ── polling watcher ────────────────────────────────────────────────────────────
+
 
 def _poll_watch(
     directory: Path,
@@ -286,6 +283,7 @@ def _poll_watch(
 
 # ── stream mode ────────────────────────────────────────────────────────────────
 
+
 def _stream_watch(session: WatchSession, remediate: bool = False) -> None:
     """
     Read episode metric JSON from stdin (one line per episode).
@@ -299,14 +297,14 @@ def _stream_watch(session: WatchSession, remediate: bool = False) -> None:
     print("  Expected fields: file, ldlj, spike_rate, vel_disc_rate, dropout_rate, jitter_cv")
     print()
 
-    _SPIKE_FAIL_S   = 0.05
-    _SPIKE_WARN_S   = 0.02
-    _VD_FAIL_S      = 0.05
-    _VD_WARN_S      = 0.02
+    _SPIKE_FAIL_S = 0.05
+    _SPIKE_WARN_S = 0.02
+    _VD_FAIL_S = 0.05
+    _VD_WARN_S = 0.02
     _DROPOUT_FAIL_S = 0.05
     _DROPOUT_WARN_S = 0.01
-    _LDLJ_FAIL_S    = -15.0
-    _LDLJ_WARN_S    = -10.0
+    _LDLJ_FAIL_S = -15.0
+    _LDLJ_WARN_S = -10.0
 
     for raw_line in sys.stdin:
         raw_line = raw_line.strip()
@@ -319,7 +317,6 @@ def _stream_watch(session: WatchSession, remediate: bool = False) -> None:
             continue
 
         fname = data.get("file", "episode")
-        path = Path(fname)
 
         verdict = "PASS"
         top_metric = ""
@@ -327,10 +324,10 @@ def _stream_watch(session: WatchSession, remediate: bool = False) -> None:
         details = "all metrics OK"
 
         checks = [
-            ("spike_rate",    data.get("spike_rate"),    _SPIKE_WARN_S,   _SPIKE_FAIL_S,   "higher"),
-            ("vel_disc_rate", data.get("vel_disc_rate"), _VD_WARN_S,      _VD_FAIL_S,      "higher"),
-            ("dropout_rate",  data.get("dropout_rate"),  _DROPOUT_WARN_S, _DROPOUT_FAIL_S, "higher"),
-            ("ldlj",          data.get("ldlj"),          _LDLJ_WARN_S,    _LDLJ_FAIL_S,    "lower"),
+            ("spike_rate", data.get("spike_rate"), _SPIKE_WARN_S, _SPIKE_FAIL_S, "higher"),
+            ("vel_disc_rate", data.get("vel_disc_rate"), _VD_WARN_S, _VD_FAIL_S, "higher"),
+            ("dropout_rate", data.get("dropout_rate"), _DROPOUT_WARN_S, _DROPOUT_FAIL_S, "higher"),
+            ("ldlj", data.get("ldlj"), _LDLJ_WARN_S, _LDLJ_FAIL_S, "lower"),
         ]
         for metric, val, warn_t, fail_t, direction in checks:
             if val is None:
@@ -348,7 +345,12 @@ def _stream_watch(session: WatchSession, remediate: bool = False) -> None:
 
         icon = _verdict_icon(verdict)
         elapsed = time.monotonic() - session._start
-        entry: dict = {"t": round(elapsed, 2), "file": fname, "verdict": verdict, "details": details}
+        entry: dict = {
+            "t": round(elapsed, 2),
+            "file": fname,
+            "verdict": verdict,
+            "details": details,
+        }
 
         remediation = ""
         if remediate and verdict in ("FAIL", "WARN") and top_metric:
@@ -377,15 +379,18 @@ def _stream_watch(session: WatchSession, remediate: bool = False) -> None:
 
 # ── optional watchdog integration ─────────────────────────────────────────────
 
+
 def _watchdog_available() -> bool:
     try:
         import watchdog  # noqa: F401
+
         return True
     except ImportError:
         return False
 
 
 # ── CLI entry point ───────────────────────────────────────────────────────────
+
 
 def run_watch(argv: list[str]) -> None:
     p = argparse.ArgumentParser(
@@ -402,13 +407,15 @@ def run_watch(argv: list[str]) -> None:
         help="Directory to watch for new episode files (not required with --stream)",
     )
     p.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         metavar="FMT",
         choices=["hdf5", "isaac_lab", "lerobot", "rlds", "mcap"],
         help="Force a format adapter (default: auto-detect from extension)",
     )
     p.add_argument(
-        "--policy", "-p",
+        "--policy",
+        "-p",
         metavar="FAMILY",
         help="Target policy family for conditioned hints (e.g. 'pi0', 'gr00t')",
     )
@@ -436,7 +443,8 @@ def run_watch(argv: list[str]) -> None:
         help="Suppress terminal bell on FAIL episodes",
     )
     p.add_argument(
-        "--quiet", "-q",
+        "--quiet",
+        "-q",
         action="store_true",
         help="Only print summary, not per-episode lines",
     )
@@ -489,6 +497,7 @@ def run_watch(argv: list[str]) -> None:
     reader = None
     if args.format:
         from calibra.__main__ import _get_reader
+
         reader = _get_reader(args.format)
 
     try:

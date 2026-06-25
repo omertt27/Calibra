@@ -5,6 +5,7 @@ All fields are Pydantic models so reports serialize cleanly to JSON.
 Analyzers produce AnalyzerResult objects; the pipeline assembles them into
 a DiagnosticReport.
 """
+
 from __future__ import annotations
 
 from enum import Enum
@@ -15,18 +16,17 @@ from pydantic import BaseModel, model_validator
 
 class RiskLevel(str, Enum):
     CRITICAL = "CRITICAL"
-    WARNING  = "WARNING"
-    OK       = "OK"
-    INFO     = "INFO"
+    WARNING = "WARNING"
+    OK = "OK"
+    INFO = "INFO"
 
 
-_LEVEL_ORDER = {RiskLevel.CRITICAL: 0, RiskLevel.WARNING: 1,
-                RiskLevel.OK: 2, RiskLevel.INFO: 3}
+_LEVEL_ORDER = {RiskLevel.CRITICAL: 0, RiskLevel.WARNING: 1, RiskLevel.OK: 2, RiskLevel.INFO: 3}
 _ICONS = {
     RiskLevel.CRITICAL: "❌",
-    RiskLevel.WARNING:  "⚠️ ",
-    RiskLevel.OK:       "✅",
-    RiskLevel.INFO:     "ℹ️ ",
+    RiskLevel.WARNING: "⚠️ ",
+    RiskLevel.OK: "✅",
+    RiskLevel.INFO: "ℹ️ ",
 }
 
 
@@ -39,12 +39,12 @@ class ObservedValue(BaseModel):
     single episode count) or when sample size makes bootstrapping meaningless.
     """
 
-    value: Optional[float] = None   # None = metric could not be computed
+    value: Optional[float] = None  # None = metric could not be computed
     unit: str = ""
     ci_lower: Optional[float] = None
     ci_upper: Optional[float] = None
     ci_level: float = 0.95
-    ci_method: str = ""   # "bootstrap", "t-distribution", …
+    ci_method: str = ""  # "bootstrap", "t-distribution", …
 
     @model_validator(mode="after")
     def _bounds_ordered(self) -> "ObservedValue":
@@ -114,7 +114,7 @@ class AnalyzerResult(BaseModel):
     analyzer_name: str
     flags: list[RiskFlag] = []
     hints: list[CompatibilityHint] = []
-    raw_metrics: dict[str, Any] = {}   # untyped bag for downstream consumers
+    raw_metrics: dict[str, Any] = {}  # untyped bag for downstream consumers
 
 
 class DiagnosticReport(BaseModel):
@@ -130,7 +130,7 @@ class DiagnosticReport(BaseModel):
     analyzer_results: list[AnalyzerResult] = []
     policy_family: Optional[str] = None
     episode_ids: list[str] = []
-    timing: dict[str, float] = {}   # analyzer_name → wall-clock seconds
+    timing: dict[str, float] = {}  # analyzer_name → wall-clock seconds
 
     # ── convenience accessors ───────────────────────────────────────────────
 
@@ -180,9 +180,7 @@ class DiagnosticReport(BaseModel):
 
         if self.timing:
             total = sum(self.timing.values())
-            timing_parts = "  ".join(
-                f"{name}: {t:.2f}s" for name, t in self.timing.items()
-            )
+            timing_parts = "  ".join(f"{name}: {t:.2f}s" for name, t in self.timing.items())
             lines.append(f"\nTiming ({total:.2f}s total): {timing_parts}")
 
         return "\n".join(lines)

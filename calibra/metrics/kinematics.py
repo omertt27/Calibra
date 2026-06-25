@@ -15,6 +15,7 @@ All functions expect:
 Kinematics convention: "position control" (actions are positions).
 For velocity or acceleration control, differentiate/integrate before calling.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -54,9 +55,7 @@ def compute_velocity_discontinuity_rate(
     See calibra/knowledge_base/claims.yaml claim VD-001.
     """
     if actions.shape != states.shape:
-        raise ValueError(
-            f"actions shape {actions.shape} must match states shape {states.shape}."
-        )
+        raise ValueError(f"actions shape {actions.shape} must match states shape {states.shape}.")
     l2_gaps = np.linalg.norm(actions - states, axis=1)
     return float(np.sum(l2_gaps > threshold) / len(actions))
 
@@ -98,13 +97,13 @@ def compute_jerk_spike_rate(
     if len(states) < 4:
         return 0.0
 
-    velocities     = np.diff(states, axis=0) / dt
-    accelerations  = np.diff(velocities, axis=0) / dt
-    jerk           = np.diff(accelerations, axis=0) / dt
+    velocities = np.diff(states, axis=0) / dt
+    accelerations = np.diff(velocities, axis=0) / dt
+    jerk = np.diff(accelerations, axis=0) / dt
 
     jerk_norms = np.linalg.norm(jerk, axis=1)
-    mean_jerk  = float(np.mean(jerk_norms))
-    std_jerk   = float(np.std(jerk_norms))
+    mean_jerk = float(np.mean(jerk_norms))
+    std_jerk = float(np.std(jerk_norms))
 
     if std_jerk == 0.0:
         return 0.0
@@ -144,23 +143,23 @@ def compute_ldlj(
         return None
 
     T = len(trajectory) * dt
-    vel   = np.diff(trajectory, axis=0) / dt
+    vel = np.diff(trajectory, axis=0) / dt
     if len(vel) < 3:
         return None
-    acc   = np.diff(vel, axis=0) / dt
+    acc = np.diff(vel, axis=0) / dt
     if len(acc) < 2:
         return None
-    jerk  = np.diff(acc, axis=0) / dt
+    jerk = np.diff(acc, axis=0) / dt
 
     v_max = float(np.max(np.linalg.norm(vel, axis=-1)))
     if v_max <= 1e-12:
         return None
 
-    jerk_sq_integral = float(np.sum(np.sum(jerk ** 2, axis=-1)) * dt)
+    jerk_sq_integral = float(np.sum(np.sum(jerk**2, axis=-1)) * dt)
     if jerk_sq_integral <= 0:
         return None
 
-    inner = (T ** 3 / v_max ** 2) * jerk_sq_integral
+    inner = (T**3 / v_max**2) * jerk_sq_integral
     if inner <= 0:
         return None
 

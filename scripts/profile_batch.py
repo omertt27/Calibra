@@ -28,6 +28,7 @@ Manifest format (YAML):
         note: "Local HDF5 collection"
         out: calibra/references/local_robot.json
 """
+
 from __future__ import annotations
 
 import argparse

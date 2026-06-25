@@ -10,6 +10,7 @@ Usage:
     python scripts/validate_claims.py --check       # CI gate: exit 1 on zero-evidence claims
     python scripts/validate_claims.py --pending     # show only claims needing more evidence
 """
+
 from __future__ import annotations
 
 import argparse
@@ -34,13 +35,13 @@ _CONF_RANK = {
 }
 
 _CONF_COLOR = {
-    "STRONG":        "\033[92m",   # green
-    "HIGH":          "\033[92m",
-    "MEDIUM":        "\033[93m",   # yellow
-    "MODERATE":      "\033[93m",
-    "LOW-MODERATE":  "\033[33m",   # orange
-    "LOW":           "\033[33m",
-    "NOT VALIDATED": "\033[91m",   # red
+    "STRONG": "\033[92m",  # green
+    "HIGH": "\033[92m",
+    "MEDIUM": "\033[93m",  # yellow
+    "MODERATE": "\033[93m",
+    "LOW-MODERATE": "\033[33m",  # orange
+    "LOW": "\033[33m",
+    "NOT VALIDATED": "\033[91m",  # red
 }
 _RESET = "\033[0m"
 
@@ -80,8 +81,7 @@ def _evidence_coverage(claim: dict, ref_names: set[str]) -> tuple[int, int]:
     evidence = claim.get("evidence", [])
     n_total = len(evidence)
     n_in_refs = sum(
-        1 for e in evidence
-        if any(part in ref_names for part in _ds_parts(e.get("dataset", "")))
+        1 for e in evidence if any(part in ref_names for part in _ds_parts(e.get("dataset", "")))
     )
     return n_in_refs, n_total
 
@@ -112,16 +112,18 @@ def print_table(claims: list[dict], ref_names: set[str], pending_only: bool) -> 
         if pending_only and not has_zero and n_pending == 0:
             continue
 
-        rows.append({
-            "id": cid,
-            "conf": conf,
-            "n_evidence": n_evidence,
-            "n_refs_covered": n_refs_covered,
-            "n_pending": n_pending,
-            "has_zero": has_zero,
-            "pending_list": pending,
-            "assertion": claim.get("assertion", "")[:65],
-        })
+        rows.append(
+            {
+                "id": cid,
+                "conf": conf,
+                "n_evidence": n_evidence,
+                "n_refs_covered": n_refs_covered,
+                "n_pending": n_pending,
+                "has_zero": has_zero,
+                "pending_list": pending,
+                "assertion": claim.get("assertion", "")[:65],
+            }
+        )
 
     if not rows:
         print("All claims have evidence and no pending tests.")
@@ -158,15 +160,17 @@ def print_table(claims: list[dict], ref_names: set[str], pending_only: bool) -> 
     zero_count = sum(1 for r in rows if r["has_zero"])
     total = len(claims)
     fully_validated = sum(
-        1 for c in claims
-        if len(c.get("evidence", [])) > 0 and not _pending_datasets(c)
+        1 for c in claims if len(c.get("evidence", [])) > 0 and not _pending_datasets(c)
     )
-    print(f"\n  {total} claims  ·  {zero_count} with zero evidence  ·  {fully_validated} fully validated")
+    print(
+        f"\n  {total} claims  ·  {zero_count} with zero evidence  ·  {fully_validated} fully validated"
+    )
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument(
         "--check",
         action="store_true",
@@ -180,9 +184,9 @@ def main() -> None:
     args = parser.parse_args()
 
     claims_dir = _REPO / "calibra" / "claims"
-    refs_dir   = _REPO / "calibra" / "references"
+    refs_dir = _REPO / "calibra" / "references"
 
-    claims    = load_claims(claims_dir)
+    claims = load_claims(claims_dir)
     ref_names = load_reference_names(refs_dir)
 
     if args.check:

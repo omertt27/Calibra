@@ -17,6 +17,7 @@ Supports:
 
 Dependencies: pip install 'calibra[lerobot]'  (pyarrow, duckdb)
 """
+
 from __future__ import annotations
 
 import json
@@ -24,9 +25,8 @@ from pathlib import Path
 from typing import List
 
 
-
 def _strip_hf(path: str) -> str:
-    return path[len("hf://"):] if path.startswith("hf://") else path
+    return path[len("hf://") :] if path.startswith("hf://") else path
 
 
 class LazyDatasetReader:
@@ -117,9 +117,7 @@ class LazyDatasetReader:
 
     def episode_count(self) -> int:
         conn = self._get_conn()
-        return conn.execute(
-            "SELECT COUNT(DISTINCT episode_index) FROM dataset"
-        ).fetchone()[0]
+        return conn.execute("SELECT COUNT(DISTINCT episode_index) FROM dataset").fetchone()[0]
 
     def get_fps(self) -> float:
         return self.fps
@@ -175,8 +173,7 @@ class LazyDatasetReader:
         scalar_cols = [c for c in all_cols if c not in image_cols]
         col_sql = ", ".join(f'"{c}"' for c in scalar_cols)
         conn.execute(
-            f"CREATE VIEW dataset AS SELECT {col_sql} FROM raw "
-            f"ORDER BY episode_index, frame_index"
+            f"CREATE VIEW dataset AS SELECT {col_sql} FROM raw ORDER BY episode_index, frame_index"
         )
         return conn
 

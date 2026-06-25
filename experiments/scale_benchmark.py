@@ -10,6 +10,7 @@ Usage:
     python experiments/scale_benchmark.py --max-n 100000
     python experiments/scale_benchmark.py --save-fig
 """
+
 from __future__ import annotations
 
 import argparse
@@ -24,9 +25,9 @@ import numpy as np
 REPO_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from calibra.pruning import CoresetSelector, ApproximateCoresetSelector
-from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
-from calibra.schema.report import DiagnosticReport, AnalyzerResult
+from calibra.pruning import CoresetSelector, ApproximateCoresetSelector  # noqa: E402
+from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata  # noqa: E402
+from calibra.schema.report import DiagnosticReport, AnalyzerResult  # noqa: E402
 
 FIG_DIR = REPO_ROOT / "experiments" / "figures"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -68,14 +69,16 @@ def _make_mock_report(batch: EpisodeBatch) -> DiagnosticReport:
 
     ep_metrics: list[dict] = []
     for i in range(n):
-        ep_metrics.append({
-            "episode_id": f"ep_{i:07d}",
-            "spike_rate": spike_rates[i],
-            "vel_disc_rate": vel_disc[i],
-            "ldlj": ldlj[i],
-            "dropout_rate": 0.0,
-            "jitter_cv": 1e-5,
-        })
+        ep_metrics.append(
+            {
+                "episode_id": f"ep_{i:07d}",
+                "spike_rate": spike_rates[i],
+                "vel_disc_rate": vel_disc[i],
+                "ldlj": ldlj[i],
+                "dropout_rate": 0.0,
+                "jitter_cv": 1e-5,
+            }
+        )
 
     ar = AnalyzerResult(
         analyzer_name="control_smoothness",
@@ -110,9 +113,7 @@ def _benchmark_n(
     result = {"n": n, "keep_fraction": keep_fraction, "batch_size": batch_size}
 
     # ── Approximate selector ──────────────────────────────────────────────────
-    approx_sel = ApproximateCoresetSelector(
-        keep_fraction=keep_fraction, batch_size=batch_size
-    )
+    approx_sel = ApproximateCoresetSelector(keep_fraction=keep_fraction, batch_size=batch_size)
     tracemalloc.start()
     t0 = time.perf_counter()
     approx_res = approx_sel.select(batch, report)
@@ -140,9 +141,7 @@ def _benchmark_n(
         result["exact_kept"] = exact_res.n_kept
 
         # Overlap: how many episodes the two selectors agree on
-        overlap = len(
-            set(approx_res.keep_episode_ids) & set(exact_res.keep_episode_ids)
-        )
+        overlap = len(set(approx_res.keep_episode_ids) & set(exact_res.keep_episode_ids))
         result["overlap_pct"] = round(100.0 * overlap / max(exact_res.n_kept, 1), 1)
 
     return result
@@ -186,7 +185,9 @@ def _save_figure(rows: list[dict]) -> None:
     # Time scaling
     ax1.loglog(ns, approx_times, "o-", color="#2196F3", linewidth=2, label="Approximate (O(N·B))")
     if exact_ns:
-        ax1.loglog(exact_ns, exact_times, "s--", color="#F44336", linewidth=2, label="Exact (O(N·K))")
+        ax1.loglog(
+            exact_ns, exact_times, "s--", color="#F44336", linewidth=2, label="Exact (O(N·K))"
+        )
     ax1.set_xlabel("Dataset size (episodes)", fontsize=11)
     ax1.set_ylabel("Wall-clock time (s)", fontsize=11)
     ax1.set_title("Runtime Scaling", fontsize=13, fontweight="bold")
@@ -216,14 +217,23 @@ def _save_figure(rows: list[dict]) -> None:
 
 def main() -> None:
     p = argparse.ArgumentParser(description="Calibra scale benchmark")
-    p.add_argument("--max-n", type=int, default=500_000, metavar="N",
-                   help="Largest dataset size to test (default: 500000)")
-    p.add_argument("--keep", type=float, default=0.30,
-                   help="Coreset keep fraction (default: 0.30)")
-    p.add_argument("--batch-size", type=int, default=1000,
-                   help="ApproximateCoresetSelector batch size (default: 1000)")
-    p.add_argument("--save-fig", action="store_true",
-                   help="Save timing/memory plots to experiments/figures/")
+    p.add_argument(
+        "--max-n",
+        type=int,
+        default=500_000,
+        metavar="N",
+        help="Largest dataset size to test (default: 500000)",
+    )
+    p.add_argument("--keep", type=float, default=0.30, help="Coreset keep fraction (default: 0.30)")
+    p.add_argument(
+        "--batch-size",
+        type=int,
+        default=1000,
+        help="ApproximateCoresetSelector batch size (default: 1000)",
+    )
+    p.add_argument(
+        "--save-fig", action="store_true", help="Save timing/memory plots to experiments/figures/"
+    )
     args = p.parse_args()
 
     sizes = [1_000, 5_000, 10_000, 50_000, 100_000, 500_000]
@@ -252,8 +262,10 @@ def main() -> None:
     max_row = rows[-1]
     n = max_row["n"]
     t = max_row["approx_time_s"]
-    print(f"\nAt N={n:,}: approximate selector finished in {t:.1f}s — "
-          f"{'✅ under 60s' if t < 60 else '⚠️ over 60s (consider larger batch_size)'}")
+    print(
+        f"\nAt N={n:,}: approximate selector finished in {t:.1f}s — "
+        f"{'✅ under 60s' if t < 60 else '⚠️ over 60s (consider larger batch_size)'}"
+    )
     print(
         "\nNote: memory figures reflect fully in-memory synthetic numpy arrays. "
         "Real usage with lazy Parquet/HDF5 loading uses significantly less RAM."

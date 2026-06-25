@@ -26,6 +26,7 @@ Cross-reference with jerk metrics to distinguish two high-surprise regimes:
 
 Requires PyTorch (optional dependency). Skips gracefully if absent.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -50,6 +51,7 @@ class WorldModelConsistencyAnalyzer(Analyzer):
     batch_size  : mini-batch size during JEPA training.
     verbose     : if True, print training progress to stderr.
     """
+
     latent_dim: int = 64
     n_epochs: int = 60
     batch_size: int = 512
@@ -85,6 +87,7 @@ class WorldModelConsistencyAnalyzer(Analyzer):
 
         try:
             import sys
+
             if self.verbose:
                 print(
                     f"[world_model] training RobotJEPA "
@@ -109,41 +112,45 @@ class WorldModelConsistencyAnalyzer(Analyzer):
         flags: list[RiskFlag] = []
 
         if high_surprise_frac > 0.30:
-            flags.append(RiskFlag(
-                level=RiskLevel.WARNING,
-                metric="jepa_high_surprise_fraction",
-                observed=ObservedValue(value=high_surprise_frac, unit="fraction"),
-                threshold=0.30,
-                interpretation=(
-                    f"{high_surprise_frac:.1%} of episodes have high JEPA surprise "
-                    "(world model cannot predict their dynamics)."
-                ),
-                implication=(
-                    "Cross-reference with jerk_spike_rate: "
-                    "high surprise + high jerk = corrupted episode (prune it); "
-                    "high surprise + low jerk = genuinely novel episode (keep it). "
-                    "IL policies trained on unpredictable data fail to generalise "
-                    "beyond the training distribution."
-                ),
-            ))
+            flags.append(
+                RiskFlag(
+                    level=RiskLevel.WARNING,
+                    metric="jepa_high_surprise_fraction",
+                    observed=ObservedValue(value=high_surprise_frac, unit="fraction"),
+                    threshold=0.30,
+                    interpretation=(
+                        f"{high_surprise_frac:.1%} of episodes have high JEPA surprise "
+                        "(world model cannot predict their dynamics)."
+                    ),
+                    implication=(
+                        "Cross-reference with jerk_spike_rate: "
+                        "high surprise + high jerk = corrupted episode (prune it); "
+                        "high surprise + low jerk = genuinely novel episode (keep it). "
+                        "IL policies trained on unpredictable data fail to generalise "
+                        "beyond the training distribution."
+                    ),
+                )
+            )
 
         if learnability < 0.50:
-            flags.append(RiskFlag(
-                level=RiskLevel.WARNING,
-                metric="jepa_world_model_learnability",
-                observed=ObservedValue(value=learnability, unit="fraction"),
-                threshold=0.50,
-                interpretation=(
-                    f"Only {learnability:.1%} of episodes are well-predicted "
-                    "by the JEPA world model."
-                ),
-                implication=(
-                    "A dataset with low world-model learnability produces IL policies "
-                    "that memorise specific trajectories but fail on novel start states. "
-                    "Run `calibra prune --strategy world-model` to select the "
-                    "low-surprise coreset before training."
-                ),
-            ))
+            flags.append(
+                RiskFlag(
+                    level=RiskLevel.WARNING,
+                    metric="jepa_world_model_learnability",
+                    observed=ObservedValue(value=learnability, unit="fraction"),
+                    threshold=0.50,
+                    interpretation=(
+                        f"Only {learnability:.1%} of episodes are well-predicted "
+                        "by the JEPA world model."
+                    ),
+                    implication=(
+                        "A dataset with low world-model learnability produces IL policies "
+                        "that memorise specific trajectories but fail on novel start states. "
+                        "Run `calibra prune --strategy world-model` to select the "
+                        "low-surprise coreset before training."
+                    ),
+                )
+            )
 
         return AnalyzerResult(
             analyzer_name=self.name,

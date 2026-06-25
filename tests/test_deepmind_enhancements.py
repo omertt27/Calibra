@@ -1,6 +1,5 @@
 import tempfile
 import numpy as np
-import pytest
 from pathlib import Path
 
 from calibra.schema.episode import Episode, EpisodeMetadata, EpisodeBatch, LazyEpisodeList
@@ -12,7 +11,7 @@ from calibra.benchmark import run_benchmark
 
 def test_lazy_episode_list():
     called = []
-    
+
     def loader_fn(idx):
         called.append(idx)
         return Episode(
@@ -23,23 +22,23 @@ def test_lazy_episode_list():
         )
 
     lazy_list = LazyEpisodeList(loader_fn=loader_fn, length=10, cache_size=2)
-    
+
     assert len(lazy_list) == 10
-    
+
     # Access first episode
     ep0 = lazy_list[0]
     assert ep0.metadata.episode_id == "0"
     assert called == [0]
-    
+
     # Access again, should hit cache
     ep0_cached = lazy_list[0]
     assert ep0_cached is ep0
     assert called == [0]  # No new call
-    
+
     # Access ep1, ep2 to evict ep0
     _ = lazy_list[1]
     _ = lazy_list[2]
-    
+
     # Access ep0 again, cache should have evicted it
     _ = lazy_list[0]
     assert called == [0, 1, 2, 0]
@@ -92,7 +91,9 @@ def test_kinematic_urdf_checker():
         ep_vel_fail = Episode(
             metadata=EpisodeMetadata(episode_id="vel_fail"),
             timestamps=np.array([0.0, 0.5]),
-            observations={"proprio": np.array([[0.0, 0.0], [0.0, 1.5]])},  # diff = 1.5, dt = 0.5 -> vel = 3.0
+            observations={
+                "proprio": np.array([[0.0, 0.0], [0.0, 1.5]])
+            },  # diff = 1.5, dt = 0.5 -> vel = 3.0
             actions=np.zeros((2, 2)),
         )
         violations = checker.check_episode(ep_vel_fail)
@@ -154,7 +155,7 @@ def test_sim2real_transition_and_visual_gaps():
 
     # Perform gap analysis
     res = analyze_gap(sim_report, real_report, sim_batch=sim_batch, real_batch=real_batch)
-    
+
     assert "transition_dynamics_gap" in res["gaps"]
     assert "visual_domain_gap" in res["gaps"]
     assert res["gaps"]["transition_dynamics_gap"]["value"] > 0.0
@@ -181,12 +182,13 @@ def test_benchmark_cli(capsys, monkeypatch):
 
     # Mock load function to return mock_batch
     import calibra.ingestion.registry as registry
+
     monkeypatch.setattr(registry, "load", lambda path, reader=None: mock_batch)
 
     # Run benchmark command
     run_benchmark(["mock_path", "--keep", "0.3", "--policy", "diffusion"])
     captured = capsys.readouterr()
-    
+
     assert "RAW DATASET" in captured.out
     assert "RANDOM PRUNED" in captured.out
     assert "CALIBRA CORESET" in captured.out

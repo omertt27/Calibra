@@ -35,6 +35,7 @@ Metrics
    suggest data collection artefacts (e.g. early-termination on failure)
    were not cleaned before export.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -55,14 +56,14 @@ from calibra.schema.report import (
 
 # ── thresholds ───────────────────────────────────────────────────────────────
 
-_SHORT_EP_WARNING  = 0.05   # 5% of episodes are outlier-short
-_SHORT_EP_CRITICAL = 0.15   # 15%
+_SHORT_EP_WARNING = 0.05  # 5% of episodes are outlier-short
+_SHORT_EP_CRITICAL = 0.15  # 15%
 
-_MULTIMODAL_SEP_INFO    = 0.35   # weak 2-cluster structure → INFO
-_MULTIMODAL_SEP_WARNING = 0.60   # clear 2-cluster structure → WARNING
+_MULTIMODAL_SEP_INFO = 0.35  # weak 2-cluster structure → INFO
+_MULTIMODAL_SEP_WARNING = 0.60  # clear 2-cluster structure → WARNING
 
 _GRIPPER_BIMODAL_THRESHOLD = 0.65  # fraction of values near extremes
-_GRIPPER_MIDDLE_MAX        = 0.10  # max fraction in the [0.3, 0.7] band
+_GRIPPER_MIDDLE_MAX = 0.10  # max fraction in the [0.3, 0.7] band
 
 
 @dataclass
@@ -84,15 +85,15 @@ class TaskStructureAnalyzer(Analyzer):
     n_bootstrap, ci_level : bootstrap CI parameters.
     """
 
-    gripper_dims:          Optional[list[int]] = None
-    vel_slow_threshold:    float = 0.08
-    action_type:           str   = "position"
-    short_ep_warning:      float = _SHORT_EP_WARNING
-    short_ep_critical:     float = _SHORT_EP_CRITICAL
-    multimodal_sep_info:   float = _MULTIMODAL_SEP_INFO
+    gripper_dims: Optional[list[int]] = None
+    vel_slow_threshold: float = 0.08
+    action_type: str = "position"
+    short_ep_warning: float = _SHORT_EP_WARNING
+    short_ep_critical: float = _SHORT_EP_CRITICAL
+    multimodal_sep_info: float = _MULTIMODAL_SEP_INFO
     multimodal_sep_warning: float = _MULTIMODAL_SEP_WARNING
-    n_bootstrap:           int   = 500
-    ci_level:              float = 0.95
+    n_bootstrap: int = 500
+    ci_level: float = 0.95
 
     @property
     def name(self) -> str:
@@ -109,7 +110,7 @@ class TaskStructureAnalyzer(Analyzer):
             return AnalyzerResult(analyzer_name=self.name)
 
         flags: list[RiskFlag] = []
-        raw:   dict = {}
+        raw: dict = {}
 
         # Resolve gripper dims once for the whole batch.
         actions_all = _collect_actions(batch)
@@ -140,7 +141,7 @@ class TaskStructureAnalyzer(Analyzer):
 
         # Per-episode arrays for Phase 2 comparison/curation (convention: "per_episode_<key>").
         raw["per_episode_contact_fraction"] = contact_raw.get("episode_values", [])
-        raw["per_episode_grasp_count"]      = grasp_raw.get("episode_values", [])
+        raw["per_episode_grasp_count"] = grasp_raw.get("episode_values", [])
 
         return AnalyzerResult(
             analyzer_name=self.name,
@@ -155,8 +156,7 @@ class TaskStructureAnalyzer(Analyzer):
         self, batch: EpisodeBatch, g_dims: list[int]
     ) -> tuple[RiskFlag, dict]:
         ep_values = [
-            _episode_contact_fraction(ep, g_dims, self.vel_slow_threshold,
-                                      self.action_type)
+            _episode_contact_fraction(ep, g_dims, self.vel_slow_threshold, self.action_type)
             for ep in batch.episodes
         ]
         arr = np.array(ep_values)
@@ -179,13 +179,15 @@ class TaskStructureAnalyzer(Analyzer):
             level=RiskLevel.INFO,
             metric="contact_density",
             observed=ObservedValue(
-                value=stat, unit="fraction",
-                ci_lower=lo, ci_upper=hi,
-                ci_level=self.ci_level, ci_method="bootstrap",
+                value=stat,
+                unit="fraction",
+                ci_lower=lo,
+                ci_upper=hi,
+                ci_level=self.ci_level,
+                ci_method="bootstrap",
             ),
             interpretation=(
-                f"{stat:.1%} of steps are in contact/slow phase "
-                f"(estimated via {method})."
+                f"{stat:.1%} of steps are in contact/slow phase (estimated via {method})."
             ),
             implication=(
                 "High contact density (> 60%) → dataset is contact-rich; "
@@ -197,9 +199,7 @@ class TaskStructureAnalyzer(Analyzer):
 
     # ── metric: grasp events ─────────────────────────────────────────────────
 
-    def _check_grasp_events(
-        self, batch: EpisodeBatch, g_dims: list[int]
-    ) -> tuple[RiskFlag, dict]:
+    def _check_grasp_events(self, batch: EpisodeBatch, g_dims: list[int]) -> tuple[RiskFlag, dict]:
         if not g_dims:
             return RiskFlag(
                 level=RiskLevel.INFO,
@@ -241,8 +241,11 @@ class TaskStructureAnalyzer(Analyzer):
                 level=RiskLevel.WARNING,
                 metric="grasp_events_per_episode",
                 observed=ObservedValue(
-                    value=stat, ci_lower=lo, ci_upper=hi,
-                    ci_level=self.ci_level, ci_method="bootstrap",
+                    value=stat,
+                    ci_lower=lo,
+                    ci_upper=hi,
+                    ci_level=self.ci_level,
+                    ci_method="bootstrap",
                 ),
                 interpretation=(
                     f"{zero_frac:.1%} of episodes have zero gripper close events "
@@ -260,8 +263,11 @@ class TaskStructureAnalyzer(Analyzer):
             level=RiskLevel.INFO,
             metric="grasp_events_per_episode",
             observed=ObservedValue(
-                value=stat, ci_lower=lo, ci_upper=hi,
-                ci_level=self.ci_level, ci_method="bootstrap",
+                value=stat,
+                ci_lower=lo,
+                ci_upper=hi,
+                ci_level=self.ci_level,
+                ci_method="bootstrap",
             ),
             interpretation=f"Mean {stat:.1f} gripper close events per episode.",
             implication=(
@@ -272,9 +278,7 @@ class TaskStructureAnalyzer(Analyzer):
 
     # ── metric: trajectory diversity ─────────────────────────────────────────
 
-    def _check_trajectory_diversity(
-        self, batch: EpisodeBatch
-    ) -> tuple[RiskFlag, dict]:
+    def _check_trajectory_diversity(self, batch: EpisodeBatch) -> tuple[RiskFlag, dict]:
         if batch.n_episodes < 4:
             return RiskFlag(
                 level=RiskLevel.INFO,
@@ -344,9 +348,7 @@ class TaskStructureAnalyzer(Analyzer):
 
     # ── metric: short episode fraction ───────────────────────────────────────
 
-    def _check_short_episodes(
-        self, batch: EpisodeBatch
-    ) -> tuple[RiskFlag, dict]:
+    def _check_short_episodes(self, batch: EpisodeBatch) -> tuple[RiskFlag, dict]:
         lengths = np.array([ep.n_steps for ep in batch.episodes], dtype=float)
 
         if len(lengths) < 4:
@@ -364,10 +366,7 @@ class TaskStructureAnalyzer(Analyzer):
 
         outlier_mask = lengths < lower_fence
         frac = float(np.mean(outlier_mask))
-        outlier_ids = [
-            batch.episodes[i].metadata.episode_id
-            for i in np.where(outlier_mask)[0]
-        ]
+        outlier_ids = [batch.episodes[i].metadata.episode_id for i in np.where(outlier_mask)[0]]
         raw = {
             "short_episode_fraction": frac,
             "lower_fence_steps": float(lower_fence),
@@ -425,9 +424,9 @@ class TaskStructureAnalyzer(Analyzer):
         hints: list[CompatibilityHint] = []
 
         contact_frac = raw.get("contact_density", {}).get("mean_contact_fraction")
-        sep_score    = raw.get("trajectory_diversity", {}).get("separation_score")
-        n_modes      = raw.get("trajectory_diversity", {}).get("estimated_modes", 1)
-        short_frac   = raw.get("short_episodes", {}).get("short_episode_fraction")
+        sep_score = raw.get("trajectory_diversity", {}).get("separation_score")
+        n_modes = raw.get("trajectory_diversity", {}).get("estimated_modes", 1)
+        short_frac = raw.get("short_episodes", {}).get("short_episode_fraction")
 
         if "diffusion" in pf:
             caveats: list[str] = []
@@ -445,15 +444,17 @@ class TaskStructureAnalyzer(Analyzer):
                     "at the early-episode part of the trajectory distribution."
                 )
                 compatible = None
-            hints.append(CompatibilityHint(
-                policy_family="Diffusion Policy",
-                compatible=compatible,
-                explanation=(
-                    "Diffusion Policy handles contact-rich and multi-modal data "
-                    "well, but is sensitive to failed-demo contamination."
-                ),
-                caveats=caveats,
-            ))
+            hints.append(
+                CompatibilityHint(
+                    policy_family="Diffusion Policy",
+                    compatible=compatible,
+                    explanation=(
+                        "Diffusion Policy handles contact-rich and multi-modal data "
+                        "well, but is sensitive to failed-demo contamination."
+                    ),
+                    caveats=caveats,
+                )
+            )
 
         if pf in ("act", "action chunking"):
             caveats = []
@@ -470,12 +471,14 @@ class TaskStructureAnalyzer(Analyzer):
                     "Very high contact density: ACT action chunks may span "
                     "contact transitions, requiring careful chunk length tuning."
                 )
-            hints.append(CompatibilityHint(
-                policy_family="ACT",
-                compatible=compatible,
-                explanation="ACT performs well on contact-rich single-strategy datasets.",
-                caveats=caveats,
-            ))
+            hints.append(
+                CompatibilityHint(
+                    policy_family="ACT",
+                    compatible=compatible,
+                    explanation="ACT performs well on contact-rich single-strategy datasets.",
+                    caveats=caveats,
+                )
+            )
 
         if "transformer" in pf or "bc" in pf:
             caveats = []
@@ -486,17 +489,20 @@ class TaskStructureAnalyzer(Analyzer):
                     "the policy will hover between strategies and succeed at neither."
                 )
                 compatible = False
-            hints.append(CompatibilityHint(
-                policy_family="Transformer BC" if "transformer" in pf else "Vanilla BC",
-                compatible=compatible,
-                explanation="Standard BC struggles with multi-modal demonstration sets.",
-                caveats=caveats,
-            ))
+            hints.append(
+                CompatibilityHint(
+                    policy_family="Transformer BC" if "transformer" in pf else "Vanilla BC",
+                    compatible=compatible,
+                    explanation="Standard BC struggles with multi-modal demonstration sets.",
+                    caveats=caveats,
+                )
+            )
 
         return hints
 
 
 # ── per-episode and per-batch helpers ────────────────────────────────────────
+
 
 def _collect_actions(batch: EpisodeBatch) -> np.ndarray:
     parts = [ep.actions for ep in batch.episodes if ep.n_steps > 0]
@@ -528,7 +534,7 @@ def _detect_gripper_dims(
 
         col_norm = (col - lo) / (hi - lo)
         near_extremes = float(np.mean((col_norm < 0.2) | (col_norm > 0.8)))
-        in_middle     = float(np.mean((col_norm > 0.3) & (col_norm < 0.7)))
+        in_middle = float(np.mean((col_norm > 0.3) & (col_norm < 0.7)))
 
         if near_extremes >= bimodal_threshold and in_middle <= middle_max:
             detected.append(d)
@@ -564,25 +570,25 @@ def _episode_contact_fraction(
             continue
         col_norm = (col - lo) / (hi - lo)
         # Determine which extreme is "closed" by which side has more mass
-        frac_low  = float(np.mean(col_norm < 0.3))
+        frac_low = float(np.mean(col_norm < 0.3))
         frac_high = float(np.mean(col_norm > 0.7))
         if frac_low > frac_high:
-            contact |= col_norm < 0.5   # low = closed
+            contact |= col_norm < 0.5  # low = closed
         else:
-            contact |= col_norm > 0.5   # high = closed
+            contact |= col_norm > 0.5  # high = closed
 
     # Velocity-based detection (supplement)
     active = [d for d in range(acts.shape[1]) if d not in gripper_dims]
     if active and action_type == "position":
         sub = acts[:, active].astype(np.float64)
-        dt  = float(np.median(np.diff(ep.timestamps)))
+        dt = float(np.median(np.diff(ep.timestamps)))
         if dt > 0 and len(sub) >= 2:
-            vel   = np.diff(sub, axis=0) / dt    # (T-1, D)
+            vel = np.diff(sub, axis=0) / dt  # (T-1, D)
             speed = np.linalg.norm(vel, axis=-1)  # (T-1,)
             v_max = float(np.max(speed))
             if v_max > 0:
                 slow = speed < vel_slow_threshold * v_max
-                contact[1:] |= slow   # align with step indices (vel is T-1)
+                contact[1:] |= slow  # align with step indices (vel is T-1)
 
     return float(np.mean(contact))
 
@@ -593,7 +599,7 @@ def _episode_grasp_count(ep: Episode, gripper_dims: list[int]) -> Optional[int]:
         return None
 
     acts = ep.actions if ep.actions.ndim > 1 else ep.actions[:, np.newaxis]
-    gd   = gripper_dims[0]
+    gd = gripper_dims[0]
     if gd >= acts.shape[1]:
         return None
 
@@ -676,12 +682,12 @@ def _two_means(
         return np.zeros(len(X), dtype=int), 0.0
 
     best_labels = np.zeros(len(X), dtype=int)
-    best_ratio  = 1.0
+    best_ratio = 1.0
 
     for _ in range(5):  # random restarts
         idx = rng.choice(len(X), 2, replace=False)
         centers = X[idx].astype(float).copy()
-        labels  = np.zeros(len(X), dtype=int)
+        labels = np.zeros(len(X), dtype=int)
 
         for _step in range(n_iter):
             d0 = np.linalg.norm(X - centers[0], axis=1)
@@ -703,15 +709,13 @@ def _two_means(
 
         ratio = min(1.0, within / total_var)
         if ratio < best_ratio:
-            best_ratio  = ratio
+            best_ratio = ratio
             best_labels = labels.copy()
 
     return best_labels, best_ratio
 
 
-def _threshold_level_upper(
-    value: float, warning: float, critical: float
-) -> RiskLevel:
+def _threshold_level_upper(value: float, warning: float, critical: float) -> RiskLevel:
     if value >= critical:
         return RiskLevel.CRITICAL
     if value >= warning:

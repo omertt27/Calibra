@@ -23,6 +23,7 @@ Usage
     similar = db.find_similar(fingerprint, policy_family="act", k=5)
     blended = db.blend_prediction(heuristic_score=72.0, similar=similar)
 """
+
 from __future__ import annotations
 
 import json
@@ -46,13 +47,13 @@ _FINGERPRINT_KEYS = [
 
 # Per-metric normalization ranges (maps raw value to [0, 1] for distance calcs)
 _NORM_RANGES: dict[str, tuple[float, float]] = {
-    "ldlj":                   (-30.0, 0.0),     # more negative = worse
-    "spike_rate":             (0.0, 0.20),
-    "vel_disc_rate":          (0.0, 0.40),
-    "dropout_rate":           (0.0, 0.20),
-    "jitter_cv":              (0.0, 0.50),
-    "action_entropy":         (0.0, 6.0),        # higher = better
-    "contact_phase_fraction": (0.0, 0.50),       # higher = better
+    "ldlj": (-30.0, 0.0),  # more negative = worse
+    "spike_rate": (0.0, 0.20),
+    "vel_disc_rate": (0.0, 0.40),
+    "dropout_rate": (0.0, 0.20),
+    "jitter_cv": (0.0, 0.50),
+    "action_entropy": (0.0, 6.0),  # higher = better
+    "contact_phase_fraction": (0.0, 0.50),  # higher = better
 }
 
 
@@ -71,8 +72,15 @@ def _normalize(fingerprint: dict[str, float]) -> np.ndarray:
 
 class OutcomeRecord:
     __slots__ = (
-        "record_id", "timestamp", "fingerprint", "predicted_score",
-        "actual_success_rate", "policy_family", "n_episodes", "dataset_name", "notes",
+        "record_id",
+        "timestamp",
+        "fingerprint",
+        "predicted_score",
+        "actual_success_rate",
+        "policy_family",
+        "n_episodes",
+        "dataset_name",
+        "notes",
     )
 
     def __init__(
@@ -99,15 +107,15 @@ class OutcomeRecord:
 
     def to_dict(self) -> dict:
         return {
-            "record_id":           self.record_id,
-            "timestamp":           self.timestamp,
-            "fingerprint":         self.fingerprint,
-            "predicted_score":     self.predicted_score,
+            "record_id": self.record_id,
+            "timestamp": self.timestamp,
+            "fingerprint": self.fingerprint,
+            "predicted_score": self.predicted_score,
             "actual_success_rate": self.actual_success_rate,
-            "policy_family":       self.policy_family,
-            "n_episodes":          self.n_episodes,
-            "dataset_name":        self.dataset_name,
-            "notes":               self.notes,
+            "policy_family": self.policy_family,
+            "n_episodes": self.n_episodes,
+            "dataset_name": self.dataset_name,
+            "notes": self.notes,
         }
 
     @classmethod
@@ -255,8 +263,7 @@ class OutcomeDatabase:
         weights /= weights.sum()
 
         emp_score = sum(
-            w * rec.actual_success_rate * 100.0
-            for (rec, _), w in zip(similar, weights)
+            w * rec.actual_success_rate * 100.0 for (rec, _), w in zip(similar, weights)
         )
 
         # Empirical weight: grows with match count and match closeness
@@ -286,6 +293,7 @@ class OutcomeDatabase:
             fp = rec.fingerprint
             # Feature: how far each metric is from its warning threshold (positive = over threshold)
             from calibra.predict import _THRESHOLDS
+
             row = []
             for key in _FINGERPRINT_KEYS:
                 val = fp.get(key)
@@ -307,6 +315,7 @@ class OutcomeDatabase:
 
         try:
             from numpy.linalg import lstsq
+
             coeffs, _, _, _ = lstsq(X, y, rcond=None)
             # Map to penalty scale (×100 to match the 0–100 score system)
             result = {}
@@ -320,10 +329,7 @@ class OutcomeDatabase:
         n = len(self._records)
         if n == 0:
             return "Outcome database: 0 records. Run `calibra predict --record-outcome` after training."
-        errors = [
-            abs(r.predicted_score / 100.0 - r.actual_success_rate)
-            for r in self._records
-        ]
+        errors = [abs(r.predicted_score / 100.0 - r.actual_success_rate) for r in self._records]
         mae = float(np.mean(errors)) * 100.0
         lines = [
             f"Outcome database: {n} record(s) at {self.path}",

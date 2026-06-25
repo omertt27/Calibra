@@ -1,4 +1,5 @@
 """Tests for the temporal stability analyzer."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -17,6 +18,7 @@ from calibra.schema.report import RiskLevel
 
 
 # ── unit tests: per-episode helpers ─────────────────────────────────────────
+
 
 class TestEpisodeJitterCV:
     def test_uniform_timing_returns_zero(self):
@@ -46,7 +48,7 @@ class TestEpisodeDropoutFraction:
     def test_known_dropout_fraction(self):
         # Insert a 5× gap at every 10th step → 10 out of 99 deltas
         ts = np.arange(100, dtype=float) * 0.1
-        ts[10] += 0.4   # create one large gap
+        ts[10] += 0.4  # create one large gap
         ts[20] += 0.4
         ep = _ep_with_timestamps(ts)
         frac = _episode_dropout_fraction(ep, k=3.0)
@@ -73,7 +75,7 @@ class TestEpisodeCameraLagStd:
         ep.obs_timestamps["camera_rgb"] = ep.timestamps + rng.normal(0, 0.025, 200)
         lag_std = _episode_camera_lag_std(ep, "camera_rgb")
         assert lag_std is not None
-        assert 0.018 < lag_std < 0.032   # ≈25ms ± tolerance
+        assert 0.018 < lag_std < 0.032  # ≈25ms ± tolerance
 
 
 class TestEpisodeMisalignment:
@@ -124,6 +126,7 @@ class TestBootstrapCI:
 
 
 # ── integration tests: TemporalAnalyzer end-to-end ──────────────────────────
+
 
 class TestTemporalAnalyzerClean:
     def test_clean_batch_all_ok(self, clean_batch):
@@ -176,15 +179,14 @@ class TestTemporalAnalyzerCameraLag:
         assert cam_flags, "Expected at least one camera_lag flag"
         # Fixture uses 50ms std, threshold is 20ms — should be CRITICAL
         assert cam_flags[0].level == RiskLevel.CRITICAL, (
-            f"Expected CRITICAL, got {cam_flags[0].level}; "
-            f"observed={cam_flags[0].observed}"
+            f"Expected CRITICAL, got {cam_flags[0].level}; observed={cam_flags[0].observed}"
         )
 
     def test_observed_unit_is_ms(self, cam_lag_batch):
         result = TemporalAnalyzer().analyze(cam_lag_batch)
         cam_flag = next(f for f in result.flags if "camera_lag" in f.metric)
         assert cam_flag.observed.unit == "ms"
-        assert cam_flag.observed.value > 10   # should be ~25ms
+        assert cam_flag.observed.value > 10  # should be ~25ms
 
 
 class TestTemporalAnalyzerMisalignment:
@@ -196,6 +198,7 @@ class TestTemporalAnalyzerMisalignment:
 
 
 # ── drift detection tests ────────────────────────────────────────────────────
+
 
 def _make_drift_episode(
     n_steps: int = 60,
@@ -224,16 +227,18 @@ def _make_drift_episode(
     # Shift physical activity by lag_frames to simulate render lag.
     if lag_frames != 0:
         shifted = np.roll(physical_activity, lag_frames)
-        shifted[:abs(lag_frames)] = 0.0
+        shifted[: abs(lag_frames)] = 0.0
     else:
         shifted = physical_activity.copy()
 
     # Create images where the (T-1,) diff signal ≈ shifted[1:]
     # by making each frame's mean proportional to the cumulative signal.
     img_means = np.cumsum(shifted) % 256  # scalar per frame
-    images = np.broadcast_to(
-        img_means[:, None, None, None], (n_steps, 16, 16, 3)
-    ).astype(np.float32).copy()
+    images = (
+        np.broadcast_to(img_means[:, None, None, None], (n_steps, 16, 16, 3))
+        .astype(np.float32)
+        .copy()
+    )
     # Add tiny noise so constant frames don't cause zero std.
     images += rng.random(images.shape).astype(np.float32) * 0.5
 
@@ -247,8 +252,7 @@ def _make_drift_episode(
 
 def _make_drift_batch(lag_frames: int = 0, n_ep: int = 5) -> EpisodeBatch:
     return EpisodeBatch(
-        episodes=[_make_drift_episode(lag_frames=lag_frames, ep_id=f"ep_{i}")
-                  for i in range(n_ep)],
+        episodes=[_make_drift_episode(lag_frames=lag_frames, ep_id=f"ep_{i}") for i in range(n_ep)],
         dataset_name="drift_test",
         format="hdf5",
         source_path="/tmp/drift.h5",
@@ -259,8 +263,9 @@ class TestTemporalAnalyzerDrift:
     def test_no_drift_skipped_without_images(self):
         """Batch with no image obs: drift check should silently skip (no flag)."""
         ep = _uniform_episode(60, 0.02)  # has camera_rgb (4×4) but no joint_vel
-        batch = EpisodeBatch(episodes=[ep] * 5, dataset_name="no_jv",
-                             format="hdf5", source_path="/tmp/x.h5")
+        batch = EpisodeBatch(
+            episodes=[ep] * 5, dataset_name="no_jv", format="hdf5", source_path="/tmp/x.h5"
+        )
         result = TemporalAnalyzer().analyze(batch)
         drift_flags = [f for f in result.flags if "drift" in f.metric]
         # 4×4 images are smaller than 8×8 threshold → skipped
@@ -276,8 +281,9 @@ class TestTemporalAnalyzerDrift:
             observations={"camera_rgb": rng.random((n, 16, 16, 3)).astype(np.float32)},
             actions=rng.random((n, 6)).astype(np.float32),
         )
-        batch = EpisodeBatch(episodes=[ep] * 5, dataset_name="no_jv",
-                             format="hdf5", source_path="/tmp/x.h5")
+        batch = EpisodeBatch(
+            episodes=[ep] * 5, dataset_name="no_jv", format="hdf5", source_path="/tmp/x.h5"
+        )
         result = TemporalAnalyzer().analyze(batch)
         drift_flags = [f for f in result.flags if "drift" in f.metric]
         assert drift_flags == [], "Should skip when joint_vel key is absent"
@@ -350,28 +356,32 @@ class TestTemporalAnalyzerPolicyHints:
 
 class TestTemporalAnalyzerEdgeCases:
     def test_empty_batch(self):
-        empty = EpisodeBatch(episodes=[], dataset_name="empty",
-                             format="hdf5", source_path="/tmp/x.h5")
+        empty = EpisodeBatch(
+            episodes=[], dataset_name="empty", format="hdf5", source_path="/tmp/x.h5"
+        )
         result = TemporalAnalyzer().analyze(empty)
         assert result.flags == []
         assert result.hints == []
 
     def test_single_episode_no_crash(self):
         ep = _uniform_episode(50, 0.1)
-        batch = EpisodeBatch(episodes=[ep], dataset_name="single",
-                             format="hdf5", source_path="/tmp/x.h5")
+        batch = EpisodeBatch(
+            episodes=[ep], dataset_name="single", format="hdf5", source_path="/tmp/x.h5"
+        )
         result = TemporalAnalyzer().analyze(batch)
         assert result.analyzer_name == "temporal_stability"
 
     def test_very_short_episodes_handled(self):
         eps = [_uniform_episode(2, 0.1, ep_id=str(i)) for i in range(5)]
-        batch = EpisodeBatch(episodes=eps, dataset_name="short",
-                             format="hdf5", source_path="/tmp/x.h5")
+        batch = EpisodeBatch(
+            episodes=eps, dataset_name="short", format="hdf5", source_path="/tmp/x.h5"
+        )
         result = TemporalAnalyzer().analyze(batch)
         assert result is not None
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
+
 
 def _uniform_episode(n: int, dt: float, ep_id: str = "ep_0") -> Episode:
     ts = np.arange(n, dtype=np.float64) * dt

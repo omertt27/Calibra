@@ -1,6 +1,7 @@
 """
 Analyzer base class. Every diagnostic module implements this contract.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

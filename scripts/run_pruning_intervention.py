@@ -10,6 +10,7 @@ Scientific Pruning Intervention Experiment: Demonstrating Causal Utility of Cali
    - Calibra Transition Novelty Pruning (Our new experimental strategy)
 4. Trains downstream World Models (MLP) on each pruned subset and evaluates global test generalization.
 """
+
 from __future__ import annotations
 
 import sys
@@ -21,11 +22,10 @@ import numpy as np
 _REPO = Path(__file__).parent.parent
 sys.path.insert(0, str(_REPO))
 
-from calibra.analyzers.latent_dynamics import LatentDynamicsAnalyzer
-from calibra.pipeline import Pipeline
-from calibra.pruning import CoresetSelector
-from calibra.schema.episode import EpisodeBatch
-from scripts.validate_world_model_observability import (
+from calibra.pipeline import Pipeline  # noqa: E402
+from calibra.pruning import CoresetSelector  # noqa: E402
+from calibra.schema.episode import EpisodeBatch  # noqa: E402
+from scripts.validate_world_model_observability import (  # noqa: E402
     DynamicsWorldModel,
     generate_ph_dataset,
     generate_mh_dataset,
@@ -34,27 +34,28 @@ from scripts.validate_world_model_observability import (
     evaluate_model,
 )
 
+
 def train_and_eval(batch: EpisodeBatch, X_test: np.ndarray, Y_test: np.ndarray) -> float:
     """Trains a DynamicsWorldModel on the batch and returns test R^2."""
     states_list = []
     actions_list = []
     next_states_list = []
-    
+
     for ep in batch.episodes:
         states_list.append(ep.observations["proprio"][:-1])
         actions_list.append(ep.actions[:-1])
         next_states_list.append(ep.observations["proprio"][1:])
-        
+
     S = np.concatenate(states_list, axis=0)
     A = np.concatenate(actions_list, axis=0)
     S_next = np.concatenate(next_states_list, axis=0)
-    
+
     X_train = np.concatenate([S, A], axis=1)
     Y_train = S_next - S
-    
+
     model = DynamicsWorldModel(state_dim=2, action_dim=2)
     model.fit(X_train, Y_train, epochs=250, lr=0.1)
-    
+
     return evaluate_model(model, X_test, Y_test)
 
 
@@ -68,12 +69,12 @@ def main():
     ph_pool = generate_ph_dataset(n_eps=10)
     mh_pool = generate_mh_dataset(n_eps=10)
     mg_pool = generate_mg_dataset(n_eps=20)
-    
+
     combined_episodes = ph_pool.episodes + mh_pool.episodes + mg_pool.episodes
     pool_batch = EpisodeBatch(combined_episodes, "redundant_pool", "hdf5", "redundant_pool")
-    
+
     X_test, Y_test = get_test_set(n_samples=3000)
-    
+
     # 2. Evaluate performance on the FULL unpruned dataset as a reference
     print("Training on FULL dataset (100% data, 40 episodes)...")
     full_perf = train_and_eval(pool_batch, X_test, Y_test)
@@ -82,20 +83,20 @@ def main():
     # Set budget constraint
     keep_fraction = 0.25  # Keep 10 out of 40 episodes
     k_target = 10
-    
+
     # 3. Strategy A: Random Pruning (averaged over 5 seeds)
     print("\nEvaluating Strategy A: Random Pruning (Baseline)...")
     rng = np.random.default_rng(42)
     random_perfs = []
-    
+
     for seed in range(5):
         shuffled = list(combined_episodes)
         rng.shuffle(shuffled)
         random_batch = EpisodeBatch(shuffled[:k_target], f"random_{seed}", "hdf5", f"random_{seed}")
         perf = train_and_eval(random_batch, X_test, Y_test)
         random_perfs.append(perf)
-        print(f"  - Run {seed+1} Test R^2: {perf:.4f}")
-        
+        print(f"  - Run {seed + 1} Test R^2: {perf:.4f}")
+
     mean_random_perf = float(np.mean(random_perfs))
     print(f"  -> Average Random Test R^2: {mean_random_perf:.4f}")
 
@@ -114,9 +115,13 @@ def main():
         min_ldlj=-1000.0,
     )
     div_result = div_selector.select(pool_batch, report)
-    div_kept_eps = [ep for ep in combined_episodes if ep.metadata.episode_id in div_result.keep_episode_ids]
-    div_batch = EpisodeBatch(div_kept_eps[:k_target], "diversity_coreset", "hdf5", "diversity_coreset")
-    
+    div_kept_eps = [
+        ep for ep in combined_episodes if ep.metadata.episode_id in div_result.keep_episode_ids
+    ]
+    div_batch = EpisodeBatch(
+        div_kept_eps[:k_target], "diversity_coreset", "hdf5", "diversity_coreset"
+    )
+
     div_perf = train_and_eval(div_batch, X_test, Y_test)
     print(f"  -> Diversity Pruned Test R^2: {div_perf:.4f}")
 
@@ -131,14 +136,20 @@ def main():
         min_ldlj=-1000.0,
     )
     novelty_result = novelty_selector.select(pool_batch, report)
-    novelty_kept_eps = [ep for ep in combined_episodes if ep.metadata.episode_id in novelty_result.keep_episode_ids]
-    novelty_batch = EpisodeBatch(novelty_kept_eps[:k_target], "novelty_coreset", "hdf5", "novelty_coreset")
-    
+    novelty_kept_eps = [
+        ep for ep in combined_episodes if ep.metadata.episode_id in novelty_result.keep_episode_ids
+    ]
+    novelty_batch = EpisodeBatch(
+        novelty_kept_eps[:k_target], "novelty_coreset", "hdf5", "novelty_coreset"
+    )
+
     novelty_perf = train_and_eval(novelty_batch, X_test, Y_test)
     print(f"  -> Transition Novelty Pruned Test R^2: {novelty_perf:.4f}")
 
     # 6. Generate Markdown Artifact
-    artifact_path = Path("/Users/omer/.gemini/antigravity-cli/brain/756f676d-5cec-4126-9311-8d2fb3a9b0af/robomimic_pruning_intervention.md")
+    artifact_path = Path(
+        "/Users/omer/.gemini/antigravity-cli/brain/756f676d-5cec-4126-9311-8d2fb3a9b0af/robomimic_pruning_intervention.md"
+    )
 
     markdown_content = f"""# Pruning Intervention Experiment: Demonstrating Causal Utility
 

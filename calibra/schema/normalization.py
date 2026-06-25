@@ -35,6 +35,7 @@ Keys are matched in order:
 Only observation keys are normalized here.  Action column names are treated as
 opaque vectors and are not renamed.
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -53,73 +54,73 @@ import numpy as np
 
 _DEFAULT_MAPPING: dict[str, str] = {
     # ── LeRobot image column names ────────────────────────────────────────────
-    "images.top":           "camera_top",
-    "images.wrist":         "camera_wrist",
-    "images.wrist_cam":     "camera_wrist",
-    "images.overhead":      "camera_overhead",
-    "images.side":          "camera_side",
-    "images.front":         "camera_front",
-    "images.camera0":       "camera_0",
-    "images.camera1":       "camera_1",
-    "images.camera2":       "camera_2",
-    "images.camera3":       "camera_3",
+    "images.top": "camera_top",
+    "images.wrist": "camera_wrist",
+    "images.wrist_cam": "camera_wrist",
+    "images.overhead": "camera_overhead",
+    "images.side": "camera_side",
+    "images.front": "camera_front",
+    "images.camera0": "camera_0",
+    "images.camera1": "camera_1",
+    "images.camera2": "camera_2",
+    "images.camera3": "camera_3",
     # Generic camera aliases (observation.image.* prefix already stripped)
-    "image":                "camera_main",
-    "image.camera0":        "camera_0",
-    "image.camera1":        "camera_1",
-    "image.top":            "camera_top",
-    "image.wrist":          "camera_wrist",
+    "image": "camera_main",
+    "image.camera0": "camera_0",
+    "image.camera1": "camera_1",
+    "image.top": "camera_top",
+    "image.wrist": "camera_wrist",
     # ── Proprioception / state ────────────────────────────────────────────────
-    "state":                "state",
-    "proprio":              "state",
-    "proprio_state":        "state",
-    "proprioception":       "state",
-    "obs/proprio":          "state",
+    "state": "state",
+    "proprio": "state",
+    "proprio_state": "state",
+    "proprioception": "state",
+    "obs/proprio": "state",
     # ── Joint-level quantities ────────────────────────────────────────────────
-    "joint_pos":            "joint_position",
-    "joint_position":       "joint_position",
-    "joint_positions":      "joint_position",
-    "joint_vel":            "joint_velocity",
-    "joint_velocity":       "joint_velocity",
-    "joint_velocities":     "joint_velocity",
-    "joint_torque":         "joint_torque",
-    "joint_torques":        "joint_torque",
+    "joint_pos": "joint_position",
+    "joint_position": "joint_position",
+    "joint_positions": "joint_position",
+    "joint_vel": "joint_velocity",
+    "joint_velocity": "joint_velocity",
+    "joint_velocities": "joint_velocity",
+    "joint_torque": "joint_torque",
+    "joint_torques": "joint_torque",
     # ── End-effector ─────────────────────────────────────────────────────────
-    "eef_pos":              "eef_position",
-    "eef_position":         "eef_position",
-    "eef_vel":              "eef_velocity",
-    "eef_velocity":         "eef_velocity",
-    "eef_quat":             "eef_orientation",
-    "eef_orientation":      "eef_orientation",
+    "eef_pos": "eef_position",
+    "eef_position": "eef_position",
+    "eef_vel": "eef_velocity",
+    "eef_velocity": "eef_velocity",
+    "eef_quat": "eef_orientation",
+    "eef_orientation": "eef_orientation",
     # ── Robomimic / Isaac Lab conventions ────────────────────────────────────
-    "robot0_eef_pos":       "eef_position",
-    "robot0_eef_quat":      "eef_orientation",
-    "robot0_gripper_qpos":  "gripper_state",
-    "robot0_joint_pos":     "joint_position",
-    "robot0_joint_vel":     "joint_velocity",
-    "obs/camera_rgb":       "camera_main",
-    "obs/proprio_state":    "state",
+    "robot0_eef_pos": "eef_position",
+    "robot0_eef_quat": "eef_orientation",
+    "robot0_gripper_qpos": "gripper_state",
+    "robot0_joint_pos": "joint_position",
+    "robot0_joint_vel": "joint_velocity",
+    "obs/camera_rgb": "camera_main",
+    "obs/proprio_state": "state",
     # ── Depth ────────────────────────────────────────────────────────────────
-    "depth":                "camera_depth",
-    "depth_image":          "camera_depth",
-    "images.depth":         "camera_depth",
+    "depth": "camera_depth",
+    "depth_image": "camera_depth",
+    "images.depth": "camera_depth",
     # ── RLDS / Bridge conventions ────────────────────────────────────────────
-    "image_primary":        "camera_main",
-    "image_wrist":          "camera_wrist",
+    "image_primary": "camera_main",
+    "image_wrist": "camera_wrist",
     # ── Gripper ──────────────────────────────────────────────────────────────
-    "gripper":              "gripper_state",
-    "gripper_state":        "gripper_state",
-    "gripper_pos":          "gripper_state",
+    "gripper": "gripper_state",
+    "gripper_state": "gripper_state",
+    "gripper_pos": "gripper_state",
 }
 
 # ── prefix-strip rules ────────────────────────────────────────────────────────
 # Applied when exact-match lookup fails. Pattern → replacement prefix.
 # The replacement is prepended to the remainder of the key (after stripping prefix).
 _PREFIX_RULES: list[tuple[str, str]] = [
-    ("images.",   "camera_"),
-    ("image.",    "camera_"),
-    ("obs/",      ""),
-    ("robot0_",   ""),
+    ("images.", "camera_"),
+    ("image.", "camera_"),
+    ("obs/", ""),
+    ("robot0_", ""),
 ]
 
 
@@ -152,6 +153,7 @@ def normalize_obs_keys(
         canonical = _resolve(raw_key, mapping)
         if canonical in result:
             import warnings
+
             warnings.warn(
                 f"normalize_obs_keys: two raw keys map to '{canonical}' "
                 f"— keeping last value. Provide extra_mapping to resolve ambiguity.",
@@ -170,7 +172,7 @@ def _resolve(raw_key: str, mapping: dict[str, str]) -> str:
     # 2. Prefix-strip rules
     for prefix, replacement in _PREFIX_RULES:
         if raw_key.startswith(prefix):
-            remainder = raw_key[len(prefix):]
+            remainder = raw_key[len(prefix) :]
             candidate = replacement + remainder
             # Check the remapped candidate against the mapping too
             if candidate in mapping:

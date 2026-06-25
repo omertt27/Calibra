@@ -1,8 +1,7 @@
 """Tests for calibra.card — HuggingFace dataset quality card generation."""
+
 from __future__ import annotations
 
-import json
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -20,6 +19,7 @@ from calibra.schema.report import (
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
+
 def _make_report(
     n_episodes: int = 50,
     n_samples: int = 25000,
@@ -35,23 +35,27 @@ def _make_report(
 ) -> DiagnosticReport:
     flags = []
     for _ in range(n_crit_flags):
-        flags.append(RiskFlag(
-            level=RiskLevel.CRITICAL,
-            metric="spike_rate",
-            observed=ObservedValue(value=spike_rate),
-            threshold=0.05,
-            interpretation="high spike rate",
-            implication="train carefully",
-        ))
+        flags.append(
+            RiskFlag(
+                level=RiskLevel.CRITICAL,
+                metric="spike_rate",
+                observed=ObservedValue(value=spike_rate),
+                threshold=0.05,
+                interpretation="high spike rate",
+                implication="train carefully",
+            )
+        )
     for _ in range(n_warn_flags):
-        flags.append(RiskFlag(
-            level=RiskLevel.WARNING,
-            metric="ldlj",
-            observed=ObservedValue(value=ldlj),
-            threshold=-10.0,
-            interpretation="moderate jerk",
-            implication="consider pruning",
-        ))
+        flags.append(
+            RiskFlag(
+                level=RiskLevel.WARNING,
+                metric="ldlj",
+                observed=ObservedValue(value=ldlj),
+                threshold=-10.0,
+                interpretation="moderate jerk",
+                implication="consider pruning",
+            )
+        )
 
     ar_smoothness = AnalyzerResult(
         analyzer_name="control_smoothness",
@@ -92,6 +96,7 @@ def _make_report(
 
 # ── _metric_row ───────────────────────────────────────────────────────────────
 
+
 class TestMetricRow:
     def test_pass_higher_worse(self):
         row = _metric_row("Spike rate", 0.01, "fraction", warn=0.02, crit=0.05)
@@ -125,6 +130,7 @@ class TestMetricRow:
 
 
 # ── generate_card ─────────────────────────────────────────────────────────────
+
 
 class TestGenerateCard:
     def test_returns_string(self):
@@ -186,8 +192,12 @@ class TestGenerateCard:
 
     def test_no_deductions_section_for_clean_data(self):
         report = _make_report(
-            spike_rate=0.005, vel_disc=0.005, ldlj=-3.0,
-            action_entropy=4.0, n_crit_flags=0, n_warn_flags=0
+            spike_rate=0.005,
+            vel_disc=0.005,
+            ldlj=-3.0,
+            action_entropy=4.0,
+            n_crit_flags=0,
+            n_warn_flags=0,
         )
         card = generate_card(report)
         assert "Quality Issues" not in card
@@ -199,6 +209,7 @@ class TestGenerateCard:
 
     def test_version_shown(self):
         from calibra import __version__
+
         report = _make_report()
         card = generate_card(report)
         assert __version__ in card
@@ -216,6 +227,7 @@ class TestGenerateCard:
 
 # ── generate_yaml_frontmatter ─────────────────────────────────────────────────
 
+
 class TestGenerateYamlFrontmatter:
     def test_certified_true_no_crits(self):
         report = _make_report(n_crit_flags=0)
@@ -229,6 +241,7 @@ class TestGenerateYamlFrontmatter:
 
     def test_version_in_yaml(self):
         from calibra import __version__
+
         report = _make_report()
         yaml = generate_yaml_frontmatter(report)
         assert __version__ in yaml
@@ -241,9 +254,11 @@ class TestGenerateYamlFrontmatter:
 
 # ── run_card CLI ──────────────────────────────────────────────────────────────
 
+
 class TestRunCardCLI:
     def _make_batch(self, n=20):
         from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
+
         rng = np.random.default_rng(0)
         episodes = [
             Episode(
@@ -264,14 +279,20 @@ class TestRunCardCLI:
     def _clean_report(self):
         """A report with no critical or warning flags."""
         return _make_report(
-            spike_rate=0.005, vel_disc=0.005, ldlj=-4.0,
-            dropout=0.0, jitter_cv=0.001, action_entropy=4.0,
+            spike_rate=0.005,
+            vel_disc=0.005,
+            ldlj=-4.0,
+            dropout=0.0,
+            jitter_cv=0.001,
+            action_entropy=4.0,
             contact_fraction=0.20,
-            n_crit_flags=0, n_warn_flags=0,
+            n_crit_flags=0,
+            n_warn_flags=0,
         )
 
     def test_run_card_prints_markdown(self, capsys, monkeypatch):
         from calibra.card import run_card
+
         clean = self._clean_report()
         with patch("calibra.card.Pipeline") as mock_pl:
             mock_pl.return_value.analyze_path.return_value = clean
@@ -283,6 +304,7 @@ class TestRunCardCLI:
 
     def test_run_card_writes_file(self, tmp_path, monkeypatch):
         from calibra.card import run_card
+
         clean = self._clean_report()
         out_file = tmp_path / "card.md"
         with patch("calibra.card.Pipeline") as mock_pl:
@@ -294,6 +316,7 @@ class TestRunCardCLI:
 
     def test_run_card_exit_0_clean(self, monkeypatch):
         from calibra.card import run_card
+
         clean = self._clean_report()
         with patch("calibra.card.Pipeline") as mock_pl:
             mock_pl.return_value.analyze_path.return_value = clean
@@ -303,7 +326,6 @@ class TestRunCardCLI:
 
     def test_run_card_exit_1_critical(self, monkeypatch):
         from calibra.card import run_card
-        from calibra.pipeline import Pipeline
         import calibra.ingestion.registry as registry
         from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 

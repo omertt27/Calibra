@@ -29,6 +29,7 @@ The gripper dimension (typically the last column) is excluded from all
 smoothness computations because it is binary/discrete and would
 artificially inflate jerk. Use `gripper_dims` to override.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -45,19 +46,19 @@ from calibra.schema.report import (
     RiskFlag,
     RiskLevel,
 )
-from calibra.analyzers.temporal import _bootstrap_ci   # reuse bootstrap helper
+from calibra.analyzers.temporal import _bootstrap_ci  # reuse bootstrap helper
 
 # ── thresholds ───────────────────────────────────────────────────────────────
 
-_LDLJ_WARNING  = -10.0   # below this → concerning
+_LDLJ_WARNING = -10.0  # below this → concerning
 _LDLJ_CRITICAL = -15.0
 
-_JERK_SPIKE_WARNING  = 0.02   # 2% of steps
+_JERK_SPIKE_WARNING = 0.02  # 2% of steps
 _JERK_SPIKE_CRITICAL = 0.05
 
-_VEL_DISC_THRESHOLD = 0.20   # Δv > 20% of v_max counts as a discontinuity
-_VEL_DISC_WARNING   = 0.02
-_VEL_DISC_CRITICAL  = 0.05
+_VEL_DISC_THRESHOLD = 0.20  # Δv > 20% of v_max counts as a discontinuity
+_VEL_DISC_WARNING = 0.02
+_VEL_DISC_CRITICAL = 0.05
 
 # Action-state divergence: mean L2 norm of (action_t - state_t).
 # Only computed when episode.observations contains a key that normalizes
@@ -86,8 +87,8 @@ _VEL_DISC_CRITICAL  = 0.05
 #
 # NOTE: thresholds still need hardware BridgeData V2 / DROID validation
 # before the WARNING boundary is considered well-calibrated.
-_ACT_STATE_DIV_WARNING  = 0.15   # real-hardware tracking error falls below this
-_ACT_STATE_DIV_CRITICAL = 0.35   # only planner waypoint datasets reach this
+_ACT_STATE_DIV_WARNING = 0.15  # real-hardware tracking error falls below this
+_ACT_STATE_DIV_CRITICAL = 0.35  # only planner waypoint datasets reach this
 
 # ── scripted motion signature thresholds ─────────────────────────────────────
 #
@@ -110,7 +111,7 @@ _ACT_STATE_DIV_CRITICAL = 0.35   # only planner waypoint datasets reach this
 # are elevated), so the heuristic is only applied when action_type="position".
 #
 # Empirical separating threshold (leaves 3σ margin on both sides):
-_SCRIPTED_SIGNATURE_SPIKE_MIN   = 0.10   # >10% spike rate
+_SCRIPTED_SIGNATURE_SPIKE_MIN = 0.10  # >10% spike rate
 _SCRIPTED_SIGNATURE_VEL_DISC_MAX = 0.015  # <1.5% vel_disc rate
 
 
@@ -134,22 +135,22 @@ class ControlSmoothnessAnalyzer(Analyzer):
     n_bootstrap, ci_level : bootstrap CI parameters.
     """
 
-    action_type:      str         = "position"
-    gripper_dims:     list[int]   = field(default_factory=lambda: [-1])
-    jerk_spike_k:     float       = 5.0
-    ldlj_warning:     float       = _LDLJ_WARNING
-    ldlj_critical:    float       = _LDLJ_CRITICAL
-    jerk_spike_warning:  float    = _JERK_SPIKE_WARNING
-    jerk_spike_critical: float    = _JERK_SPIKE_CRITICAL
-    vel_disc_threshold:  float    = _VEL_DISC_THRESHOLD
-    vel_disc_warning:    float    = _VEL_DISC_WARNING
-    vel_disc_critical:   float    = _VEL_DISC_CRITICAL
-    act_state_div_warning:  float = _ACT_STATE_DIV_WARNING
+    action_type: str = "position"
+    gripper_dims: list[int] = field(default_factory=lambda: [-1])
+    jerk_spike_k: float = 5.0
+    ldlj_warning: float = _LDLJ_WARNING
+    ldlj_critical: float = _LDLJ_CRITICAL
+    jerk_spike_warning: float = _JERK_SPIKE_WARNING
+    jerk_spike_critical: float = _JERK_SPIKE_CRITICAL
+    vel_disc_threshold: float = _VEL_DISC_THRESHOLD
+    vel_disc_warning: float = _VEL_DISC_WARNING
+    vel_disc_critical: float = _VEL_DISC_CRITICAL
+    act_state_div_warning: float = _ACT_STATE_DIV_WARNING
     act_state_div_critical: float = _ACT_STATE_DIV_CRITICAL
-    scripted_spike_min:     float = _SCRIPTED_SIGNATURE_SPIKE_MIN
-    scripted_vel_disc_max:  float = _SCRIPTED_SIGNATURE_VEL_DISC_MAX
-    n_bootstrap:      int         = 1000
-    ci_level:         float       = 0.95
+    scripted_spike_min: float = _SCRIPTED_SIGNATURE_SPIKE_MIN
+    scripted_vel_disc_max: float = _SCRIPTED_SIGNATURE_VEL_DISC_MAX
+    n_bootstrap: int = 1000
+    ci_level: float = 0.95
 
     @property
     def name(self) -> str:
@@ -202,24 +203,26 @@ class ControlSmoothnessAnalyzer(Analyzer):
                 + " Downgraded from CRITICAL: scripted motion signature detected — "
                 "high tracking error is expected from planner waypoint transitions."
             )
-            downgraded = div_flag.model_copy(update={
-                "level": RiskLevel.WARNING,
-                "interpretation": new_interp,
-                "implication": (
-                    "Scripted planner dataset with large waypoint gaps. "
-                    "Verify normalisation and coordinate frames. "
-                    "Consider whether the planner targets represent reachable states."
-                ),
-            })
+            downgraded = div_flag.model_copy(
+                update={
+                    "level": RiskLevel.WARNING,
+                    "interpretation": new_interp,
+                    "implication": (
+                        "Scripted planner dataset with large waypoint gaps. "
+                        "Verify normalisation and coordinate frames. "
+                        "Consider whether the planner targets represent reachable states."
+                    ),
+                }
+            )
             flags = [downgraded if f is div_flag else f for f in flags]
 
         hints = self._policy_hints(flags, policy_family, raw)
 
         # Per-episode arrays for Phase 2 comparison/curation (convention: "per_episode_<key>").
-        raw["per_episode_ldlj"]               = ldlj_raw.get("episode_values", [])
-        raw["per_episode_spike_rate"]         = spike_raw.get("episode_values", [])
-        raw["per_episode_vel_disc_rate"]      = disc_raw.get("episode_values", [])
-        raw["per_episode_act_state_div"]      = div_raw.get("episode_values", []) if div_raw else []
+        raw["per_episode_ldlj"] = ldlj_raw.get("episode_values", [])
+        raw["per_episode_spike_rate"] = spike_raw.get("episode_values", [])
+        raw["per_episode_vel_disc_rate"] = disc_raw.get("episode_values", [])
+        raw["per_episode_act_state_div"] = div_raw.get("episode_values", []) if div_raw else []
 
         return AnalyzerResult(
             analyzer_name=self.name,
@@ -231,8 +234,9 @@ class ControlSmoothnessAnalyzer(Analyzer):
     # ── metric: LDLJ ────────────────────────────────────────────────────────
 
     def _check_ldlj(self, batch: EpisodeBatch) -> tuple[RiskFlag, dict]:
-        ep_values = [_episode_ldlj(ep, self.action_type, self._active_dims(ep))
-                     for ep in batch.episodes]
+        ep_values = [
+            _episode_ldlj(ep, self.action_type, self._active_dims(ep)) for ep in batch.episodes
+        ]
         values = [v for v in ep_values if v is not None]
 
         if not values:
@@ -242,8 +246,13 @@ class ControlSmoothnessAnalyzer(Analyzer):
 
         arr = np.array(values)
         stat, lo, hi = _bootstrap_ci(arr, np.mean, self.n_bootstrap, self.ci_level)
-        raw = {"mean_ldlj": float(stat), "ci_lower": float(lo), "ci_upper": float(hi),
-               "n_episodes": len(values), "episode_values": ep_values}
+        raw = {
+            "mean_ldlj": float(stat),
+            "ci_lower": float(lo),
+            "ci_upper": float(hi),
+            "n_episodes": len(values),
+            "episode_values": ep_values,
+        }
 
         level = _threshold_level_lower(stat, self.ldlj_warning, self.ldlj_critical)
 
@@ -251,8 +260,13 @@ class ControlSmoothnessAnalyzer(Analyzer):
             return RiskFlag(
                 level=RiskLevel.OK,
                 metric="ldlj",
-                observed=ObservedValue(value=stat, ci_lower=lo, ci_upper=hi,
-                                       ci_level=self.ci_level, ci_method="bootstrap"),
+                observed=ObservedValue(
+                    value=stat,
+                    ci_lower=lo,
+                    ci_upper=hi,
+                    ci_level=self.ci_level,
+                    ci_method="bootstrap",
+                ),
                 threshold=self.ldlj_warning,
                 interpretation="Action trajectories are smooth (LDLJ within threshold).",
                 implication="No smoothness risk detected.",
@@ -261,8 +275,9 @@ class ControlSmoothnessAnalyzer(Analyzer):
         return RiskFlag(
             level=level,
             metric="ldlj",
-            observed=ObservedValue(value=stat, ci_lower=lo, ci_upper=hi,
-                                   ci_level=self.ci_level, ci_method="bootstrap"),
+            observed=ObservedValue(
+                value=stat, ci_lower=lo, ci_upper=hi, ci_level=self.ci_level, ci_method="bootstrap"
+            ),
             threshold=self.ldlj_warning,
             interpretation=(
                 f"Mean LDLJ = {stat:.2f} across {len(values)} episodes "
@@ -281,9 +296,12 @@ class ControlSmoothnessAnalyzer(Analyzer):
     # ── metric: jerk spikes ──────────────────────────────────────────────────
 
     def _check_jerk_spikes(self, batch: EpisodeBatch) -> tuple[RiskFlag, dict]:
-        ep_values = [_episode_jerk_spike_fraction(
-            ep, self.action_type, self._active_dims(ep), self.jerk_spike_k
-        ) for ep in batch.episodes]
+        ep_values = [
+            _episode_jerk_spike_fraction(
+                ep, self.action_type, self._active_dims(ep), self.jerk_spike_k
+            )
+            for ep in batch.episodes
+        ]
         fracs = [f for f in ep_values if f is not None]
 
         if not fracs:
@@ -293,9 +311,13 @@ class ControlSmoothnessAnalyzer(Analyzer):
 
         arr = np.array(fracs)
         stat, lo, hi = _bootstrap_ci(arr, np.mean, self.n_bootstrap, self.ci_level)
-        raw = {"mean_spike_fraction": float(stat), "ci_lower": float(lo),
-               "ci_upper": float(hi), "spike_k": self.jerk_spike_k,
-               "episode_values": ep_values}
+        raw = {
+            "mean_spike_fraction": float(stat),
+            "ci_lower": float(lo),
+            "ci_upper": float(hi),
+            "spike_k": self.jerk_spike_k,
+            "episode_values": ep_values,
+        }
 
         level = _threshold_level_upper(stat, self.jerk_spike_warning, self.jerk_spike_critical)
 
@@ -303,9 +325,14 @@ class ControlSmoothnessAnalyzer(Analyzer):
             return RiskFlag(
                 level=RiskLevel.OK,
                 metric="jerk_spike_rate",
-                observed=ObservedValue(value=stat, unit="fraction",
-                                       ci_lower=lo, ci_upper=hi,
-                                       ci_level=self.ci_level, ci_method="bootstrap"),
+                observed=ObservedValue(
+                    value=stat,
+                    unit="fraction",
+                    ci_lower=lo,
+                    ci_upper=hi,
+                    ci_level=self.ci_level,
+                    ci_method="bootstrap",
+                ),
                 threshold=self.jerk_spike_warning,
                 interpretation="Jerk spike rate is within acceptable range.",
                 implication="No jerk spike risk detected.",
@@ -315,9 +342,14 @@ class ControlSmoothnessAnalyzer(Analyzer):
         return RiskFlag(
             level=level,
             metric="jerk_spike_rate",
-            observed=ObservedValue(value=stat, unit="fraction",
-                                   ci_lower=lo, ci_upper=hi,
-                                   ci_level=self.ci_level, ci_method="bootstrap"),
+            observed=ObservedValue(
+                value=stat,
+                unit="fraction",
+                ci_lower=lo,
+                ci_upper=hi,
+                ci_level=self.ci_level,
+                ci_method="bootstrap",
+            ),
             threshold=self.jerk_spike_warning,
             interpretation=(
                 f"{stat:.1%} of steps have jerk > {self.jerk_spike_k}× "
@@ -335,22 +367,28 @@ class ControlSmoothnessAnalyzer(Analyzer):
     # ── metric: velocity discontinuities ─────────────────────────────────────
 
     def _check_vel_discontinuities(self, batch: EpisodeBatch) -> tuple[RiskFlag, dict]:
-        ep_values = [_episode_vel_disc_fraction(
-            ep, self.action_type, self._active_dims(ep), self.vel_disc_threshold
-        ) for ep in batch.episodes]
+        ep_values = [
+            _episode_vel_disc_fraction(
+                ep, self.action_type, self._active_dims(ep), self.vel_disc_threshold
+            )
+            for ep in batch.episodes
+        ]
         fracs = [f for f in ep_values if f is not None]
 
         if not fracs:
-            return self._skip_flag("velocity_discontinuity_rate",
-                                   "insufficient episode length"), {
+            return self._skip_flag("velocity_discontinuity_rate", "insufficient episode length"), {
                 "episode_values": ep_values
             }
 
         arr = np.array(fracs)
         stat, lo, hi = _bootstrap_ci(arr, np.mean, self.n_bootstrap, self.ci_level)
-        raw = {"mean_disc_fraction": float(stat), "ci_lower": float(lo),
-               "ci_upper": float(hi), "threshold": self.vel_disc_threshold,
-               "episode_values": ep_values}
+        raw = {
+            "mean_disc_fraction": float(stat),
+            "ci_lower": float(lo),
+            "ci_upper": float(hi),
+            "threshold": self.vel_disc_threshold,
+            "episode_values": ep_values,
+        }
 
         level = _threshold_level_upper(stat, self.vel_disc_warning, self.vel_disc_critical)
 
@@ -358,9 +396,14 @@ class ControlSmoothnessAnalyzer(Analyzer):
             return RiskFlag(
                 level=RiskLevel.OK,
                 metric="velocity_discontinuity_rate",
-                observed=ObservedValue(value=stat, unit="fraction",
-                                       ci_lower=lo, ci_upper=hi,
-                                       ci_level=self.ci_level, ci_method="bootstrap"),
+                observed=ObservedValue(
+                    value=stat,
+                    unit="fraction",
+                    ci_lower=lo,
+                    ci_upper=hi,
+                    ci_level=self.ci_level,
+                    ci_method="bootstrap",
+                ),
                 threshold=self.vel_disc_warning,
                 interpretation="Velocity profile is continuous — no sudden reversals.",
                 implication="No velocity discontinuity risk detected.",
@@ -370,9 +413,14 @@ class ControlSmoothnessAnalyzer(Analyzer):
         return RiskFlag(
             level=level,
             metric="velocity_discontinuity_rate",
-            observed=ObservedValue(value=stat, unit="fraction",
-                                   ci_lower=lo, ci_upper=hi,
-                                   ci_level=self.ci_level, ci_method="bootstrap"),
+            observed=ObservedValue(
+                value=stat,
+                unit="fraction",
+                ci_lower=lo,
+                ci_upper=hi,
+                ci_level=self.ci_level,
+                ci_method="bootstrap",
+            ),
             threshold=self.vel_disc_warning,
             interpretation=(
                 f"{stat:.1%} of steps show velocity change > "
@@ -419,13 +467,12 @@ class ControlSmoothnessAnalyzer(Analyzer):
             return None
 
         spike_rate = spike_raw.get("mean_spike_fraction")
-        vel_disc   = disc_raw.get("mean_disc_fraction")
+        vel_disc = disc_raw.get("mean_disc_fraction")
 
         if spike_rate is None or vel_disc is None:
             return None
 
-        if not (spike_rate > self.scripted_spike_min
-                and vel_disc < self.scripted_vel_disc_max):
+        if not (spike_rate > self.scripted_spike_min and vel_disc < self.scripted_vel_disc_max):
             return None
 
         return RiskFlag(
@@ -503,8 +550,7 @@ class ControlSmoothnessAnalyzer(Analyzer):
             for key in _STATE_KEYS:
                 if key in ep.observations:
                     candidate = ep.observations[key]
-                    if (candidate.ndim == 2
-                            and candidate.shape == ep.actions.shape):
+                    if candidate.ndim == 2 and candidate.shape == ep.actions.shape:
                         state_arr = candidate
                         break
 
@@ -522,7 +568,7 @@ class ControlSmoothnessAnalyzer(Analyzer):
 
         valid = [v for v in ep_values if v is not None]
         if not valid or n_skipped == batch.n_episodes:
-            return None, None   # metric silently skipped — no paired state obs
+            return None, None  # metric silently skipped — no paired state obs
 
         arr = np.array(valid)
         stat = float(np.mean(arr))
@@ -578,13 +624,15 @@ class ControlSmoothnessAnalyzer(Analyzer):
         flag = RiskFlag(
             level=level,
             metric="action_state_divergence",
-            observed=ObservedValue(value=stat, ci_lower=lo, ci_upper=hi,
-                                   ci_level=0.95, ci_method="percentile"),
+            observed=ObservedValue(
+                value=stat, ci_lower=lo, ci_upper=hi, ci_level=0.95, ci_method="percentile"
+            ),
             threshold=self.act_state_div_warning,
             interpretation=interp,
             implication=impl,
-            affected_fraction=float(len([v for v in valid
-                                         if v > self.act_state_div_warning]) / len(valid)),
+            affected_fraction=float(
+                len([v for v in valid if v > self.act_state_div_warning]) / len(valid)
+            ),
         )
         return flag, raw
 
@@ -621,12 +669,14 @@ class ControlSmoothnessAnalyzer(Analyzer):
                     "blending with human demonstrations."
                 )
                 compatible = None
-            hints.append(CompatibilityHint(
-                policy_family="Diffusion Policy",
-                compatible=compatible,
-                explanation="Smooth demonstrations are important for diffusion score quality.",
-                caveats=caveats,
-            ))
+            hints.append(
+                CompatibilityHint(
+                    policy_family="Diffusion Policy",
+                    compatible=compatible,
+                    explanation="Smooth demonstrations are important for diffusion score quality.",
+                    caveats=caveats,
+                )
+            )
 
         if pf in ("act", "action chunking"):
             caveats = []
@@ -646,12 +696,14 @@ class ControlSmoothnessAnalyzer(Analyzer):
                         "the cross-attention mechanism will struggle."
                     )
                 compatible = None
-            hints.append(CompatibilityHint(
-                policy_family="ACT",
-                compatible=compatible,
-                explanation="ACT action chunks are sensitive to intra-chunk smoothness.",
-                caveats=caveats,
-            ))
+            hints.append(
+                CompatibilityHint(
+                    policy_family="ACT",
+                    compatible=compatible,
+                    explanation="ACT action chunks are sensitive to intra-chunk smoothness.",
+                    caveats=caveats,
+                )
+            )
 
         return hints
 
@@ -677,9 +729,8 @@ class ControlSmoothnessAnalyzer(Analyzer):
 
 # ── per-episode metric helpers ───────────────────────────────────────────────
 
-def _get_velocity(
-    ep: Episode, action_type: str, active_dims: list[int]
-) -> Optional[np.ndarray]:
+
+def _get_velocity(ep: Episode, action_type: str, active_dims: list[int]) -> Optional[np.ndarray]:
     """
     Return velocity array (T-k, D) for the active action dimensions.
     k depends on how many derivatives are needed to reach velocity.
@@ -705,15 +756,15 @@ def _get_velocity(
     elif action_type == "acceleration":
         if len(acts) < 2:
             return None
-        return np.cumsum(acts, axis=0) * dt   # integrate to get velocity
+        return np.cumsum(acts, axis=0) * dt  # integrate to get velocity
     else:
-        raise ValueError(f"Unknown action_type: {action_type!r}. "
-                         "Expected 'position', 'velocity', or 'acceleration'.")
+        raise ValueError(
+            f"Unknown action_type: {action_type!r}. "
+            "Expected 'position', 'velocity', or 'acceleration'."
+        )
 
 
-def _get_jerk(
-    vel: np.ndarray, dt: float, action_type: str
-) -> Optional[np.ndarray]:
+def _get_jerk(vel: np.ndarray, dt: float, action_type: str) -> Optional[np.ndarray]:
     """Differentiate velocity to reach jerk (2 more derivatives)."""
     if len(vel) < 3:
         return None
@@ -766,11 +817,11 @@ def _episode_ldlj(
     if v_max <= 1e-12:
         return None
 
-    jerk_sq_integral = float(np.sum(np.sum(jerk ** 2, axis=-1)) * dt)
+    jerk_sq_integral = float(np.sum(np.sum(jerk**2, axis=-1)) * dt)
     if jerk_sq_integral <= 0:
         return None
 
-    inner = (T ** 3 / v_max ** 2) * jerk_sq_integral
+    inner = (T**3 / v_max**2) * jerk_sq_integral
     if inner <= 0:
         return None
 
@@ -836,9 +887,8 @@ def _episode_vel_disc_fraction(
 
 # ── shared threshold helpers ─────────────────────────────────────────────────
 
-def _threshold_level_upper(
-    value: float, warning: float, critical: float
-) -> RiskLevel:
+
+def _threshold_level_upper(value: float, warning: float, critical: float) -> RiskLevel:
     """Higher value is worse (e.g. spike rate, dropout rate)."""
     if value >= critical:
         return RiskLevel.CRITICAL
@@ -847,9 +897,7 @@ def _threshold_level_upper(
     return RiskLevel.OK
 
 
-def _threshold_level_lower(
-    value: float, warning: float, critical: float
-) -> RiskLevel:
+def _threshold_level_lower(value: float, warning: float, critical: float) -> RiskLevel:
     """Lower value is worse (e.g. LDLJ — more negative is worse)."""
     if value <= critical:
         return RiskLevel.CRITICAL

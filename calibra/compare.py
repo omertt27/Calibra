@@ -12,6 +12,7 @@ matches work: "pusht" matches "pusht_velocity_command.json".
 
 hf:// URIs are supported and stripped before passing to the ingestion layer.
 """
+
 from __future__ import annotations
 
 import json
@@ -28,6 +29,7 @@ _WIDTH = 56
 
 
 # ── reference loading ─────────────────────────────────────────────────────────
+
 
 def find_reference(name: str) -> Path:
     candidates = sorted(_REFS_DIR.glob("*.json"))
@@ -59,6 +61,7 @@ def load_reference(name: str) -> dict:
 
 # ── metric extraction ─────────────────────────────────────────────────────────
 
+
 def _raw(report: DiagnosticReport, analyzer: str) -> dict:
     for r in report.analyzer_results:
         if r.analyzer_name == analyzer:
@@ -71,12 +74,12 @@ def metrics_from_report(report: DiagnosticReport) -> dict[str, Optional[float]]:
     s = _raw(report, "control_smoothness")
     c = _raw(report, "coverage_entropy")
     return {
-        "jitter_cv":      t.get("jitter",             {}).get("mean_cv"),
-        "dropout_rate":   t.get("dropout",            {}).get("mean_dropout_fraction"),
-        "ldlj":           s.get("ldlj",               {}).get("mean_ldlj"),
-        "spike_rate":     s.get("jerk_spikes",        {}).get("mean_spike_fraction"),
-        "vel_disc_rate":  s.get("vel_discontinuities",{}).get("mean_disc_fraction"),
-        "action_entropy": c.get("action_entropy",     {}).get("entropy_bits_per_dim"),
+        "jitter_cv": t.get("jitter", {}).get("mean_cv"),
+        "dropout_rate": t.get("dropout", {}).get("mean_dropout_fraction"),
+        "ldlj": s.get("ldlj", {}).get("mean_ldlj"),
+        "spike_rate": s.get("jerk_spikes", {}).get("mean_spike_fraction"),
+        "vel_disc_rate": s.get("vel_discontinuities", {}).get("mean_disc_fraction"),
+        "action_entropy": c.get("action_entropy", {}).get("entropy_bits_per_dim"),
     }
 
 
@@ -86,20 +89,19 @@ def metrics_from_reference(ref: dict) -> dict[str, Optional[float]]:
     s = agg.get("control_smoothness", {})
     c = agg.get("coverage_entropy", {})
     return {
-        "jitter_cv":      t.get("jitter.mean_cv"),
-        "dropout_rate":   t.get("dropout.mean_dropout_fraction"),
-        "ldlj":           s.get("ldlj.mean_ldlj"),
-        "spike_rate":     s.get("jerk_spikes.mean_spike_fraction"),
-        "vel_disc_rate":  s.get("vel_discontinuities.mean_disc_fraction"),
+        "jitter_cv": t.get("jitter.mean_cv"),
+        "dropout_rate": t.get("dropout.mean_dropout_fraction"),
+        "ldlj": s.get("ldlj.mean_ldlj"),
+        "spike_rate": s.get("jerk_spikes.mean_spike_fraction"),
+        "vel_disc_rate": s.get("vel_discontinuities.mean_disc_fraction"),
         "action_entropy": c.get("action_entropy.entropy_bits_per_dim"),
     }
 
 
 # ── interpretation rules ──────────────────────────────────────────────────────
 
-def _interp_vel_disc(
-    yours: float, ref: float, ref_mode: str, ref_label: str
-) -> tuple[str, str]:
+
+def _interp_vel_disc(yours: float, ref: float, ref_mode: str, ref_label: str) -> tuple[str, str]:
     """(interpretation_text, confidence_label)"""
     delta = yours - ref
     rel = abs(delta) / max(abs(ref), 1e-9)
@@ -126,8 +128,7 @@ def _interp_vel_disc(
     elif ref_mode == "position":
         if yours < 0.04:
             return (
-                f"Similar to {ref_label}. Expected for position-command "
-                "manipulation.",
+                f"Similar to {ref_label}. Expected for position-command manipulation.",
                 "HIGH",
             )
         elif yours > 0.10:
@@ -150,8 +151,7 @@ def _interp_vel_disc(
             return (f"Similar to {ref_label} (Δ {delta:+.1%}).", "MODERATE")
         elif delta > 0:
             return (
-                f"Rougher than {ref_label} (Δ {delta:+.1%}). "
-                "Investigate teleop quality.",
+                f"Rougher than {ref_label} (Δ {delta:+.1%}). Investigate teleop quality.",
                 "MODERATE",
             )
         else:
@@ -162,8 +162,12 @@ def _interp_vel_disc(
 
 
 def _interp_spike_rate(
-    yours: float, ref: float, ref_mode: str, ref_label: str,
-    yours_is_scripted: bool = False, ref_is_scripted: bool = False,
+    yours: float,
+    ref: float,
+    ref_mode: str,
+    ref_label: str,
+    yours_is_scripted: bool = False,
+    ref_is_scripted: bool = False,
 ) -> tuple[str, str]:
     delta = yours - ref
     rel = abs(delta) / max(abs(ref), 1e-9)
@@ -200,14 +204,19 @@ def _interp_spike_rate(
 
 
 def _interp_ldlj(
-    yours: float, ref: float, ref_mode: str, ref_label: str,
-    your_action_dim: Optional[int], ref_action_dim: Optional[int],
+    yours: float,
+    ref: float,
+    ref_mode: str,
+    ref_label: str,
+    your_action_dim: Optional[int],
+    ref_action_dim: Optional[int],
 ) -> tuple[str, str]:
     delta = yours - ref
     mode_mismatch = ref_mode not in ("unknown", "") and ref_mode != "unknown"
     dim_ratio = (
         (your_action_dim or 1) / max(ref_action_dim or 1, 1)
-        if your_action_dim and ref_action_dim else 1.0
+        if your_action_dim and ref_action_dim
+        else 1.0
     )
     warn = "  ⚠  LDLJ is unreliable for cross-mode or cross-frequency comparison.\n  "
     if abs(dim_ratio - 1.0) > 0.5 or mode_mismatch:
@@ -229,9 +238,7 @@ def _interp_ldlj(
         )
 
 
-def _interp_temporal(
-    yours: float, ref: float, key: str, ref_is_sim: bool
-) -> tuple[str, str]:
+def _interp_temporal(yours: float, ref: float, key: str, ref_is_sim: bool) -> tuple[str, str]:
     if ref_is_sim:
         return (
             "Reference is from a simulated dataset (machine-precision timestamps). "
@@ -257,8 +264,7 @@ def _interp_temporal(
             return ("Very low dropout. Clean frame delivery.", "MODERATE")
         elif yours < 0.05:
             return (
-                "Moderate dropout. Filter or interpolate affected episodes "
-                "before training.",
+                "Moderate dropout. Filter or interpolate affected episodes before training.",
                 "MODERATE",
             )
         else:
@@ -269,9 +275,7 @@ def _interp_temporal(
             )
 
 
-def _interp_entropy(
-    yours: float, ref: float, ref_label: str
-) -> tuple[str, str]:
+def _interp_entropy(yours: float, ref: float, ref_label: str) -> tuple[str, str]:
     if yours > 4.5:
         return (
             f"Healthy action-space coverage. Similar to {ref_label}.",
@@ -293,21 +297,26 @@ def _interp_entropy(
 
 # ── rendering ─────────────────────────────────────────────────────────────────
 
+
 def _pct(v: Optional[float]) -> str:
     return f"{v:.1%}" if v is not None else "n/a"
 
+
 def _f2(v: Optional[float]) -> str:
     return f"{v:.2f}" if v is not None else "n/a"
+
 
 def _sci(v: Optional[float]) -> str:
     if v is None:
         return "n/a"
     return f"{v:.2e}" if abs(v) < 0.001 else f"{v:.4f}"
 
+
 def _delta_arrow(delta: Optional[float]) -> str:
     if delta is None:
         return ""
     return "  ▲" if delta > 0 else "  ▼"
+
 
 def _section(
     title: str,
@@ -357,12 +366,14 @@ def render_comparison(
     ref_action_dim = meta.get("action_dim")
     ref_is_sim = _ref_is_sim(ref_metrics)
 
-    mode_tag = f"{ref_mode}-command" if ref_mode in ("velocity", "position") else "unknown control mode"
+    mode_tag = (
+        f"{ref_mode}-command" if ref_mode in ("velocity", "position") else "unknown control mode"
+    )
     dim_tag = f"{ref_action_dim}D" if ref_action_dim else ""
     header_ref = f"{ref_label}  ({mode_tag} · {dim_tag} · {ref_n_eps} episodes)"
 
     divider = "─" * _WIDTH
-    thick   = "━" * _WIDTH
+    thick = "━" * _WIDTH
     lines = [
         thick,
         f"calibra compare — {Path(your_path).name}  vs.  {ref_name}",
@@ -413,11 +424,19 @@ def render_comparison(
         interp, conf = _interp_vel_disc(y, r, ref_mode, ref_name)
     else:
         interp, conf = "Could not compute.", ""
-    lines.append(_section(
-        "VELOCITY DISCONTINUITY RATE",
-        _pct(y), _pct(r), ref_name, _pct(delta), _delta_arrow(delta),
-        interp, _claims.evidence_line("vel_disc_rate", ref_mode), conf,
-    ))
+    lines.append(
+        _section(
+            "VELOCITY DISCONTINUITY RATE",
+            _pct(y),
+            _pct(r),
+            ref_name,
+            _pct(delta),
+            _delta_arrow(delta),
+            interp,
+            _claims.evidence_line("vel_disc_rate", ref_mode),
+            conf,
+        )
+    )
     lines.append(divider)
 
     # 2. Jerk spike rate
@@ -425,17 +444,28 @@ def render_comparison(
     delta = (y - r) if y is not None and r is not None else None
     if y is not None and r is not None:
         interp, conf = _interp_spike_rate(
-            y, r, ref_mode, ref_name,
+            y,
+            r,
+            ref_mode,
+            ref_name,
             yours_is_scripted=yours_is_scripted,
             ref_is_scripted=ref_scripted,
         )
     else:
         interp, conf = "Could not compute.", ""
-    lines.append(_section(
-        "JERK SPIKE RATE",
-        _pct(y), _pct(r), ref_name, _pct(delta), _delta_arrow(delta),
-        interp, _claims.evidence_line("spike_rate", ref_mode), conf,
-    ))
+    lines.append(
+        _section(
+            "JERK SPIKE RATE",
+            _pct(y),
+            _pct(r),
+            ref_name,
+            _pct(delta),
+            _delta_arrow(delta),
+            interp,
+            _claims.evidence_line("spike_rate", ref_mode),
+            conf,
+        )
+    )
     lines.append(divider)
 
     # 3. LDLJ
@@ -447,11 +477,19 @@ def render_comparison(
         interp, conf = "Could not compute.", ""
     delta_str = f"{delta:+.2f}" if delta is not None else "n/a"
     arrow = ("  ▲ (smoother)" if delta > 0 else "  ▼ (rougher)") if delta is not None else ""
-    lines.append(_section(
-        "LDLJ",
-        _f2(y), _f2(r), ref_name, delta_str, arrow,
-        interp, _claims.evidence_line("ldlj", "any"), conf,
-    ))
+    lines.append(
+        _section(
+            "LDLJ",
+            _f2(y),
+            _f2(r),
+            ref_name,
+            delta_str,
+            arrow,
+            interp,
+            _claims.evidence_line("ldlj", "any"),
+            conf,
+        )
+    )
     lines.append(divider)
 
     # 4. Timestamp jitter
@@ -463,11 +501,19 @@ def render_comparison(
         interp, conf = "Could not compute.", ""
     ref_str = (_sci(r) + "  (sim)") if ref_is_sim else _sci(r)
     hw_class = "any" if ref_is_sim else "hardware"
-    lines.append(_section(
-        "TIMESTAMP JITTER CV",
-        _sci(y), ref_str, ref_name, _sci(delta), _delta_arrow(delta),
-        interp, _claims.evidence_line("jitter_cv", hw_class), conf,
-    ))
+    lines.append(
+        _section(
+            "TIMESTAMP JITTER CV",
+            _sci(y),
+            ref_str,
+            ref_name,
+            _sci(delta),
+            _delta_arrow(delta),
+            interp,
+            _claims.evidence_line("jitter_cv", hw_class),
+            conf,
+        )
+    )
     lines.append(divider)
 
     # 5. Timestamp dropout
@@ -478,11 +524,19 @@ def render_comparison(
     else:
         interp, conf = "Could not compute.", ""
     ref_str = (_pct(r) + "  (sim)") if ref_is_sim else _pct(r)
-    lines.append(_section(
-        "TIMESTAMP DROPOUT RATE",
-        _pct(y), ref_str, ref_name, _pct(delta), _delta_arrow(delta),
-        interp, _claims.evidence_line("dropout_rate", "any"), conf,
-    ))
+    lines.append(
+        _section(
+            "TIMESTAMP DROPOUT RATE",
+            _pct(y),
+            ref_str,
+            ref_name,
+            _pct(delta),
+            _delta_arrow(delta),
+            interp,
+            _claims.evidence_line("dropout_rate", "any"),
+            conf,
+        )
+    )
     lines.append(divider)
 
     # 6. Action entropy
@@ -492,13 +546,19 @@ def render_comparison(
         interp, conf = _interp_entropy(y, r or 0, ref_name)
     else:
         interp, conf = "Could not compute.", ""
-    lines.append(_section(
-        "ACTION ENTROPY",
-        f"{_f2(y)} bits/dim", f"{_f2(r)} bits/dim", ref_name,
-        f"{delta:+.2f} bits/dim" if delta is not None else "n/a",
-        _delta_arrow(delta),
-        interp, _claims.evidence_line("action_entropy", ref_mode), conf,
-    ))
+    lines.append(
+        _section(
+            "ACTION ENTROPY",
+            f"{_f2(y)} bits/dim",
+            f"{_f2(r)} bits/dim",
+            ref_name,
+            f"{delta:+.2f} bits/dim" if delta is not None else "n/a",
+            _delta_arrow(delta),
+            interp,
+            _claims.evidence_line("action_entropy", ref_mode),
+            conf,
+        )
+    )
     lines.append(thick)
 
     # ── Recommended Actions ───────────────────────────────────────────────────
@@ -530,7 +590,8 @@ def _recommended_actions(
     # Jerk outliers → prune specific episodes
     if outlier_episodes:
         jerk_eps = [
-            a for a in outlier_episodes
+            a
+            for a in outlier_episodes
             if any(m in ("spike_rate", "vel_disc_rate") for m in a.metrics)
         ]
         if jerk_eps:
@@ -592,10 +653,7 @@ def _ref_is_sim(ref_metrics: dict) -> bool:
 
 def _dataset_is_scripted(report: DiagnosticReport) -> bool:
     """True when the ControlSmoothnessAnalyzer emitted a scripted motion signature."""
-    return any(
-        f.metric == "motion_collection_signature"
-        for f in report.flags
-    )
+    return any(f.metric == "motion_collection_signature" for f in report.flags)
 
 
 def _ref_is_scripted(ref_metrics: dict[str, Optional[float]]) -> bool:
@@ -605,14 +663,12 @@ def _ref_is_scripted(ref_metrics: dict[str, Optional[float]]) -> bool:
       spike_rate > 10% AND vel_disc_rate < 1.5%.
     """
     spike = ref_metrics.get("spike_rate")
-    vd    = ref_metrics.get("vel_disc_rate")
-    return (
-        spike is not None and vd is not None
-        and spike > 0.10 and vd < 0.015
-    )
+    vd = ref_metrics.get("vel_disc_rate")
+    return spike is not None and vd is not None and spike > 0.10 and vd < 0.015
 
 
 # ── entry point ───────────────────────────────────────────────────────────────
+
 
 def run_compare(argv: list[str]) -> None:
     import argparse
@@ -626,32 +682,42 @@ def run_compare(argv: list[str]) -> None:
         prog="calibra compare",
         description="Compare a dataset against a named reference profile.",
     )
-    p.add_argument("path",      help="Path or Hub ID of dataset to analyse (hf:// URIs supported)")
+    p.add_argument("path", help="Path or Hub ID of dataset to analyse (hf:// URIs supported)")
     p.add_argument("reference", help="Reference name (e.g. 'pusht', 'aloha')")
-    p.add_argument("--format", "-f", metavar="FMT",
-                   choices=["hdf5", "lerobot", "rlds", "mcap"],
-                   help="Force a format adapter (default: auto-detect)")
-    p.add_argument("--gripper-dims", metavar="DIMS", default=None,
-                   help="Comma-separated gripper dimension indices to exclude "
-                        "from smoothness metrics (e.g. '6,13'). "
-                        "Use '' to disable gripper exclusion.")
-    p.add_argument("--no-recommendations", action="store_true",
-                   help="Skip the Recommended Actions section")
+    p.add_argument(
+        "--format",
+        "-f",
+        metavar="FMT",
+        choices=["hdf5", "lerobot", "rlds", "mcap"],
+        help="Force a format adapter (default: auto-detect)",
+    )
+    p.add_argument(
+        "--gripper-dims",
+        metavar="DIMS",
+        default=None,
+        help="Comma-separated gripper dimension indices to exclude "
+        "from smoothness metrics (e.g. '6,13'). "
+        "Use '' to disable gripper exclusion.",
+    )
+    p.add_argument(
+        "--no-recommendations", action="store_true", help="Skip the Recommended Actions section"
+    )
     args = p.parse_args(argv)
 
     # Strip hf:// prefix — the ingestion layer handles bare "org/repo" IDs.
     dataset_path = args.path
     if dataset_path.startswith("hf://"):
-        dataset_path = dataset_path[len("hf://"):]
+        dataset_path = dataset_path[len("hf://") :]
 
     # resolve reader
     reader = None
     if args.format:
         from calibra.__main__ import _get_reader
+
         reader = _get_reader(args.format)
 
     # resolve gripper dims
-    gripper_dims: list[int] = [-1]   # default: last dim
+    gripper_dims: list[int] = [-1]  # default: last dim
     if args.gripper_dims is not None:
         raw = args.gripper_dims.strip()
         gripper_dims = [int(x) for x in raw.split(",") if x.strip()] if raw else []
@@ -669,12 +735,14 @@ def run_compare(argv: list[str]) -> None:
     # run pipeline on user's dataset
     log(f"Loading {dataset_path!r} ...")
     try:
-        pipeline = Pipeline(analyzers=[
-            TemporalAnalyzer(),
-            ControlSmoothnessAnalyzer(gripper_dims=gripper_dims),
-            CoverageEntropyAnalyzer(),
-            TaskStructureAnalyzer(),
-        ])
+        pipeline = Pipeline(
+            analyzers=[
+                TemporalAnalyzer(),
+                ControlSmoothnessAnalyzer(gripper_dims=gripper_dims),
+                CoverageEntropyAnalyzer(),
+                TaskStructureAnalyzer(),
+            ]
+        )
         report: DiagnosticReport = pipeline.analyze_path(dataset_path, reader=reader)
     except Exception as e:
         print(f"error: {e}", file=sys.stderr)
@@ -685,15 +753,16 @@ def run_compare(argv: list[str]) -> None:
     outlier_episodes = None
     if not args.no_recommendations:
         from calibra.anomalies import find_outliers
+
         outlier_episodes = find_outliers(report)
 
     # extract metrics and render
     your_metrics = metrics_from_report(report)
-    ref_metrics  = metrics_from_reference(ref_data)
+    ref_metrics = metrics_from_reference(ref_data)
 
     # detect collection-method mismatch
     yours_is_scripted = _dataset_is_scripted(report)
-    ref_scripted      = _ref_is_scripted(ref_metrics)
+    ref_scripted = _ref_is_scripted(ref_metrics)
 
     # infer action dim from first episode via report metadata
     your_action_dim = None

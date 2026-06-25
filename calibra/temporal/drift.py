@@ -25,6 +25,7 @@ Threshold: GR00T N1 trains with camera + proprioception assumed synchronous.
 A lag of more than 2 frames at 50 Hz (= 40 ms) is significant enough to
 degrade multi-step action prediction.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -54,16 +55,12 @@ def compute_visual_activity(images: np.ndarray) -> np.ndarray:
     """
     imgs = np.asarray(images, dtype=np.float32)
     if imgs.ndim not in (3, 4):
-        raise ValueError(
-            f"images must be (T, H, W) or (T, H, W, C), got shape {imgs.shape}."
-        )
+        raise ValueError(f"images must be (T, H, W) or (T, H, W, C), got shape {imgs.shape}.")
     if len(imgs) < 2:
-        raise ValueError(
-            f"Need at least 2 frames, got {len(imgs)}."
-        )
-    diffs = np.abs(np.diff(imgs, axis=0))           # (T-1, H, W[, C])
+        raise ValueError(f"Need at least 2 frames, got {len(imgs)}.")
+    diffs = np.abs(np.diff(imgs, axis=0))  # (T-1, H, W[, C])
     spatial_axes = tuple(range(1, diffs.ndim))
-    return diffs.mean(axis=spatial_axes)             # (T-1,)
+    return diffs.mean(axis=spatial_axes)  # (T-1,)
 
 
 def estimate_sensor_command_latency(
@@ -104,7 +101,7 @@ def estimate_sensor_command_latency(
     the peak is at k = -L (negative).  The GR00T drift check uses abs(k).
     """
     p = np.asarray(physical_signal, dtype=np.float64).ravel()
-    v = np.asarray(visual_signal,   dtype=np.float64).ravel()
+    v = np.asarray(visual_signal, dtype=np.float64).ravel()
 
     # Align lengths — visual signal from frame diffs is one step shorter.
     n = min(len(p), len(v))
@@ -114,13 +111,13 @@ def estimate_sensor_command_latency(
     v_std = v.std()
 
     if p_std < 1e-12 or v_std < 1e-12:
-        return 0   # constant signal — cannot estimate lag
+        return 0  # constant signal — cannot estimate lag
 
     p_norm = (p - p.mean()) / p_std
     v_norm = (v - v.mean()) / v_std
 
     xcorr = np.correlate(p_norm, v_norm, mode="full")
-    lags   = np.arange(-(n - 1), n)
+    lags = np.arange(-(n - 1), n)
     return int(lags[int(np.argmax(xcorr))])
 
 
@@ -141,6 +138,6 @@ def estimate_visual_physics_lag(
     -------
     int — estimated lag in frames (positive = camera lags physics).
     """
-    visual_activity   = compute_visual_activity(images)              # (T-1,)
-    physical_activity = np.linalg.norm(joint_velocities, axis=1)    # (T,)
+    visual_activity = compute_visual_activity(images)  # (T-1,)
+    physical_activity = np.linalg.norm(joint_velocities, axis=1)  # (T,)
     return estimate_sensor_command_latency(physical_activity, visual_activity)

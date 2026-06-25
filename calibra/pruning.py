@@ -41,6 +41,7 @@ Usage
     print(result.summary())
     # → Write result.keep_episode_ids to a file, then filter your dataset.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -54,14 +55,15 @@ from calibra.comparison.comparator import _extract_ep_data
 
 # ── quality thresholds (conservative defaults) ────────────────────────────────
 
-_DEFAULT_MAX_SPIKE_RATE    = 0.10   # 10% of steps have jerk spikes
-_DEFAULT_MAX_VEL_DISC_RATE = 0.25   # 25% of steps are discontinuous
-_DEFAULT_MAX_DROPOUT       = 0.10   # 10% of frames dropped
-_DEFAULT_MIN_LDLJ          = -30.0  # catastrophically jerky
-_DEFAULT_MIN_LENGTH        = 10     # fewer than 10 steps is noise
+_DEFAULT_MAX_SPIKE_RATE = 0.10  # 10% of steps have jerk spikes
+_DEFAULT_MAX_VEL_DISC_RATE = 0.25  # 25% of steps are discontinuous
+_DEFAULT_MAX_DROPOUT = 0.10  # 10% of frames dropped
+_DEFAULT_MIN_LDLJ = -30.0  # catastrophically jerky
+_DEFAULT_MIN_LENGTH = 10  # fewer than 10 steps is noise
 
 
 # ── result schema ─────────────────────────────────────────────────────────────
+
 
 @dataclass
 class PruningResult:
@@ -83,17 +85,18 @@ class PruningResult:
                               reduce the quality-passing pool).
     method                  : always "quality_filter + greedy_max_coverage".
     """
-    keep_episode_ids:     list[str]
-    quality_fail_ids:     list[str]
+
+    keep_episode_ids: list[str]
+    quality_fail_ids: list[str]
     diversity_pruned_ids: list[str]
-    quality_scores:       dict[str, float]
-    diversity_scores:     dict[str, float]
-    n_original:           int
-    n_kept:               int
-    n_quality_failures:   int
-    n_diversity_pruned:   int
+    quality_scores: dict[str, float]
+    diversity_scores: dict[str, float]
+    n_original: int
+    n_kept: int
+    n_quality_failures: int
+    n_diversity_pruned: int
     keep_fraction_actual: float
-    method:               str = "quality_filter + greedy_max_coverage"
+    method: str = "quality_filter + greedy_max_coverage"
 
     def summary(self) -> str:
         lines = [
@@ -115,21 +118,22 @@ class PruningResult:
 
     def to_dict(self) -> dict:
         return {
-            "method":              self.method,
-            "n_original":          self.n_original,
-            "n_kept":              self.n_kept,
-            "n_quality_failures":  self.n_quality_failures,
-            "n_diversity_pruned":  self.n_diversity_pruned,
+            "method": self.method,
+            "n_original": self.n_original,
+            "n_kept": self.n_kept,
+            "n_quality_failures": self.n_quality_failures,
+            "n_diversity_pruned": self.n_diversity_pruned,
             "keep_fraction_actual": self.keep_fraction_actual,
-            "keep_episode_ids":    self.keep_episode_ids,
-            "quality_fail_ids":    self.quality_fail_ids,
+            "keep_episode_ids": self.keep_episode_ids,
+            "quality_fail_ids": self.quality_fail_ids,
             "diversity_pruned_ids": self.diversity_pruned_ids,
-            "quality_scores":      self.quality_scores,
-            "diversity_scores":    self.diversity_scores,
+            "quality_scores": self.quality_scores,
+            "diversity_scores": self.diversity_scores,
         }
 
 
 # ── selector ──────────────────────────────────────────────────────────────────
+
 
 @dataclass
 class CoresetSelector:
@@ -154,17 +158,17 @@ class CoresetSelector:
                        Default 0.7 — primarily action diversity, quality as tie-breaker.
     """
 
-    keep_fraction:        float = 0.5
-    max_spike_rate:       float = _DEFAULT_MAX_SPIKE_RATE
-    max_vel_disc_rate:    float = _DEFAULT_MAX_VEL_DISC_RATE
+    keep_fraction: float = 0.5
+    max_spike_rate: float = _DEFAULT_MAX_SPIKE_RATE
+    max_vel_disc_rate: float = _DEFAULT_MAX_VEL_DISC_RATE
     max_dropout_fraction: float = _DEFAULT_MAX_DROPOUT
-    min_ldlj:             float = _DEFAULT_MIN_LDLJ
-    min_length:           int   = _DEFAULT_MIN_LENGTH
-    quality_only:         bool  = False
-    diversity_weight:     float = 0.7
-    entropy_weight:       float = 0.0
-    strategy:             str   = "diversity"
-    latent_space:         str   = "none"
+    min_ldlj: float = _DEFAULT_MIN_LDLJ
+    min_length: int = _DEFAULT_MIN_LENGTH
+    quality_only: bool = False
+    diversity_weight: float = 0.7
+    entropy_weight: float = 0.0
+    strategy: str = "diversity"
+    latent_space: str = "none"
 
     def select(
         self,
@@ -225,12 +229,14 @@ class CoresetSelector:
             sorted_pass = sorted(
                 quality_pass_indices,
                 key=lambda idx: novelty_scores.get(episodes[idx].metadata.episode_id, 0.0),
-                reverse=True
+                reverse=True,
             )
             keep_indices = sorted_pass[:k]
             diversity_pruned_indices = sorted_pass[k:]
             diversity_scores = {
-                episodes[i].metadata.episode_id: float(novelty_scores.get(episodes[i].metadata.episode_id, 0.0))
+                episodes[i].metadata.episode_id: float(
+                    novelty_scores.get(episodes[i].metadata.episode_id, 0.0)
+                )
                 for i in quality_pass_indices
             }
         elif self.strategy == "influence":
@@ -246,11 +252,16 @@ class CoresetSelector:
             latent_embeddings = None
             if self.latent_space != "none":
                 from calibra.curation.latent_embed import extract_latent_embeddings
+
                 latent_embeddings = extract_latent_embeddings(batch, model_type=self.latent_space)
 
             features = _build_feature_matrix(
-                episodes, quality_pass_indices, ep_data,
-                self.diversity_weight, entropy_scores, self.entropy_weight,
+                episodes,
+                quality_pass_indices,
+                ep_data,
+                self.diversity_weight,
+                entropy_scores,
+                self.entropy_weight,
                 latent_embeddings=latent_embeddings,
             )
             selected_local = _greedy_max_coverage(features, k)
@@ -258,17 +269,15 @@ class CoresetSelector:
             selected_set = set(selected_global)
 
             keep_indices = selected_global
-            diversity_pruned_indices = [
-                i for i in quality_pass_indices if i not in selected_set
-            ]
+            diversity_pruned_indices = [i for i in quality_pass_indices if i not in selected_set]
 
             # Compute diversity scores: min distance from each episode to selected set
             diversity_scores = _diversity_score_map(
                 episodes, quality_pass_indices, features, selected_local
             )
 
-        keep_ids       = [episodes[i].metadata.episode_id for i in keep_indices]
-        fail_ids       = [episodes[i].metadata.episode_id for i in quality_fail_indices]
+        keep_ids = [episodes[i].metadata.episode_id for i in keep_indices]
+        fail_ids = [episodes[i].metadata.episode_id for i in quality_fail_indices]
         div_pruned_ids = [episodes[i].metadata.episode_id for i in diversity_pruned_indices]
 
         return PruningResult(
@@ -298,32 +307,33 @@ def _select_influence(
         if r.analyzer_name == "influence":
             influence_data = r.raw_metrics.get("per_episode_influence", {})
             break
-            
+
     if not influence_data:
         from calibra.analyzers.influence import InfluenceAnalyzer
+
         analyzer = InfluenceAnalyzer()
         res = analyzer.analyze(batch)
         influence_data = res.raw_metrics.get("per_episode_influence", {})
-        
+
     candidate_ids = [episodes[i].metadata.episode_id for i in quality_pass_indices]
     candidate_influences = [influence_data.get(cid, 0.0) for cid in candidate_ids]
-    
+
     sorted_local_indices = np.argsort(candidate_influences)[::-1]
     selected_local = sorted_local_indices[:k].tolist()
-    
+
     selected_global = [quality_pass_indices[i] for i in selected_local]
     selected_set = set(selected_global)
 
     keep_indices = selected_global
-    diversity_pruned_indices = [
-        i for i in quality_pass_indices if i not in selected_set
-    ]
-    
+    diversity_pruned_indices = [i for i in quality_pass_indices if i not in selected_set]
+
     diversity_scores = {
-        episodes[i].metadata.episode_id: float(influence_data.get(episodes[i].metadata.episode_id, 0.0))
+        episodes[i].metadata.episode_id: float(
+            influence_data.get(episodes[i].metadata.episode_id, 0.0)
+        )
         for i in quality_pass_indices
     }
-    
+
     return keep_indices, diversity_pruned_indices, diversity_scores
 
 
@@ -340,16 +350,17 @@ def _select_energy(
         if r.analyzer_name == "transition_dynamics":
             energy_data = r.raw_metrics.get("per_episode_dynamics_error", {})
             break
-            
+
     if not energy_data:
         from calibra.analyzers.transition_dynamics import TransitionDynamicsAnalyzer
+
         analyzer = TransitionDynamicsAnalyzer()
         res = analyzer.analyze(batch)
         energy_data = res.raw_metrics.get("per_episode_dynamics_error", {})
-        
+
     candidate_ids = [episodes[i].metadata.episode_id for i in quality_pass_indices]
     candidate_energies = np.array([energy_data.get(cid, 0.0) for cid in candidate_ids])
-    
+
     # Prune extreme outliers (top 10% highest energy is likely physics violations / noise)
     if len(candidate_energies) > 10:
         threshold_noise = np.percentile(candidate_energies, 90)
@@ -361,28 +372,29 @@ def _select_energy(
         clean_indices = quality_pass_indices
         clean_ids = candidate_ids
         clean_energies = candidate_energies
-        
+
     # Greedily select the highest dynamics error (surprisal) transitions
     sorted_local_indices = np.argsort(clean_energies)[::-1]
     selected_local = sorted_local_indices[:k].tolist()
-    
+
     selected_global = [clean_indices[i] for i in selected_local]
     selected_set = set(selected_global)
 
     keep_indices = selected_global
-    diversity_pruned_indices = [
-        i for i in quality_pass_indices if i not in selected_set
-    ]
-    
+    diversity_pruned_indices = [i for i in quality_pass_indices if i not in selected_set]
+
     diversity_scores = {
-        episodes[i].metadata.episode_id: float(energy_data.get(episodes[i].metadata.episode_id, 0.0))
+        episodes[i].metadata.episode_id: float(
+            energy_data.get(episodes[i].metadata.episode_id, 0.0)
+        )
         for i in quality_pass_indices
     }
-    
+
     return keep_indices, diversity_pruned_indices, diversity_scores
 
 
 # ── Stage 1: quality scoring ──────────────────────────────────────────────────
+
 
 def _compute_quality_scores(
     episodes: list[Episode],
@@ -394,10 +406,10 @@ def _compute_quality_scores(
     Weighted combination of normalised quality metrics. All weights sum to 1.
     Missing metrics contribute 0 to the composite (treated as clean).
     """
-    spike_rates   = ep_data.get("per_episode_spike_rate", [])
-    disc_rates    = ep_data.get("per_episode_vel_disc_rate", [])
-    dropouts      = ep_data.get("per_episode_dropout_fraction", [])
-    ldlj_values   = ep_data.get("per_episode_ldlj", [])
+    spike_rates = ep_data.get("per_episode_spike_rate", [])
+    disc_rates = ep_data.get("per_episode_vel_disc_rate", [])
+    dropouts = ep_data.get("per_episode_dropout_fraction", [])
+    ldlj_values = ep_data.get("per_episode_ldlj", [])
 
     scores: dict[str, float] = {}
     for i, ep in enumerate(episodes):
@@ -433,8 +445,8 @@ def _quality_filter(
 ) -> list[int]:
     """Return indices of episodes that fail quality thresholds (to be removed)."""
     spike_rates = ep_data.get("per_episode_spike_rate", [])
-    disc_rates  = ep_data.get("per_episode_vel_disc_rate", [])
-    dropouts    = ep_data.get("per_episode_dropout_fraction", [])
+    disc_rates = ep_data.get("per_episode_vel_disc_rate", [])
+    dropouts = ep_data.get("per_episode_dropout_fraction", [])
     ldlj_values = ep_data.get("per_episode_ldlj", [])
 
     fail: list[int] = []
@@ -467,9 +479,11 @@ def _quality_filter(
 
 # ── Stage 2: behavioral feature extraction ────────────────────────────────────
 
+
 def _compute_entropy_scores(episodes: list[Episode]) -> dict[int, float]:
     """Return {episode_index: trajectory_entropy} for all episodes."""
     from calibra.curation.entropy import compute_trajectory_entropy
+
     return {i: compute_trajectory_entropy(ep.actions) for i, ep in enumerate(episodes)}
 
 
@@ -494,8 +508,8 @@ def _build_feature_matrix(
     metrics only. Default 0.7.
     """
     spike_rates = ep_data.get("per_episode_spike_rate", [])
-    disc_rates  = ep_data.get("per_episode_vel_disc_rate", [])
-    lengths     = ep_data.get("per_episode_length", [])
+    disc_rates = ep_data.get("per_episode_vel_disc_rate", [])
+    lengths = ep_data.get("per_episode_length", [])
 
     rows: list[np.ndarray] = []
     for i in candidate_indices:
@@ -505,16 +519,18 @@ def _build_feature_matrix(
             acts = acts[:, np.newaxis]
 
         if latent_embeddings is not None:
-            action_feat = latent_embeddings.get(ep.metadata.episode_id, np.zeros(10, dtype=np.float32))
+            action_feat = latent_embeddings.get(
+                ep.metadata.episode_id, np.zeros(10, dtype=np.float32)
+            )
         else:
             # Behavioral: action mean and std per dim
             action_mean = np.mean(acts, axis=0)
-            action_std  = np.std(acts, axis=0)
+            action_std = np.std(acts, axis=0)
             action_feat = np.concatenate([action_mean, action_std])
 
         # Quality metrics as secondary features
         spike = _safe_get(spike_rates, i) or 0.0
-        disc  = _safe_get(disc_rates, i) or 0.0
+        disc = _safe_get(disc_rates, i) or 0.0
         length_raw = _safe_get(lengths, i) or float(ep.n_steps)
         quality_feat = np.array([spike, disc, length_raw / 1000.0])
 
@@ -524,11 +540,13 @@ def _build_feature_matrix(
         # Blend: diversity_weight for action stats, entropy_weight for entropy,
         # remaining for quality metrics.
         q_scale = max(0.0, 1.0 - diversity_weight - entropy_weight)
-        row = np.concatenate([
-            action_feat  * diversity_weight,
-            quality_feat * q_scale,
-            entropy_feat * entropy_weight,
-        ])
+        row = np.concatenate(
+            [
+                action_feat * diversity_weight,
+                quality_feat * q_scale,
+                entropy_feat * entropy_weight,
+            ]
+        )
         rows.append(row)
 
     if not rows:
@@ -561,7 +579,12 @@ def _greedy_max_coverage(features: np.ndarray, k: int) -> list[int]:
 
     try:
         import torch
-        device = "cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu")
+
+        device = (
+            "cuda"
+            if torch.cuda.is_available()
+            else ("mps" if torch.backends.mps.is_available() else "cpu")
+        )
         if device in ("cuda", "mps"):
             feats_t = torch.tensor(features, dtype=torch.float32, device=device)
             centroid = feats_t.mean(dim=0)
@@ -634,6 +657,7 @@ def _diversity_score_map(
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
+
 def _safe_get(lst: list, i: int):
     """Return lst[i] if in bounds and not None, else None."""
     if lst and i < len(lst) and lst[i] is not None:
@@ -642,6 +666,7 @@ def _safe_get(lst: list, i: int):
 
 
 # ── approximate coreset selector ──────────────────────────────────────────────
+
 
 @dataclass
 class ApproximateCoresetSelector(CoresetSelector):
@@ -723,11 +748,16 @@ class ApproximateCoresetSelector(CoresetSelector):
             latent_embeddings = None
             if self.latent_space != "none":
                 from calibra.curation.latent_embed import extract_latent_embeddings
+
                 latent_embeddings = extract_latent_embeddings(batch, model_type=self.latent_space)
 
             features = _build_feature_matrix(
-                episodes, quality_pass_indices, ep_data,
-                self.diversity_weight, entropy_scores, self.entropy_weight,
+                episodes,
+                quality_pass_indices,
+                ep_data,
+                self.diversity_weight,
+                entropy_scores,
+                self.entropy_weight,
                 latent_embeddings=latent_embeddings,
             )
             selected_local = _approximate_max_coverage(features, k, self.batch_size)
@@ -735,15 +765,13 @@ class ApproximateCoresetSelector(CoresetSelector):
             selected_set = set(selected_global)
 
             keep_indices = selected_global
-            diversity_pruned_indices = [
-                i for i in quality_pass_indices if i not in selected_set
-            ]
+            diversity_pruned_indices = [i for i in quality_pass_indices if i not in selected_set]
             diversity_scores = _diversity_score_map(
                 episodes, quality_pass_indices, features, selected_local
             )
 
-        keep_ids       = [episodes[i].metadata.episode_id for i in keep_indices]
-        fail_ids       = [episodes[i].metadata.episode_id for i in quality_fail_indices]
+        keep_ids = [episodes[i].metadata.episode_id for i in keep_indices]
+        fail_ids = [episodes[i].metadata.episode_id for i in quality_fail_indices]
         div_pruned_ids = [episodes[i].metadata.episode_id for i in diversity_pruned_indices]
 
         return PruningResult(

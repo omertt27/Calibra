@@ -2,6 +2,7 @@
 DatasetReader — the only interface between format-specific adapters and the
 diagnostic layer. Analyzers receive EpisodeBatch; they never see this class.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

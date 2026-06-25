@@ -21,6 +21,7 @@ of what was found so the user can write a thin adapter subclass.
 
 Dependency: pip install 'calibra[hdf5]'  (h5py)
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -39,11 +40,11 @@ if TYPE_CHECKING:
 def _require_h5py() -> "_h5py":
     try:
         import h5py
+
         return h5py
     except ImportError:
         raise ImportError(
-            "h5py is required for the HDF5 adapter.\n"
-            "Install it with: pip install 'calibra[hdf5]'"
+            "h5py is required for the HDF5 adapter.\nInstall it with: pip install 'calibra[hdf5]'"
         ) from None
 
 
@@ -133,12 +134,14 @@ class HDF5Reader(DatasetReader):
                 success=success,
                 source_file=source,
             )
-            episodes.append(Episode(
-                metadata=meta,
-                timestamps=timestamps,
-                observations=observations,
-                actions=actions,
-            ))
+            episodes.append(
+                Episode(
+                    metadata=meta,
+                    timestamps=timestamps,
+                    observations=observations,
+                    actions=actions,
+                )
+            )
         return episodes
 
     def _read_convention_b(self, f: "_h5py.File", source: str) -> list[Episode]:
@@ -156,12 +159,14 @@ class HDF5Reader(DatasetReader):
                 episode_id=f"episode_{i}",
                 source_file=source,
             )
-            episodes.append(Episode(
-                metadata=meta,
-                timestamps=timestamps_all[sl],
-                observations=obs,
-                actions=actions_all[sl],
-            ))
+            episodes.append(
+                Episode(
+                    metadata=meta,
+                    timestamps=timestamps_all[sl],
+                    observations=obs,
+                    actions=actions_all[sl],
+                )
+            )
         return episodes
 
     @staticmethod
@@ -178,6 +183,7 @@ class HDF5Reader(DatasetReader):
         grp: "_h5py.Group | _h5py.File",
     ) -> dict[str, np.ndarray]:
         import h5py
+
         obs: dict[str, np.ndarray] = {}
         root = grp["observations"] if "observations" in grp else grp
         if isinstance(root, h5py.Group):

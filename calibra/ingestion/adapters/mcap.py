@@ -14,6 +14,7 @@ directory, they become separate episodes.
 
 Dependency: pip install 'calibra[mcap]'  (mcap, mcap-ros2-support)
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -32,6 +33,7 @@ if TYPE_CHECKING:
 def _require_mcap() -> tuple:
     try:
         from mcap.reader import make_reader
+
         return (make_reader,)
     except ImportError:
         raise ImportError(

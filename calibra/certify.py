@@ -21,6 +21,7 @@ Exit codes:
     1  PROVISIONALLY CERTIFIED (warnings only)
     2  NOT CERTIFIED (critical failures)
 """
+
 from __future__ import annotations
 
 import argparse
@@ -34,7 +35,7 @@ from calibra.schema.report import DiagnosticReport, RiskLevel
 
 _WIDTH = 60
 _THICK = "━" * _WIDTH
-_THIN  = "─" * _WIDTH
+_THIN = "─" * _WIDTH
 
 
 # ── grading ──────────────────────────────────────────────────────────────────
@@ -65,10 +66,16 @@ def _grade(report: DiagnosticReport) -> tuple[str, int]:
             return None
         return flag.level
 
-    criticals = [f for f in report.flags_at_level(RiskLevel.CRITICAL)
-                 if _effective_level(f) == RiskLevel.CRITICAL]
-    warnings  = [f for f in report.flags_at_level(RiskLevel.WARNING)
-                 if _effective_level(f) == RiskLevel.WARNING]
+    criticals = [
+        f
+        for f in report.flags_at_level(RiskLevel.CRITICAL)
+        if _effective_level(f) == RiskLevel.CRITICAL
+    ]
+    warnings = [
+        f
+        for f in report.flags_at_level(RiskLevel.WARNING)
+        if _effective_level(f) == RiskLevel.WARNING
+    ]
 
     if criticals:
         return "NOT CERTIFIED", 2
@@ -87,6 +94,7 @@ def _grade_banner(grade: str) -> str:
 
 # ── remediation ───────────────────────────────────────────────────────────────
 
+
 def _remediation_steps(report: DiagnosticReport, is_scripted: bool = False) -> list[str]:
     steps: list[str] = []
 
@@ -103,6 +111,7 @@ def _remediation_steps(report: DiagnosticReport, is_scripted: bool = False) -> l
 
 
 # ── certificate rendering ─────────────────────────────────────────────────────
+
 
 def render_certificate(
     report: DiagnosticReport,
@@ -133,16 +142,20 @@ def render_certificate(
 
     # Summary of flags — exclude spike_rate from displayed criticals/warnings when scripted
     criticals = [
-        f for f in report.flags_at_level(RiskLevel.CRITICAL)
+        f
+        for f in report.flags_at_level(RiskLevel.CRITICAL)
         if not (is_scripted and f.metric in _SCRIPTED_EXEMPT_METRICS)
     ]
     warnings = [
-        f for f in report.flags_at_level(RiskLevel.WARNING)
+        f
+        for f in report.flags_at_level(RiskLevel.WARNING)
         if not (is_scripted and f.metric in _SCRIPTED_EXEMPT_METRICS)
     ]
     scripted_spike_flags = [
-        f for f in report.flags
-        if is_scripted and f.metric in _SCRIPTED_EXEMPT_METRICS
+        f
+        for f in report.flags
+        if is_scripted
+        and f.metric in _SCRIPTED_EXEMPT_METRICS
         and f.level in (RiskLevel.CRITICAL, RiskLevel.WARNING)
     ]
 
@@ -162,26 +175,16 @@ def render_certificate(
         lines.append(_THIN)
         lines.append("  SCRIPTED DATA NOTE")
         lines.append(_THIN)
-        lines.append(
-            "  Scripted motion signature detected. The following flags were"
-        )
-        lines.append(
-            "  excluded from the grade because scripted/planner datasets"
-        )
-        lines.append(
-            "  structurally produce high jerk spikes at waypoint transitions:"
-        )
+        lines.append("  Scripted motion signature detected. The following flags were")
+        lines.append("  excluded from the grade because scripted/planner datasets")
+        lines.append("  structurally produce high jerk spikes at waypoint transitions:")
         for f in scripted_spike_flags:
             lines.append(
                 f"    • [{f.level.value}] {f.metric} = {f.observed.value:.3f}"
                 "  (expected for planner data)"
             )
-        lines.append(
-            "  If training a smoothness-sensitive policy (Diffusion, GR00T),"
-        )
-        lines.append(
-            "  consider filtering episodes by spike_rate or using action smoothing."
-        )
+        lines.append("  If training a smoothness-sensitive policy (Diffusion, GR00T),")
+        lines.append("  consider filtering episodes by spike_rate or using action smoothing.")
         lines.append("")
 
     # Remediation
@@ -203,6 +206,7 @@ def render_certificate(
 
 # ── CLI entry point ───────────────────────────────────────────────────────────
 
+
 def run_certify(argv: list[str]) -> None:
     p = argparse.ArgumentParser(
         prog="calibra certify",
@@ -210,16 +214,19 @@ def run_certify(argv: list[str]) -> None:
     )
     p.add_argument("path", help="Path or Hub ID of the dataset to certify")
     p.add_argument(
-        "--reference", "-r",
+        "--reference",
+        "-r",
         metavar="REF",
         help="Optional reference profile to compare against (e.g. 'pusht', 'aloha')",
     )
     p.add_argument(
-        "--policy", metavar="FAMILY",
+        "--policy",
+        metavar="FAMILY",
         help="Target policy family for conditioned hints (e.g. 'diffusion', 'act')",
     )
     p.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         metavar="FMT",
         choices=["hdf5", "isaac_lab", "lerobot", "rlds", "mcap"],
         help="Force a format adapter (default: auto-detect)",
@@ -230,7 +237,8 @@ def run_certify(argv: list[str]) -> None:
         help="Treat WARNING flags as certification failures (exit code 2)",
     )
     p.add_argument(
-        "--json", "-j",
+        "--json",
+        "-j",
         action="store_true",
         help="Output report as JSON instead of human-readable text",
     )
@@ -238,11 +246,12 @@ def run_certify(argv: list[str]) -> None:
 
     dataset_path = args.path
     if dataset_path.startswith("hf://"):
-        dataset_path = dataset_path[len("hf://"):]
+        dataset_path = dataset_path[len("hf://") :]
 
     reader = None
     if args.format:
         from calibra.__main__ import _get_reader
+
         reader = _get_reader(args.format)
 
     def log(msg: str) -> None:
@@ -271,10 +280,11 @@ def run_certify(argv: list[str]) -> None:
     if args.reference:
         try:
             from calibra.compare import load_reference, metrics_from_report, metrics_from_reference
-            ref_data    = load_reference(args.reference)
-            your_m      = metrics_from_report(report)
-            ref_m       = metrics_from_reference(ref_data)
-            vd_delta    = ((your_m["vel_disc_rate"] or 0) - (ref_m["vel_disc_rate"] or 0))
+
+            ref_data = load_reference(args.reference)
+            your_m = metrics_from_report(report)
+            ref_m = metrics_from_reference(ref_data)
+            vd_delta = (your_m["vel_disc_rate"] or 0) - (ref_m["vel_disc_rate"] or 0)
             if vd_delta > 0.05:
                 extra_steps.append(
                     f"Velocity discontinuity {vd_delta:+.1%} above {args.reference} — "
@@ -291,6 +301,7 @@ def run_certify(argv: list[str]) -> None:
 
     if args.json:
         import json
+
         out = {
             "grade": grade,
             "exit_code": exit_code,

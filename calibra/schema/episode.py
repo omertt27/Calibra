@@ -2,6 +2,7 @@
 Internal normalized episode representation. All analyzers consume this type.
 No format-specific logic belongs here.
 """
+
 from __future__ import annotations
 
 from collections import OrderedDict
@@ -37,9 +38,9 @@ class Episode:
     """
 
     metadata: EpisodeMetadata
-    timestamps: np.ndarray                        # (T,)
+    timestamps: np.ndarray  # (T,)
     observations: dict[str, np.ndarray]
-    actions: np.ndarray                           # (T, action_dim)
+    actions: np.ndarray  # (T, action_dim)
     obs_timestamps: dict[str, np.ndarray] = field(default_factory=dict)
     action_timestamps: Optional[np.ndarray] = None
 
@@ -128,7 +129,7 @@ class EpisodeBatch:
 
     episodes: Union[list[Episode], LazyEpisodeList]
     dataset_name: str
-    format: str        # "rlds" | "lerobot" | "hdf5" | "mcap"
+    format: str  # "rlds" | "lerobot" | "hdf5" | "mcap"
     source_path: str
     extra: dict = field(default_factory=dict)
     _n_samples_hint: Optional[int] = field(default=None, repr=False)

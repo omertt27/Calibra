@@ -4,6 +4,7 @@ Reader registry — auto-detection and dispatch.
 Adapters register themselves at import time via @register. The public entry
 point is `load(path)`, which probes registered readers in priority order.
 """
+
 from __future__ import annotations
 
 from calibra.ingestion.base import DatasetReader

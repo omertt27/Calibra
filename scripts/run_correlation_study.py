@@ -17,6 +17,7 @@ For each configuration, this script:
 3. Evaluates global generalization test R^2.
 4. Computes Pearson and Spearman rank correlation coefficients across all 12 datapoints.
 """
+
 from __future__ import annotations
 
 import sys
@@ -28,11 +29,10 @@ import numpy as np
 _REPO = Path(__file__).parent.parent
 sys.path.insert(0, str(_REPO))
 
-from calibra.analyzers.latent_dynamics import LatentDynamicsAnalyzer
-from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
-from scripts.validate_world_model_observability import (
+from calibra.analyzers.latent_dynamics import LatentDynamicsAnalyzer  # noqa: E402
+from calibra.schema.episode import EpisodeBatch  # noqa: E402
+from scripts.validate_world_model_observability import (  # noqa: E402
     DynamicsWorldModel,
-    true_dynamics,
     generate_ph_dataset,
     generate_mh_dataset,
     generate_mg_dataset,
@@ -41,6 +41,7 @@ from scripts.validate_world_model_observability import (
 )
 
 # ── Helper to mix datasets ──────────────────────────────────────────────────
+
 
 def mix_datasets(name: str, batches: list[tuple[EpisodeBatch, float]]) -> EpisodeBatch:
     """Combines episodes from multiple batches based on fractions."""
@@ -53,6 +54,7 @@ def mix_datasets(name: str, batches: list[tuple[EpisodeBatch, float]]) -> Episod
 
 # ── Pearson/Spearman Rank Correlation ───────────────────────────────────────
 
+
 def spearman_correlation(X: np.ndarray, Y: np.ndarray) -> float:
     """Computes Spearman Rank Correlation Coefficient."""
     # Rank inputs
@@ -62,6 +64,7 @@ def spearman_correlation(X: np.ndarray, Y: np.ndarray) -> float:
 
 
 # ── Main ────────────────────────────────────────────────────────────────────
+
 
 def main():
     print("=" * 70)
@@ -79,17 +82,14 @@ def main():
         ("PH-5", EpisodeBatch(ph_pool.episodes[:5], "ph-5", "hdf5", "ph-5")),
         ("PH-10", EpisodeBatch(ph_pool.episodes[:10], "ph-10", "hdf5", "ph-10")),
         ("PH-20", EpisodeBatch(ph_pool.episodes[:20], "ph-20", "hdf5", "ph-20")),
-        
         # Multi-Human
         ("MH-5", EpisodeBatch(mh_pool.episodes[:5], "mh-5", "hdf5", "mh-5")),
         ("MH-10", EpisodeBatch(mh_pool.episodes[:10], "mh-10", "hdf5", "mh-10")),
         ("MH-20", EpisodeBatch(mh_pool.episodes[:20], "mh-20", "hdf5", "mh-20")),
-        
         # Machine Generated
         ("MG-10", EpisodeBatch(mg_pool.episodes[:10], "mg-10", "hdf5", "mg-10")),
         ("MG-30", EpisodeBatch(mg_pool.episodes[:30], "mg-30", "hdf5", "mg-30")),
         ("MG-100", EpisodeBatch(mg_pool.episodes[:100], "mg-100", "hdf5", "mg-100")),
-        
         # Mixtures
         ("Mixed-A (90% PH, 10% MG)", mix_datasets("mixed-a", [(ph_pool, 0.9), (mg_pool, 0.1)])),
         ("Mixed-B (50% MH, 50% MG)", mix_datasets("mixed-b", [(mh_pool, 0.5), (mg_pool, 0.5)])),
@@ -98,7 +98,7 @@ def main():
 
     analyzer = LatentDynamicsAnalyzer()
     X_test, Y_test = get_test_set(n_samples=3000)
-    
+
     datapoints = []
 
     for name, batch in configs:
@@ -109,7 +109,7 @@ def main():
         trans_redundancy = report.raw_metrics.get("transition_redundancy", 0.0)
         predictability_r2 = report.raw_metrics.get("dynamics_r2_predictability", 0.0)
         action_effect_mi = report.raw_metrics.get("action_effect_mi", 0.0)
-        
+
         # B. Train downstream world model
         states_list = []
         actions_list = []
@@ -118,32 +118,36 @@ def main():
             states_list.append(ep.observations["proprio"][:-1])
             actions_list.append(ep.actions[:-1])
             next_states_list.append(ep.observations["proprio"][1:])
-            
+
         S = np.concatenate(states_list, axis=0)
         A = np.concatenate(actions_list, axis=0)
         S_next = np.concatenate(next_states_list, axis=0)
-        
+
         X_train = np.concatenate([S, A], axis=1)
         Y_train = S_next - S
-        
+
         model = DynamicsWorldModel(state_dim=2, action_dim=2)
         model.fit(X_train, Y_train, epochs=250, lr=0.1)
-        
+
         # C. Evaluate downstream generalization
         test_r2 = evaluate_model(model, X_test, Y_test)
-        
-        datapoints.append({
-            "name": name,
-            "size": batch.n_samples,
-            "state_entropy": state_entropy,
-            "state_redundancy": state_redundancy,
-            "trans_redundancy": trans_redundancy,
-            "predictability": predictability_r2,
-            "action_effect_mi": action_effect_mi,
-            "test_r2": test_r2
-        })
-        
-        print(f"Processed {name:28} | Size: {batch.n_samples:5} | Entropy: {state_entropy:.2f} | TransRedundancy: {trans_redundancy:.2%} | Test R^2: {test_r2:.4f}")
+
+        datapoints.append(
+            {
+                "name": name,
+                "size": batch.n_samples,
+                "state_entropy": state_entropy,
+                "state_redundancy": state_redundancy,
+                "trans_redundancy": trans_redundancy,
+                "predictability": predictability_r2,
+                "action_effect_mi": action_effect_mi,
+                "test_r2": test_r2,
+            }
+        )
+
+        print(
+            f"Processed {name:28} | Size: {batch.n_samples:5} | Entropy: {state_entropy:.2f} | TransRedundancy: {trans_redundancy:.2%} | Test R^2: {test_r2:.4f}"
+        )
 
     # 3. Compute correlation matrices
     sizes = np.array([d["size"] for d in datapoints])
@@ -168,8 +172,10 @@ def main():
     s_mi = spearman_correlation(mis, performances)
 
     # 4. Generate Markdown Artifact
-    artifact_path = Path("/Users/omer/.gemini/antigravity-cli/brain/756f676d-5cec-4126-9311-8d2fb3a9b0af/robomimic_correlation_study.md")
-    
+    artifact_path = Path(
+        "/Users/omer/.gemini/antigravity-cli/brain/756f676d-5cec-4126-9311-8d2fb3a9b0af/robomimic_correlation_study.md"
+    )
+
     rows = []
     for d in datapoints:
         rows.append(

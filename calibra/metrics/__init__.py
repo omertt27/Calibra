@@ -7,6 +7,7 @@ For pipeline use (bootstrap CI, AnalyzerResult, per-episode tracking), use:
   calibra.analyzers.smoothness.ControlSmoothnessAnalyzer
   calibra.analyzers.temporal.TemporalAnalyzer
 """
+
 from calibra.metrics.kinematics import (
     compute_action_entropy,
     compute_jerk_spike_rate,

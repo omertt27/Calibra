@@ -13,6 +13,7 @@ Usage:
     python scripts/profile_pusht.py
     python scripts/profile_pusht.py --dataset lerobot/pusht --out profile_pusht.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -38,6 +39,7 @@ PERCENTILES = [5, 10, 25, 50, 75, 90, 95]
 
 # ── distribution helpers ──────────────────────────────────────────────────────
 
+
 def distribution(values: list) -> dict:
     """Percentile profile of a per-episode float list. None values are dropped."""
     arr = np.array([v for v in values if v is not None], dtype=np.float64)
@@ -54,6 +56,7 @@ def distribution(values: list) -> dict:
 
 
 # ── extraction ────────────────────────────────────────────────────────────────
+
 
 def per_episode_distributions(report: DiagnosticReport) -> dict:
     out = {}
@@ -91,29 +94,35 @@ def flag_summary(report: DiagnosticReport) -> list[dict]:
     rows = []
     for result in report.analyzer_results:
         for flag in result.flags:
-            rows.append({
-                "analyzer": result.analyzer_name,
-                "metric": flag.metric,
-                "level": flag.level.value,
-                "observed": flag.observed.value,
-                "ci_lower": flag.observed.ci_lower,
-                "ci_upper": flag.observed.ci_upper,
-                "interpretation": flag.interpretation,
-            })
+            rows.append(
+                {
+                    "analyzer": result.analyzer_name,
+                    "metric": flag.metric,
+                    "level": flag.level.value,
+                    "observed": flag.observed.value,
+                    "ci_lower": flag.observed.ci_lower,
+                    "ci_upper": flag.observed.ci_upper,
+                    "interpretation": flag.interpretation,
+                }
+            )
     return rows
 
 
 # ── main ──────────────────────────────────────────────────────────────────────
 
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument(
-        "--dataset", default=PUSHT_HUB_ID,
+        "--dataset",
+        default=PUSHT_HUB_ID,
         help=f"HuggingFace Hub ID or local path (default: {PUSHT_HUB_ID})",
     )
     parser.add_argument(
-        "--out", default=None,
+        "--out",
+        default=None,
         help="Write JSON output to this file (default: stdout)",
     )
     args = parser.parse_args()
@@ -129,14 +138,16 @@ def main() -> None:
         log(f"  action_dim={ep0.action_dim}  modalities={sorted(batch.modalities)}")
 
     log("Running Calibra pipeline ...")
-    pipeline = Pipeline(analyzers=[
-        TemporalAnalyzer(),
-        # pusht actions are (dx, dy) velocity — no discrete gripper dimension.
-        # Pass gripper_dims=[] so both action dims are included in smoothness metrics.
-        ControlSmoothnessAnalyzer(gripper_dims=[]),
-        CoverageEntropyAnalyzer(),
-        TaskStructureAnalyzer(),
-    ])
+    pipeline = Pipeline(
+        analyzers=[
+            TemporalAnalyzer(),
+            # pusht actions are (dx, dy) velocity — no discrete gripper dimension.
+            # Pass gripper_dims=[] so both action dims are included in smoothness metrics.
+            ControlSmoothnessAnalyzer(gripper_dims=[]),
+            CoverageEntropyAnalyzer(),
+            TaskStructureAnalyzer(),
+        ]
+    )
     report = pipeline.run(batch)
     log("Pipeline complete.")
 

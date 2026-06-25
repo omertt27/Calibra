@@ -4,6 +4,7 @@ Tests for DatasetComparator (Phase 2).
 All fixtures are synthetic — no real dataset files required.
 Permutation tests use n_permutations=199 (default) and fixed seed=42.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -13,10 +14,15 @@ from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 from calibra.analyzers.temporal import TemporalAnalyzer
 from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
 from calibra.pipeline import Pipeline
-from calibra.comparison.comparator import DatasetComparator, _permutation_test, _infer_flag_direction
+from calibra.comparison.comparator import (
+    DatasetComparator,
+    _permutation_test,
+    _infer_flag_direction,
+)
 
 
 # ── fixtures ─────────────────────────────────────────────────────────────────
+
 
 def _make_ep(
     n_steps: int = 100,
@@ -70,32 +76,36 @@ def _make_jerky_ep(n_steps: int = 100, dt: float = 0.1, seed: int = 0) -> Episod
 def clean_batch_diverse() -> EpisodeBatch:
     """10 clean episodes with distinct seeds (low jitter, varied per-episode)."""
     episodes = [_make_ep(jitter_std=0.0, seed=i) for i in range(10)]
-    return EpisodeBatch(episodes=episodes, dataset_name="clean",
-                        format="hdf5", source_path="/tmp/clean.h5")
+    return EpisodeBatch(
+        episodes=episodes, dataset_name="clean", format="hdf5", source_path="/tmp/clean.h5"
+    )
 
 
 @pytest.fixture
 def jittery_batch_diverse() -> EpisodeBatch:
     """10 jittery episodes with distinct seeds (high jitter per episode)."""
     episodes = [_make_ep(jitter_std=0.025, seed=i) for i in range(10)]
-    return EpisodeBatch(episodes=episodes, dataset_name="jittery",
-                        format="hdf5", source_path="/tmp/jittery.h5")
+    return EpisodeBatch(
+        episodes=episodes, dataset_name="jittery", format="hdf5", source_path="/tmp/jittery.h5"
+    )
 
 
 @pytest.fixture
 def smooth_batch() -> EpisodeBatch:
     """10 smooth sine-wave episodes."""
     episodes = [_make_smooth_ep(seed=i) for i in range(10)]
-    return EpisodeBatch(episodes=episodes, dataset_name="smooth",
-                        format="hdf5", source_path="/tmp/smooth.h5")
+    return EpisodeBatch(
+        episodes=episodes, dataset_name="smooth", format="hdf5", source_path="/tmp/smooth.h5"
+    )
 
 
 @pytest.fixture
 def jerky_batch() -> EpisodeBatch:
     """10 jerky random-action episodes."""
     episodes = [_make_jerky_ep(seed=i) for i in range(10)]
-    return EpisodeBatch(episodes=episodes, dataset_name="jerky",
-                        format="hdf5", source_path="/tmp/jerky.h5")
+    return EpisodeBatch(
+        episodes=episodes, dataset_name="jerky", format="hdf5", source_path="/tmp/jerky.h5"
+    )
 
 
 @pytest.fixture
@@ -109,6 +119,7 @@ def pipeline_smoothness_only() -> Pipeline:
 
 
 # ── permutation test unit tests ───────────────────────────────────────────────
+
 
 def test_permutation_test_identical_groups():
     """Identical groups → delta=0, p_value≈1."""
@@ -145,6 +156,7 @@ def test_permutation_test_filters_none_values():
 
 # ── direction inference ───────────────────────────────────────────────────────
 
+
 def test_direction_jitter_increase_is_degraded():
     assert _infer_flag_direction("timestamp_jitter_cv", delta=0.1) == "degraded"
 
@@ -170,6 +182,7 @@ def test_direction_zero_delta_is_ambiguous():
 
 
 # ── comparator integration tests ──────────────────────────────────────────────
+
 
 def test_same_report_no_significant_degradation(clean_batch_diverse, pipeline_temporal_only):
     """Comparing a report against itself: no significant degraded flags."""
@@ -311,8 +324,10 @@ def test_drift_risk_level_degraded_tracks_candidate(
     for drift_flag in result.degraded:
         # Find the corresponding candidate flag.
         cand_flag = next(
-            f for r in cand_report.analyzer_results
-            for f in r.flags if f.metric == drift_flag.metric
+            f
+            for r in cand_report.analyzer_results
+            for f in r.flags
+            if f.metric == drift_flag.metric
         )
         assert drift_flag.level == cand_flag.level
 

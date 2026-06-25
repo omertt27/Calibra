@@ -1,4 +1,5 @@
 """Tests for the GR00T Compatibility Analyzer."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -11,6 +12,7 @@ from calibra.schema.report import AnalyzerResult, RiskLevel
 
 
 # ── fixtures ─────────────────────────────────────────────────────────────────
+
 
 def _make_ep(
     n_steps: int = 50,
@@ -40,6 +42,7 @@ def _make_batch(episodes: list[Episode], name: str = "test") -> EpisodeBatch:
 
 # ── policy_family gate ────────────────────────────────────────────────────────
 
+
 class TestGR00TPolicyGate:
     def test_empty_result_when_no_policy(self):
         batch = _make_batch([_make_ep()])
@@ -66,6 +69,7 @@ class TestGR00TPolicyGate:
 
 # ── visual modality check ─────────────────────────────────────────────────────
 
+
 class TestGR00TVisualModality:
     def test_ok_when_camera_present(self):
         batch = _make_batch([_make_ep(with_camera=True)])
@@ -91,6 +95,7 @@ class TestGR00TVisualModality:
 
 
 # ── language annotation check ─────────────────────────────────────────────────
+
 
 class TestGR00TLanguage:
     def test_ok_when_all_annotated(self):
@@ -124,6 +129,7 @@ class TestGR00TLanguage:
 
 
 # ── episode length check ──────────────────────────────────────────────────────
+
 
 class TestGR00TEpisodeLength:
     def test_ok_when_episodes_long_enough(self):
@@ -159,6 +165,7 @@ class TestGR00TEpisodeLength:
 
 # ── control frequency check ───────────────────────────────────────────────────
 
+
 class TestGR00TControlFrequency:
     def test_ok_at_50hz(self):
         eps = [_make_ep(dt=0.02) for _ in range(5)]  # 50 Hz
@@ -184,6 +191,7 @@ class TestGR00TControlFrequency:
 
 # ── action dim check ──────────────────────────────────────────────────────────
 
+
 class TestGR00TActionDim:
     @pytest.mark.parametrize("dim", [7, 8, 14, 16])
     def test_ok_for_known_dims(self, dim):
@@ -201,10 +209,10 @@ class TestGR00TActionDim:
 
 # ── overall hint ──────────────────────────────────────────────────────────────
 
+
 class TestGR00TOverallHint:
     def test_compatible_true_when_all_ok(self):
-        ep = _make_ep(n_steps=50, action_dim=7, dt=0.02,
-                      with_camera=True, task="pick the cube")
+        ep = _make_ep(n_steps=50, action_dim=7, dt=0.02, with_camera=True, task="pick the cube")
         batch = _make_batch([ep])
         result = GR00TCompatibilityAnalyzer().analyze(batch, policy_family="gr00t")
         gr00t_hints = [h for h in result.hints if h.policy_family == "GR00T N1"]
@@ -227,6 +235,7 @@ class TestGR00TOverallHint:
 
 
 # ── pipeline integration ──────────────────────────────────────────────────────
+
 
 class TestGR00TPipelineIntegration:
     def test_gr00t_analyzer_injected_in_pipeline(self):

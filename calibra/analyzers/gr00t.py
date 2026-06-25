@@ -23,6 +23,7 @@ GR00T N1 requirements (https://developer.nvidia.com/isaac/gr00t):
 Only runs when policy_family contains "gr00t". All other policy families
 receive an empty result so there is no performance overhead.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -42,9 +43,9 @@ from calibra.schema.report import (
 
 # ── constants ────────────────────────────────────────────────────────────────
 
-_CHUNK_SIZE: int = 16          # GR00T N1 default action chunk size
+_CHUNK_SIZE: int = 16  # GR00T N1 default action chunk size
 
-_FREQ_LOW_WARNING:  float = 15.0   # Hz — below this, temporal tokenisation degrades
+_FREQ_LOW_WARNING: float = 15.0  # Hz — below this, temporal tokenisation degrades
 _FREQ_HIGH_WARNING: float = 120.0  # Hz — above this, chunks cover < 0.13 s of motion
 
 _KNOWN_ACTION_DIMS: set[int] = {7, 8, 14, 16}  # documented GR00T robot configs
@@ -52,7 +53,7 @@ _KNOWN_ACTION_DIMS: set[int] = {7, 8, 14, 16}  # documented GR00T robot configs
 _VISUAL_KEYS = frozenset(["camera", "image", "rgb", "depth", "visual"])
 
 # Camera-proprioception drift threshold (frames).  At 50 Hz, 2 frames = 40 ms.
-_DRIFT_WARNING_FRAMES:  int = 2
+_DRIFT_WARNING_FRAMES: int = 2
 _DRIFT_CRITICAL_FRAMES: int = 5
 
 _JOINT_VEL_KEYS = frozenset(["joint_vel", "robot0_joint_vel", "velocity"])
@@ -75,12 +76,12 @@ class GR00TCompatibilityAnalyzer(Analyzer):
         Action dimensions that are known GR00T robot configurations.
     """
 
-    chunk_size:           int       = _CHUNK_SIZE
-    freq_low_warning:     float     = _FREQ_LOW_WARNING
-    freq_high_warning:    float     = _FREQ_HIGH_WARNING
-    known_action_dims:    set[int]  = field(default_factory=lambda: set(_KNOWN_ACTION_DIMS))
-    drift_warning_frames: int       = _DRIFT_WARNING_FRAMES
-    drift_critical_frames: int      = _DRIFT_CRITICAL_FRAMES
+    chunk_size: int = _CHUNK_SIZE
+    freq_low_warning: float = _FREQ_LOW_WARNING
+    freq_high_warning: float = _FREQ_HIGH_WARNING
+    known_action_dims: set[int] = field(default_factory=lambda: set(_KNOWN_ACTION_DIMS))
+    drift_warning_frames: int = _DRIFT_WARNING_FRAMES
+    drift_critical_frames: int = _DRIFT_CRITICAL_FRAMES
 
     @property
     def name(self) -> str:
@@ -133,8 +134,7 @@ class GR00TCompatibilityAnalyzer(Analyzer):
     def _check_visual_modality(self, batch: EpisodeBatch) -> RiskFlag:
         """GR00T requires at least one RGB camera stream."""
         has_visual = any(
-            any(kw in mod_key.lower() for kw in _VISUAL_KEYS)
-            for mod_key in batch.modalities
+            any(kw in mod_key.lower() for kw in _VISUAL_KEYS) for mod_key in batch.modalities
         )
         if has_visual:
             return RiskFlag(
@@ -163,7 +163,8 @@ class GR00TCompatibilityAnalyzer(Analyzer):
     def _check_language_annotations(self, batch: EpisodeBatch) -> RiskFlag:
         """GR00T is language-conditioned — all episodes should have a task string."""
         n_annotated = sum(
-            1 for ep in batch.episodes
+            1
+            for ep in batch.episodes
             if ep.metadata.task_description and ep.metadata.task_description.strip()
         )
         frac = n_annotated / batch.n_episodes
@@ -208,8 +209,7 @@ class GR00TCompatibilityAnalyzer(Analyzer):
                 metric="gr00t.episode_length",
                 observed=ObservedValue(value=median_len, unit="steps"),
                 interpretation=(
-                    f"All episodes are ≥ {self.chunk_size} steps "
-                    f"(median: {median_len:.0f} steps)."
+                    f"All episodes are ≥ {self.chunk_size} steps (median: {median_len:.0f} steps)."
                 ),
                 implication=f"Episodes fill at least one complete GR00T action chunk ({self.chunk_size} steps).",
             )
@@ -325,13 +325,16 @@ class GR00TCompatibilityAnalyzer(Analyzer):
                 metric="gr00t.action_dim",
                 observed=ObservedValue(value=float(modal_dim), unit="dims"),
                 interpretation=(
-                    f"Action dimensionality {modal_dim}D matches a known "
-                    "GR00T robot configuration."
+                    f"Action dimensionality {modal_dim}D matches a known GR00T robot configuration."
                 ),
                 implication=(
                     f"{modal_dim}D matches: "
-                    + {7: "single-arm (no gripper)", 8: "single-arm + gripper",
-                       14: "bimanual (no gripper)", 16: "bimanual + gripper"}.get(modal_dim, "")
+                    + {
+                        7: "single-arm (no gripper)",
+                        8: "single-arm + gripper",
+                        14: "bimanual (no gripper)",
+                        16: "bimanual + gripper",
+                    }.get(modal_dim, "")
                 ),
             ), raw
 
@@ -386,7 +389,7 @@ class GR00TCompatibilityAnalyzer(Analyzer):
             for key in ep.observations:
                 if any(kw in key.lower() for kw in _VISUAL_KEYS):
                     candidate = ep.observations[key]
-                    if candidate.ndim in (3, 4):   # (T, H, W) or (T, H, W, C)
+                    if candidate.ndim in (3, 4):  # (T, H, W) or (T, H, W, C)
                         img_arr = candidate
                         break
 
@@ -396,17 +399,19 @@ class GR00TCompatibilityAnalyzer(Analyzer):
                 continue
 
             try:
-                visual_activity  = compute_visual_activity(img_arr)
-                physical_activity = np.linalg.norm(
-                    jv_arr.astype(np.float32), axis=1
-                ) if jv_arr.ndim > 1 else np.abs(jv_arr.astype(np.float32))
+                visual_activity = compute_visual_activity(img_arr)
+                physical_activity = (
+                    np.linalg.norm(jv_arr.astype(np.float32), axis=1)
+                    if jv_arr.ndim > 1
+                    else np.abs(jv_arr.astype(np.float32))
+                )
                 lag = estimate_sensor_command_latency(physical_activity, visual_activity)
                 lag_samples.append(lag)
             except Exception:
                 continue
 
         if not lag_samples:
-            return None, None   # silently skip — prerequisites not met
+            return None, None  # silently skip — prerequisites not met
 
         median_lag = int(np.median(lag_samples))
         raw = {"median_lag_frames": median_lag, "n_episodes_checked": len(lag_samples)}
@@ -427,8 +432,11 @@ class GR00TCompatibilityAnalyzer(Analyzer):
         level = RiskLevel.CRITICAL if abs_lag > self.drift_critical_frames else RiskLevel.WARNING
         dt_str = ""
         # Estimate lag in ms using median control freq if available.
-        freqs = [1.0 / float(np.median(np.diff(ep.timestamps)))
-                 for ep in batch.episodes if ep.n_steps > 1]
+        freqs = [
+            1.0 / float(np.median(np.diff(ep.timestamps)))
+            for ep in batch.episodes
+            if ep.n_steps > 1
+        ]
         if freqs:
             median_dt_ms = 1000.0 / float(np.median(freqs))
             dt_str = f" ≈ {abs_lag * median_dt_ms:.0f} ms"
@@ -457,7 +465,7 @@ class GR00TCompatibilityAnalyzer(Analyzer):
 
     def _overall_hint(self, flags: list[RiskFlag]) -> CompatibilityHint:
         has_critical = any(f.level == RiskLevel.CRITICAL for f in flags)
-        has_warning  = any(f.level == RiskLevel.WARNING  for f in flags)
+        has_warning = any(f.level == RiskLevel.WARNING for f in flags)
 
         if has_critical:
             return CompatibilityHint(
@@ -467,10 +475,7 @@ class GR00TCompatibilityAnalyzer(Analyzer):
                     "Dataset has critical structural issues that must be resolved "
                     "before GR00T N1 fine-tuning."
                 ),
-                caveats=[
-                    f.interpretation
-                    for f in flags if f.level == RiskLevel.CRITICAL
-                ],
+                caveats=[f.interpretation for f in flags if f.level == RiskLevel.CRITICAL],
             )
         if has_warning:
             return CompatibilityHint(
@@ -480,10 +485,7 @@ class GR00TCompatibilityAnalyzer(Analyzer):
                     "Dataset is structurally compatible with GR00T N1 but has "
                     "warnings that may reduce fine-tuning quality."
                 ),
-                caveats=[
-                    f.interpretation
-                    for f in flags if f.level == RiskLevel.WARNING
-                ],
+                caveats=[f.interpretation for f in flags if f.level == RiskLevel.WARNING],
             )
         return CompatibilityHint(
             policy_family="GR00T N1",

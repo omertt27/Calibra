@@ -1,4 +1,5 @@
 """Tests for the Isaac Lab HDF5 adapter."""
+
 from __future__ import annotations
 
 
@@ -31,27 +32,32 @@ def _write_isaac_lab_file(
             demo.attrs["num_samples"] = n_steps
 
             obs_grp = demo.create_group("obs")
-            obs_grp.create_dataset("robot0_joint_pos",
-                                   data=rng.random((n_steps, 7)).astype(np.float32))
-            obs_grp.create_dataset("robot0_joint_vel",
-                                   data=rng.random((n_steps, 7)).astype(np.float32))
-            obs_grp.create_dataset("robot0_eef_pos",
-                                   data=rng.random((n_steps, 3)).astype(np.float32))
-            obs_grp.create_dataset("robot0_eef_quat",
-                                   data=rng.random((n_steps, 4)).astype(np.float32))
-            obs_grp.create_dataset("robot0_gripper_qpos",
-                                   data=rng.random((n_steps, 2)).astype(np.float32))
+            obs_grp.create_dataset(
+                "robot0_joint_pos", data=rng.random((n_steps, 7)).astype(np.float32)
+            )
+            obs_grp.create_dataset(
+                "robot0_joint_vel", data=rng.random((n_steps, 7)).astype(np.float32)
+            )
+            obs_grp.create_dataset(
+                "robot0_eef_pos", data=rng.random((n_steps, 3)).astype(np.float32)
+            )
+            obs_grp.create_dataset(
+                "robot0_eef_quat", data=rng.random((n_steps, 4)).astype(np.float32)
+            )
+            obs_grp.create_dataset(
+                "robot0_gripper_qpos", data=rng.random((n_steps, 2)).astype(np.float32)
+            )
             if with_images:
-                obs_grp.create_dataset("agentview_image",
-                                       data=rng.integers(0, 255, (n_steps, 84, 84, 3),
-                                                         dtype=np.uint8))
+                obs_grp.create_dataset(
+                    "agentview_image",
+                    data=rng.integers(0, 255, (n_steps, 84, 84, 3), dtype=np.uint8),
+                )
 
-            demo.create_dataset("actions",
-                                data=rng.random((n_steps, action_dim)).astype(np.float32))
-            demo.create_dataset("dones",
-                                data=np.zeros(n_steps, dtype=bool))
-            demo.create_dataset("rewards",
-                                data=rng.random(n_steps).astype(np.float32))
+            demo.create_dataset(
+                "actions", data=rng.random((n_steps, action_dim)).astype(np.float32)
+            )
+            demo.create_dataset("dones", data=np.zeros(n_steps, dtype=bool))
+            demo.create_dataset("rewards", data=rng.random(n_steps).astype(np.float32))
 
         if with_mask:
             mask_grp = f.create_group("mask")
@@ -62,6 +68,7 @@ def _write_isaac_lab_file(
 
 
 # ── detection ────────────────────────────────────────────────────────────────
+
 
 class TestIsaacLabDetection:
     def test_can_read_true_for_isaac_lab_file(self, tmp_path):
@@ -87,6 +94,7 @@ class TestIsaacLabDetection:
 
 
 # ── reading ──────────────────────────────────────────────────────────────────
+
 
 class TestIsaacLabRead:
     def test_returns_episode_batch(self, tmp_path):
@@ -175,6 +183,7 @@ class TestIsaacLabRead:
     def test_registry_auto_detects(self, tmp_path):
         """Auto-detection via load() picks IsaacLabReader over HDF5Reader."""
         from calibra.ingestion import registry
+
         p = tmp_path / "demo.hdf5"
         _write_isaac_lab_file(str(p))
         reader_cls = registry.detect_reader(str(p))

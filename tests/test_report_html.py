@@ -1,10 +1,10 @@
 """Unit tests for the visual HTML report generator."""
+
 from __future__ import annotations
 
 import tempfile
 from pathlib import Path
 import numpy as np
-import pytest
 
 from calibra.pipeline import Pipeline
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
@@ -22,12 +22,14 @@ def _make_batch(n_eps: int = 3, n_steps: int = 20) -> EpisodeBatch:
             "force_torque": rng.normal(0, 1, (n_steps, 6)).astype(np.float32),
             "contact_sensor": rng.uniform(0, 1, n_steps).astype(np.float32),
         }
-        episodes.append(Episode(
-            metadata=EpisodeMetadata(episode_id=f"ep_{i}"),
-            timestamps=ts,
-            observations=obs,
-            actions=acts,
-        ))
+        episodes.append(
+            Episode(
+                metadata=EpisodeMetadata(episode_id=f"ep_{i}"),
+                timestamps=ts,
+                observations=obs,
+                actions=acts,
+            )
+        )
     return EpisodeBatch(
         episodes=episodes,
         dataset_name="html_test_ds",
@@ -40,17 +42,17 @@ class TestReportHTML:
     def test_generate_html_report_creates_file(self):
         batch = _make_batch()
         report = Pipeline().run(batch)
-        
+
         with tempfile.TemporaryDirectory() as tmpdir:
             out_file = Path(tmpdir) / "report.html"
-            
+
             # Run generator
             generate_html_report(report, str(out_file), outliers={0: ["ldlj outlier"]})
-            
+
             # Check file exists and has content
             assert out_file.exists()
             content = out_file.read_text(encoding="utf-8")
-            
+
             # Assert Tailwind, Chart.js, and dataset name are embedded
             assert "<!DOCTYPE html>" in content
             assert "tailwindcss" in content
@@ -59,5 +61,3 @@ class TestReportHTML:
             assert "ldlj outlier" in content
             assert "ssl_trajectory_outliers" in content
             assert "contact_dropout" in content
-
-

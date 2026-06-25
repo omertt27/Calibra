@@ -16,6 +16,7 @@ Confidence intervals are computed via percentile bootstrap over episodes
 artificially narrow intervals from treating correlated within-episode steps
 as i.i.d. samples.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -35,22 +36,22 @@ from calibra.schema.report import (
 
 # ── thresholds (all times in seconds unless noted) ──────────────────────────
 
-_JITTER_CV_WARNING  = 0.15   # 15 % coefficient of variation
+_JITTER_CV_WARNING = 0.15  # 15 % coefficient of variation
 _JITTER_CV_CRITICAL = 0.30
 
-_DROPOUT_K          = 3.0    # gap must exceed k × median_delta to count
+_DROPOUT_K = 3.0  # gap must exceed k × median_delta to count
 
-_DROPOUT_WARNING    = 0.01   # 1 % of steps
-_DROPOUT_CRITICAL   = 0.05   # 5 %
+_DROPOUT_WARNING = 0.01  # 1 % of steps
+_DROPOUT_CRITICAL = 0.05  # 5 %
 
-_CAM_LAG_WARNING_S  = 0.010  # 10 ms
+_CAM_LAG_WARNING_S = 0.010  # 10 ms
 _CAM_LAG_CRITICAL_S = 0.020  # 20 ms — from Calibra spec example
 
-_ALIGN_TOL_S        = 0.005  # 5 ms action-obs alignment tolerance
-_ALIGN_WARNING      = 0.01   # 1 % misaligned steps
-_ALIGN_CRITICAL     = 0.05
+_ALIGN_TOL_S = 0.005  # 5 ms action-obs alignment tolerance
+_ALIGN_WARNING = 0.01  # 1 % misaligned steps
+_ALIGN_CRITICAL = 0.05
 
-_CAMERA_PREFIXES    = ("camera", "cam", "rgb", "depth", "wrist", "overhead")
+_CAMERA_PREFIXES = ("camera", "cam", "rgb", "depth", "wrist", "overhead")
 
 # ── camera-physics drift thresholds (frames) ─────────────────────────────────
 #
@@ -76,13 +77,13 @@ _CAMERA_PREFIXES    = ("camera", "cam", "rgb", "depth", "wrist", "overhead")
 # Until then, treat WARNING/CRITICAL levels here as informed guesses.
 # Do not cite these numbers in published results.
 
-_DRIFT_WARNING_FRAMES:  int = 2   # 40 ms at 50 Hz — NOT VALIDATED
-_DRIFT_CRITICAL_FRAMES: int = 5   # 100 ms at 50 Hz — NOT VALIDATED
+_DRIFT_WARNING_FRAMES: int = 2  # 40 ms at 50 Hz — NOT VALIDATED
+_DRIFT_CRITICAL_FRAMES: int = 5  # 100 ms at 50 Hz — NOT VALIDATED
 
 # Observation key fragments used to detect joint-velocity arrays.
 _JOINT_VEL_KEYS = frozenset(["joint_vel", "robot0_joint_vel", "velocity"])
 # Observation key fragments used to detect image arrays.
-_VISUAL_KEYS    = frozenset(["camera", "image", "rgb", "depth", "visual"])
+_VISUAL_KEYS = frozenset(["camera", "image", "rgb", "depth", "visual"])
 
 
 @dataclass
@@ -107,21 +108,21 @@ class TemporalAnalyzer(Analyzer):
                           If None, auto-detected by prefix matching.
     """
 
-    jitter_cv_warning:    float = _JITTER_CV_WARNING
-    jitter_cv_critical:   float = _JITTER_CV_CRITICAL
-    dropout_k:            float = _DROPOUT_K
-    dropout_warning:      float = _DROPOUT_WARNING
-    dropout_critical:     float = _DROPOUT_CRITICAL
-    cam_lag_warning_s:    float = _CAM_LAG_WARNING_S
-    cam_lag_critical_s:   float = _CAM_LAG_CRITICAL_S
-    align_tol_s:          float = _ALIGN_TOL_S
-    align_warning:        float = _ALIGN_WARNING
-    align_critical:       float = _ALIGN_CRITICAL
-    drift_warning_frames: int   = _DRIFT_WARNING_FRAMES
-    drift_critical_frames: int  = _DRIFT_CRITICAL_FRAMES
-    n_bootstrap:          int   = 1000
-    ci_level:             float = 0.95
-    camera_keys:          Optional[list[str]] = None
+    jitter_cv_warning: float = _JITTER_CV_WARNING
+    jitter_cv_critical: float = _JITTER_CV_CRITICAL
+    dropout_k: float = _DROPOUT_K
+    dropout_warning: float = _DROPOUT_WARNING
+    dropout_critical: float = _DROPOUT_CRITICAL
+    cam_lag_warning_s: float = _CAM_LAG_WARNING_S
+    cam_lag_critical_s: float = _CAM_LAG_CRITICAL_S
+    align_tol_s: float = _ALIGN_TOL_S
+    align_warning: float = _ALIGN_WARNING
+    align_critical: float = _ALIGN_CRITICAL
+    drift_warning_frames: int = _DRIFT_WARNING_FRAMES
+    drift_critical_frames: int = _DRIFT_CRITICAL_FRAMES
+    n_bootstrap: int = 1000
+    ci_level: float = 0.95
+    camera_keys: Optional[list[str]] = None
 
     @property
     def name(self) -> str:
@@ -170,7 +171,7 @@ class TemporalAnalyzer(Analyzer):
         hints = self._policy_hints(flags, policy_family, raw)
 
         # Per-episode arrays for Phase 2 comparison/curation (convention: "per_episode_<key>").
-        raw["per_episode_jitter_cv"]        = jitter_raw.get("episode_values", [])
+        raw["per_episode_jitter_cv"] = jitter_raw.get("episode_values", [])
         raw["per_episode_dropout_fraction"] = dropout_raw.get("episode_values", [])
         raw["per_episode_drift_lag_frames"] = drift_raw.get("episode_lags", []) if drift_raw else []
 
@@ -183,9 +184,7 @@ class TemporalAnalyzer(Analyzer):
 
     # ── metric: timestamp jitter ─────────────────────────────────────────────
 
-    def _check_jitter(
-        self, batch: EpisodeBatch
-    ) -> tuple[Optional[RiskFlag], dict]:
+    def _check_jitter(self, batch: EpisodeBatch) -> tuple[Optional[RiskFlag], dict]:
         ep_values = [_episode_jitter_cv(ep) for ep in batch.episodes]
         cvs = [v for v in ep_values if v is not None]
 
@@ -194,18 +193,26 @@ class TemporalAnalyzer(Analyzer):
 
         arr = np.array(cvs)
         stat, lo, hi = _bootstrap_ci(arr, np.mean, self.n_bootstrap, self.ci_level)
-        raw = {"mean_cv": float(stat), "ci_lower": float(lo), "ci_upper": float(hi),
-               "n_episodes": len(cvs), "episode_values": ep_values}
+        raw = {
+            "mean_cv": float(stat),
+            "ci_lower": float(lo),
+            "ci_upper": float(hi),
+            "n_episodes": len(cvs),
+            "episode_values": ep_values,
+        }
 
-        level = self._threshold_level(
-            stat, self.jitter_cv_warning, self.jitter_cv_critical
-        )
+        level = self._threshold_level(stat, self.jitter_cv_warning, self.jitter_cv_critical)
         if level == RiskLevel.OK:
             return RiskFlag(
                 level=RiskLevel.OK,
                 metric="timestamp_jitter_cv",
-                observed=ObservedValue(value=stat, ci_lower=lo, ci_upper=hi,
-                                       ci_level=self.ci_level, ci_method="bootstrap"),
+                observed=ObservedValue(
+                    value=stat,
+                    ci_lower=lo,
+                    ci_upper=hi,
+                    ci_level=self.ci_level,
+                    ci_method="bootstrap",
+                ),
                 threshold=self.jitter_cv_warning,
                 interpretation="Step-to-step timing is consistent.",
                 implication="No jitter risk detected.",
@@ -214,8 +221,9 @@ class TemporalAnalyzer(Analyzer):
         return RiskFlag(
             level=level,
             metric="timestamp_jitter_cv",
-            observed=ObservedValue(value=stat, ci_lower=lo, ci_upper=hi,
-                                   ci_level=self.ci_level, ci_method="bootstrap"),
+            observed=ObservedValue(
+                value=stat, ci_lower=lo, ci_upper=hi, ci_level=self.ci_level, ci_method="bootstrap"
+            ),
             threshold=self.jitter_cv_warning,
             interpretation=(
                 f"High coefficient of variation in inter-step timing "
@@ -230,29 +238,31 @@ class TemporalAnalyzer(Analyzer):
 
     # ── metric: timestamp dropout ────────────────────────────────────────────
 
-    def _check_dropout(
-        self, batch: EpisodeBatch
-    ) -> tuple[Optional[RiskFlag], dict]:
-        ep_values = [
-            _episode_dropout_fraction(ep, self.dropout_k)
-            for ep in batch.episodes
-        ]
+    def _check_dropout(self, batch: EpisodeBatch) -> tuple[Optional[RiskFlag], dict]:
+        ep_values = [_episode_dropout_fraction(ep, self.dropout_k) for ep in batch.episodes]
         arr = np.array(ep_values)
         stat, lo, hi = _bootstrap_ci(arr, np.mean, self.n_bootstrap, self.ci_level)
-        raw = {"mean_dropout_fraction": float(stat), "ci_lower": float(lo),
-               "ci_upper": float(hi), "dropout_k": self.dropout_k,
-               "episode_values": ep_values}
+        raw = {
+            "mean_dropout_fraction": float(stat),
+            "ci_lower": float(lo),
+            "ci_upper": float(hi),
+            "dropout_k": self.dropout_k,
+            "episode_values": ep_values,
+        }
 
-        level = self._threshold_level(
-            stat, self.dropout_warning, self.dropout_critical
-        )
+        level = self._threshold_level(stat, self.dropout_warning, self.dropout_critical)
         if level == RiskLevel.OK:
             return RiskFlag(
                 level=RiskLevel.OK,
                 metric="timestamp_dropout_rate",
-                observed=ObservedValue(value=stat, unit="fraction",
-                                       ci_lower=lo, ci_upper=hi,
-                                       ci_level=self.ci_level, ci_method="bootstrap"),
+                observed=ObservedValue(
+                    value=stat,
+                    unit="fraction",
+                    ci_lower=lo,
+                    ci_upper=hi,
+                    ci_level=self.ci_level,
+                    ci_method="bootstrap",
+                ),
                 threshold=self.dropout_warning,
                 interpretation="Timestamp dropout rate is within acceptable range.",
                 implication="No dropout risk detected.",
@@ -262,9 +272,14 @@ class TemporalAnalyzer(Analyzer):
         return RiskFlag(
             level=level,
             metric="timestamp_dropout_rate",
-            observed=ObservedValue(value=stat, unit="fraction",
-                                   ci_lower=lo, ci_upper=hi,
-                                   ci_level=self.ci_level, ci_method="bootstrap"),
+            observed=ObservedValue(
+                value=stat,
+                unit="fraction",
+                ci_lower=lo,
+                ci_upper=hi,
+                ci_level=self.ci_level,
+                ci_method="bootstrap",
+            ),
             threshold=self.dropout_warning,
             interpretation=(
                 f"{stat:.1%} of steps have inter-step gaps > {self.dropout_k}× "
@@ -295,19 +310,26 @@ class TemporalAnalyzer(Analyzer):
         arr = np.array(lag_stds)
         stat, lo, hi = _bootstrap_ci(arr, np.mean, self.n_bootstrap, self.ci_level)
         stat_ms, lo_ms, hi_ms = stat * 1000, lo * 1000, hi * 1000
-        raw = {"mean_lag_std_ms": float(stat_ms), "ci_lower_ms": float(lo_ms),
-               "ci_upper_ms": float(hi_ms), "n_episodes": len(lag_stds)}
+        raw = {
+            "mean_lag_std_ms": float(stat_ms),
+            "ci_lower_ms": float(lo_ms),
+            "ci_upper_ms": float(hi_ms),
+            "n_episodes": len(lag_stds),
+        }
 
-        level = self._threshold_level(
-            stat, self.cam_lag_warning_s, self.cam_lag_critical_s
-        )
+        level = self._threshold_level(stat, self.cam_lag_warning_s, self.cam_lag_critical_s)
         if level == RiskLevel.OK:
             return RiskFlag(
                 level=RiskLevel.OK,
                 metric=f"camera_lag_std[{cam_key}]",
-                observed=ObservedValue(value=stat_ms, unit="ms",
-                                       ci_lower=lo_ms, ci_upper=hi_ms,
-                                       ci_level=self.ci_level, ci_method="bootstrap"),
+                observed=ObservedValue(
+                    value=stat_ms,
+                    unit="ms",
+                    ci_lower=lo_ms,
+                    ci_upper=hi_ms,
+                    ci_level=self.ci_level,
+                    ci_method="bootstrap",
+                ),
                 threshold=self.cam_lag_warning_s * 1000,
                 interpretation=f"Camera '{cam_key}' lag variance is within threshold.",
                 implication="No camera synchronisation risk detected.",
@@ -316,9 +338,14 @@ class TemporalAnalyzer(Analyzer):
         return RiskFlag(
             level=level,
             metric=f"camera_lag_std[{cam_key}]",
-            observed=ObservedValue(value=stat_ms, unit="ms",
-                                   ci_lower=lo_ms, ci_upper=hi_ms,
-                                   ci_level=self.ci_level, ci_method="bootstrap"),
+            observed=ObservedValue(
+                value=stat_ms,
+                unit="ms",
+                ci_lower=lo_ms,
+                ci_upper=hi_ms,
+                ci_level=self.ci_level,
+                ci_method="bootstrap",
+            ),
             threshold=self.cam_lag_critical_s * 1000,
             interpretation=(
                 f"Camera '{cam_key}' timestamp std-dev relative to master clock "
@@ -333,9 +360,7 @@ class TemporalAnalyzer(Analyzer):
 
     # ── metric: action-observation alignment ─────────────────────────────────
 
-    def _check_alignment(
-        self, batch: EpisodeBatch
-    ) -> tuple[Optional[RiskFlag], dict]:
+    def _check_alignment(self, batch: EpisodeBatch) -> tuple[Optional[RiskFlag], dict]:
         fracs: list[float] = []
         for ep in batch.episodes:
             if ep.action_timestamps is None:
@@ -348,19 +373,26 @@ class TemporalAnalyzer(Analyzer):
 
         arr = np.array(fracs)
         stat, lo, hi = _bootstrap_ci(arr, np.mean, self.n_bootstrap, self.ci_level)
-        raw = {"mean_misalign_fraction": float(stat), "ci_lower": float(lo),
-               "ci_upper": float(hi), "tolerance_ms": self.align_tol_s * 1000}
+        raw = {
+            "mean_misalign_fraction": float(stat),
+            "ci_lower": float(lo),
+            "ci_upper": float(hi),
+            "tolerance_ms": self.align_tol_s * 1000,
+        }
 
-        level = self._threshold_level(
-            stat, self.align_warning, self.align_critical
-        )
+        level = self._threshold_level(stat, self.align_warning, self.align_critical)
         if level == RiskLevel.OK:
             return RiskFlag(
                 level=RiskLevel.OK,
                 metric="action_obs_misalignment",
-                observed=ObservedValue(value=stat, unit="fraction",
-                                       ci_lower=lo, ci_upper=hi,
-                                       ci_level=self.ci_level, ci_method="bootstrap"),
+                observed=ObservedValue(
+                    value=stat,
+                    unit="fraction",
+                    ci_lower=lo,
+                    ci_upper=hi,
+                    ci_level=self.ci_level,
+                    ci_method="bootstrap",
+                ),
                 threshold=self.align_warning,
                 interpretation="Action and observation timestamps are well-aligned.",
                 implication="No alignment risk detected.",
@@ -370,9 +402,14 @@ class TemporalAnalyzer(Analyzer):
         return RiskFlag(
             level=level,
             metric="action_obs_misalignment",
-            observed=ObservedValue(value=stat, unit="fraction",
-                                   ci_lower=lo, ci_upper=hi,
-                                   ci_level=self.ci_level, ci_method="bootstrap"),
+            observed=ObservedValue(
+                value=stat,
+                unit="fraction",
+                ci_lower=lo,
+                ci_upper=hi,
+                ci_level=self.ci_level,
+                ci_method="bootstrap",
+            ),
             threshold=self.align_warning,
             interpretation=(
                 f"{stat:.1%} of steps have action-observation timestamp offsets "
@@ -401,15 +438,16 @@ class TemporalAnalyzer(Analyzer):
         hints: list[CompatibilityHint] = []
 
         jitter_cv = raw.get("jitter", {}).get("mean_cv")
-        dropout   = raw.get("dropout", {}).get("mean_dropout_fraction")
-        drift_lag = raw.get("camera_physics_drift", {}).get("median_lag_frames") if raw.get("camera_physics_drift") else None
+        dropout = raw.get("dropout", {}).get("mean_dropout_fraction")
+        drift_lag = (
+            raw.get("camera_physics_drift", {}).get("median_lag_frames")
+            if raw.get("camera_physics_drift")
+            else None
+        )
         has_cam_lag_crit = any(
-            f.level == RiskLevel.CRITICAL and "camera_lag" in f.metric
-            for f in flags
+            f.level == RiskLevel.CRITICAL and "camera_lag" in f.metric for f in flags
         )
-        has_drift_issue = (
-            drift_lag is not None and abs(drift_lag) > self.drift_warning_frames
-        )
+        has_drift_issue = drift_lag is not None and abs(drift_lag) > self.drift_warning_frames
 
         if "diffusion" in pf:
             caveats: list[str] = []
@@ -433,13 +471,15 @@ class TemporalAnalyzer(Analyzer):
                     "corrupts diffusion conditioning on multi-modal history."
                 )
                 compatible = False
-            hints.append(CompatibilityHint(
-                policy_family="Diffusion Policy",
-                compatible=compatible,
-                explanation="Temporal stability is a key prerequisite for "
-                            "diffusion-based BC policies.",
-                caveats=caveats,
-            ))
+            hints.append(
+                CompatibilityHint(
+                    policy_family="Diffusion Policy",
+                    compatible=compatible,
+                    explanation="Temporal stability is a key prerequisite for "
+                    "diffusion-based BC policies.",
+                    caveats=caveats,
+                )
+            )
 
         if pf in ("act", "action chunking"):
             caveats = []
@@ -450,13 +490,15 @@ class TemporalAnalyzer(Analyzer):
                     "variable-length gaps that misalign chunk boundaries."
                 )
                 compatible = None
-            hints.append(CompatibilityHint(
-                policy_family="ACT",
-                compatible=compatible,
-                explanation="ACT is sensitive to consistent episode step counts "
-                            "and action chunk alignment.",
-                caveats=caveats,
-            ))
+            hints.append(
+                CompatibilityHint(
+                    policy_family="ACT",
+                    compatible=compatible,
+                    explanation="ACT is sensitive to consistent episode step counts "
+                    "and action chunk alignment.",
+                    caveats=caveats,
+                )
+            )
 
         if "transformer" in pf:
             caveats = []
@@ -474,13 +516,15 @@ class TemporalAnalyzer(Analyzer):
                     "different physical states, degrading temporal attention."
                 )
                 compatible = None
-            hints.append(CompatibilityHint(
-                policy_family="Transformer",
-                compatible=compatible,
-                explanation="Transformer BC policies rely on positional encoding "
-                            "that assumes fixed-rate sequences.",
-                caveats=caveats,
-            ))
+            hints.append(
+                CompatibilityHint(
+                    policy_family="Transformer",
+                    compatible=compatible,
+                    explanation="Transformer BC policies rely on positional encoding "
+                    "that assumes fixed-rate sequences.",
+                    caveats=caveats,
+                )
+            )
 
         return hints
 
@@ -593,7 +637,10 @@ class TemporalAnalyzer(Analyzer):
                 "Apply timestamp correction or use `calibra retarget` to re-align "
                 "before training."
             ),
-            affected_fraction=float(sum(1 for lag in lag_samples if abs(lag) > self.drift_warning_frames) / len(lag_samples)),
+            affected_fraction=float(
+                sum(1 for lag in lag_samples if abs(lag) > self.drift_warning_frames)
+                / len(lag_samples)
+            ),
         ), raw
 
     # ── helpers ──────────────────────────────────────────────────────────────
@@ -602,14 +649,11 @@ class TemporalAnalyzer(Analyzer):
         if self.camera_keys is not None:
             return self.camera_keys
         return [
-            k for k in batch.modalities
-            if any(k.lower().startswith(p) for p in _CAMERA_PREFIXES)
+            k for k in batch.modalities if any(k.lower().startswith(p) for p in _CAMERA_PREFIXES)
         ]
 
     @staticmethod
-    def _threshold_level(
-        value: float, warning: float, critical: float
-    ) -> RiskLevel:
+    def _threshold_level(value: float, warning: float, critical: float) -> RiskLevel:
         if value >= critical:
             return RiskLevel.CRITICAL
         if value >= warning:
@@ -618,6 +662,7 @@ class TemporalAnalyzer(Analyzer):
 
 
 # ── per-episode metric helpers (pure functions, testable in isolation) ───────
+
 
 def _episode_jitter_cv(ep: Episode) -> Optional[float]:
     """Coefficient of variation of inter-step deltas. None if < 3 steps."""
@@ -684,10 +729,9 @@ def _bootstrap_ci(
         v = float(stat_fn(values))
         return v, v, v
 
-    boot_stats = np.array([
-        stat_fn(rng.choice(values, size=len(values), replace=True))
-        for _ in range(n_boot)
-    ])
+    boot_stats = np.array(
+        [stat_fn(rng.choice(values, size=len(values), replace=True)) for _ in range(n_boot)]
+    )
     alpha = (1.0 - ci_level) / 2.0
     return (
         float(stat_fn(values)),

@@ -25,6 +25,7 @@ are loaded into the EpisodeBatch.
 Dependencies:
   pip install 'calibra[lerobot]'  (datasets, pyarrow, duckdb)
 """
+
 from __future__ import annotations
 
 import json
@@ -46,6 +47,7 @@ if TYPE_CHECKING:
 def _require_datasets() -> "_hf_datasets":
     try:
         import datasets
+
         return datasets
     except ImportError:
         raise ImportError(
@@ -57,6 +59,7 @@ def _require_datasets() -> "_hf_datasets":
 def _require_duckdb():
     try:
         import duckdb
+
         return duckdb
     except ImportError:
         raise ImportError(
@@ -72,7 +75,7 @@ def _is_hub_uri(path: str) -> bool:
 
 def _strip_hf_prefix(path: str) -> str:
     """Remove 'hf://' prefix if present, returning the bare repo ID."""
-    return path[len("hf://"):] if _is_hub_uri(path) else path
+    return path[len("hf://") :] if _is_hub_uri(path) else path
 
 
 def _is_hub_id(path: str) -> bool:
@@ -207,12 +210,10 @@ class LeRobotReader(DatasetReader):
         schema = pq.read_schema(str(parquet_files[0]))
         scalar_cols = [c for c in schema.names if c not in image_cols]
 
-        tables = [
-            pq.read_table(str(f), columns=scalar_cols)
-            for f in parquet_files
-        ]
+        tables = [pq.read_table(str(f), columns=scalar_cols) for f in parquet_files]
 
         import pyarrow as pa
+
         combined = pa.concat_tables(tables)
         df = combined.to_pandas()
         df = df.sort_values(["episode_index", "frame_index"]).reset_index(drop=True)
@@ -257,8 +258,10 @@ class LeRobotReader(DatasetReader):
         task = _read_task_v2(p)
 
         episode_ids: list[int] = [
-            row[0] for row in
-            conn.execute("SELECT DISTINCT episode_index FROM dataset ORDER BY episode_index").fetchall()
+            row[0]
+            for row in conn.execute(
+                "SELECT DISTINCT episode_index FROM dataset ORDER BY episode_index"
+            ).fetchall()
         ]
 
         for ep_id in episode_ids:
@@ -292,14 +295,11 @@ class LeRobotReader(DatasetReader):
         file_list_sql = ", ".join(f"'{f}'" for f in parquet_files)
         conn.execute(f"CREATE VIEW raw AS SELECT * FROM read_parquet([{file_list_sql}])")
 
-        all_cols: list[str] = [
-            row[0] for row in conn.execute("DESCRIBE raw").fetchall()
-        ]
+        all_cols: list[str] = [row[0] for row in conn.execute("DESCRIBE raw").fetchall()]
         scalar_cols = [c for c in all_cols if c not in image_cols]
         col_sql = ", ".join(f'"{c}"' for c in scalar_cols)
         conn.execute(
-            f"CREATE VIEW dataset AS SELECT {col_sql} FROM raw "
-            f"ORDER BY episode_index, frame_index"
+            f"CREATE VIEW dataset AS SELECT {col_sql} FROM raw ORDER BY episode_index, frame_index"
         )
         return conn
 
@@ -336,10 +336,8 @@ class LeRobotReader(DatasetReader):
         """Return columns that are not HuggingFace Image features."""
         try:
             from datasets import Image as HFImage
-            return [
-                col for col, feat in ds.features.items()
-                if not isinstance(feat, HFImage)
-            ]
+
+            return [col for col, feat in ds.features.items() if not isinstance(feat, HFImage)]
         except ImportError:
             return [col for col in ds.column_names if "image" not in col.lower()]
 
@@ -400,6 +398,7 @@ class LeRobotReader(DatasetReader):
 
 
 # ── metadata readers ─────────────────────────────────────────────────────────
+
 
 def _image_columns_from_info(info: dict) -> set[str]:
     """

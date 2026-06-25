@@ -4,6 +4,7 @@ Self-Supervised (SSL) Trajectory Embedding Analyzer.
 Projects state-action trajectories into an embedding space to measure
 global trajectory novelty and detect anomalous demonstration outliers.
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -17,8 +18,8 @@ from calibra.schema.report import AnalyzerResult, RiskFlag, RiskLevel, ObservedV
 class SSLTrajectoryEmbedderAnalyzer(Analyzer):
     """
     Trajectory-level embedder analyzing structural novelty.
-    
-    Uses sequence projection to map variable-length states/actions to 
+
+    Uses sequence projection to map variable-length states/actions to
     fixed-size vectors, computing pairwise cosine distance to locate
     behavioral outliers and measure dataset representation coverage.
     """
@@ -84,18 +85,20 @@ class SSLTrajectoryEmbedderAnalyzer(Analyzer):
         # We ignore the self-distance (which is 0.0) by filling the diagonal with infinity
         np.fill_diagonal(dist_matrix, np.inf)
         nearest_distances = np.min(dist_matrix, axis=0)
-        np.fill_diagonal(dist_matrix, 0.0) # restore diagonal
+        np.fill_diagonal(dist_matrix, 0.0)  # restore diagonal
 
         # Compute global centroid distance to find outliers
         mean_emb = np.mean(embs, axis=0)
-        mean_emb_norm = mean_emb / np.linalg.norm(mean_emb) if np.linalg.norm(mean_emb) > 1e-8 else mean_emb
+        mean_emb_norm = (
+            mean_emb / np.linalg.norm(mean_emb) if np.linalg.norm(mean_emb) > 1e-8 else mean_emb
+        )
         centroid_distances = 1.0 - (embs @ mean_emb_norm)
 
         # Calculate MAD (Median Absolute Deviation) outliers on centroid distances
         median_dist = np.median(centroid_distances)
         mad = np.median(np.abs(centroid_distances - median_dist))
         mad = max(mad, 1e-6)
-        
+
         # Outliers are trajectories with distance > median + 3 * (1.4826 * MAD)
         threshold = median_dist + 3 * (1.4826 * mad)
         outliers = centroid_distances > threshold
@@ -122,7 +125,7 @@ class SSLTrajectoryEmbedderAnalyzer(Analyzer):
 
         # Compute dataset coverage score (average distance to nearest neighbor)
         mean_nearest_dist = float(np.mean(nearest_distances[np.isfinite(nearest_distances)]))
-        
+
         # If coverage distance is very high, it means episodes are sparse and fragmented
         if mean_nearest_dist > 0.6:
             flags.append(

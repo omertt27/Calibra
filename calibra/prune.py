@@ -29,6 +29,7 @@ The JSON contains:
 
 To apply to a LeRobot v2 dataset, use the episode IDs to filter your Parquet shards.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -49,14 +50,16 @@ def run_prune(argv: list[str]) -> None:
     )
     p.add_argument("path", help="Path or Hub ID of the dataset to prune")
     p.add_argument(
-        "--keep", "-k",
+        "--keep",
+        "-k",
         type=float,
         default=0.5,
         metavar="FRACTION",
         help="Target fraction of episodes to keep (default: 0.5)",
     )
     p.add_argument(
-        "--out", "-o",
+        "--out",
+        "-o",
         metavar="PATH",
         default="coreset_index.json",
         help="Output JSON file path (default: coreset_index.json)",
@@ -67,7 +70,8 @@ def run_prune(argv: list[str]) -> None:
         help="Stage 1 only — filter quality failures but skip diversity selection",
     )
     p.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         metavar="FMT",
         choices=["hdf5", "isaac_lab", "lerobot", "rlds", "mcap"],
         help="Force a format adapter (default: auto-detect)",
@@ -83,39 +87,79 @@ def run_prune(argv: list[str]) -> None:
 
     # Stage 1 quality thresholds
     q = p.add_argument_group("Stage 1 quality thresholds (override defaults)")
-    q.add_argument("--max-spike-rate",    type=float, default=None,
-                   help="Max jerk spike fraction per episode (default: 0.10; "
-                        "auto-raised to 0.30 when scripted motion signature is detected)")
-    q.add_argument("--max-vel-disc-rate", type=float, default=0.25,
-                   help="Max velocity discontinuity fraction (default: 0.25)")
-    q.add_argument("--max-dropout",       type=float, default=0.10,
-                   help="Max frame dropout fraction (default: 0.10)")
-    q.add_argument("--min-ldlj",          type=float, default=-30.0,
-                   help="Min LDLJ value (more negative = worse, default: -30.0)")
-    q.add_argument("--min-length",        type=int,   default=10,
-                   help="Min episode length in steps (default: 10)")
+    q.add_argument(
+        "--max-spike-rate",
+        type=float,
+        default=None,
+        help="Max jerk spike fraction per episode (default: 0.10; "
+        "auto-raised to 0.30 when scripted motion signature is detected)",
+    )
+    q.add_argument(
+        "--max-vel-disc-rate",
+        type=float,
+        default=0.25,
+        help="Max velocity discontinuity fraction (default: 0.25)",
+    )
+    q.add_argument(
+        "--max-dropout", type=float, default=0.10, help="Max frame dropout fraction (default: 0.10)"
+    )
+    q.add_argument(
+        "--min-ldlj",
+        type=float,
+        default=-30.0,
+        help="Min LDLJ value (more negative = worse, default: -30.0)",
+    )
+    q.add_argument(
+        "--min-length", type=int, default=10, help="Min episode length in steps (default: 10)"
+    )
 
     # Stage 2 diversity
     d = p.add_argument_group("Stage 2 diversity selection")
-    d.add_argument("--diversity-weight", type=float, default=0.7,
-                   help="Weight of action-space features vs quality features "
-                        "in diversity computation (0–1, default: 0.7)")
-    d.add_argument("--entropy-weight", type=float, default=0.0,
-                   help="Weight of per-trajectory Shannon entropy in the diversity "
-                        "feature vector (0–1, default: 0). Set > 0 to preferentially "
-                        "retain high-entropy (informative) episodes. "
-                        "Automatically set to 0.4 when --policy gr00t is used.")
-    d.add_argument("--strategy", choices=["diversity", "influence", "energy", "novelty"], default="diversity",
-                   help="Coreset selection strategy. Choose 'novelty' for transition-novelty pruning [Research Preview] (default: diversity)")
-    d.add_argument("--latent-space", choices=["none", "proprio", "visual", "resnet", "clip", "vlm"], default="none",
-                   help="Feature representation space for diversity selection (default: none)")
-    d.add_argument("--approximate", action="store_true",
-                   help="Use approximate MiniBatch diversity selection (O(N×B) instead of "
-                        "O(N×K)). Auto-enabled when N > 50 000. Suitable for 100k+ episodes.")
-    d.add_argument("--batch-size", type=int, default=1000,
-                   help="MiniBatch size for --approximate mode (default: 1000)")
-    p.add_argument("--curriculum", action="store_true",
-                   help="Slice the coreset into progressive learning curriculum stages (curriculum_index.json)")
+    d.add_argument(
+        "--diversity-weight",
+        type=float,
+        default=0.7,
+        help="Weight of action-space features vs quality features "
+        "in diversity computation (0–1, default: 0.7)",
+    )
+    d.add_argument(
+        "--entropy-weight",
+        type=float,
+        default=0.0,
+        help="Weight of per-trajectory Shannon entropy in the diversity "
+        "feature vector (0–1, default: 0). Set > 0 to preferentially "
+        "retain high-entropy (informative) episodes. "
+        "Automatically set to 0.4 when --policy gr00t is used.",
+    )
+    d.add_argument(
+        "--strategy",
+        choices=["diversity", "influence", "energy", "novelty"],
+        default="diversity",
+        help="Coreset selection strategy. Choose 'novelty' for transition-novelty pruning [Research Preview] (default: diversity)",
+    )
+    d.add_argument(
+        "--latent-space",
+        choices=["none", "proprio", "visual", "resnet", "clip", "vlm"],
+        default="none",
+        help="Feature representation space for diversity selection (default: none)",
+    )
+    d.add_argument(
+        "--approximate",
+        action="store_true",
+        help="Use approximate MiniBatch diversity selection (O(N×B) instead of "
+        "O(N×K)). Auto-enabled when N > 50 000. Suitable for 100k+ episodes.",
+    )
+    d.add_argument(
+        "--batch-size",
+        type=int,
+        default=1000,
+        help="MiniBatch size for --approximate mode (default: 1000)",
+    )
+    p.add_argument(
+        "--curriculum",
+        action="store_true",
+        help="Slice the coreset into progressive learning curriculum stages (curriculum_index.json)",
+    )
 
     p.add_argument(
         "--export-dataset",
@@ -127,8 +171,12 @@ def run_prune(argv: list[str]) -> None:
             "Hub IDs must be downloaded locally first."
         ),
     )
-    p.add_argument("--json", "-j", action="store_true",
-                   help="Print full JSON result to stdout in addition to writing --out")
+    p.add_argument(
+        "--json",
+        "-j",
+        action="store_true",
+        help="Print full JSON result to stdout in addition to writing --out",
+    )
     args = p.parse_args(argv)
 
     if not (0.0 < args.keep <= 1.0):
@@ -137,11 +185,12 @@ def run_prune(argv: list[str]) -> None:
 
     dataset_path = args.path
     if dataset_path.startswith("hf://"):
-        dataset_path = dataset_path[len("hf://"):]
+        dataset_path = dataset_path[len("hf://") :]
 
     reader = None
     if args.format:
         from calibra.__main__ import _get_reader
+
         reader = _get_reader(args.format)
 
     def log(msg: str) -> None:
@@ -151,6 +200,7 @@ def run_prune(argv: list[str]) -> None:
 
     try:
         from calibra.ingestion.registry import load
+
         batch = load(dataset_path, reader=reader)
     except Exception as exc:
         print(f"error loading dataset: {exc}", file=sys.stderr)
@@ -169,19 +219,19 @@ def run_prune(argv: list[str]) -> None:
 
     # Apply GR00T-specific defaults before building the selector.
     user_set_spike_rate = args.max_spike_rate is not None
-    max_spike_rate    = args.max_spike_rate if user_set_spike_rate else 0.10
+    max_spike_rate = args.max_spike_rate if user_set_spike_rate else 0.10
     max_vel_disc_rate = args.max_vel_disc_rate
-    max_dropout       = args.max_dropout
-    diversity_weight  = args.diversity_weight
-    entropy_weight    = args.entropy_weight
+    max_dropout = args.max_dropout
+    diversity_weight = args.diversity_weight
+    entropy_weight = args.entropy_weight
 
     if args.policy and "gr00t" in args.policy.lower():
         # GR00T fine-tuning is sensitive to jerk and discontinuities.
-        max_spike_rate    = min(max_spike_rate,    0.05)
+        max_spike_rate = min(max_spike_rate, 0.05)
         max_vel_disc_rate = min(max_vel_disc_rate, 0.10)
-        max_dropout       = min(max_dropout,       0.05)
+        max_dropout = min(max_dropout, 0.05)
         if entropy_weight == 0.0:
-            entropy_weight = 0.4   # prefer informative episodes by default
+            entropy_weight = 0.4  # prefer informative episodes by default
         log("  [--policy gr00t] Applying GR00T quality thresholds and entropy weighting.")
 
     # Auto-adjust spike threshold for scripted/planner datasets.
@@ -253,6 +303,7 @@ def run_prune(argv: list[str]) -> None:
         if not contact_fractions:
             try:
                 from calibra.analyzers.phase_balance import PhaseBalanceAnalyzer
+
                 analyzer = PhaseBalanceAnalyzer()
                 res = analyzer.analyze(batch)
                 per_ep_contact = res.raw_metrics.get("per_episode_contact", [])
@@ -264,9 +315,7 @@ def run_prune(argv: list[str]) -> None:
         # Sort the kept episode IDs by contact_phase_fraction descending
         keep_ids = result.keep_episode_ids
         sorted_keep_ids = sorted(
-            keep_ids,
-            key=lambda eid: contact_fractions.get(eid, 0.0),
-            reverse=True
+            keep_ids, key=lambda eid: contact_fractions.get(eid, 0.0), reverse=True
         )
 
         # Partition into three stages:
@@ -282,7 +331,7 @@ def run_prune(argv: list[str]) -> None:
 
         stage_1 = sorted_keep_ids[:s1_len]
         stage_2 = sorted_keep_ids[s1_len : s1_len + s2_len]
-        stage_3 = sorted_keep_ids[s1_len + s2_len:]
+        stage_3 = sorted_keep_ids[s1_len + s2_len :]
 
         curriculum_data = {
             "stage_1_intuitive_physics": stage_1,
@@ -303,6 +352,7 @@ def run_prune(argv: list[str]) -> None:
 
     if args.export_dataset:
         from calibra.curation.export import export_dataset
+
         log(f"Exporting coreset dataset to {args.export_dataset!r} ...")
         try:
             exported = export_dataset(
@@ -312,10 +362,7 @@ def run_prune(argv: list[str]) -> None:
                 log=log,
             )
             log(f"Dataset exported to {exported}")
-            print(
-                f"\n  Ready to train:\n"
-                f"    python train.py --dataset {exported}"
-            )
+            print(f"\n  Ready to train:\n    python train.py --dataset {exported}")
         except Exception as exc:
             print(f"error exporting dataset: {exc}", file=sys.stderr)
             sys.exit(1)

@@ -11,9 +11,11 @@ contains an explicit "timestamp" key.
 
 Dependency: pip install 'calibra[rlds]'  (tensorflow, tensorflow-datasets)
 """
+
 from __future__ import annotations
 
 from pathlib import Path
+from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -31,6 +33,7 @@ def _require_tfds() -> tuple["tf", "tfds"]:
     try:
         import tensorflow as tf
         import tensorflow_datasets as tfds
+
         return tf, tfds
     except ImportError:
         raise ImportError(
@@ -84,15 +87,16 @@ class RLDSReader(DatasetReader):
             n_episodes = info.splits["train"].num_examples
 
         def loader_fn(idx: int) -> Episode:
-            fresh_ds = tfds.load(path, split=f"train[{idx}:{idx+1}]")
+            fresh_ds = tfds.load(path, split=f"train[{idx}:{idx + 1}]")
             ep = next(iter(fresh_ds))
             return self._episode_from_rlds(ep, idx, path, tf)
 
-        def iterator_fn() -> Iterable[Episode]:
+        def iterator_fn() -> Iterator[Episode]:
             for i, ep in enumerate(ds):
                 yield self._episode_from_rlds(ep, i, path, tf)
 
         from calibra.schema.episode import LazyEpisodeList
+
         lazy_eps = LazyEpisodeList(
             loader_fn=loader_fn,
             length=n_episodes,
@@ -106,9 +110,7 @@ class RLDSReader(DatasetReader):
             source_path=path,
         )
 
-    def _episode_from_rlds(
-        self, ep: Any, ep_idx: int, source: str, tf: "tf"
-    ) -> Episode:
+    def _episode_from_rlds(self, ep: Any, ep_idx: int, source: str, tf: "tf") -> Episode:
         steps = ep["steps"]
         step_list = list(steps)
 

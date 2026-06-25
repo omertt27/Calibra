@@ -1,4 +1,5 @@
 """Tests for the coverage entropy analyzer."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -17,6 +18,7 @@ from calibra.schema.report import RiskLevel
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
+
 
 def _make_episode(
     n_steps: int,
@@ -58,8 +60,9 @@ def _make_collapsed_episode(
 
 
 def _batch_of(episodes) -> EpisodeBatch:
-    return EpisodeBatch(episodes=list(episodes), dataset_name="test",
-                        format="hdf5", source_path="/tmp/x.h5")
+    return EpisodeBatch(
+        episodes=list(episodes), dataset_name="test", format="hdf5", source_path="/tmp/x.h5"
+    )
 
 
 def _diverse_batch(n_eps: int = 10, n_steps: int = 200) -> EpisodeBatch:
@@ -67,11 +70,11 @@ def _diverse_batch(n_eps: int = 10, n_steps: int = 200) -> EpisodeBatch:
 
 
 def _collapsed_batch(n_eps: int = 10, n_steps: int = 200) -> EpisodeBatch:
-    return _batch_of([_make_collapsed_episode(n_steps, ep_id=f"ep_{i}")
-                      for i in range(n_eps)])
+    return _batch_of([_make_collapsed_episode(n_steps, ep_id=f"ep_{i}") for i in range(n_eps)])
 
 
 # ── unit tests: marginal entropy ─────────────────────────────────────────────
+
 
 class TestMarginalEntropyBits:
     def test_uniform_has_higher_entropy_than_constant(self):
@@ -96,13 +99,15 @@ class TestMarginalEntropyBits:
         # bins than a wide one → clear entropy separation.
         rng = np.random.default_rng(0)
         narrow = rng.uniform(0.45, 0.55, (1000, 3))  # occupies 5% of [-1, 1]
-        wide   = rng.uniform(-1.0, 1.0,  (1000, 3))  # occupies 100% of [-1, 1]
+        wide = rng.uniform(-1.0, 1.0, (1000, 3))  # occupies 100% of [-1, 1]
         ref = (-1.0, 1.0)
-        assert _marginal_entropy_bits(wide, data_range=ref) > \
-               _marginal_entropy_bits(narrow, data_range=ref)
+        assert _marginal_entropy_bits(wide, data_range=ref) > _marginal_entropy_bits(
+            narrow, data_range=ref
+        )
 
 
 # ── unit tests: PCA variance ─────────────────────────────────────────────────
+
 
 class TestPCATopKFraction:
     def test_rank1_data_has_fraction_near_1(self):
@@ -135,6 +140,7 @@ class TestPCATopKFraction:
 
 # ── unit tests: bimodality heuristic ─────────────────────────────────────────
 
+
 class TestBimodalHeuristic:
     def test_unimodal_is_not_bimodal(self):
         lengths = np.full(20, 50.0)
@@ -143,7 +149,7 @@ class TestBimodalHeuristic:
     def test_bimodal_distribution_detected(self):
         rng = np.random.default_rng(0)
         short = rng.normal(30, 2, 15)
-        long_  = rng.normal(100, 3, 15)
+        long_ = rng.normal(100, 3, 15)
         lengths = np.concatenate([short, long_])
         assert _is_bimodal_heuristic(lengths)
 
@@ -158,6 +164,7 @@ class TestBimodalHeuristic:
 
 
 # ── unit tests: data collection helpers ──────────────────────────────────────
+
 
 class TestCollectActions:
     def test_stacks_across_episodes(self):
@@ -188,13 +195,16 @@ class TestCollectState:
 
 # ── integration: CoverageEntropyAnalyzer ─────────────────────────────────────
 
+
 class TestCoverageEntropyAnalyzerDiverse:
     def test_diverse_batch_ok_flags(self):
         batch = _diverse_batch(10, 300)
         result = CoverageEntropyAnalyzer().analyze(batch)
-        bad = [f for f in result.flags
-               if f.level == RiskLevel.CRITICAL
-               and not np.isnan(f.observed.value)]
+        bad = [
+            f
+            for f in result.flags
+            if f.level == RiskLevel.CRITICAL and not np.isnan(f.observed.value)
+        ]
         assert bad == [], f"Unexpected CRITICAL on diverse data: {[f.metric for f in bad]}"
 
     def test_analyzer_name(self):
@@ -220,12 +230,12 @@ class TestCoverageEntropyAnalyzerCollapsed:
             action_entropy_critical=2.0,
         ).analyze(batch)
         entropy_flags = [
-            f for f in result.flags
+            f
+            for f in result.flags
             if "action_entropy" in f.metric and not np.isnan(f.observed.value)
         ]
         assert entropy_flags, "Expected action_entropy flag"
-        assert any(f.level in (RiskLevel.WARNING, RiskLevel.CRITICAL)
-                   for f in entropy_flags)
+        assert any(f.level in (RiskLevel.WARNING, RiskLevel.CRITICAL) for f in entropy_flags)
 
     def test_diverse_batch_ok_entropy_with_reference_range(self):
         batch = _diverse_batch(10, 300)
@@ -234,7 +244,8 @@ class TestCoverageEntropyAnalyzerCollapsed:
             action_entropy_warning=3.5,
         ).analyze(batch)
         entropy_flags = [
-            f for f in result.flags
+            f
+            for f in result.flags
             if "action_entropy" in f.metric and not np.isnan(f.observed.value)
         ]
         assert entropy_flags
@@ -249,13 +260,15 @@ class TestCoverageEntropyAnalyzerCollapsed:
             t = np.arange(n, dtype=np.float64) * 0.1
             v = rng.random(n)
             # All 4 dims are linear combinations of one direction
-            acts = np.column_stack([v, 2*v, -v, 0.5*v]).astype(np.float32)
-            episodes.append(Episode(
-                metadata=EpisodeMetadata(episode_id=f"ep_{i}"),
-                timestamps=t,
-                observations={"proprio": rng.random((n, 4)).astype(np.float32)},
-                actions=acts,
-            ))
+            acts = np.column_stack([v, 2 * v, -v, 0.5 * v]).astype(np.float32)
+            episodes.append(
+                Episode(
+                    metadata=EpisodeMetadata(episode_id=f"ep_{i}"),
+                    timestamps=t,
+                    observations={"proprio": rng.random((n, 4)).astype(np.float32)},
+                    actions=acts,
+                )
+            )
         batch = _batch_of(episodes)
         result = CoverageEntropyAnalyzer().analyze(batch)
         pca_flags = [f for f in result.flags if "pca" in f.metric]
@@ -266,7 +279,7 @@ class TestCoverageEntropyAnalyzerCollapsed:
 class TestCoverageEntropyAnalyzerBimodal:
     def test_bimodal_episodes_flagged_as_info(self):
         short_eps = [_make_episode(30, ep_id=f"ep_{i}") for i in range(10)]
-        long_eps  = [_make_episode(120, ep_id=f"ep_{i+10}") for i in range(10)]
+        long_eps = [_make_episode(120, ep_id=f"ep_{i + 10}") for i in range(10)]
         batch = _batch_of(short_eps + long_eps)
         result = CoverageEntropyAnalyzer().analyze(batch)
         ep_len_flags = [f for f in result.flags if "episode_length" in f.metric]
@@ -294,11 +307,15 @@ class TestCoverageEntropyEdgeCases:
             n = 200
             t = np.arange(n, dtype=np.float64) * 0.1
             v = rng.random(n)
-            acts = np.column_stack([v, 2*v, -v, 0.5*v]).astype(np.float32)
-            episodes.append(Episode(
-                metadata=EpisodeMetadata(episode_id=f"ep_{i}"),
-                timestamps=t, observations={}, actions=acts,
-            ))
+            acts = np.column_stack([v, 2 * v, -v, 0.5 * v]).astype(np.float32)
+            episodes.append(
+                Episode(
+                    metadata=EpisodeMetadata(episode_id=f"ep_{i}"),
+                    timestamps=t,
+                    observations={},
+                    actions=acts,
+                )
+            )
         batch = _batch_of(episodes)
         result = CoverageEntropyAnalyzer().analyze(batch, policy_family="diffusion")
         dp_hints = [h for h in result.hints if "Diffusion" in h.policy_family]

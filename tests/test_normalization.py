@@ -1,6 +1,7 @@
 """
 Tests for calibra.schema.normalization — key mapping and resolution rules.
 """
+
 from __future__ import annotations
 
 import warnings
@@ -12,11 +13,13 @@ from calibra.schema.normalization import normalize_obs_keys, _resolve, _DEFAULT_
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
+
 def _arr(shape=(10, 3)) -> np.ndarray:
     return np.zeros(shape, dtype=np.float32)
 
 
 # ── exact-match rules ─────────────────────────────────────────────────────────
+
 
 def test_exact_match_state():
     result = normalize_obs_keys({"state": _arr()})
@@ -56,6 +59,7 @@ def test_exact_match_proprio():
 
 # ── prefix-strip rules ────────────────────────────────────────────────────────
 
+
 def test_prefix_strip_images_unknown_camera():
     result = normalize_obs_keys({"images.front_left": _arr()})
     assert "camera_front_left" in result
@@ -79,6 +83,7 @@ def test_prefix_strip_robot0():
 
 # ── pass-through ──────────────────────────────────────────────────────────────
 
+
 def test_unknown_key_passes_through():
     result = normalize_obs_keys({"completely_custom_key_xyz": _arr()})
     assert "completely_custom_key_xyz" in result
@@ -89,6 +94,7 @@ def test_empty_dict():
 
 
 # ── extra_mapping override ────────────────────────────────────────────────────
+
 
 def test_extra_mapping_overrides_default():
     # By default "state" → "state"; override to "joint_state"
@@ -119,6 +125,7 @@ def test_extra_mapping_does_not_affect_other_keys():
 
 # ── duplicate canonical key warning ──────────────────────────────────────────
 
+
 def test_duplicate_canonical_key_emits_warning():
     # "proprio" → "state" and "state" → "state" — both map to "state"
     with warnings.catch_warnings(record=True) as w:
@@ -130,6 +137,7 @@ def test_duplicate_canonical_key_emits_warning():
 
 # ── arrays are not copied ─────────────────────────────────────────────────────
 
+
 def test_arrays_are_same_object():
     arr = _arr()
     result = normalize_obs_keys({"images.top": arr})
@@ -137,6 +145,7 @@ def test_arrays_are_same_object():
 
 
 # ── _resolve directly ────────────────────────────────────────────────────────
+
 
 def test_resolve_exact():
     assert _resolve("images.top", _DEFAULT_MAPPING) == "camera_top"
@@ -152,11 +161,12 @@ def test_resolve_passthrough():
 
 # ── multi-key batch ───────────────────────────────────────────────────────────
 
+
 def test_mixed_batch_normalizes_all():
     raw = {
-        "images.top":    _arr(),
-        "images.wrist":  _arr((10, 3)),
-        "state":         _arr((10, 14)),
+        "images.top": _arr(),
+        "images.wrist": _arr((10, 3)),
+        "state": _arr((10, 14)),
         "custom_sensor": _arr((10, 1)),
     }
     result = normalize_obs_keys(raw)

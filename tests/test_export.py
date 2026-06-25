@@ -1,4 +1,5 @@
 """Tests for calibra.curation.export — dataset materialisation after pruning."""
+
 from __future__ import annotations
 
 import json
@@ -10,6 +11,7 @@ from calibra.pruning import PruningResult
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
+
 
 def _make_result(keep_ids: list[str], n_original: int = 10) -> PruningResult:
     all_ids = [str(i) for i in range(n_original)]
@@ -61,15 +63,17 @@ def _make_lerobot_v2_dir(tmp_path: Path, n_episodes: int = 5, steps_per_ep: int 
             rows["action"].append([float(ep), float(step)])
             rows["observation.state"].append([float(ep + 0.1), float(step + 0.1)])
 
-    table = pa_mod.table({
-        "episode_index": pa_mod.array(rows["episode_index"], type=pa_mod.int64()),
-        "frame_index":   pa_mod.array(rows["frame_index"],   type=pa_mod.int64()),
-        "timestamp":     pa_mod.array(rows["timestamp"],     type=pa_mod.float64()),
-        "action":        pa_mod.array(rows["action"],        type=pa_mod.list_(pa_mod.float32())),
-        "observation.state": pa_mod.array(
-            rows["observation.state"], type=pa_mod.list_(pa_mod.float32())
-        ),
-    })
+    table = pa_mod.table(
+        {
+            "episode_index": pa_mod.array(rows["episode_index"], type=pa_mod.int64()),
+            "frame_index": pa_mod.array(rows["frame_index"], type=pa_mod.int64()),
+            "timestamp": pa_mod.array(rows["timestamp"], type=pa_mod.float64()),
+            "action": pa_mod.array(rows["action"], type=pa_mod.list_(pa_mod.float32())),
+            "observation.state": pa_mod.array(
+                rows["observation.state"], type=pa_mod.list_(pa_mod.float32())
+            ),
+        }
+    )
     pq_mod.write_table(table, data_dir / "train-00000-of-00001.parquet")
 
     info = {
@@ -88,8 +92,7 @@ def _make_lerobot_v2_dir(tmp_path: Path, n_episodes: int = 5, steps_per_ep: int 
     (meta_dir / "info.json").write_text(json.dumps(info, indent=2))
 
     episodes_lines = [
-        json.dumps({"episode_index": ep, "length": steps_per_ep})
-        for ep in range(n_episodes)
+        json.dumps({"episode_index": ep, "length": steps_per_ep}) for ep in range(n_episodes)
     ]
     (meta_dir / "episodes.jsonl").write_text("\n".join(episodes_lines) + "\n")
     (meta_dir / "tasks.jsonl").write_text(json.dumps({"task_index": 0, "task": "pick"}) + "\n")
@@ -98,6 +101,7 @@ def _make_lerobot_v2_dir(tmp_path: Path, n_episodes: int = 5, steps_per_ep: int 
 
 
 # ── LeRobot v2 export ─────────────────────────────────────────────────────────
+
 
 class TestExportLeRobotV2:
     def test_basic_export_creates_output(self, tmp_path):
@@ -190,6 +194,7 @@ class TestExportLeRobotV2:
 
 # ── Hub ID guard ──────────────────────────────────────────────────────────────
 
+
 class TestHubIdGuard:
     def test_hub_id_raises_valueerror(self, tmp_path):
         from calibra.curation.export import export_dataset
@@ -207,6 +212,7 @@ class TestHubIdGuard:
 
 
 # ── unknown format ────────────────────────────────────────────────────────────
+
 
 class TestUnknownFormat:
     def test_unknown_path_raises_valueerror(self, tmp_path):

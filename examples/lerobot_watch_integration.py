@@ -30,17 +30,18 @@ Integration points
   If you use LeRobot's `record` command, use `MetricsEmitter` as a context
   manager around the episode-save step.
 """
+
 from __future__ import annotations
 
 import json
 import sys
-from pathlib import Path
 from typing import Optional
 
 import numpy as np
 
 
 # ── metric computation (pure numpy, no Calibra pipeline dependency) ───────────
+
 
 def _compute_spike_rate(actions: np.ndarray, dt: float = 0.02, sigma_limit: float = 5.0) -> float:
     """Fraction of timesteps where jerk exceeds sigma_limit * std."""
@@ -90,11 +91,11 @@ def _compute_ldlj(positions: np.ndarray, dt: float = 0.02) -> float:
     A = float(np.max(speed_norm))
     if A < 1e-9:
         return -5.0
-    jerk_sq = np.sum(jerk ** 2, axis=-1) if jerk.ndim > 1 else jerk ** 2
+    jerk_sq = np.sum(jerk**2, axis=-1) if jerk.ndim > 1 else jerk**2
     integral = float(np.trapz(jerk_sq, dx=dt))
     if integral <= 0:
         return -5.0
-    return float(np.log((T ** 3 / A ** 2) * integral))
+    return float(np.log((T**3 / A**2) * integral))
 
 
 def _compute_jitter_cv(timestamps: np.ndarray) -> float:
@@ -109,6 +110,7 @@ def _compute_jitter_cv(timestamps: np.ndarray) -> float:
 
 
 # ── emitter ───────────────────────────────────────────────────────────────────
+
 
 def emit_episode_metrics(
     episode_id: str,
@@ -142,12 +144,12 @@ def emit_episode_metrics(
     positions = states if states is not None else actions
 
     metrics = {
-        "file":           str(episode_id),
-        "spike_rate":     round(_compute_spike_rate(actions, dt), 6),
-        "vel_disc_rate":  round(_compute_vel_disc_rate(actions, dt), 6),
-        "dropout_rate":   round(_compute_dropout_rate(timestamps), 6),
-        "ldlj":           round(_compute_ldlj(positions, dt), 4),
-        "jitter_cv":      round(_compute_jitter_cv(timestamps), 6),
+        "file": str(episode_id),
+        "spike_rate": round(_compute_spike_rate(actions, dt), 6),
+        "vel_disc_rate": round(_compute_vel_disc_rate(actions, dt), 6),
+        "dropout_rate": round(_compute_dropout_rate(timestamps), 6),
+        "ldlj": round(_compute_ldlj(positions, dt), 4),
+        "jitter_cv": round(_compute_jitter_cv(timestamps), 6),
     }
 
     print(json.dumps(metrics), file=file, flush=True)
@@ -192,6 +194,7 @@ class MetricsEmitter:
 
 # ── demo: simulate a collection session ──────────────────────────────────────
 
+
 def _simulate_collection_session(n_episodes: int = 10) -> None:
     """
     Simulate a teleoperation session with mixed clean and bad episodes.
@@ -221,11 +224,13 @@ def _simulate_collection_session(n_episodes: int = 10) -> None:
         emitter.emit(f"ep_{i:04d}.hdf5", actions, timestamps)
 
         import time
+
         time.sleep(0.05)  # simulate episode duration
 
 
 if __name__ == "__main__":
     import argparse
+
     p = argparse.ArgumentParser(
         description=(
             "Simulate a teleoperation session and emit episode metrics to stdout. "
@@ -235,7 +240,11 @@ if __name__ == "__main__":
             "calibra watch --stream --remediate"
         )
     )
-    p.add_argument("--n-episodes", type=int, default=10,
-                   help="Number of synthetic episodes to simulate (default: 10)")
+    p.add_argument(
+        "--n-episodes",
+        type=int,
+        default=10,
+        help="Number of synthetic episodes to simulate (default: 10)",
+    )
     args = p.parse_args()
     _simulate_collection_session(args.n_episodes)

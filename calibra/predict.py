@@ -40,6 +40,7 @@ Exit codes
     1  MARGINAL or RISKY (20–59%)
     2  UNLIKELY (< 20%)
 """
+
 from __future__ import annotations
 
 import argparse
@@ -52,7 +53,7 @@ from calibra.schema.report import DiagnosticReport, RiskLevel
 
 _WIDTH = 60
 _THICK = "━" * _WIDTH
-_THIN  = "─" * _WIDTH
+_THIN = "─" * _WIDTH
 
 # ── prediction weights ────────────────────────────────────────────────────────
 # Each factor deducts from a 100-point baseline.
@@ -61,33 +62,35 @@ _THIN  = "─" * _WIDTH
 _WEIGHTS = {
     # (metric_key, penalty at warning, penalty at critical, direction)
     # direction: 'higher_worse' or 'lower_worse'
-    "ldlj":                   (10.0, 25.0, "lower_worse"),   # more negative = worse
-    "spike_rate":             (8.0,  20.0, "higher_worse"),
-    "vel_disc_rate":          (8.0,  20.0, "higher_worse"),
-    "dropout_rate":           (7.0,  18.0, "higher_worse"),
-    "jitter_cv":              (5.0,  12.0, "higher_worse"),
-    "action_entropy":         (10.0, 20.0, "lower_worse"),  # low entropy = less diversity
+    "ldlj": (10.0, 25.0, "lower_worse"),  # more negative = worse
+    "spike_rate": (8.0, 20.0, "higher_worse"),
+    "vel_disc_rate": (8.0, 20.0, "higher_worse"),
+    "dropout_rate": (7.0, 18.0, "higher_worse"),
+    "jitter_cv": (5.0, 12.0, "higher_worse"),
+    "action_entropy": (10.0, 20.0, "lower_worse"),  # low entropy = less diversity
     "contact_phase_fraction": (10.0, 20.0, "lower_worse"),
     # World-model learnability (from WorldModelConsistencyAnalyzer / RobotJEPA)
     # High mean JEPA surprise → world model can't predict the data → poor generalisation
-    "jepa_surprise":          (8.0,  18.0, "higher_worse"),
+    "jepa_surprise": (8.0, 18.0, "higher_worse"),
 }
 
 # Thresholds (mirrors analyzer constants)
 _THRESHOLDS = {
-    "ldlj":                   {"warn": -10.0,  "crit": -15.0},
-    "spike_rate":             {"warn": 0.02,   "crit": 0.05},
-    "vel_disc_rate":          {"warn": 0.02,   "crit": 0.05},
-    "dropout_rate":           {"warn": 0.01,   "crit": 0.05},
-    "jitter_cv":              {"warn": 0.05,   "crit": 0.20},
-    "action_entropy":         {"warn": 2.5,    "crit": 1.5},
-    "contact_phase_fraction": {"warn": 0.10,   "crit": 0.05},
+    "ldlj": {"warn": -10.0, "crit": -15.0},
+    "spike_rate": {"warn": 0.02, "crit": 0.05},
+    "vel_disc_rate": {"warn": 0.02, "crit": 0.05},
+    "dropout_rate": {"warn": 0.01, "crit": 0.05},
+    "jitter_cv": {"warn": 0.05, "crit": 0.20},
+    "action_entropy": {"warn": 2.5, "crit": 1.5},
+    "contact_phase_fraction": {"warn": 0.10, "crit": 0.05},
     # JEPA surprise is normalised to [0, 1]; above 0.4 signals poor learnability
-    "jepa_surprise":          {"warn": 0.40,   "crit": 0.70},
+    "jepa_surprise": {"warn": 0.40, "crit": 0.70},
 }
 
 
-def get_weights_and_thresholds(policy_family: Optional[str] = None) -> tuple[dict[str, tuple[float, float, str]], dict[str, dict[str, float]]]:
+def get_weights_and_thresholds(
+    policy_family: Optional[str] = None,
+) -> tuple[dict[str, tuple[float, float, str]], dict[str, dict[str, float]]]:
     """Retrieve weights and thresholds customized for a specific policy family."""
     weights = dict(_WEIGHTS)
     thresholds = dict(_THRESHOLDS)
@@ -95,7 +98,7 @@ def get_weights_and_thresholds(policy_family: Optional[str] = None) -> tuple[dic
         return weights, thresholds
 
     pf = policy_family.lower()
-    
+
     # Universal calibrations from grid search
     thresholds["action_entropy"] = {"warn": 2.0, "crit": 1.0}
     thresholds["contact_phase_fraction"] = {"warn": 0.04, "crit": 0.02}
@@ -127,21 +130,21 @@ def _raw(report: DiagnosticReport, analyzer: str) -> dict:
 
 
 def _extract_metrics(report: DiagnosticReport) -> dict[str, Optional[float]]:
-    t  = _raw(report, "temporal_stability")
-    s  = _raw(report, "control_smoothness")
-    c  = _raw(report, "coverage_entropy")
+    t = _raw(report, "temporal_stability")
+    s = _raw(report, "control_smoothness")
+    c = _raw(report, "coverage_entropy")
     pb = _raw(report, "phase_balance")
     wm = _raw(report, "world_model_consistency")
     return {
-        "ldlj":                   s.get("ldlj",              {}).get("mean_ldlj"),
-        "spike_rate":     s.get("jerk_spikes",        {}).get("mean_spike_fraction"),
-        "vel_disc_rate":  s.get("vel_discontinuities",{}).get("mean_disc_fraction"),
-        "dropout_rate":   t.get("dropout",            {}).get("mean_dropout_fraction"),
-        "jitter_cv":      t.get("jitter",             {}).get("mean_cv"),
-        "action_entropy": c.get("action_entropy",     {}).get("entropy_bits_per_dim"),
+        "ldlj": s.get("ldlj", {}).get("mean_ldlj"),
+        "spike_rate": s.get("jerk_spikes", {}).get("mean_spike_fraction"),
+        "vel_disc_rate": s.get("vel_discontinuities", {}).get("mean_disc_fraction"),
+        "dropout_rate": t.get("dropout", {}).get("mean_dropout_fraction"),
+        "jitter_cv": t.get("jitter", {}).get("mean_cv"),
+        "action_entropy": c.get("action_entropy", {}).get("entropy_bits_per_dim"),
         "contact_phase_fraction": pb.get("mean_contact_fraction"),
         # JEPA world-model surprise (only present if WorldModelConsistencyAnalyzer ran)
-        "jepa_surprise":  wm.get("mean_surprise"),
+        "jepa_surprise": wm.get("mean_surprise"),
     }
 
 
@@ -159,10 +162,10 @@ def _tier(score: float) -> str:
 
 def _tier_icon(tier: str) -> str:
     return {
-        "STRONG":   "🟢",
-        "GOOD":     "🟢",
+        "STRONG": "🟢",
+        "GOOD": "🟢",
         "MARGINAL": "🟡",
-        "RISKY":    "🟠",
+        "RISKY": "🟠",
         "UNLIKELY": "🔴",
     }.get(tier, "?")
 
@@ -182,15 +185,13 @@ def predict_outcome(
     Returns a dict with predicted_score, tier, deductions, and metric_values.
     """
     metrics = _extract_metrics(report)
-    score   = 100.0
+    score = 100.0
     deductions: list[dict] = []
 
     weights, thresholds = get_weights_and_thresholds(policy_family)
 
     is_scripted = any(
-        f.metric == "motion_collection_signature"
-        for r in report.analyzer_results
-        for f in r.flags
+        f.metric == "motion_collection_signature" for r in report.analyzer_results for f in r.flags
     )
 
     for metric_key, (w_warn, w_crit, direction) in weights.items():
@@ -198,9 +199,9 @@ def predict_outcome(
         if value is None:
             continue
 
-        thresh  = thresholds[metric_key]
-        warn_t  = thresh["warn"]
-        crit_t  = thresh["crit"]
+        thresh = thresholds[metric_key]
+        warn_t = thresh["warn"]
+        crit_t = thresh["crit"]
 
         w_w = w_warn
         w_c = w_crit
@@ -231,13 +232,15 @@ def predict_outcome(
                 continue
 
         score -= penalty
-        deductions.append({
-            "metric":   metric_key,
-            "value":    round(value, 5),
-            "severity": severity,
-            "penalty":  round(penalty, 2),
-            "reason":   _deduction_reason(metric_key, value, severity, direction),
-        })
+        deductions.append(
+            {
+                "metric": metric_key,
+                "value": round(value, 5),
+                "severity": severity,
+                "penalty": round(penalty, 2),
+                "reason": _deduction_reason(metric_key, value, severity, direction),
+            }
+        )
 
     heuristic_score = max(0.0, min(100.0, score))
 
@@ -249,6 +252,7 @@ def predict_outcome(
     if use_outcome_db:
         try:
             from calibra.outcome_db import OutcomeDatabase
+
             db = OutcomeDatabase()
             fp = {k: v for k, v in metrics.items() if v is not None}
             similar = db.find_similar(fp, policy_family=policy_family)
@@ -271,8 +275,8 @@ def predict_outcome(
 
     uncertainty = min(15.0, 5.0 + len(deductions) * 2.0)
     if empirical_weight > 0:
-        uncertainty *= (1.0 - empirical_weight * 0.5)
-    low  = max(0.0,   final_score - uncertainty)
+        uncertainty *= 1.0 - empirical_weight * 0.5
+    low = max(0.0, final_score - uncertainty)
     high = min(100.0, final_score + uncertainty)
 
     if empirical_weight > 0:
@@ -289,28 +293,26 @@ def predict_outcome(
         )
 
     return {
-        "predicted_score":        round(final_score, 1),
-        "heuristic_score":        round(heuristic_score, 1),
-        "empirical_weight":       round(empirical_weight, 3),
-        "similar_outcomes":       similar_outcomes,
+        "predicted_score": round(final_score, 1),
+        "heuristic_score": round(heuristic_score, 1),
+        "empirical_weight": round(empirical_weight, 3),
+        "similar_outcomes": similar_outcomes,
         "predicted_success_rate": round(final_score / 100.0, 3),
-        "predicted_range":        [round(low, 1), round(high, 1)],
-        "tier":                   tier,
-        "deductions":             deductions,
-        "metric_values":          {k: v for k, v in metrics.items() if v is not None},
-        "n_critical_flags":       len(report.flags_at_level(RiskLevel.CRITICAL)),
-        "n_warning_flags":        len(report.flags_at_level(RiskLevel.WARNING)),
-        "n_episodes":             report.n_episodes,
-        "n_samples":              report.n_samples,
-        "dataset_name":           report.dataset_name,
-        "policy_family":          policy_family or "generic",
-        "note":                   note,
+        "predicted_range": [round(low, 1), round(high, 1)],
+        "tier": tier,
+        "deductions": deductions,
+        "metric_values": {k: v for k, v in metrics.items() if v is not None},
+        "n_critical_flags": len(report.flags_at_level(RiskLevel.CRITICAL)),
+        "n_warning_flags": len(report.flags_at_level(RiskLevel.WARNING)),
+        "n_episodes": report.n_episodes,
+        "n_samples": report.n_samples,
+        "dataset_name": report.dataset_name,
+        "policy_family": policy_family or "generic",
+        "note": note,
     }
 
 
-def _deduction_reason(
-    metric: str, value: float, severity: str, direction: str
-) -> str:
+def _deduction_reason(metric: str, value: float, severity: str, direction: str) -> str:
     reasons = {
         "ldlj": (
             f"Mean LDLJ = {value:.2f} ({severity.lower()} threshold). "
@@ -353,11 +355,12 @@ def _deduction_reason(
 
 # ── rendering ─────────────────────────────────────────────────────────────────
 
+
 def render_prediction(result: dict) -> str:
-    tier  = result["tier"]
+    tier = result["tier"]
     score = result["predicted_score"]
     lo, hi = result["predicted_range"]
-    icon  = _tier_icon(tier)
+    icon = _tier_icon(tier)
     emp_w = result.get("empirical_weight", 0.0)
 
     lines = [
@@ -370,8 +373,7 @@ def render_prediction(result: dict) -> str:
         f"  Policy   : {result['policy_family']}",
         "",
         _THIN,
-        f"  {icon}  Predicted Success: {score:.0f}%  "
-        f"[range {lo:.0f}%–{hi:.0f}%]  —  {tier}",
+        f"  {icon}  Predicted Success: {score:.0f}%  [range {lo:.0f}%–{hi:.0f}%]  —  {tier}",
     ]
 
     if emp_w > 0:
@@ -443,6 +445,7 @@ def _exit_code(tier: str) -> int:
 
 # ── CLI entry point ───────────────────────────────────────────────────────────
 
+
 def run_predict(argv: list[str]) -> None:
     p = argparse.ArgumentParser(
         prog="calibra predict",
@@ -453,24 +456,28 @@ def run_predict(argv: list[str]) -> None:
     )
     p.add_argument("path", help="Path or HF Hub ID of the dataset to evaluate")
     p.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         metavar="FMT",
         choices=["hdf5", "isaac_lab", "lerobot", "rlds", "mcap"],
         help="Force a format adapter (default: auto-detect)",
     )
     p.add_argument(
-        "--policy", "-p",
+        "--policy",
+        "-p",
         metavar="FAMILY",
         default="generic",
         help="Target policy family (e.g. 'diffusion', 'act', 'pi0'). Default: generic",
     )
     p.add_argument(
-        "--reference", "-r",
+        "--reference",
+        "-r",
         metavar="REF",
         help="Optional reference profile for context (e.g. 'aloha')",
     )
     p.add_argument(
-        "--json", "-j",
+        "--json",
+        "-j",
         action="store_true",
         help="Output full prediction as JSON",
     )
@@ -501,11 +508,12 @@ def run_predict(argv: list[str]) -> None:
 
     dataset_path = args.path
     if dataset_path.startswith("hf://"):
-        dataset_path = dataset_path[len("hf://"):]
+        dataset_path = dataset_path[len("hf://") :]
 
     reader = None
     if args.format:
         from calibra.__main__ import _get_reader
+
         reader = _get_reader(args.format)
 
     def log(msg: str) -> None:
@@ -537,6 +545,7 @@ def run_predict(argv: list[str]) -> None:
             sys.exit(2)
         try:
             from calibra.outcome_db import OutcomeDatabase
+
             db = OutcomeDatabase()
             rec = db.record(
                 fingerprint=result["metric_values"],

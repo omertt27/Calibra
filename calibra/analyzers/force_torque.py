@@ -4,6 +4,7 @@ Force/Torque and Contact Dynamics Observability Analyzer.
 Diagnoses quality anomalies in physical robot interactions using force/torque
 (wrench) sensors and contact state logs.
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -17,7 +18,7 @@ from calibra.schema.report import AnalyzerResult, RiskFlag, RiskLevel, ObservedV
 class ForceTorqueContactAnalyzer(Analyzer):
     """
     Diagnoses force/torque readings and contact sensor feeds.
-    
+
     Identifies high-impact physical shocks (force spikes), abnormal signal
     vibrations (excessive noise), contact signal dropouts, or misalignments
     with movement states.
@@ -27,7 +28,9 @@ class ForceTorqueContactAnalyzer(Analyzer):
     def name(self) -> str:
         return "force_torque"
 
-    def _find_modality_keys(self, episode_obs: dict[str, np.ndarray]) -> tuple[list[str], list[str]]:
+    def _find_modality_keys(
+        self, episode_obs: dict[str, np.ndarray]
+    ) -> tuple[list[str], list[str]]:
         """Identify keys in observation dict containing force/torque or contact data."""
         ft_keys = []
         contact_keys = []
@@ -45,11 +48,11 @@ class ForceTorqueContactAnalyzer(Analyzer):
         policy_family: Optional[str] = None,
     ) -> AnalyzerResult:
         flags = []
-        
+
         # Check if there is force/torque or contact data in the batch
         if not batch.episodes:
             return AnalyzerResult(analyzer_name=self.name)
-            
+
         ft_keys, contact_keys = self._find_modality_keys(batch.episodes[0].observations)
         if not ft_keys and not contact_keys:
             # Skip analysis if no force/torque/contact modalities are found
@@ -73,20 +76,19 @@ class ForceTorqueContactAnalyzer(Analyzer):
                 mag = np.linalg.norm(ft_data, axis=1)
                 if len(mag) < 2:
                     continue
-                    
+
                 # Compute first-order differences (shocks)
                 diff = np.abs(np.diff(mag))
                 median_diff = np.median(diff)
                 mad_diff = np.median(np.abs(diff - median_diff))
-                
+
                 # A force spike is a shock that is > 5 * 1.4826 * MAD from the median
                 threshold = median_diff + 5.0 * 1.4826 * max(mad_diff, 1e-4)
                 spikes = np.sum(diff > threshold)
-                
+
                 ep_spikes += spikes
                 ep_ft_steps += len(diff)
 
-                
             if ep_ft_steps > 0:
                 spike_rate = float(ep_spikes / ep_ft_steps)
                 per_episode_spikes.append(spike_rate)
@@ -104,7 +106,7 @@ class ForceTorqueContactAnalyzer(Analyzer):
                 is_contact = contact_data > 0.5
                 ep_contacts += np.sum(is_contact)
                 ep_contact_steps += len(contact_data)
-                
+
             if ep_contact_steps > 0:
                 contact_rate = float(ep_contacts / ep_contact_steps)
                 per_episode_contacts.append(contact_rate)
@@ -122,7 +124,6 @@ class ForceTorqueContactAnalyzer(Analyzer):
                     observed=ObservedValue(value=overall_spike_rate, unit="fraction"),
                     threshold=0.01,
                     interpretation=f"Force/torque shock rate is {overall_spike_rate:.2%}.",
-
                     implication=(
                         "Frequent high-impact force/torque spikes indicate collisions, operator "
                         "struggling, or sensor communication glitches. Inspect trajectories."
@@ -133,7 +134,9 @@ class ForceTorqueContactAnalyzer(Analyzer):
 
         # Low contact density when contact sensors are present
         if contact_keys:
-            overall_contact_density = float(total_contact_steps / sum(ep.n_steps for ep in batch.episodes))
+            overall_contact_density = float(
+                total_contact_steps / sum(ep.n_steps for ep in batch.episodes)
+            )
             if overall_contact_density < 0.01:
                 flags.append(
                     RiskFlag(

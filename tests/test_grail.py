@@ -1,4 +1,5 @@
 """Tests for the GRAIL adapter."""
+
 from __future__ import annotations
 
 import pickle
@@ -38,6 +39,7 @@ def _write_mock_grail_file(
 
 # ── detection ────────────────────────────────────────────────────────────────
 
+
 class TestGRAILDetection:
     def test_can_read_true_for_uncompressed_pkl(self, tmp_path):
         p = tmp_path / "trajectory_0.pkl"
@@ -62,13 +64,14 @@ class TestGRAILDetection:
     def test_can_read_directory(self, tmp_path):
         # Empty directory should return False
         assert not GRAILReader.can_read(str(tmp_path))
-        
+
         # Directory with valid pkl should return True
         _write_mock_grail_file(str(tmp_path / "traj.pkl"))
         assert GRAILReader.can_read(str(tmp_path))
 
 
 # ── reading ──────────────────────────────────────────────────────────────────
+
 
 class TestGRAILRead:
     def test_returns_episode_batch(self, tmp_path):
@@ -79,7 +82,7 @@ class TestGRAILRead:
         assert batch.format == "grail"
         assert batch.n_episodes == 1
         assert batch.n_samples == 30
-        
+
         ep = batch.episodes[0]
         assert ep.actions.shape == (30, 19)
         assert "dof_pos" in ep.observations

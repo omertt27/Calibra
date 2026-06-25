@@ -2,7 +2,7 @@
 GRAIL adapter (Generating Humanoid Loco-Manipulation).
 
 GRAIL motion datasets consist of directories containing pickled (.pkl) files
-for robot trajectories and object trajectories. Each robot trajectory pickle 
+for robot trajectories and object trajectories. Each robot trajectory pickle
 file typically has:
   dof_pos      (T, num_dof)
   dof_vel      (T, num_dof)
@@ -11,6 +11,7 @@ file typically has:
 This adapter reads a directory of pickled files (or a single .pkl trajectory)
 and packages them into an EpisodeBatch.
 """
+
 from __future__ import annotations
 
 import pickle
@@ -60,7 +61,7 @@ class GRAILReader(DatasetReader):
 
     def read(self, path: str) -> EpisodeBatch:
         p = Path(path)
-        
+
         if p.is_file():
             files = [p]
             dataset_name = p.stem
@@ -76,7 +77,7 @@ class GRAILReader(DatasetReader):
                 # Log error and skip corrupt pickles
                 print(f"Warning: Failed to load pickle {file_path}: {e}")
                 continue
-            
+
             # Extract keys
             dof_pos = data.get("dof_pos")
             if dof_pos is None:
@@ -87,10 +88,10 @@ class GRAILReader(DatasetReader):
                     continue
                 # If only root_state exists, synthesize a dummy dof_pos to avoid errors in downstream analysis
                 dof_pos = np.zeros((len(root_state), 1))
-            
+
             T = len(dof_pos)
             timestamps = np.arange(T, dtype=np.float64) / self._fps
-            
+
             # observations: joint position, base root state, dof velocities
             observations = {
                 "dof_pos": dof_pos,
@@ -99,29 +100,33 @@ class GRAILReader(DatasetReader):
                 observations["dof_vel"] = data["dof_vel"]
             if "root_state" in data:
                 observations["root_state"] = data["root_state"]
-            
+
             # Since actions in trajectory data are target commands, let's treat
             # the dof_pos as actions if no explicit 'action' key is defined.
             actions = data.get("actions") or data.get("action")
             if actions is None:
                 actions = dof_pos
-            
+
             meta = EpisodeMetadata(
                 episode_id=file_path.name.replace(".gz", "").replace(".pkl", ""),
                 source_file=str(file_path),
-                extra={"original_keys": list(data.keys())}
+                extra={"original_keys": list(data.keys())},
             )
-            
-            episodes.append(Episode(
-                metadata=meta,
-                timestamps=timestamps,
-                observations=observations,
-                actions=np.array(actions, dtype=np.float32),
-            ))
-            
+
+            episodes.append(
+                Episode(
+                    metadata=meta,
+                    timestamps=timestamps,
+                    observations=observations,
+                    actions=np.array(actions, dtype=np.float32),
+                )
+            )
+
         if not episodes:
-            raise ValueError(f"No valid GRAIL episodes with 'dof_pos' or 'root_state' found in {path}")
-            
+            raise ValueError(
+                f"No valid GRAIL episodes with 'dof_pos' or 'root_state' found in {path}"
+            )
+
         return EpisodeBatch(
             episodes=episodes,
             dataset_name=dataset_name,

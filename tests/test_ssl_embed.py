@@ -1,15 +1,16 @@
 """Unit tests for the SSLTrajectoryEmbedderAnalyzer."""
+
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from calibra.analyzers.ssl_embed import SSLTrajectoryEmbedderAnalyzer
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
-from calibra.schema.report import RiskLevel
 
 
-def _make_batch(n_eps: int = 5, n_steps: int = 50, action_dim: int = 4, inject_outlier: bool = False) -> EpisodeBatch:
+def _make_batch(
+    n_eps: int = 5, n_steps: int = 50, action_dim: int = 4, inject_outlier: bool = False
+) -> EpisodeBatch:
     rng = np.random.default_rng(42)
     episodes = []
     for i in range(n_eps):
@@ -21,7 +22,7 @@ def _make_batch(n_eps: int = 5, n_steps: int = 50, action_dim: int = 4, inject_o
         else:
             acts = rng.uniform(-1.0, 1.0, (n_steps, action_dim)).astype(np.float32)
             obs = {"proprio": rng.uniform(-1.0, 1.0, (n_steps, 8)).astype(np.float32)}
-            
+
         episodes.append(
             Episode(
                 metadata=EpisodeMetadata(episode_id=f"ep_{i}"),
@@ -43,7 +44,7 @@ class TestSSLTrajectoryEmbedderAnalyzer:
         batch = _make_batch(n_eps=4)
         analyzer = SSLTrajectoryEmbedderAnalyzer(embedding_dim=16)
         result = analyzer.analyze(batch)
-        
+
         assert result.analyzer_name == "ssl_embed"
         assert "mean_nearest_distance" in result.raw_metrics
         assert "per_episode_ssl_novelty" in result.raw_metrics
@@ -67,7 +68,7 @@ class TestSSLTrajectoryEmbedderAnalyzer:
         batch = _make_batch(n_eps=10, inject_outlier=True)
         analyzer = SSLTrajectoryEmbedderAnalyzer(embedding_dim=16)
         result = analyzer.analyze(batch)
-        
+
         # Outliers should be captured in outlier_indices
         outliers = result.raw_metrics.get("outlier_indices", [])
         assert 0 in outliers  # The 0th episode (injected outlier) should be flagged

@@ -10,6 +10,7 @@ Runs three rigorous experiments over the 12 dataset configurations:
 3. Ablation C (Metric Competition): Directly compares Pearson/Spearman correlations
    across all computed metrics (Size, Entropy, Redundancy, Predictability, MI) to rank predictors.
 """
+
 from __future__ import annotations
 
 import sys
@@ -22,9 +23,9 @@ import numpy as np
 _REPO = Path(__file__).parent.parent
 sys.path.insert(0, str(_REPO))
 
-from calibra.analyzers.latent_dynamics import LatentDynamicsAnalyzer
-from calibra.schema.episode import Episode, EpisodeBatch
-from scripts.validate_world_model_observability import (
+from calibra.analyzers.latent_dynamics import LatentDynamicsAnalyzer  # noqa: E402
+from calibra.schema.episode import EpisodeBatch  # noqa: E402
+from scripts.validate_world_model_observability import (  # noqa: E402
     DynamicsWorldModel,
     generate_ph_dataset,
     generate_mh_dataset,
@@ -32,28 +33,29 @@ from scripts.validate_world_model_observability import (
     get_test_set,
     evaluate_model,
 )
-from scripts.run_correlation_study import mix_datasets, spearman_correlation
+from scripts.run_correlation_study import mix_datasets, spearman_correlation  # noqa: E402
 
 
 # ── OLS Regression Helper with t-statistics ─────────────────────────────────
+
 
 def fit_ols(X: np.ndarray, y: np.ndarray, feature_names: list[str]) -> dict[str, Any]:
     """Fits Ordinary Least Squares regression and computes t-statistics."""
     N, P = X.shape
     # Add intercept column
     X_bias = np.concatenate([np.ones((N, 1)), X], axis=1)
-    
+
     # Solve beta = (X^T X)^-1 X^T y
     try:
         beta = np.linalg.solve(X_bias.T @ X_bias, X_bias.T @ y)
         preds = X_bias @ beta
         residuals = y - preds
-        rss = np.sum(residuals ** 2)
-        
+        rss = np.sum(residuals**2)
+
         # Degrees of freedom: N - (P + 1)
         dof = N - (P + 1)
         sigma_sq = rss / dof if dof > 0 else 1e-8
-        
+
         # Covariance matrix: sigma^2 * (X^T X)^-1
         cov_beta = sigma_sq * np.linalg.inv(X_bias.T @ X_bias)
         se_beta = np.sqrt(np.diagonal(cov_beta))
@@ -61,17 +63,16 @@ def fit_ols(X: np.ndarray, y: np.ndarray, feature_names: list[str]) -> dict[str,
     except Exception:
         beta = np.zeros(P + 1)
         t_stats = np.zeros(P + 1)
-        
-    out = {
-        "intercept": {"coef": float(beta[0]), "t_stat": float(t_stats[0])}
-    }
+
+    out = {"intercept": {"coef": float(beta[0]), "t_stat": float(t_stats[0])}}
     for idx, name in enumerate(feature_names):
-        out[name] = {"coef": float(beta[idx+1]), "t_stat": float(t_stats[idx+1])}
-        
+        out[name] = {"coef": float(beta[idx + 1]), "t_stat": float(t_stats[idx + 1])}
+
     return out
 
 
 # ── Main ────────────────────────────────────────────────────────────────────
+
 
 def main():
     print("=" * 70)
@@ -88,15 +89,12 @@ def main():
         ("PH-5", EpisodeBatch(ph_pool.episodes[:5], "ph-5", "hdf5", "ph-5")),
         ("PH-10", EpisodeBatch(ph_pool.episodes[:10], "ph-10", "hdf5", "ph-10")),
         ("PH-20", EpisodeBatch(ph_pool.episodes[:20], "ph-20", "hdf5", "ph-20")),
-        
         ("MH-5", EpisodeBatch(mh_pool.episodes[:5], "mh-5", "hdf5", "mh-5")),
         ("MH-10", EpisodeBatch(mh_pool.episodes[:10], "mh-10", "hdf5", "mh-10")),
         ("MH-20", EpisodeBatch(mh_pool.episodes[:20], "mh-20", "hdf5", "mh-20")),
-        
         ("MG-10", EpisodeBatch(mg_pool.episodes[:10], "mg-10", "hdf5", "mg-10")),
         ("MG-30", EpisodeBatch(mg_pool.episodes[:30], "mg-30", "hdf5", "mg-30")),
         ("MG-100", EpisodeBatch(mg_pool.episodes[:100], "mg-100", "hdf5", "mg-100")),
-        
         ("Mixed-A (90% PH, 10% MG)", mix_datasets("mixed-a", [(ph_pool, 0.9), (mg_pool, 0.1)])),
         ("Mixed-B (50% MH, 50% MG)", mix_datasets("mixed-b", [(mh_pool, 0.5), (mg_pool, 0.5)])),
         ("Mixed-C (10% PH, 90% MH)", mix_datasets("mixed-c", [(ph_pool, 0.1), (mh_pool, 0.9)])),
@@ -117,17 +115,17 @@ def main():
             states_list.append(ep.observations["proprio"][:-1])
             actions_list.append(ep.actions[:-1])
             next_states_list.append(ep.observations["proprio"][1:])
-            
+
         S = np.concatenate(states_list, axis=0)
         A = np.concatenate(actions_list, axis=0)
         S_next = np.concatenate(next_states_list, axis=0)
-        
+
         X_train = np.concatenate([S, A], axis=1)
         Y_train = S_next - S
-        
+
         model = DynamicsWorldModel(state_dim=2, action_dim=2)
         model.fit(X_train, Y_train, epochs=250, lr=0.1)
-        
+
         test_r2 = evaluate_model(model, X_test, Y_test)
         cached_performances.append(test_r2)
         sizes.append(batch.n_samples)
@@ -149,21 +147,25 @@ def main():
             report = analyzer.analyze(batch)
             trans_reds.append(report.raw_metrics.get("transition_redundancy", 0.0))
             state_reds.append(report.raw_metrics.get("state_redundancy", 0.0))
-            
+
         trans_reds = np.array(trans_reds)
         state_reds = np.array(state_reds)
-        
+
         # Pearson and Spearman
         p_corr = np.corrcoef(trans_reds, y_perf)[0, 1]
         s_corr = spearman_correlation(trans_reds, y_perf)
-        
-        ablation_a_results.append({
-            "alpha": alpha,
-            "pearson": p_corr,
-            "spearman": s_corr,
-            "mean_redundancy": float(np.mean(trans_reds))
-        })
-        print(f"  Alpha = {alpha:4.1f} | Mean Transition Redundancy: {np.mean(trans_reds):.2%} | Pearson r: {p_corr:.4f} | Spearman rho: {s_corr:.4f}")
+
+        ablation_a_results.append(
+            {
+                "alpha": alpha,
+                "pearson": p_corr,
+                "spearman": s_corr,
+                "mean_redundancy": float(np.mean(trans_reds)),
+            }
+        )
+        print(
+            f"  Alpha = {alpha:4.1f} | Mean Transition Redundancy: {np.mean(trans_reds):.2%} | Pearson r: {p_corr:.4f} | Spearman rho: {s_corr:.4f}"
+        )
 
     # ── ABLATION B: Dataset Size Control Regression ──────────────────────────
     print("\nRunning Ablation B: Dataset Size Control Regression...")
@@ -173,14 +175,14 @@ def main():
     baseline_entropies = []
     baseline_predictabilities = []
     baseline_mis = []
-    
+
     for name, batch in configs:
         report = analyzer_base.analyze(batch)
         baseline_redundancies.append(report.raw_metrics.get("transition_redundancy", 0.0))
         baseline_entropies.append(report.raw_metrics.get("state_space_entropy_2d", 0.0))
         baseline_predictabilities.append(report.raw_metrics.get("dynamics_r2_predictability", 0.0))
         baseline_mis.append(report.raw_metrics.get("action_effect_mi", 0.0))
-        
+
     baseline_redundancies = np.array(baseline_redundancies)
     baseline_entropies = np.array(baseline_entropies)
     baseline_predictabilities = np.array(baseline_predictabilities)
@@ -193,39 +195,43 @@ def main():
 
     X_reg = np.stack([standardize(sizes), standardize(baseline_redundancies)], axis=1)
     ols_res = fit_ols(X_reg, y_perf, ["Size", "Redundancy"])
-    print(f"  OLS fit: Test R^2 ~ Size + Redundancy")
-    print(f"    - Size Standard Coefficient      : {ols_res['Size']['coef']:.4f} (t-stat: {ols_res['Size']['t_stat']:.2f})")
-    print(f"    - Redundancy Standard Coefficient: {ols_res['Redundancy']['coef']:.4f} (t-stat: {ols_res['Redundancy']['t_stat']:.2f})")
+    print("  OLS fit: Test R^2 ~ Size + Redundancy")
+    print(
+        f"    - Size Standard Coefficient      : {ols_res['Size']['coef']:.4f} (t-stat: {ols_res['Size']['t_stat']:.2f})"
+    )
+    print(
+        f"    - Redundancy Standard Coefficient: {ols_res['Redundancy']['coef']:.4f} (t-stat: {ols_res['Redundancy']['t_stat']:.2f})"
+    )
 
     # ── ABLATION C: Metric Competition ───────────────────────────────────────
     print("\nRunning Ablation C: Metric Competition...")
-    
+
     metrics_to_comp = [
         ("Dataset Size", sizes),
         ("State Entropy (Coverage)", baseline_entropies),
         ("Transition Predictability", baseline_predictabilities),
         ("Causal Action Dependency (dHSIC)", baseline_mis),
-        ("Transition Redundancy", baseline_redundancies)
+        ("Transition Redundancy", baseline_redundancies),
     ]
-    
+
     ablation_c_results = []
     for m_name, m_vals in metrics_to_comp:
         p_val = np.corrcoef(m_vals, y_perf)[0, 1]
         s_val = spearman_correlation(m_vals, y_perf)
-        ablation_c_results.append({
-            "name": m_name,
-            "pearson": p_val,
-            "spearman": s_val
-        })
-        
+        ablation_c_results.append({"name": m_name, "pearson": p_val, "spearman": s_val})
+
     # Sort by absolute Spearman correlation descending
     ablation_c_results.sort(key=lambda x: abs(x["spearman"]), reverse=True)
     for idx, r in enumerate(ablation_c_results):
-        print(f"  Rank {idx+1}: {r['name']:32} | Spearman rho: {r['spearman']:.4f} | Pearson r: {r['pearson']:.4f}")
+        print(
+            f"  Rank {idx + 1}: {r['name']:32} | Spearman rho: {r['spearman']:.4f} | Pearson r: {r['pearson']:.4f}"
+        )
 
     # ── 5. Generate Markdown Artifact ───────────────────────────────────────
-    artifact_path = Path("/Users/omer/.gemini/antigravity-cli/brain/756f676d-5cec-4126-9311-8d2fb3a9b0af/robomimic_scientific_ablations.md")
-    
+    artifact_path = Path(
+        "/Users/omer/.gemini/antigravity-cli/brain/756f676d-5cec-4126-9311-8d2fb3a9b0af/robomimic_scientific_ablations.md"
+    )
+
     # Voxel / Alpha Sweep rows
     alpha_rows = []
     for r in ablation_a_results:
@@ -238,7 +244,7 @@ def main():
     rank_rows = []
     for idx, r in enumerate(ablation_c_results):
         rank_rows.append(
-            f"| {idx+1} | **{r['name']}** | {r['pearson']:.4f} | {r['spearman']:.4f} |"
+            f"| {idx + 1} | **{r['name']}** | {r['pearson']:.4f} | {r['spearman']:.4f} |"
         )
     rank_table_rows = "\n".join(rank_rows)
 
@@ -258,7 +264,7 @@ We sweep the trajectory state-change multiplier alpha in (1, 2, 3, 4, 5, 10) to 
 {alpha_table_rows}
 
 ### Finding:
-Transition Redundancy remains a **highly robust predictor of downstream performance across all alpha scales** (Spearman correlation ranges from {ablation_a_results[0]['spearman']:.4f} to {ablation_a_results[-1]['spearman']:.4f}). This proves that the metric represents a true physical signal (manifold trajectory clustering) rather than a hyperparameter tuning artifact.
+Transition Redundancy remains a **highly robust predictor of downstream performance across all alpha scales** (Spearman correlation ranges from {ablation_a_results[0]["spearman"]:.4f} to {ablation_a_results[-1]["spearman"]:.4f}). This proves that the metric represents a true physical signal (manifold trajectory clustering) rather than a hyperparameter tuning artifact.
 
 ---
 
@@ -270,11 +276,11 @@ Performance = b0 + b1 * Size + b2 * Redundancy
 
 | Feature | Standardized Coefficient (beta) | t-statistic (t) | Significant? |
 | :--- | :---: | :---: | :---: |
-| **Dataset Size** | {ols_res['Size']['coef']:.4f} | {ols_res['Size']['t_stat']:.2f} | Yes |
-| **Transition Redundancy** | **{ols_res['Redundancy']['coef']:.4f}** | **{ols_res['Redundancy']['t_stat']:.2f}** | **Highly Significant** 🌟 |
+| **Dataset Size** | {ols_res["Size"]["coef"]:.4f} | {ols_res["Size"]["t_stat"]:.2f} | Yes |
+| **Transition Redundancy** | **{ols_res["Redundancy"]["coef"]:.4f}** | **{ols_res["Redundancy"]["t_stat"]:.2f}** | **Highly Significant** 🌟 |
 
 ### Finding:
-Even after controlling for total data volume, Transition Redundancy has a **strongly negative standardized coefficient (beta = {ols_res['Redundancy']['coef']:.4f})** and is highly significant (t = {ols_res['Redundancy']['t_stat']:.2f}). This confirms that redundancy predicts world model quality independently of dataset size.
+Even after controlling for total data volume, Transition Redundancy has a **strongly negative standardized coefficient (beta = {ols_res["Redundancy"]["coef"]:.4f})** and is highly significant (t = {ols_res["Redundancy"]["t_stat"]:.2f}). This confirms that redundancy predicts world model quality independently of dataset size.
 
 ---
 

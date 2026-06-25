@@ -1,8 +1,8 @@
 """Tests for π0, OpenVLA, and Octo compatibility analyzers."""
+
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from calibra.analyzers.pi0 import Pi0CompatibilityAnalyzer
 from calibra.analyzers.openvla import OpenVLACompatibilityAnalyzer
@@ -27,15 +27,17 @@ def _batch(
             obs["camera_rgb"] = rng.random((n_steps, 64, 64, 3)).astype(np.float32)
         obs["proprio"] = rng.random((n_steps, 7)).astype(np.float32)
 
-        episodes.append(Episode(
-            metadata=EpisodeMetadata(
-                episode_id=f"ep_{i}",
-                task_description="pick up the red cube" if has_lang else None,
-            ),
-            timestamps=np.arange(n_steps, dtype=np.float64) * dt,
-            observations=obs,
-            actions=rng.random((n_steps, action_dim)).astype(np.float32),
-        ))
+        episodes.append(
+            Episode(
+                metadata=EpisodeMetadata(
+                    episode_id=f"ep_{i}",
+                    task_description="pick up the red cube" if has_lang else None,
+                ),
+                timestamps=np.arange(n_steps, dtype=np.float64) * dt,
+                observations=obs,
+                actions=rng.random((n_steps, action_dim)).astype(np.float32),
+            )
+        )
     return EpisodeBatch(
         episodes=episodes,
         dataset_name="test",
@@ -45,6 +47,7 @@ def _batch(
 
 
 # ── π0 tests ──────────────────────────────────────────────────────────────────
+
 
 class TestPi0Analyzer:
     def test_skipped_when_not_pi0(self, clean_batch):
@@ -63,14 +66,18 @@ class TestPi0Analyzer:
     def test_missing_camera_is_critical(self):
         batch = _batch(has_camera=False)
         result = Pi0CompatibilityAnalyzer().analyze(batch, policy_family="pi0")
-        assert any(f.metric == "pi0_visual_observations" and f.level == RiskLevel.CRITICAL
-                   for f in result.flags)
+        assert any(
+            f.metric == "pi0_visual_observations" and f.level == RiskLevel.CRITICAL
+            for f in result.flags
+        )
 
     def test_missing_lang_is_critical(self):
         batch = _batch(has_lang=False)
         result = Pi0CompatibilityAnalyzer().analyze(batch, policy_family="pi0")
-        assert any(f.metric == "pi0_language_annotations" and f.level == RiskLevel.CRITICAL
-                   for f in result.flags)
+        assert any(
+            f.metric == "pi0_language_annotations" and f.level == RiskLevel.CRITICAL
+            for f in result.flags
+        )
 
     def test_short_episodes_warned(self):
         batch = _batch(n_steps=10)  # shorter than chunk_size=50
@@ -87,6 +94,7 @@ class TestPi0Analyzer:
 
 
 # ── OpenVLA tests ─────────────────────────────────────────────────────────────
+
 
 class TestOpenVLAAnalyzer:
     def test_skipped_when_not_openvla(self, clean_batch):
@@ -115,6 +123,7 @@ class TestOpenVLAAnalyzer:
 
 
 # ── Octo tests ────────────────────────────────────────────────────────────────
+
 
 class TestOctoAnalyzer:
     def test_skipped_when_not_octo(self, clean_batch):
@@ -145,8 +154,10 @@ class TestOctoAnalyzer:
 
 # ── pipeline integration ──────────────────────────────────────────────────────
 
+
 def test_pipeline_activates_pi0():
     from calibra.pipeline import Pipeline
+
     batch = _batch()
     report = Pipeline().run(batch, policy_family="pi0")
     analyzer_names = [r.analyzer_name for r in report.analyzer_results]
@@ -155,6 +166,7 @@ def test_pipeline_activates_pi0():
 
 def test_pipeline_activates_openvla():
     from calibra.pipeline import Pipeline
+
     batch = _batch()
     report = Pipeline().run(batch, policy_family="openvla")
     analyzer_names = [r.analyzer_name for r in report.analyzer_results]
@@ -163,6 +175,7 @@ def test_pipeline_activates_openvla():
 
 def test_pipeline_activates_octo():
     from calibra.pipeline import Pipeline
+
     batch = _batch(n_eps=60)
     report = Pipeline().run(batch, policy_family="octo")
     analyzer_names = [r.analyzer_name for r in report.analyzer_results]
@@ -171,6 +184,7 @@ def test_pipeline_activates_octo():
 
 def test_pipeline_does_not_activate_pi0_for_diffusion():
     from calibra.pipeline import Pipeline
+
     batch = _batch()
     report = Pipeline().run(batch, policy_family="diffusion")
     analyzer_names = [r.analyzer_name for r in report.analyzer_results]

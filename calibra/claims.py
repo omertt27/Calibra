@@ -17,6 +17,7 @@ Confidence levels reflect evidence count, not subjective belief:
 When a new dataset is profiled, check whether it supports or falsifies active claims.
 Update the relevant JSON file accordingly.
 """
+
 from __future__ import annotations
 
 import json
@@ -26,13 +27,13 @@ _CLAIMS_DIR = Path(__file__).parent / "claims"
 
 # Metric key used in compare.py → claim metric field
 _METRIC_KEYS = {
-    "vel_disc_rate":  "velocity_discontinuity_rate",
-    "spike_rate":     "spike_rate",
-    "ldlj":           "ldlj",
-    "jitter_cv":      "jitter_cv",
-    "dropout_rate":   "dropout_rate",
+    "vel_disc_rate": "velocity_discontinuity_rate",
+    "spike_rate": "spike_rate",
+    "ldlj": "ldlj",
+    "jitter_cv": "jitter_cv",
+    "dropout_rate": "dropout_rate",
     "action_entropy": "action_entropy",
-    "state_entropy":  "action_entropy",   # covered by the same claim family
+    "state_entropy": "action_entropy",  # covered by the same claim family
     "pretraining_alignment_index": "pretraining_alignment_index",
 }
 
@@ -48,9 +49,9 @@ def _derive_confidence(claim: dict) -> str:
     if n == 1:
         return "LOW-MODERATE"
     if n <= 2:
-        return "LOW"        # 2 points — not enough for MODERATE
+        return "LOW"  # 2 points — not enough for MODERATE
     if n <= 4:
-        return "MEDIUM"     # 3–4 points — MEDIUM per roadmap table
+        return "MEDIUM"  # 3–4 points — MEDIUM per roadmap table
     if n <= 9:
         return "HIGH"
     return "STRONG"
@@ -81,7 +82,8 @@ def get(metric_key: str, class_name: str) -> list[dict]:
     metric = _METRIC_KEYS.get(metric_key, metric_key)
     active_statuses = {"active_hypothesis", "validated", "provisional"}
     return [
-        c for c in load_all().values()
+        c
+        for c in load_all().values()
         if c.get("metric") == metric
         and c.get("status") in active_statuses
         and (c.get("class") == class_name or c.get("class") == "any")

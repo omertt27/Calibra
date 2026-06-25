@@ -20,6 +20,7 @@ All formats re-number episode IDs from 0 to N-1 so the output is a self-containe
 valid dataset that training scripts (LeRobot ``train.py``, etc.) can consume
 without modification.
 """
+
 from __future__ import annotations
 
 import json
@@ -95,6 +96,7 @@ def export_dataset(
 
 
 # ── LeRobot v2 ────────────────────────────────────────────────────────────────
+
 
 def _export_lerobot_v2(
     src: Path,
@@ -249,6 +251,7 @@ def _copy_stats_json(meta_src: Path, meta_out: Path) -> None:
 
 # ── LeRobot v1 (HuggingFace Datasets) ────────────────────────────────────────
 
+
 def _export_lerobot_v1(
     src: Path,
     out: Path,
@@ -285,6 +288,7 @@ def _export_lerobot_v1(
 
 # ── HDF5 ──────────────────────────────────────────────────────────────────────
 
+
 def _export_hdf5(
     src: Path,
     out: Path,
@@ -295,8 +299,7 @@ def _export_hdf5(
         import h5py
     except ImportError:
         raise RuntimeError(
-            "h5py is required for HDF5 export.\n"
-            "Install it with: pip install 'calibra[hdf5]'"
+            "h5py is required for HDF5 export.\nInstall it with: pip install 'calibra[hdf5]'"
         ) from None
 
     keep_ids: set[str] = set(result.keep_episode_ids)
@@ -336,6 +339,7 @@ def _is_episode_group(obj, episode_ids: set[str]) -> bool:
     """Heuristic: True if obj is an HDF5 group whose name matches an episode ID."""
     try:
         import h5py
+
         return isinstance(obj, h5py.Group) and obj.name.lstrip("/") in episode_ids
     except Exception:
         return False

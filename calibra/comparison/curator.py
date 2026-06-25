@@ -13,6 +13,7 @@ Typical usage:
     filtered_batch, curation_report = curator.curate(batch, report)
     print(curation_report.summary())
 """
+
 from __future__ import annotations
 
 import warnings
@@ -51,12 +52,12 @@ class EpisodeCurator:
                         Requires ControlSmoothnessAnalyzer in the pipeline.
     """
 
-    min_length:           Optional[int]   = None
-    max_jitter_cv:        Optional[float] = None
+    min_length: Optional[int] = None
+    max_jitter_cv: Optional[float] = None
     max_dropout_fraction: Optional[float] = None
-    min_ldlj:             Optional[float] = None
-    max_spike_rate:       Optional[float] = None
-    max_vel_disc_rate:    Optional[float] = None
+    min_ldlj: Optional[float] = None
+    max_spike_rate: Optional[float] = None
+    max_vel_disc_rate: Optional[float] = None
 
     def curate(
         self,
@@ -93,43 +94,65 @@ class EpisodeCurator:
         if self.min_length is not None:
             for i, ep in enumerate(batch.episodes):
                 if ep.n_steps < self.min_length:
-                    per_ep_flags[i].append(EpisodeFlag(
-                        episode_index=i,
-                        episode_id=ep.metadata.episode_id,
-                        metric="length",
-                        observed_value=float(ep.n_steps),
-                        threshold=float(self.min_length),
-                        direction="too_short",
-                        interpretation=(
-                            f"Episode has {ep.n_steps} steps, "
-                            f"below min_length={self.min_length}."
-                        ),
-                    ))
+                    per_ep_flags[i].append(
+                        EpisodeFlag(
+                            episode_index=i,
+                            episode_id=ep.metadata.episode_id,
+                            metric="length",
+                            observed_value=float(ep.n_steps),
+                            threshold=float(self.min_length),
+                            direction="too_short",
+                            interpretation=(
+                                f"Episode has {ep.n_steps} steps, "
+                                f"below min_length={self.min_length}."
+                            ),
+                        )
+                    )
 
-        _flag_upper(per_ep_flags, batch.episodes,
-                    ep_data.get("per_episode_jitter_cv", []),
-                    "timestamp_jitter_cv", self.max_jitter_cv,
-                    "Timestamp jitter CV")
+        _flag_upper(
+            per_ep_flags,
+            batch.episodes,
+            ep_data.get("per_episode_jitter_cv", []),
+            "timestamp_jitter_cv",
+            self.max_jitter_cv,
+            "Timestamp jitter CV",
+        )
 
-        _flag_upper(per_ep_flags, batch.episodes,
-                    ep_data.get("per_episode_dropout_fraction", []),
-                    "timestamp_dropout_rate", self.max_dropout_fraction,
-                    "Timestamp dropout fraction")
+        _flag_upper(
+            per_ep_flags,
+            batch.episodes,
+            ep_data.get("per_episode_dropout_fraction", []),
+            "timestamp_dropout_rate",
+            self.max_dropout_fraction,
+            "Timestamp dropout fraction",
+        )
 
-        _flag_lower(per_ep_flags, batch.episodes,
-                    ep_data.get("per_episode_ldlj", []),
-                    "ldlj", self.min_ldlj,
-                    "LDLJ smoothness score")
+        _flag_lower(
+            per_ep_flags,
+            batch.episodes,
+            ep_data.get("per_episode_ldlj", []),
+            "ldlj",
+            self.min_ldlj,
+            "LDLJ smoothness score",
+        )
 
-        _flag_upper(per_ep_flags, batch.episodes,
-                    ep_data.get("per_episode_spike_rate", []),
-                    "jerk_spike_rate", self.max_spike_rate,
-                    "Jerk spike rate")
+        _flag_upper(
+            per_ep_flags,
+            batch.episodes,
+            ep_data.get("per_episode_spike_rate", []),
+            "jerk_spike_rate",
+            self.max_spike_rate,
+            "Jerk spike rate",
+        )
 
-        _flag_upper(per_ep_flags, batch.episodes,
-                    ep_data.get("per_episode_vel_disc_rate", []),
-                    "velocity_discontinuity_rate", self.max_vel_disc_rate,
-                    "Velocity discontinuity rate")
+        _flag_upper(
+            per_ep_flags,
+            batch.episodes,
+            ep_data.get("per_episode_vel_disc_rate", []),
+            "velocity_discontinuity_rate",
+            self.max_vel_disc_rate,
+            "Velocity discontinuity rate",
+        )
 
         # ── split retained / dropped ──────────────────────────────────────────
 
@@ -164,6 +187,7 @@ class EpisodeCurator:
 
 # ── threshold helpers ─────────────────────────────────────────────────────────
 
+
 def _flag_upper(
     per_ep_flags: list[list[EpisodeFlag]],
     episodes: list[Episode],
@@ -179,18 +203,19 @@ def _flag_upper(
         if val is None:
             continue
         if float(val) > threshold:
-            per_ep_flags[i].append(EpisodeFlag(
-                episode_index=i,
-                episode_id=episodes[i].metadata.episode_id,
-                metric=metric,
-                observed_value=float(val),
-                threshold=float(threshold),
-                direction="too_high",
-                interpretation=(
-                    f"{label} = {float(val):.4g} exceeds "
-                    f"max threshold {threshold:.4g}."
-                ),
-            ))
+            per_ep_flags[i].append(
+                EpisodeFlag(
+                    episode_index=i,
+                    episode_id=episodes[i].metadata.episode_id,
+                    metric=metric,
+                    observed_value=float(val),
+                    threshold=float(threshold),
+                    direction="too_high",
+                    interpretation=(
+                        f"{label} = {float(val):.4g} exceeds max threshold {threshold:.4g}."
+                    ),
+                )
+            )
 
 
 def _flag_lower(
@@ -208,15 +233,16 @@ def _flag_lower(
         if val is None:
             continue
         if float(val) < threshold:
-            per_ep_flags[i].append(EpisodeFlag(
-                episode_index=i,
-                episode_id=episodes[i].metadata.episode_id,
-                metric=metric,
-                observed_value=float(val),
-                threshold=float(threshold),
-                direction="too_low",
-                interpretation=(
-                    f"{label} = {float(val):.4g} is below "
-                    f"min threshold {threshold:.4g}."
-                ),
-            ))
+            per_ep_flags[i].append(
+                EpisodeFlag(
+                    episode_index=i,
+                    episode_id=episodes[i].metadata.episode_id,
+                    metric=metric,
+                    observed_value=float(val),
+                    threshold=float(threshold),
+                    direction="too_low",
+                    interpretation=(
+                        f"{label} = {float(val):.4g} is below min threshold {threshold:.4g}."
+                    ),
+                )
+            )
