@@ -1,10 +1,11 @@
-name: Publish Documentation
+name: Deploy Unified Website
 
 on:
   push:
     branches:
       - main
     paths:
+      - 'web/**'
       - 'docs/**'
       - 'mkdocs.yml'
       - '.github/workflows/docs.yml'
@@ -13,24 +14,46 @@ permissions:
   contents: write
 
 jobs:
-  deploy:
+  build-and-deploy:
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - name: Configure Git Credentials
-        run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+      # 1. Setup Node & Build React Web App
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'web/package-lock.json'
 
+      - name: Install Node dependencies
+        run: npm ci
+        working-directory: web
+
+      - name: Build React Web App
+        run: npm run build
+        working-directory: web
+
+      # 2. Setup Python & Build MkDocs Site into React Build Directory
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: 3.11
 
-      - name: Install dependencies
-        run: |
-          pip install mkdocs-material pymdown-extensions
+      - name: Install Python dependencies
+        run: pip install mkdocs-material pymdown-extensions
 
-      - name: Build and Deploy documentation
-        run: mkdocs gh-deploy --force
+      - name: Build Documentation into web/dist/docs
+        run: mkdocs build --site-dir web/dist/docs
+
+      # 3. Deploy to gh-pages branch
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: web/dist
+          branch: gh-pages

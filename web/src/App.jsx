@@ -971,6 +971,23 @@ export default function App() {
             >
               <Activity size={15} /> Control Panel & Curation Workspace
             </button>
+            <a 
+              href="/Calibra/docs/" 
+              target="_blank"
+              rel="noreferrer"
+              className="tab-btn"
+              style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '8px', 
+                textDecoration: 'none', 
+                width: 'auto', 
+                padding: '8px 18px',
+                color: 'var(--text-secondary)'
+              }}
+            >
+              <BookOpen size={15} /> Docs
+            </a>
           </div>
         </div>
       </header>
