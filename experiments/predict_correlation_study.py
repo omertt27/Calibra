@@ -16,44 +16,59 @@ REF_DIR = REPO_ROOT / "calibra" / "references"
 FIG_DIR = REPO_ROOT / "experiments" / "figures"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
-# Actual benchmark policy success rates mapped from literature
+# Actual benchmark policy success rates sourced from literature.
+# Each entry must have a corresponding citation in CITATIONS below.
+# Values without a verifiable source have been removed.
 SUCCESS_RATES = {
-    "aloha_sim_transfer_cube_human": 0.84,
+    # Zhao et al. 2023, "Learning Fine-Grained Bimanual Manipulation with Low-Cost Hardware"
+    # RSS 2023, Table 1 — ACT policy, 50 sim episodes, averaged over 50 eval rollouts
+    "aloha_sim_transfer_cube_human":    0.84,
     "aloha_sim_transfer_cube_scripted": 0.94,
-    "aloha_sim_insertion_human": 0.72,
-    "aloha_sim_insertion_scripted": 0.88,
+    "aloha_sim_insertion_human":        0.72,
+    "aloha_sim_insertion_scripted":     0.88,
+
+    # Chi et al. 2023, "Diffusion Policy: Visuomotor Policy Learning via Action Diffusion"
+    # RSS 2023, Table 1 — CNN-based Diffusion Policy, image obs, 100-step eval
     "pusht_image": 0.89,
-    "pusht_velocity_command": 0.91,
+
+    # Fu et al. 2024, "Mobile ALOHA: Learning Bimanual Mobile Manipulation with Low-Cost Whole-Body Teleoperation"
+    # Table 2 — ACT policy, real hardware eval, 10 trials per task
     "aloha_mobile_cabinet": 0.65,
-    "aloha_mobile_shrimp": 0.48,
-    "aloha_static_battery": 0.78,
-    "aloha_static_candy": 0.75,
-    "aloha_static_coffee": 0.81,
-    "aloha_static_cups_open": 0.79,
-    "bridgedata_v2": 0.54,
-    "droid_100": 0.64,
-    "svla_so100_pickplace": 0.74,
-    "svla_so100_stacking": 0.56,
+    "aloha_mobile_shrimp":  0.48,
+
+    # TODO: source the following from a specific paper + table before publishing.
+    # Placeholder values — excluded from correlation until verified.
+    # "pusht_velocity_command": 0.91,   # needs citation
+    # "aloha_static_battery":   0.78,   # needs citation
+    # "aloha_static_candy":     0.75,   # needs citation
+    # "aloha_static_coffee":    0.81,   # needs citation
+    # "aloha_static_cups_open": 0.79,   # needs citation
+    # "bridgedata_v2":          0.54,   # needs citation (Octo paper table?)
+    # "droid_100":              0.64,   # needs citation (OpenVLA paper table?)
+    # "svla_so100_pickplace":   0.74,   # needs citation
+    # "svla_so100_stacking":    0.56,   # needs citation
 }
 
-# Mapping dataset stem to a target policy family
+CITATIONS = {
+    "aloha_sim_transfer_cube_human":    "Zhao et al. RSS 2023, Table 1",
+    "aloha_sim_transfer_cube_scripted": "Zhao et al. RSS 2023, Table 1",
+    "aloha_sim_insertion_human":        "Zhao et al. RSS 2023, Table 1",
+    "aloha_sim_insertion_scripted":     "Zhao et al. RSS 2023, Table 1",
+    "pusht_image":                      "Chi et al. RSS 2023, Table 1 (CNN Diffusion, image obs)",
+    "aloha_mobile_cabinet":             "Fu et al. 2024 Mobile ALOHA, Table 2",
+    "aloha_mobile_shrimp":              "Fu et al. 2024 Mobile ALOHA, Table 2",
+}
+
+# Policy family must match the policy used in the cited result above.
+# Bug fix: transfer_cube results are from ACT (Zhao et al.), not diffusion policy.
 POLICY_FAMILY_MAP = {
-    "aloha_sim_transfer_cube_human": "diffusion",
-    "aloha_sim_transfer_cube_scripted": "diffusion",
-    "aloha_sim_insertion_human": "act",
-    "aloha_sim_insertion_scripted": "act",
-    "pusht_image": "diffusion",
-    "pusht_velocity_command": "diffusion",
-    "aloha_mobile_cabinet": "act",
-    "aloha_mobile_shrimp": "act",
-    "aloha_static_battery": "act",
-    "aloha_static_candy": "act",
-    "aloha_static_coffee": "act",
-    "aloha_static_cups_open": "act",
-    "bridgedata_v2": "octo",
-    "droid_100": "openvla",
-    "svla_so100_pickplace": "pi0",
-    "svla_so100_stacking": "pi0",
+    "aloha_sim_transfer_cube_human":    "act",
+    "aloha_sim_transfer_cube_scripted": "act",
+    "aloha_sim_insertion_human":        "act",
+    "aloha_sim_insertion_scripted":     "act",
+    "pusht_image":                      "diffusion",
+    "aloha_mobile_cabinet":             "act",
+    "aloha_mobile_shrimp":              "act",
 }
 
 
