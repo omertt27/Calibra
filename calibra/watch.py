@@ -56,6 +56,64 @@ _LDLJ_FAIL = -15.0
 _WATCH_EXTENSIONS = frozenset([".h5", ".hdf5", ".npz", ".mcap", ".bag"])
 
 
+class JEPAWatchScorer:
+    """
+    Incrementally maintains a RobotJEPA world model during a watch session.
+    Retrains every RETRAIN_INTERVAL episodes (synchronous — blocks briefly).
+    Requires torch; silently disabled if absent.
+    """
+
+    MIN_EPISODES: int = 5
+    RETRAIN_INTERVAL: int = 5
+
+    def __init__(self) -> None:
+        self._episodes: list = []
+        self._scores: dict[str, float] = {}
+        self._trained: bool = False
+
+    def add_and_score(self, episode) -> Optional[float]:
+        """
+        Add episode to buffer. Retrain and rescore every RETRAIN_INTERVAL episodes.
+        Returns latest surprise score for this episode, or None if not yet trained.
+        """
+        self._episodes.append(episode)
+        n = len(self._episodes)
+
+        if n >= self.MIN_EPISODES and n % self.RETRAIN_INTERVAL == 0:
+            self._retrain()
+
+        return self._scores.get(episode.metadata.episode_id)
+
+    def _retrain(self) -> None:
+        from calibra.models.robot_jepa import score_by_jepa_surprise, RobotJEPAConfig
+        from calibra.schema.episode import EpisodeBatch
+
+        try:
+            batch = EpisodeBatch(
+                episodes=list(self._episodes),
+                dataset_name="watch_session",
+                format="unknown",
+                source_path="watch",
+            )
+            scores = score_by_jepa_surprise(
+                batch, config=RobotJEPAConfig(n_epochs=30, batch_size=256)
+            )
+            self._scores.update(scores)
+            self._trained = True
+        except Exception:
+            pass
+
+    @staticmethod
+    def surprise_label(score: Optional[float]) -> str:
+        if score is None:
+            return "(learning...)"
+        if score >= 0.65:
+            return "HIGH  (novel)"
+        if score >= 0.35:
+            return "MED   (familiar)"
+        return "LOW   (redundant)"
+
+
 def _episode_verdict(report) -> tuple[str, str]:
     """
     Returns (verdict, details) for a single-episode DiagnosticReport.
@@ -134,20 +192,26 @@ def _remediation_advice(metric: str, value: float, verdict: str) -> str:
 
 
 def _score_episode_file(path: Path, policy_family: Optional[str], reader=None):
-    """Load a single-file episode and run the pipeline on it."""
+    """Load a single-file episode and run the pipeline on it. Returns (report, batch)."""
     from calibra.ingestion.registry import load as _load
     from calibra.pipeline import Pipeline
 
     batch = _load(str(path), reader=reader)
     report = Pipeline().run(batch, policy_family=policy_family)
-    return report
+    return report, batch
 
 
 # ── session state ─────────────────────────────────────────────────────────────
 
 
 class WatchSession:
-    def __init__(self, log_file: Optional[Path], quiet: bool, bell: bool):
+    def __init__(
+        self,
+        log_file: Optional[Path],
+        quiet: bool,
+        bell: bool,
+        world_model: bool = False,
+    ):
         self.log_file = log_file
         self.quiet = quiet
         self.bell = bell
@@ -156,13 +220,22 @@ class WatchSession:
         self.n_fail = 0
         self.episodes: list[dict] = []
         self._start = time.monotonic()
+        self._jepa_scorer: Optional[JEPAWatchScorer] = (
+            JEPAWatchScorer() if world_model else None
+        )
 
     @property
     def total(self) -> int:
         return self.n_pass + self.n_warn + self.n_fail
 
     def record(
-        self, path: Path, verdict: str, details: str, report=None, remediate: bool = False
+        self,
+        path: Path,
+        verdict: str,
+        details: str,
+        report=None,
+        remediate: bool = False,
+        surprise_score: Optional[float] = None,
     ) -> None:
         icon = _verdict_icon(verdict)
         elapsed = time.monotonic() - self._start
@@ -196,6 +269,11 @@ class WatchSession:
                     )
                     entry["remediation"] = remediation
 
+        if self._jepa_scorer is not None and surprise_score is not None:
+            wm_label = JEPAWatchScorer.surprise_label(surprise_score)
+            entry["wm_surprise"] = round(surprise_score, 3)
+            entry["wm_label"] = wm_label
+
         self.episodes.append(entry)
 
         if verdict == "PASS":
@@ -207,7 +285,10 @@ class WatchSession:
 
         if not self.quiet:
             score_str = f"  score={entry['calibra_score']:.0f}" if "calibra_score" in entry else ""
-            print(f"  {icon} [{self.total:>4}] {path.name:<40} {verdict:<4} — {details}{score_str}")
+            wm_str = f"  [wm: {entry['wm_label']}]" if "wm_label" in entry else ""
+            print(
+                f"  {icon} [{self.total:>4}] {path.name:<40} {verdict:<4} — {details}{score_str}{wm_str}"
+            )
             if remediation:
                 print(f"       ↳ {remediation}")
             if verdict == "FAIL" and self.bell:
@@ -271,9 +352,21 @@ def _poll_watch(
         for path in new_files:
             time.sleep(0.5)
             try:
-                report = _score_episode_file(path, policy_family, reader)
+                report, batch = _score_episode_file(path, policy_family, reader)
                 verdict, details = _episode_verdict(report)
-                session.record(path, verdict, details, report, remediate=remediate)
+                surprise_score: Optional[float] = None
+                if session._jepa_scorer is not None:
+                    episodes = getattr(batch, "episodes", [])
+                    if episodes:
+                        surprise_score = session._jepa_scorer.add_and_score(episodes[0])
+                session.record(
+                    path,
+                    verdict,
+                    details,
+                    report,
+                    remediate=remediate,
+                    surprise_score=surprise_score,
+                )
             except Exception as exc:
                 session.record(path, "FAIL", f"load error: {exc}")
             known.add(path)
@@ -467,14 +560,36 @@ def run_watch(argv: list[str]) -> None:
             "Example: python collect.py | calibra watch --stream --remediate"
         ),
     )
+    p.add_argument(
+        "--world-model",
+        action="store_true",
+        help=(
+            "Maintain a running JEPA world model. Score each episode for world-model "
+            "surprise (HIGH=novel, LOW=redundant). Requires torch. "
+            "Warms up after 5 episodes, retrains every 5 new episodes."
+        ),
+    )
     args = p.parse_args(argv)
 
+    world_model = args.world_model
+    if args.stream and world_model:
+        print(
+            "warning: --world-model is not supported with --stream (no Episode objects). "
+            "World-model scoring disabled.",
+            file=sys.stderr,
+        )
+        world_model = False
+
     log_file = Path(args.log_file) if args.log_file else None
-    session = WatchSession(log_file=log_file, quiet=args.quiet, bell=not args.no_bell)
+    session = WatchSession(
+        log_file=log_file, quiet=args.quiet, bell=not args.no_bell, world_model=world_model
+    )
 
     print("━" * 60)
     print("  CALIBRA WATCH — real-time data quality monitor")
     print("━" * 60)
+    if world_model:
+        print("  World-model scoring: ON  (requires 5+ episodes to warm up)")
 
     if args.stream:
         try:

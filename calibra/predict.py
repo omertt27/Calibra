@@ -561,6 +561,10 @@ def run_predict(argv: list[str]) -> None:
                 f"error={abs(result['heuristic_score'] / 100.0 - actual_rate) * 100:.1f}%"
             )
             log(f"  {db.summary()}")
+            log(
+                "  Outcome recorded locally."
+                " Set CALIBRA_CLOUD_SYNC=1 to contribute to the global prediction model."
+            )
         except Exception as exc:
             log(f"  Warning: could not record outcome: {exc}")
 

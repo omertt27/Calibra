@@ -124,6 +124,12 @@ def main() -> None:
         run_card(sys.argv[2:])
         return
 
+    if len(sys.argv) > 1 and sys.argv[1] == "serve":
+        from calibra.serve import run_serve
+
+        run_serve(sys.argv[2:])
+        return
+
     if len(sys.argv) > 1 and sys.argv[1] == "calibrate":
         from calibra.outcome_db import OutcomeDatabase
 

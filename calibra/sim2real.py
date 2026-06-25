@@ -62,6 +62,10 @@ _FREQ_MEDIUM: float = 5.0  # Hz delta
 _FREQ_HIGH: float = 15.0
 _FREQ_CRITICAL: float = 30.0
 
+_WM_TRANSFER_MEDIUM: float = 0.15
+_WM_TRANSFER_HIGH: float = 0.30
+_WM_TRANSFER_CRITICAL: float = 0.50
+
 _WIDTH = 60
 _THICK = "━" * _WIDTH
 _THIN = "─" * _WIDTH
@@ -169,6 +173,57 @@ def _extract_actions(report: DiagnosticReport) -> Optional[np.ndarray]:
 def _extract_freq(report: DiagnosticReport) -> Optional[float]:
     t = _raw(report, "temporal_stability")
     return t.get("mean_control_hz") or t.get("jitter", {}).get("mean_hz")
+
+
+def _compute_world_model_transfer_gap(sim_batch, real_batch) -> Optional[dict]:
+    """
+    Train a JEPA world model on sim data and evaluate its prediction error on real data.
+
+    A high transfer gap means the physics learned in sim does not transfer to real.
+    """
+    try:
+        try:
+            import torch  # noqa: F401
+        except ImportError:
+            return None
+
+        if sim_batch.n_episodes < 3 or real_batch.n_episodes < 3:
+            return None
+
+        from calibra.models.robot_jepa import _PROPRIO_KEYS, RobotJEPA, RobotJEPAConfig
+
+        sim_keys = set()
+        for ep in sim_batch.episodes:
+            sim_keys.update(ep.observations.keys())
+        real_keys = set()
+        for ep in real_batch.episodes:
+            real_keys.update(ep.observations.keys())
+
+        shared_proprio = [k for k in _PROPRIO_KEYS if k in sim_keys and k in real_keys]
+        if not shared_proprio:
+            return None
+
+        jepa = RobotJEPA(RobotJEPAConfig(n_epochs=60))
+        jepa.fit(sim_batch)
+
+        sim_surprise = jepa.mean_surprise(sim_batch)
+        real_surprise = jepa.mean_surprise(real_batch)
+        transfer_gap = max(0.0, real_surprise - sim_surprise)
+
+        risk = _risk_level(transfer_gap, _WM_TRANSFER_MEDIUM, _WM_TRANSFER_HIGH, _WM_TRANSFER_CRITICAL)
+
+        return {
+            "value": round(transfer_gap, 4),
+            "sim_surprise": round(sim_surprise, 4),
+            "real_surprise": round(real_surprise, 4),
+            "risk": risk,
+            "note": (
+                "JEPA trained on sim data; evaluated on real transitions. "
+                "Higher gap = physics learned in sim does not transfer to real."
+            ),
+        }
+    except Exception:
+        return None
 
 
 def analyze_gap(
@@ -405,6 +460,12 @@ def analyze_gap(
             except Exception:
                 pass
 
+        # ── world-model transfer gap ─────────────────────────────────────────
+        wm_gap = _compute_world_model_transfer_gap(sim_batch, real_batch)
+        if wm_gap is not None:
+            gaps["world_model_transfer_gap"] = wm_gap
+            overall_levels.append(wm_gap["risk"])
+
     # ── frequency gap ─────────────────────────────────────────────────────────
     sim_freq = _extract_freq(sim_report)
     real_freq = _extract_freq(real_report)
@@ -469,6 +530,13 @@ def analyze_gap(
         val = vis_gap["value"]
         vis_score = max(0.0, min(100.0, 100.0 * (1.0 - val / 0.5)))
         pai_components.append(vis_score)
+
+    # 6. World-model transfer gap component
+    wm_gap_data = gaps.get("world_model_transfer_gap")
+    if wm_gap_data is not None:
+        val = wm_gap_data["value"]
+        wm_score = max(0.0, min(100.0, 100.0 * (1.0 - val / _WM_TRANSFER_CRITICAL)))
+        pai_components.append(wm_score)
 
     # 4. Modality matching component
     sim_obs = set()

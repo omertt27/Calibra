@@ -232,11 +232,52 @@ export default function App() {
 
   // Selected Episode Lock state
   const [selectedEpisodeId, setSelectedEpisodeId] = useState(14); // Defaults to Episode 14 (an anomaly)
-  
+
+  // Live server connection
+  const SERVER_URL = 'http://localhost:7842';
+  const [serverStatus, setServerStatus] = useState('checking');
+  const [liveDatasetPath, setLiveDatasetPath] = useState('');
+  const [liveResult, setLiveResult] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
   // Preload dataset data
   const currentDataset = useMemo(() => {
     return ROBOT_DATASETS[selectedDatasetKey];
   }, [selectedDatasetKey]);
+
+  // Health-check calibra serve every 5 seconds
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const res = await fetch(`${SERVER_URL}/health`, { signal: AbortSignal.timeout(2000) });
+        setServerStatus(res.ok ? 'online' : 'offline');
+      } catch {
+        setServerStatus('offline');
+      }
+    };
+    check();
+    const id = setInterval(check, 5000);
+    return () => clearInterval(id);
+  }, []);
+
+  const handleLiveAnalyze = async () => {
+    if (!liveDatasetPath.trim() || serverStatus !== 'online') return;
+    setIsAnalyzing(true);
+    setLiveResult(null);
+    try {
+      const res = await fetch(`${SERVER_URL}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: liveDatasetPath }),
+      });
+      const data = await res.json();
+      setLiveResult(data);
+    } catch (err) {
+      setLiveResult({ error: String(err) });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   // Generate 2D Behavioral Embedding Space (Deterministically LCG-seeded)
   const embeddingPoints = useMemo(() => {
@@ -971,23 +1012,42 @@ export default function App() {
             >
               <Activity size={15} /> Control Panel & Curation Workspace
             </button>
-            <a 
-              href="/Calibra/docs/" 
+            <a
+              href="/Calibra/docs/"
               target="_blank"
               rel="noreferrer"
               className="tab-btn"
-              style={{ 
-                display: 'inline-flex', 
-                alignItems: 'center', 
-                gap: '8px', 
-                textDecoration: 'none', 
-                width: 'auto', 
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                textDecoration: 'none',
+                width: 'auto',
                 padding: '8px 18px',
                 color: 'var(--text-secondary)'
               }}
             >
               <BookOpen size={15} /> Docs
             </a>
+            <div
+              title={serverStatus === 'online' ? 'calibra serve running — live analysis available' : serverStatus === 'checking' ? 'Checking for calibra serve...' : 'calibra serve offline — run: calibra serve'}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 14px', borderRadius: '8px',
+                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(255,255,255,0.03)',
+                fontSize: '12px', color: 'var(--text-muted)', cursor: 'default',
+                userSelect: 'none',
+              }}
+            >
+              <span style={{
+                width: '7px', height: '7px', borderRadius: '50%',
+                background: serverStatus === 'online' ? 'var(--success)' : serverStatus === 'checking' ? 'var(--warning)' : '#64748b',
+                boxShadow: serverStatus === 'online' ? '0 0 6px var(--success)' : 'none',
+                flexShrink: 0,
+              }} />
+              {serverStatus === 'online' ? 'Live' : serverStatus === 'checking' ? '...' : 'Offline'}
+            </div>
           </div>
         </div>
       </header>
@@ -1125,7 +1185,100 @@ export default function App() {
         {/* WORKSPACE & CURATION PANEL TAB */}
         {activeTab === 'simulator' && (
           <div className="animate-fade-in-up" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-            
+
+            {/* Live Analysis Panel */}
+            <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left', borderColor: serverStatus === 'online' ? 'rgba(16,185,129,0.2)' : undefined }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                  <Activity size={16} style={{ color: serverStatus === 'online' ? 'var(--success)' : 'var(--text-muted)' }} />
+                  Live Analysis
+                  <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-muted)', marginLeft: '4px' }}>
+                    powered by <code style={{ fontFamily: 'var(--font-mono)' }}>calibra serve</code>
+                  </span>
+                </h3>
+                <span style={{
+                  fontSize: '11px', padding: '3px 10px', borderRadius: '20px',
+                  background: serverStatus === 'online' ? 'rgba(16,185,129,0.1)' : 'rgba(100,116,139,0.1)',
+                  color: serverStatus === 'online' ? 'var(--success)' : 'var(--text-muted)',
+                  border: `1px solid ${serverStatus === 'online' ? 'rgba(16,185,129,0.3)' : 'rgba(100,116,139,0.2)'}`,
+                }}>
+                  {serverStatus === 'online' ? 'Server online' : serverStatus === 'checking' ? 'Connecting...' : 'Server offline'}
+                </span>
+              </div>
+
+              {serverStatus !== 'online' ? (
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span>Start the Calibra server to analyze real datasets from this dashboard:</span>
+                  <code style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--brand-gold)', background: 'rgba(0,0,0,0.3)', padding: '6px 12px', borderRadius: '6px', display: 'inline-block' }}>
+                    pip install 'calibra-robotics[serve]' &amp;&amp; calibra serve
+                  </code>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <input
+                      type="text"
+                      className="glass-input"
+                      placeholder="/data/my_demos.h5  or  lerobot/pusht"
+                      value={liveDatasetPath}
+                      onChange={(e) => setLiveDatasetPath(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleLiveAnalyze()}
+                      style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: '13px' }}
+                    />
+                    <button
+                      className="btn-primary"
+                      onClick={handleLiveAnalyze}
+                      disabled={isAnalyzing || !liveDatasetPath.trim()}
+                      style={{ whiteSpace: 'nowrap', opacity: isAnalyzing ? 0.7 : 1 }}
+                    >
+                      {isAnalyzing ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Play size={14} fill="currentColor" />}
+                      {isAnalyzing ? 'Analyzing...' : 'Analyze'}
+                    </button>
+                  </div>
+
+                  {liveResult && !liveResult.error && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginTop: '4px' }}>
+                      {[
+                        { label: 'Episodes', value: liveResult.episodes ?? '—' },
+                        { label: 'Jerk Spike Rate', value: liveResult.jerk_spike_rate != null ? `${liveResult.jerk_spike_rate.toFixed(1)}%` : '—', warn: liveResult.jerk_spike_rate > 5 },
+                        { label: 'Vel Discontinuity', value: liveResult.vel_discontinuity != null ? `${liveResult.vel_discontinuity.toFixed(1)}%` : '—', warn: liveResult.vel_discontinuity > 4 },
+                        { label: 'LDLJ', value: liveResult.ldlj != null ? liveResult.ldlj.toFixed(1) : '—', warn: liveResult.ldlj < -10 },
+                      ].map(({ label, value, warn }) => (
+                        <div key={label} style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '8px', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{label}</span>
+                          <strong style={{ fontSize: '18px', color: warn ? 'var(--danger)' : 'var(--success)' }}>{value}</strong>
+                        </div>
+                      ))}
+                      <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{
+                          padding: '4px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600,
+                          background: liveResult.overall_status === 'CERTIFIED' ? 'rgba(16,185,129,0.15)' : liveResult.overall_status === 'PROVISIONALLY_CERTIFIED' ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)',
+                          color: liveResult.overall_status === 'CERTIFIED' ? 'var(--success)' : liveResult.overall_status === 'PROVISIONALLY_CERTIFIED' ? 'var(--warning)' : 'var(--danger)',
+                          border: `1px solid ${liveResult.overall_status === 'CERTIFIED' ? 'rgba(16,185,129,0.3)' : liveResult.overall_status === 'PROVISIONALLY_CERTIFIED' ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                        }}>
+                          {liveResult.overall_status?.replace('_', ' ')}
+                        </span>
+                        {liveResult.score != null && (
+                          <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                            Calibra Score: <strong style={{ color: liveResult.score >= 75 ? 'var(--success)' : liveResult.score >= 50 ? 'var(--warning)' : 'var(--danger)' }}>{liveResult.score}/100</strong>
+                          </span>
+                        )}
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginLeft: 'auto', fontFamily: 'var(--font-mono)' }}>
+                          {liveResult.name}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {liveResult?.error && (
+                    <div style={{ fontSize: '13px', color: 'var(--danger)', background: 'rgba(239,68,68,0.08)', padding: '10px 14px', borderRadius: '8px', borderLeft: '3px solid var(--danger)' }}>
+                      {liveResult.error}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Top Workspace Config Row */}
             <div className="glass-card" style={{ display: 'flex', flexWrap: 'wrap', gap: '28px', alignItems: 'center', justifyContent: 'space-between', padding: '24px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', textAlign: 'left' }}>

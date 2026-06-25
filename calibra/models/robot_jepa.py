@@ -429,3 +429,84 @@ class RobotJEPA:
                 z = self._model["predictor"](inp)  # (N, L)
 
         return z.cpu().numpy()
+
+    def mean_surprise(self, batch) -> float:
+        """
+        Mean raw cosine-distance surprise across all transitions in batch.
+
+        Unlike score_episodes(), this does NOT normalize within the batch —
+        it returns the absolute surprise value. Use this for cross-dataset
+        comparison (e.g. evaluate a sim-trained model on real transitions).
+
+        Returns 0.0 if the batch has no usable proprioceptive transitions.
+        """
+        if self._model is None:
+            raise RuntimeError("Call fit() before mean_surprise().")
+
+        import torch
+        import torch.nn.functional as F
+
+        states, actions, next_states, _ = self._extract_transitions(batch)
+        if states is None:
+            return 0.0
+
+        with torch.no_grad():
+            s_t = torch.from_numpy(states).to(self._device)
+            a_t = torch.from_numpy(actions).to(self._device)
+            ns_t = torch.from_numpy(next_states).to(self._device)
+
+            # Clamp normalized inputs to avoid NaN when batch is OOD
+            s_n = ((s_t - self._s_mean) / self._s_std).clamp(-10.0, 10.0)
+            a_n = ((a_t - self._a_mean) / self._a_std).clamp(-10.0, 10.0)
+            ns_n = ((ns_t - self._s_mean) / self._s_std).clamp(-10.0, 10.0)
+
+            z_t = self._model["encoder"](s_n)
+            z_t1_pred = self._model["predictor"](torch.cat([z_t, a_n], dim=-1))
+            z_t1_target = self._model["encoder"](ns_n)
+
+            cos_sim = F.cosine_similarity(z_t1_pred, z_t1_target, dim=-1)
+            return float((1.0 - cos_sim).clamp(0.0).mean().item())
+
+
+# ── module-level utility ───────────────────────────────────────────────────────
+
+
+def score_by_jepa_surprise(
+    batch,
+    config: Optional[RobotJEPAConfig] = None,
+    verbose: bool = False,
+) -> dict[str, float]:
+    """
+    Train a fresh RobotJEPA on batch and return {episode_id: surprise_score}.
+
+    Surprise scores are normalized to [0, 1] within the batch.
+    High surprise + low jerk  → genuinely novel episode (keep for world model training).
+    High surprise + high jerk → corrupted episode (prune).
+    Low surprise              → redundant episode (prune for diversity).
+
+    Returns {} if:
+      - torch is not installed
+      - batch has fewer than 3 episodes
+      - no episode has proprioceptive observations
+    """
+    try:
+        import torch as _torch  # noqa: F401
+    except ImportError:
+        return {}
+
+    if batch.n_episodes < 3:
+        return {}
+
+    try:
+        jepa = RobotJEPA(config or RobotJEPAConfig())
+        if verbose:
+            import sys
+            print(
+                f"  [world-model] Training JEPA on {batch.n_episodes} episodes...",
+                file=sys.stderr,
+                flush=True,
+            )
+        jepa.fit(batch)
+        return jepa.score_episodes(batch)
+    except Exception:
+        return {}
