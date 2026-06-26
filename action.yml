@@ -1,0 +1,163 @@
+name: Calibra Dataset Certify
+description: Run Calibra quality certification on a robot demonstration dataset and post results as a PR comment.
+author: Calibra
+
+branding:
+  icon: shield
+  color: green
+
+inputs:
+  dataset-path:
+    description: Path to the dataset (local path or HuggingFace Hub ID)
+    required: true
+  policy:
+    description: Policy family to certify against (diffusion, act, gr00t)
+    required: false
+    default: ""
+  reference:
+    description: Reference profile to compare against (aloha, pusht, droid_100, ...)
+    required: false
+    default: ""
+  strict:
+    description: Fail on warnings in addition to critical failures
+    required: false
+    default: "false"
+  post-comment:
+    description: Post certification result as a PR comment (requires GITHUB_TOKEN)
+    required: false
+    default: "true"
+  calibra-version:
+    description: calibra-robotics version to install
+    required: false
+    default: "latest"
+
+outputs:
+  status:
+    description: Certification result (CERTIFIED, PROVISIONALLY_CERTIFIED, NOT_CERTIFIED)
+    value: ${{ steps.certify.outputs.status }}
+  score:
+    description: Composite Calibra score (0-100)
+    value: ${{ steps.certify.outputs.score }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install calibra-robotics
+      shell: bash
+      run: |
+        if [ "${{ inputs.calibra-version }}" = "latest" ]; then
+          pip install 'calibra-robotics[lerobot]' --quiet
+        else
+          pip install "calibra-robotics[lerobot]==${{ inputs.calibra-version }}" --quiet
+        fi
+
+    - name: Run calibra certify
+      id: certify
+      shell: bash
+      run: |
+        ARGS="${{ inputs.dataset-path }}"
+        [ -n "${{ inputs.policy }}" ]    && ARGS="$ARGS --policy ${{ inputs.policy }}"
+        [ -n "${{ inputs.reference }}" ] && ARGS="$ARGS --reference ${{ inputs.reference }}"
+        [ "${{ inputs.strict }}" = "true" ] && ARGS="$ARGS --strict"
+
+        # Run and capture both output and exit code
+        OUTPUT=$(calibra certify $ARGS --json 2>&1) || EXIT_CODE=$?
+        EXIT_CODE=${EXIT_CODE:-0}
+
+        echo "json_output<<EOF" >> $GITHUB_OUTPUT
+        echo "$OUTPUT" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+        # Parse status from JSON
+        STATUS=$(echo "$OUTPUT" | python3 -c "
+        import sys, json
+        try:
+            data = json.load(sys.stdin)
+            print(data.get('status', 'UNKNOWN'))
+        except Exception:
+            statuses = {0: 'CERTIFIED', 1: 'PROVISIONALLY_CERTIFIED', 2: 'NOT_CERTIFIED'}
+            print(statuses.get($EXIT_CODE, 'UNKNOWN'))
+        " 2>/dev/null || echo "UNKNOWN")
+
+        SCORE=$(echo "$OUTPUT" | python3 -c "
+        import sys, json
+        try:
+            data = json.load(sys.stdin)
+            print(data.get('score', ''))
+        except Exception:
+            print('')
+        " 2>/dev/null || echo "")
+
+        echo "status=$STATUS" >> $GITHUB_OUTPUT
+        echo "score=$SCORE"   >> $GITHUB_OUTPUT
+        echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
+
+        echo "Calibra certification: $STATUS"
+
+    - name: Post PR comment
+      if: inputs.post-comment == 'true' && github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const status = '${{ steps.certify.outputs.status }}';
+          const score  = '${{ steps.certify.outputs.score }}';
+          const path   = '${{ inputs.dataset-path }}';
+
+          const icons = {
+            'CERTIFIED':               '✅',
+            'PROVISIONALLY_CERTIFIED': '⚠️',
+            'NOT_CERTIFIED':           '❌',
+          };
+          const icon = icons[status] || '❓';
+
+          const scoreStr = score ? ` · Score: **${score}/100**` : '';
+
+          const body = [
+            `## ${icon} Calibra Dataset Certification`,
+            ``,
+            `**Dataset:** \`${path}\``,
+            `**Status:** ${status.replace(/_/g, ' ')}${scoreStr}`,
+            ``,
+            `<details><summary>Full certification output</summary>`,
+            ``,
+            `\`\`\``,
+            `${{ steps.certify.outputs.json_output }}`,
+            `\`\`\``,
+            `</details>`,
+            ``,
+            `*Run \`calibra certify ${path}\` locally for the full report.*`,
+          ].join('\n');
+
+          const comments = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo:  context.repo.repo,
+            issue_number: context.issue.number,
+          });
+
+          const existing = comments.data.find(c =>
+            c.body.includes('Calibra Dataset Certification') &&
+            c.user.type === 'Bot'
+          );
+
+          if (existing) {
+            await github.rest.issues.updateComment({
+              owner:      context.repo.owner,
+              repo:       context.repo.repo,
+              comment_id: existing.id,
+              body,
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner:       context.repo.owner,
+              repo:        context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+          }
+
+    - name: Fail on NOT_CERTIFIED
+      if: steps.certify.outputs.exit_code == '2'
+      shell: bash
+      run: |
+        echo "Dataset failed Calibra certification. See report above."
+        exit 2

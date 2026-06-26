@@ -135,39 +135,39 @@ class TestMetricRow:
 class TestGenerateCard:
     def test_returns_string(self):
         report = _make_report()
-        card = generate_card(report)
+        card, _ = generate_card(report)
         assert isinstance(card, str)
         assert len(card) > 100
 
     def test_contains_dataset_name(self):
         report = _make_report()
-        card = generate_card(report)
+        card, _ = generate_card(report)
         assert "test_dataset" in card
 
     def test_certified_status_clean_data(self):
         report = _make_report(n_crit_flags=0, n_warn_flags=0)
-        card = generate_card(report)
+        card, _ = generate_card(report)
         assert "CERTIFIED" in card
         assert "NOT CERTIFIED" not in card
 
     def test_provisional_status_warns(self):
         report = _make_report(n_crit_flags=0, n_warn_flags=1)
-        card = generate_card(report)
+        card, _ = generate_card(report)
         assert "PROVISIONALLY CERTIFIED" in card
 
     def test_not_certified_status_crits(self):
         report = _make_report(n_crit_flags=1, n_warn_flags=0)
-        card = generate_card(report)
+        card, _ = generate_card(report)
         assert "NOT CERTIFIED" in card
 
     def test_badge_url_in_card(self):
         report = _make_report()
-        card = generate_card(report)
+        card, _ = generate_card(report)
         assert "img.shields.io" in card
 
     def test_metric_table_present(self):
         report = _make_report()
-        card = generate_card(report)
+        card, _ = generate_card(report)
         assert "Jerk spike rate" in card
         assert "Velocity discontinuity" in card
         assert "LDLJ" in card
@@ -175,18 +175,18 @@ class TestGenerateCard:
 
     def test_predicted_success_present(self):
         report = _make_report()
-        card = generate_card(report)
+        card, _ = generate_card(report)
         assert "Predicted success" in card
         assert "%" in card
 
     def test_policy_family_shown(self):
         report = _make_report()
-        card = generate_card(report, policy_family="act")
+        card, _ = generate_card(report, policy_family="act")
         assert "act" in card
 
     def test_deductions_section_for_bad_data(self):
         report = _make_report(spike_rate=0.08, n_crit_flags=1)
-        card = generate_card(report)
+        card, _ = generate_card(report)
         assert "Quality Issues" in card
         assert "CRITICAL" in card
 
@@ -199,29 +199,29 @@ class TestGenerateCard:
             n_crit_flags=0,
             n_warn_flags=0,
         )
-        card = generate_card(report)
+        card, _ = generate_card(report)
         assert "Quality Issues" not in card
 
     def test_calibra_link_in_footer(self):
         report = _make_report()
-        card = generate_card(report)
+        card, _ = generate_card(report)
         assert "github.com/omerTT/Calibra" in card
 
     def test_version_shown(self):
         from calibra import __version__
 
         report = _make_report()
-        card = generate_card(report)
+        card, _ = generate_card(report)
         assert __version__ in card
 
     def test_episode_count_shown(self):
         report = _make_report(n_episodes=120)
-        card = generate_card(report)
+        card, _ = generate_card(report)
         assert "120" in card
 
     def test_coreset_recommendation_present(self):
         report = _make_report()
-        card = generate_card(report)
+        card, _ = generate_card(report)
         assert "prune" in card.lower() or "coreset" in card.lower()
 
 

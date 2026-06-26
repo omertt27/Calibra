@@ -112,6 +112,18 @@ def main() -> None:
         run_cure(sys.argv[2:])
         return
 
+    if len(sys.argv) > 1 and sys.argv[1] == "gap":
+        from calibra.gap import run_gap
+
+        run_gap(sys.argv[2:])
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "diagnose":
+        from calibra.diagnose import run_diagnose
+
+        run_diagnose(sys.argv[2:])
+        return
+
     if len(sys.argv) > 1 and sys.argv[1] == "benchmark":
         from calibra.benchmark import run_benchmark
 

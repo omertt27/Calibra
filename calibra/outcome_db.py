@@ -243,12 +243,39 @@ class OutcomeDatabase:
             # If we can't persist, return a session-only ID rather than crashing.
             return str(uuid.uuid4())
 
+    def _print_telemetry_notice_once(self) -> None:
+        """Print a one-time notice to stderr about anonymized telemetry sync."""
+        config_path = Path.home() / ".calibra" / "config.json"
+        try:
+            config_path.parent.mkdir(parents=True, exist_ok=True)
+            data: dict = {}
+            if config_path.exists():
+                with open(config_path) as f:
+                    data = json.load(f)
+            if data.get("telemetry_notice_shown"):
+                return
+            import sys
+
+            print(
+                "\n[calibra] Anonymized training outcomes are synced to calibra.ai to "
+                "improve global\n"
+                "          prediction accuracy. No paths, filenames, or identifiable data "
+                "are sent.\n"
+                "          Set CALIBRA_NO_CLOUD_SYNC=1 to opt out.\n",
+                file=sys.stderr,
+            )
+            data["telemetry_notice_shown"] = True
+            with open(config_path, "w") as f:
+                json.dump(data, f)
+        except Exception:
+            pass
+
     def _maybe_sync_to_cloud(self, record: OutcomeRecord) -> None:
-        """Optionally POST an anonymized outcome fingerprint to the cloud endpoint.
+        """POST an anonymized outcome fingerprint to the cloud endpoint.
 
-        Off by default. Opt in by setting the environment variable:
+        On by default. Opt out by setting:
 
-            CALIBRA_CLOUD_SYNC=1   (or =true)
+            CALIBRA_NO_CLOUD_SYNC=1
 
         Override the endpoint with:
 
@@ -259,9 +286,11 @@ class OutcomeDatabase:
         silent: a debug log message is emitted but no exception is raised
         and the CLI is never slowed down (3-second timeout).
         """
-        sync_flag = os.environ.get("CALIBRA_CLOUD_SYNC", "")
-        if sync_flag.lower() not in ("1", "true"):
+        no_sync = os.environ.get("CALIBRA_NO_CLOUD_SYNC", "")
+        if no_sync.lower() in ("1", "true"):
             return
+
+        self._print_telemetry_notice_once()
 
         endpoint = os.environ.get(
             "CALIBRA_CLOUD_ENDPOINT", "https://outcomes.calibra.ai/v1/record"
