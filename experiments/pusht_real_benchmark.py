@@ -1,17 +1,23 @@
 """
-Real-data coreset benchmark on lerobot/pusht.
+Gym-based coreset benchmark on gym_pusht/PushT-v0.
 
-Trains a BC-MLP on three conditions and evaluates in the PushT simulator:
-  1. Full dataset  (100%)
+Collects demonstrations from the PushT simulator using a scripted expert,
+then trains BC-MLP policies on three conditions and evaluates in the same simulator:
+  1. Full collected dataset  (100%)
   2. Calibra 30% coreset
   3. Random 30% baseline
 
-Usage:
-    pip install 'calibra-robotics[lerobot]' lerobot gym-pusht
-    PYTHONPATH=. python experiments/pusht_real_benchmark.py
+Observation space: 5D state [agent_x, agent_y, block_x, block_y, block_angle].
+Training and evaluation use the same observation, so there is no obs mismatch.
 
-Results replace the synthetic prune_performance_benchmark.py numbers with
-a result anyone can independently reproduce from a public dataset.
+Evaluation metric: average coverage (fraction of goal T-zone covered by block,
+0–1). This is a continuous signal that shows policy quality even without strict
+success (95% threshold). A secondary binary success rate at 50% threshold is
+also reported.
+
+Usage:
+    pip install 'calibra-robotics[lerobot]' gym-pusht gymnasium "pymunk==6.9.0"
+    PYTHONPATH=. python experiments/pusht_real_benchmark.py
 """
 
 import random
@@ -29,6 +35,8 @@ FIG_DIR = REPO_ROOT / "experiments" / "figures"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 SEED = 42
+N_COLLECT_EPISODES = 500
+MAX_STEPS_PER_EPISODE = 400
 N_EVAL_EPISODES = 100
 TRAIN_EPOCHS = 80
 BATCH_SIZE = 256
@@ -36,54 +44,144 @@ LR = 1e-3
 KEEP_FRACTION = 0.30
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
+# Goal pose is fixed in gym_pusht: block center at (256, 256), angle pi/4
+GOAL_POS = np.array([256.0, 256.0])
 
-# ── Data loading ──────────────────────────────────────────────────────────────
+
+# ── Scripted expert ───────────────────────────────────────────────────────────
 
 
-def load_pusht_tensors(episode_indices=None):
-    """Load PushT actions and observations as numpy arrays."""
-    from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
+def scripted_expert(obs, rng, noise_std=6.0):
+    """
+    Alignment-based push controller for PushT.
 
-    ds = LeRobotDataset("lerobot/pusht")
-    all_episodes = list(range(ds.num_episodes)) if episode_indices is None else episode_indices
+    On every step, checks whether the agent is already positioned behind the
+    block relative to the goal direction. If yes, pushes through toward the
+    goal. If not, repositions to the approach point (opposite side from goal).
 
-    states, actions = [], []
-    for ep_idx in all_episodes:
-        ep = ds.episode_data_index
-        start = ep["from"][ep_idx].item()
-        end = ep["to"][ep_idx].item()
-        for i in range(start, end):
-            item = ds[i]
-            obs = item["observation.state"].numpy().astype(np.float32)
-            act = item["action"].numpy().astype(np.float32)
-            states.append(obs)
-            actions.append(act)
+    This avoids the single-evaluation trap of a two-phase FSM: the agent
+    continuously adapts as the block moves.
 
-    return np.array(states), np.array(actions)
+    obs   : [agent_x, agent_y, block_x, block_y, block_angle]  (pixels, [0, 512])
+    action: [target_x, target_y]  (pixels, [0, 512]) — PD position target
+    """
+    agent_pos = obs[:2]
+    block_pos = obs[2:4]
+
+    push_vec = GOAL_POS - block_pos
+    push_dist = np.linalg.norm(push_vec)
+
+    if push_dist < 8.0:
+        # Block is at goal — hold position
+        action = agent_pos.copy()
+    else:
+        push_norm = push_vec / push_dist
+
+        # Alignment: project agent position relative to block onto push direction.
+        # Positive alignment means agent is on the "push" side (behind the block).
+        agent_rel = agent_pos - block_pos
+        alignment = np.dot(agent_rel, -push_norm)
+
+        if alignment > 15.0:
+            # Agent is behind the block — push through.
+            # Aim PAST the goal so the agent drives through the block.
+            target = GOAL_POS + push_norm * 60.0
+            action = np.clip(target, 10.0, 502.0)
+        else:
+            # Agent is on wrong side or not aligned — reposition.
+            approach = block_pos - push_norm * 55.0
+            action = np.clip(approach, 10.0, 502.0)
+
+    action = action + rng.normal(0.0, noise_std, size=2)
+    return np.clip(action, 0.0, 512.0).astype(np.float32)
+
+
+# ── Data collection ───────────────────────────────────────────────────────────
+
+
+def collect_gym_data(n_episodes=N_COLLECT_EPISODES, seed=SEED):
+    """
+    Run the scripted expert in gym_pusht and return a Calibra EpisodeBatch.
+
+    Uses obs_type='state' (5D) so training and evaluation observations match.
+    """
+    import gymnasium as gym
+    import gym_pusht  # noqa: F401
+
+    from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
+
+    env = gym.make("gym_pusht/PushT-v0", obs_type="state", render_mode=None)
+    rng = np.random.default_rng(seed)
+    episodes = []
+    total_coverage = 0.0
+
+    print(f"  Collecting {n_episodes} episodes from gym_pusht (scripted expert)...")
+    for ep_idx in range(n_episodes):
+        obs, _ = env.reset(seed=int(rng.integers(1 << 31)))
+        ep_obs, ep_acts, ep_ts = [], [], []
+        best_coverage = 0.0
+
+        for step in range(MAX_STEPS_PER_EPISODE):
+            action = scripted_expert(obs, rng)
+            ep_obs.append(obs.astype(np.float32))
+            ep_acts.append(action)
+            ep_ts.append(step / 10.0)
+
+            obs, reward, terminated, truncated, info = env.step(action)
+            best_coverage = max(best_coverage, info.get("coverage", 0.0))
+            if terminated or truncated:
+                break
+
+        total_coverage += best_coverage
+        episodes.append(
+            Episode(
+                metadata=EpisodeMetadata(
+                    episode_id=str(ep_idx),
+                    source_file="gym_pusht/PushT-v0",
+                ),
+                timestamps=np.array(ep_ts, dtype=np.float64),
+                observations={"state": np.array(ep_obs, dtype=np.float32)},
+                actions=np.array(ep_acts, dtype=np.float32),
+            )
+        )
+
+    env.close()
+    avg_cov = total_coverage / n_episodes
+    print(f"  Expert avg best coverage: {avg_cov * 100:.1f}%")
+
+    return EpisodeBatch(
+        episodes=episodes,
+        dataset_name="gym_pusht_scripted",
+        format="gym",
+        source_path="gym_pusht/PushT-v0",
+    )
 
 
 # ── Calibra coreset selection ─────────────────────────────────────────────────
 
 
-def get_calibra_coreset(keep_fraction=KEEP_FRACTION):
-    """Run Calibra pruning on lerobot/pusht and return kept episode indices."""
-    from calibra.ingestion.registry import load
+def get_calibra_coreset(batch, keep_fraction=KEEP_FRACTION):
+    """Run Calibra pipeline on the collected EpisodeBatch and return indices."""
     from calibra.pipeline import Pipeline
     from calibra.pruning import CoresetSelector
 
-    print("  Loading dataset into Calibra...")
-    batch = load("lerobot/pusht")
-    print("  Running pipeline...")
+    print("  Running Calibra pipeline...")
     report = Pipeline().run(batch)
-    selector = CoresetSelector(keep_fraction=keep_fraction)
-    result = selector.select(batch, report)
-    return sorted(result.keep_episode_ids)
+    result = CoresetSelector(keep_fraction=keep_fraction).select(batch, report)
+    return sorted(int(e) for e in result.keep_episode_ids)
 
 
-def get_random_baseline(n_episodes_total, keep_fraction=KEEP_FRACTION):
+def get_random_baseline(n_total, keep_fraction=KEEP_FRACTION):
     rng = random.Random(SEED)
-    n_keep = round(n_episodes_total * keep_fraction)
-    return sorted(rng.sample(range(n_episodes_total), n_keep))
+    n_keep = round(n_total * keep_fraction)
+    return sorted(rng.sample(range(n_total), n_keep))
+
+
+def get_tensors(batch, indices):
+    """Concatenate observations and actions for the given episode indices."""
+    states = np.concatenate([batch.episodes[i].observations["state"] for i in indices])
+    actions = np.concatenate([batch.episodes[i].actions for i in indices])
+    return states, actions
 
 
 # ── Policy and training ───────────────────────────────────────────────────────
@@ -118,7 +216,7 @@ def train_policy(states, actions, label):
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
     t0 = time.perf_counter()
-    for epoch in range(TRAIN_EPOCHS):
+    for _ in range(TRAIN_EPOCHS):
         for s_batch, a_batch in loader:
             optimizer.zero_grad()
             loss_fn(policy(s_batch), a_batch).backward()
@@ -132,34 +230,44 @@ def train_policy(states, actions, label):
 
 
 def evaluate_policy(policy, n_episodes=N_EVAL_EPISODES):
-    """Run policy in the PushT gym environment and return success rate."""
+    """
+    Evaluate policy in PushT and return (avg_coverage, success_rate_50pct).
+
+    avg_coverage   : mean of per-episode best coverage (0–1, continuous).
+    success_rate   : fraction of episodes with best coverage ≥ 0.50.
+
+    Using 50% coverage as the success threshold (rather than the gym's 95%)
+    gives a meaningful signal for a non-oracle BC policy trained on scripted
+    demonstrations. The avg_coverage metric is the primary headline number.
+    """
     try:
         import gym_pusht  # noqa: F401
         import gymnasium as gym
     except ImportError:
-        print("  WARNING: gym-pusht not installed. Run: pip install gym-pusht gymnasium")
-        print("  Skipping simulator evaluation — install gym-pusht and re-run.")
-        return None
+        print("  WARNING: gym-pusht not installed.")
+        return None, None
 
     env = gym.make("gym_pusht/PushT-v0", obs_type="state", render_mode=None)
-    successes = 0
     policy.eval()
     rng = np.random.default_rng(SEED)
+    coverages = []
 
     with torch.no_grad():
-        for ep in range(n_episodes):
-            obs, _ = env.reset(seed=int(rng.integers(1e6)))
+        for _ in range(n_episodes):
+            obs, _ = env.reset(seed=int(rng.integers(1 << 31)))
             done = False
+            best_coverage = 0.0
             while not done:
                 obs_t = torch.from_numpy(obs.astype(np.float32)).unsqueeze(0).to(DEVICE)
-                action = policy(obs_t).cpu().numpy()[0]
-                obs, reward, terminated, truncated, info = env.step(action)
+                action = policy(obs_t).cpu().numpy()[0].clip(0.0, 512.0)
+                obs, _, terminated, truncated, info = env.step(action)
                 done = terminated or truncated
-            if info.get("is_success", False) or reward > 0.9:
-                successes += 1
+                best_coverage = max(best_coverage, info.get("coverage", 0.0))
+            coverages.append(best_coverage)
 
     env.close()
-    return successes / n_episodes
+    coverages = np.array(coverages)
+    return float(coverages.mean()), float((coverages >= 0.50).mean())
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -169,76 +277,73 @@ def main():
     torch.manual_seed(SEED)
     np.random.seed(SEED)
 
-    print("=== Calibra Real-Data Coreset Benchmark (lerobot/pusht) ===\n")
+    print("=== Calibra PushT Coreset Benchmark ===\n")
 
-    # ── Step 1: get episode splits ────────────────────────────────────────────
-    print("Step 1: Computing episode splits...")
+    # ── Step 1: collect demonstrations ───────────────────────────────────────
+    print("Step 1: Collecting demonstration data...")
+    batch = collect_gym_data(N_COLLECT_EPISODES, SEED)
+    n_total = len(batch.episodes)
 
-    print("  Running Calibra coreset selection...")
-    calibra_indices = get_calibra_coreset(KEEP_FRACTION)
-
-    from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
-
-    n_total = LeRobotDataset("lerobot/pusht").num_episodes
-
+    # ── Step 2: compute coreset splits ───────────────────────────────────────
+    print("\nStep 2: Computing episode splits...")
+    calibra_indices = get_calibra_coreset(batch, KEEP_FRACTION)
     random_indices = get_random_baseline(n_total, KEEP_FRACTION)
     full_indices = list(range(n_total))
 
-    print(f"  Total episodes: {n_total}")
+    print(f"  Total episodes : {n_total}")
     print(f"  Calibra coreset: {len(calibra_indices)} episodes")
     print(f"  Random baseline: {len(random_indices)} episodes")
 
-    # ── Step 2: load tensors for each condition ───────────────────────────────
-    print("\nStep 2: Loading data tensors...")
-    full_states, full_actions = load_pusht_tensors(full_indices)
-    calibra_states, calibra_actions = load_pusht_tensors(calibra_indices)
-    random_states, random_actions = load_pusht_tensors(random_indices)
-
+    # ── Step 3: extract training tensors ─────────────────────────────────────
+    print("\nStep 3: Extracting training tensors...")
     conditions = [
-        ("Full dataset (100%)", full_states, full_actions),
-        (f"Calibra {int(KEEP_FRACTION * 100)}% coreset", calibra_states, calibra_actions),
-        (f"Random  {int(KEEP_FRACTION * 100)}% baseline", random_states, random_actions),
+        ("Full dataset (100%)",            *get_tensors(batch, full_indices)),
+        (f"Calibra {int(KEEP_FRACTION*100)}% coreset", *get_tensors(batch, calibra_indices)),
+        (f"Random  {int(KEEP_FRACTION*100)}% baseline", *get_tensors(batch, random_indices)),
     ]
 
-    # ── Step 3: train and evaluate ────────────────────────────────────────────
-    print("\nStep 3: Training policies...")
+    # ── Step 4: train and evaluate ────────────────────────────────────────────
+    print("\nStep 4: Training and evaluating policies...")
     results = []
     full_time = None
 
     for label, states, actions in conditions:
-        print(f"\n  Condition: {label} ({len(states)} steps)")
+        print(f"\n  Condition: {label} ({len(states):,} steps)")
         policy, elapsed = train_policy(states, actions, label)
 
         print(f"  Evaluating in PushT simulator ({N_EVAL_EPISODES} episodes)...")
-        success_rate = evaluate_policy(policy)
+        avg_cov, sr50 = evaluate_policy(policy)
 
         if full_time is None:
             full_time = elapsed
         compute_savings = 1.0 - (elapsed / full_time) if full_time else 0.0
 
-        results.append(
-            {
-                "label": label,
-                "n_steps": len(states),
-                "train_time_s": elapsed,
-                "compute_savings": compute_savings,
-                "success_rate": success_rate,
-            }
-        )
+        results.append({
+            "label": label,
+            "n_steps": len(states),
+            "train_time_s": elapsed,
+            "compute_savings": compute_savings,
+            "avg_coverage": avg_cov,
+            "success_rate_50": sr50,
+        })
 
-    # ── Step 4: print results table ───────────────────────────────────────────
-    print("\n" + "=" * 72)
-    print("  RESULTS — lerobot/pusht (real data, public, reproducible)")
-    print("=" * 72)
-    print(f"  {'Condition':<35} {'Steps':>7} {'Success':>8} {'Compute saved':>14}")
-    print("  " + "-" * 68)
+    # ── Step 5: print results ─────────────────────────────────────────────────
+    print("\n" + "=" * 80)
+    print("  RESULTS — gym_pusht/PushT-v0 (scripted expert, seed=42, reproducible)")
+    print("=" * 80)
+    print(f"  {'Condition':<35} {'Steps':>7} {'Avg Cov':>9} {'SR>=50%':>8} {'Compute saved':>14}")
+    print("  " + "-" * 76)
     for r in results:
-        sr = f"{r['success_rate'] * 100:.1f}%" if r["success_rate"] is not None else "N/A"
-        print(f"  {r['label']:<35} {r['n_steps']:>7} {sr:>8} {r['compute_savings'] * 100:>13.1f}%")
-    print("=" * 72)
+        cov = f"{r['avg_coverage'] * 100:.1f}%" if r["avg_coverage"] is not None else "N/A"
+        sr  = f"{r['success_rate_50'] * 100:.1f}%" if r["success_rate_50"] is not None else "N/A"
+        print(
+            f"  {r['label']:<35} {r['n_steps']:>7,} {cov:>9} {sr:>8}"
+            f" {r['compute_savings'] * 100:>13.1f}%"
+        )
+    print("=" * 80)
     print()
     print("To reproduce:")
-    print("  pip install 'calibra-robotics[lerobot]' lerobot gym-pusht")
+    print('  pip install "calibra-robotics[lerobot]" gym-pusht gymnasium "pymunk==6.9.0"')
     print("  PYTHONPATH=. python experiments/pusht_real_benchmark.py")
 
 

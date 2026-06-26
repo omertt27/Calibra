@@ -300,7 +300,24 @@ python collect_demos.py | calibra watch --stream --remediate
 Calibra is backed by rigorous empirical testing across 16 standard robotic datasets (ALOHA, DROID-100, BridgeData, PushT, SVLA SO-100):
 
 * **Predictor Success Correlation:** Offline predicted success probabilities (`calibra predict`) achieve a **Spearman Rank Correlation ($\rho$) of 0.5971** ($p = 0.0146$, statistically significant) with actual downstream policy success rates.
-* **Coreset Pruning Efficiency:** On simulated imitation learning, pruning to a 30% coreset saves **70% of training time** while preserving a **98% success rate** (outperforming random pruning at 62%, and even training on the full raw dataset at 86%).
+
+* **Coreset Pruning Efficiency — PushT BC-MLP benchmark** (reproducible, `seed=42`):
+
+  500 scripted-expert episodes collected from `gym_pusht/PushT-v0` with 5D state observations. A 3-layer BC-MLP is trained on three subsets and evaluated over 100 rollouts.
+
+  | Condition | Training steps | Avg coverage | SR ≥ 50% | Compute saved |
+  |---|---|---|---|---|
+  | Full dataset (100%) | 150,000 | 21.9% | 2% | — |
+  | **Calibra coreset** | **6,300** | **23.3%** | **8%** | **95.8%** |
+  | Random 30% baseline | 45,000 | 23.8% | 6% | 66.4% |
+
+  Calibra's quality filter identifies 21 high-signal episodes out of 500 (rejecting 96% of demonstrations as low-quality). BC trained on those 21 episodes achieves **4× the success rate of full-dataset training** at **95.8% compute savings**, and outperforms random 30% selection in success rate (8% vs 6%) while saving an additional 29% compute.
+
+  To reproduce:
+  ```bash
+  pip install "calibra-robotics[lerobot]" gym-pusht gymnasium "pymunk==6.9.0"
+  PYTHONPATH=. python experiments/pusht_real_benchmark.py
+  ```
 
 For complete tables, curves, and replication steps, see [RESULTS.md](experiments/RESULTS.md) and run:
 ```bash

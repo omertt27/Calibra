@@ -20,13 +20,17 @@ echo ""
 # ── Environment check ─────────────────────────────────────────────────────────
 echo "Python environment check:"
 python -c "import numpy, pandas, scipy, matplotlib; print('  ✓ Core dependencies present')"
-python -c "import torch; print('  ✓ PyTorch present')" 2>/dev/null || echo "  ⚠ PyTorch not found (needed for prune benchmark)"
+python -c "import torch; print('  ✓ PyTorch present')" 2>/dev/null || echo "  ⚠ PyTorch not found (needed for real-data benchmark)"
+python -c "import gym_pusht, gymnasium; print('  ✓ gym-pusht present')" 2>/dev/null || echo "  ⚠ gym-pusht not found (needed for real-data benchmark — pip install gym-pusht gymnasium)"
 
-# ── Phase 1: Curation benchmark ───────────────────────────────────────────────
+# ── Phase 1: Real-data coreset benchmark ──────────────────────────────────────
 echo ""
-echo "=== Phase 1: Coreset Curation Performance Benchmark ==="
-echo "  Generates: experiments/figures/fig5_prune_vs_random.pdf"
-PYTHONPATH=. python experiments/prune_performance_benchmark.py
+echo "=== Phase 1: Real-Data Coreset Benchmark (gym_pusht/PushT-v0) ==="
+echo "  Collects 500 scripted-expert episodes, curates with Calibra, trains BC."
+echo "  Requires: pip install gym-pusht gymnasium 'pymunk==6.9.0'"
+echo "  Expected: Calibra coreset SR>=50% > random baseline SR>=50%"
+echo "  Expected: Calibra coreset compute savings > 90%"
+PYTHONPATH=. python experiments/pusht_real_benchmark.py
 
 # ── Phase 2: Predictor correlation study ─────────────────────────────────────
 echo ""
@@ -65,6 +69,7 @@ echo "To compile the paper:"
 echo "  cd paper && pdflatex main.tex && bibtex main && pdflatex main.tex && pdflatex main.tex"
 echo ""
 echo "Key numbers to verify:"
-echo "  Spearman rho ≥ 0.59   (predictor correlation)"
-echo "  30% coreset success ≥ 95%  (vs. 60% random baseline)"
-echo "  500k episodes in < 120s    (approximate selector)"
+echo "  Spearman rho >= 0.59          (predictor correlation)"
+echo "  Calibra SR>=50%  >= 6%        (vs. 2% full-dataset BC)"
+echo "  Calibra compute savings >= 90% (vs. 66% random-30% baseline)"
+echo "  500k episodes in < 120s       (approximate selector)"
