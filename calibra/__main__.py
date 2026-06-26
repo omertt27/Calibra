@@ -112,6 +112,12 @@ def main() -> None:
         run_cure(sys.argv[2:])
         return
 
+    if len(sys.argv) > 1 and sys.argv[1] == "surprise":
+        from calibra.surprise import run_surprise
+
+        run_surprise(sys.argv[2:])
+        return
+
     if len(sys.argv) > 1 and sys.argv[1] == "gap":
         from calibra.gap import run_gap
 

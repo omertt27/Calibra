@@ -134,11 +134,12 @@ def run_prune(argv: list[str]) -> None:
     d.add_argument(
         "--strategy",
         choices=["diversity", "influence", "energy", "novelty", "world-model"],
-        default="diversity",
+        default=None,
         help=(
-            "Coreset selection strategy (default: diversity). "
-            "Choose 'novelty' for transition-novelty pruning [Research Preview]. "
-            "world-model: selects episodes maximizing JEPA world-model surprise (requires torch)."
+            "Coreset selection strategy. "
+            "Default: 'world-model' when --policy is not set (world-model-first), "
+            "'diversity' when --policy is given (IL mode). "
+            "world-model requires torch; falls back to diversity if unavailable."
         ),
     )
     d.add_argument(
@@ -220,6 +221,15 @@ def run_prune(argv: list[str]) -> None:
         sys.exit(1)
 
     log("Running coreset selection ...")
+
+    # Strategy default: world-model when no policy is specified, diversity otherwise.
+    if args.strategy is None:
+        if args.policy is None:
+            args.strategy = "world-model"
+            log("  [strategy] No --policy set: defaulting to world-model (JEPA surprise).")
+            log("             Use --strategy diversity for IL / behaviour-cloning mode.")
+        else:
+            args.strategy = "diversity"
 
     # Apply GR00T-specific defaults before building the selector.
     user_set_spike_rate = args.max_spike_rate is not None
