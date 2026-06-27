@@ -377,17 +377,39 @@ def _poll_watch(
 # ── stream mode ────────────────────────────────────────────────────────────────
 
 
+def _make_stream_episode(fname: str, actions: list, states: list):
+    """Build a minimal Episode from raw action/state arrays for JEPA scoring."""
+    from calibra.schema.episode import Episode, EpisodeMetadata
+
+    act_arr = np.array(actions, dtype=np.float32)
+    state_arr = np.array(states, dtype=np.float32)
+    if act_arr.ndim == 1:
+        act_arr = act_arr[:, np.newaxis]
+    T = len(act_arr)
+    return Episode(
+        metadata=EpisodeMetadata(episode_id=fname),
+        timestamps=np.arange(T, dtype=np.float64) * 0.02,
+        observations={"proprio": state_arr},
+        actions=act_arr,
+    )
+
+
 def _stream_watch(session: WatchSession, remediate: bool = False) -> None:
     """
     Read episode metric JSON from stdin (one line per episode).
 
-    Expected fields: file, ldlj, spike_rate, vel_disc_rate, dropout_rate, jitter_cv.
+    Required fields: file, ldlj, spike_rate, vel_disc_rate, dropout_rate, jitter_cv.
+    Optional fields for world-model scoring: actions (list of lists), states (list of lists).
 
     Example usage:
         python examples/lerobot_watch_integration.py | calibra watch --stream --remediate
+        python collect.py | calibra watch --stream --world-model --remediate
     """
+    wm_note = "  Include 'actions' and 'states' arrays per line for world-model scoring." if session._jepa_scorer else ""
     print("  Stream mode: reading episode metrics from stdin (one JSON per line)")
     print("  Expected fields: file, ldlj, spike_rate, vel_disc_rate, dropout_rate, jitter_cv")
+    if wm_note:
+        print(wm_note)
     print()
 
     _SPIKE_FAIL_S = 0.05
@@ -410,6 +432,17 @@ def _stream_watch(session: WatchSession, remediate: bool = False) -> None:
             continue
 
         fname = data.get("file", "episode")
+
+        surprise_score: Optional[float] = None
+        if session._jepa_scorer is not None:
+            raw_actions = data.get("actions")
+            raw_states = data.get("states")
+            if raw_actions and raw_states:
+                try:
+                    ep = _make_stream_episode(fname, raw_actions, raw_states)
+                    surprise_score = session._jepa_scorer.add_and_score(ep)
+                except Exception:
+                    pass
 
         verdict = "PASS"
         top_metric = ""
@@ -445,6 +478,11 @@ def _stream_watch(session: WatchSession, remediate: bool = False) -> None:
             "details": details,
         }
 
+        if surprise_score is not None:
+            wm_label = JEPAWatchScorer.surprise_label(surprise_score)
+            entry["wm_surprise"] = round(surprise_score, 3)
+            entry["wm_label"] = wm_label
+
         remediation = ""
         if remediate and verdict in ("FAIL", "WARN") and top_metric:
             remediation = _remediation_advice(top_metric, top_value, verdict)
@@ -459,7 +497,8 @@ def _stream_watch(session: WatchSession, remediate: bool = False) -> None:
         session.episodes.append(entry)
 
         if not session.quiet:
-            print(f"  {icon} [{session.total:>4}] {fname:<40} {verdict:<4} — {details}")
+            wm_str = f"  [wm: {entry['wm_label']}]" if "wm_label" in entry else ""
+            print(f"  {icon} [{session.total:>4}] {fname:<40} {verdict:<4} — {details}{wm_str}")
             if remediation:
                 print(f"       ↳ {remediation}")
             if verdict == "FAIL" and session.bell:
@@ -572,13 +611,6 @@ def run_watch(argv: list[str]) -> None:
     args = p.parse_args(argv)
 
     world_model = args.world_model
-    if args.stream and world_model:
-        print(
-            "warning: --world-model is not supported with --stream (no Episode objects). "
-            "World-model scoring disabled.",
-            file=sys.stderr,
-        )
-        world_model = False
 
     log_file = Path(args.log_file) if args.log_file else None
     session = WatchSession(

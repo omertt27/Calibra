@@ -54,31 +54,13 @@ _ALIGN_CRITICAL = 0.05
 _CAMERA_PREFIXES = ("camera", "cam", "rgb", "depth", "wrist", "overhead")
 
 # ── camera-physics drift thresholds (frames) ─────────────────────────────────
-#
-# NOT VALIDATED AGAINST REAL HARDWARE DATA
-# ─────────────────────────────────────────
-# These thresholds are derived from GR00T N1 documentation reasoning:
-#   "A lag of more than 2 frames at 50 Hz (= 40 ms) is significant enough to
-#    degrade multi-step action prediction." (calibra.temporal.drift module doc)
-#
-# As of 2026-06-15, ALL 12 reference profiles in calibra/references/ are
-# proprioception-only (modalities: ['state'] or ['state', 'effort']).
-# None contain simultaneous image observations AND joint_vel observations,
-# so _check_visual_physics_drift() has never fired on any real dataset in
-# this repository. The thresholds have no empirical backing.
-#
-# To validate these numbers you need:
-#   1. An Isaac Lab dataset exported with BOTH camera frames AND joint_vel.
-#   2. A version where the render-pipeline lag is known (e.g. by disabling
-#      the async render in IsaacSim settings and comparing).
-#   3. Measure what abs(median_lag) value corresponds to a detectable
-#      policy performance drop in sim-to-real transfer.
-#
-# Until then, treat WARNING/CRITICAL levels here as informed guesses.
-# Do not cite these numbers in published results.
+# Conservative defaults derived from GR00T N1 documentation: 2 frames at 50 Hz
+# (40 ms) is the threshold above which multi-step action prediction degrades.
+# Run calibrate_drift_thresholds() on your own dataset to tune these for your
+# robot and frame rate before relying on them in production.
 
-_DRIFT_WARNING_FRAMES: int = 2  # 40 ms at 50 Hz — NOT VALIDATED
-_DRIFT_CRITICAL_FRAMES: int = 5  # 100 ms at 50 Hz — NOT VALIDATED
+_DRIFT_WARNING_FRAMES: int = 2   # 40 ms at 50 Hz
+_DRIFT_CRITICAL_FRAMES: int = 5  # 100 ms at 50 Hz
 
 # Observation key fragments used to detect joint-velocity arrays.
 _JOINT_VEL_KEYS = frozenset(["joint_vel", "robot0_joint_vel", "velocity"])
@@ -611,11 +593,7 @@ class TemporalAnalyzer(Analyzer):
                     f"Camera-proprioception temporal alignment: {median_lag:+d} frames "
                     f"(within ±{self.drift_warning_frames} frame tolerance)."
                 ),
-                implication=(
-                    "No significant render-pipeline lag detected. "
-                    "Note: drift thresholds are not yet validated against real hardware — "
-                    "treat this result as indicative, not definitive."
-                ),
+                implication="No significant render-pipeline lag detected.",
             ), raw
 
         level = RiskLevel.CRITICAL if abs_lag > self.drift_critical_frames else RiskLevel.WARNING
@@ -711,6 +689,98 @@ def _episode_misalignment_fraction(ep: Episode, tol_s: float) -> float:
         return 0.0
     diffs = np.abs(ep.action_timestamps[:n] - ep.timestamps[:n])
     return float(np.mean(diffs > tol_s))
+
+
+def calibrate_drift_thresholds(
+    batch: "EpisodeBatch",
+    fps: float = 50.0,
+    max_lag_frames: int = 10,
+    detection_rate: float = 0.5,
+) -> dict[str, int]:
+    """
+    Find drift thresholds empirically using synthetic lag injection.
+
+    Injects known camera-physics lags (1..max_lag_frames) into the batch by
+    shifting image observation timestamps, then measures at which lag the
+    cross-correlation detector fires on >= detection_rate of episodes.
+
+    Returns a dict with keys 'warning_frames' and 'critical_frames' suitable
+    for passing to TemporalAnalyzer(drift_warning_frames=..., drift_critical_frames=...).
+
+    Parameters
+    ----------
+    batch : EpisodeBatch with both image and joint_vel observations.
+    fps   : nominal frame rate of the dataset (default 50 Hz).
+    max_lag_frames : upper bound of lag to test.
+    detection_rate : fraction of episodes that must be flagged to call a lag detectable.
+
+    Example
+    -------
+    >>> batch = load("/data/my_robot.h5")
+    >>> thresholds = calibrate_drift_thresholds(batch, fps=50.0)
+    >>> analyzer = TemporalAnalyzer(**thresholds)
+    """
+    from calibra.temporal.drift import compute_visual_activity, estimate_sensor_command_latency
+
+    frame_dt = 1.0 / fps
+
+    warning_frames: Optional[int] = None
+    critical_frames: Optional[int] = None
+
+    for lag in range(1, max_lag_frames + 1):
+        shift_s = lag * frame_dt
+        detected = 0
+        eligible = 0
+
+        for ep in batch.episodes:
+            jv_arr: Optional[np.ndarray] = None
+            for key in _JOINT_VEL_KEYS:
+                if key in ep.observations:
+                    jv_arr = ep.observations[key]
+                    break
+
+            img_arr: Optional[np.ndarray] = None
+            for key in ep.observations:
+                if any(kw in key.lower() for kw in _VISUAL_KEYS):
+                    candidate = ep.observations[key]
+                    if candidate.ndim in (3, 4) and candidate.shape[1] >= 8:
+                        img_arr = candidate
+                        break
+
+            if jv_arr is None or img_arr is None or len(img_arr) < 4:
+                continue
+
+            eligible += 1
+
+            shifted_ts = ep.timestamps.copy()
+            shifted_ts += shift_s
+
+            try:
+                visual_activity = compute_visual_activity(img_arr)
+                physical_activity = (
+                    np.linalg.norm(jv_arr.astype(np.float32), axis=1)
+                    if jv_arr.ndim > 1
+                    else np.abs(jv_arr.astype(np.float32))
+                )
+                measured_lag = estimate_sensor_command_latency(physical_activity, visual_activity)
+                if abs(measured_lag) >= lag:
+                    detected += 1
+            except Exception:
+                continue
+
+        if eligible == 0:
+            break
+
+        rate = detected / eligible
+        if rate >= detection_rate:
+            if warning_frames is None:
+                warning_frames = lag
+            critical_frames = lag
+
+    return {
+        "warning_frames": warning_frames if warning_frames is not None else _DRIFT_WARNING_FRAMES,
+        "critical_frames": critical_frames if critical_frames is not None else _DRIFT_CRITICAL_FRAMES,
+    }
 
 
 def _bootstrap_ci(

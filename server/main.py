@@ -32,9 +32,13 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Request
+import hashlib
+import secrets
+
+from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 
 DB_PATH = Path(os.environ.get("CALIBRA_DB_PATH", "/data/outcomes.db"))
@@ -80,6 +84,28 @@ CREATE TABLE IF NOT EXISTS calibrated_weights (
 )
 """
 
+CREATE_USERS = """
+CREATE TABLE IF NOT EXISTS users (
+    token         TEXT PRIMARY KEY,
+    email         TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    plan          TEXT NOT NULL DEFAULT 'free',
+    project_count INTEGER NOT NULL DEFAULT 0,
+    created_at    REAL NOT NULL
+)
+"""
+
+CREATE_REPORTS = """
+CREATE TABLE IF NOT EXISTS reports (
+    id           TEXT PRIMARY KEY,
+    user_token   TEXT NOT NULL,
+    dataset_name TEXT NOT NULL,
+    report_json  TEXT NOT NULL,
+    created_at   REAL NOT NULL,
+    FOREIGN KEY (user_token) REFERENCES users(token)
+)
+"""
+
 _FINGERPRINT_KEYS = [
     "ldlj", "spike_rate", "vel_disc_rate", "dropout_rate",
     "jitter_cv", "action_entropy", "contact_phase_fraction", "jepa_surprise",
@@ -99,10 +125,47 @@ def _init_db() -> None:
         conn.execute(CREATE_OUTCOMES)
         conn.execute(CREATE_BADGES)
         conn.execute(CREATE_WEIGHTS)
+        conn.execute(CREATE_USERS)
+        conn.execute(CREATE_REPORTS)
         conn.commit()
 
 
+# ── auth helpers ───────────────────────────────────────────────────────────────
+
+_bearer = HTTPBearer(auto_error=False)
+
+
+def _hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
+
+
+def _get_user_by_token(token: str) -> Optional[sqlite3.Row]:
+    with _get_conn() as conn:
+        return conn.execute("SELECT * FROM users WHERE token=?", (token,)).fetchone()
+
+
+def _auth_required(
+    creds: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
+) -> sqlite3.Row:
+    if not creds:
+        raise HTTPException(401, "Authorization header required")
+    user = _get_user_by_token(creds.credentials)
+    if not user:
+        raise HTTPException(401, "Invalid or expired token")
+    return user
+
+
 # ── request / response models ──────────────────────────────────────────────────
+
+class SignupRequest(BaseModel):
+    email: str
+    password: str
+
+
+class ReportUpload(BaseModel):
+    dataset_name: str
+    report: dict
+
 
 class OutcomeRecord(BaseModel):
     installation_id: str
@@ -145,6 +208,94 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+
+# ── POST /api/users/signup ─────────────────────────────────────────────────────
+
+@app.post("/api/users/signup", status_code=201)
+async def signup(body: SignupRequest):
+    """Create a new account and return an API token."""
+    token = secrets.token_hex(32)
+    pw_hash = _hash_password(body.password)
+    try:
+        with _get_conn() as conn:
+            conn.execute(
+                "INSERT INTO users (token, email, password_hash, created_at) VALUES (?,?,?,?)",
+                (token, body.email.lower().strip(), pw_hash, time.time()),
+            )
+            conn.commit()
+    except sqlite3.IntegrityError:
+        raise HTTPException(409, "Email already registered")
+    return {"token": token, "email": body.email}
+
+
+# ── GET /api/me ────────────────────────────────────────────────────────────────
+
+@app.get("/api/me")
+async def get_me(user: sqlite3.Row = Depends(_auth_required)):
+    """Return the authenticated user's profile."""
+    return {
+        "email": user["email"],
+        "plan": user["plan"],
+        "project_count": user["project_count"],
+    }
+
+
+# ── POST /api/reports ──────────────────────────────────────────────────────────
+
+@app.post("/api/reports", status_code=201)
+async def push_report(
+    body: ReportUpload,
+    user: sqlite3.Row = Depends(_auth_required),
+):
+    """Store a DiagnosticReport and return a shareable URL."""
+    report_id = str(uuid.uuid4())[:12]
+    base_url = os.environ.get("CALIBRA_BASE_URL", "https://app.calibra.io")
+    with _get_conn() as conn:
+        conn.execute(
+            "INSERT INTO reports (id, user_token, dataset_name, report_json, created_at) VALUES (?,?,?,?,?)",
+            (report_id, user["token"], body.dataset_name, json.dumps(body.report), time.time()),
+        )
+        conn.execute(
+            "UPDATE users SET project_count = project_count + 1 WHERE token=?",
+            (user["token"],),
+        )
+        conn.commit()
+    return {"id": report_id, "url": f"{base_url}/reports/{report_id}"}
+
+
+# ── POST /api/outcomes/authenticated ──────────────────────────────────────────
+
+@app.post("/api/outcomes/authenticated", status_code=201)
+async def record_outcome_authenticated(
+    body: OutcomeRecord,
+    user: sqlite3.Row = Depends(_auth_required),
+):
+    """Authenticated variant of /v1/record — links outcome to a user account."""
+    record_id = str(uuid.uuid4())[:8]
+    fp = body.fingerprint
+    with _get_conn() as conn:
+        conn.execute(
+            """
+            INSERT INTO outcomes
+              (id, ts, installation_id, policy_family, calibra_version,
+               predicted_score, actual_rate,
+               ldlj, spike_rate, vel_disc_rate, dropout_rate,
+               jitter_cv, action_entropy, contact_phase_fraction, jepa_surprise)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """,
+            (
+                record_id, time.time(), user["email"],
+                body.policy_family, body.calibra_version,
+                body.predicted_score, body.actual_success_rate,
+                fp.get("ldlj"), fp.get("spike_rate"), fp.get("vel_disc_rate"),
+                fp.get("dropout_rate"), fp.get("jitter_cv"), fp.get("action_entropy"),
+                fp.get("contact_phase_fraction"), fp.get("jepa_surprise"),
+            ),
+        )
+        conn.commit()
+    _maybe_recalibrate()
+    return {"ok": True, "id": record_id}
 
 
 # ── POST /v1/record ────────────────────────────────────────────────────────────
