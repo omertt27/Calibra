@@ -563,7 +563,7 @@ def run_predict(argv: list[str]) -> None:
             log(f"  {db.summary()}")
             log(
                 "  Outcome recorded locally."
-                " Set CALIBRA_CLOUD_SYNC=1 to contribute to the global prediction model."
+                " Run `calibra login` to sync outcomes to the global prediction model."
             )
         except Exception as exc:
             log(f"  Warning: could not record outcome: {exc}")

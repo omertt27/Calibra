@@ -46,6 +46,30 @@ def main() -> None:
         print(f"calibra {__version__}")
         return
 
+    if len(sys.argv) > 1 and sys.argv[1] == "login":
+        from calibra.cloud.auth import run_login
+
+        run_login()
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "logout":
+        from calibra.cloud.auth import run_logout
+
+        run_logout()
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "whoami":
+        from calibra.cloud.auth import run_whoami
+
+        run_whoami()
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "cloud":
+        from calibra.cloud.push import run_cloud
+
+        run_cloud(sys.argv[2:])
+        return
+
     if len(sys.argv) > 1 and sys.argv[1] == "compare":
         from calibra.compare import run_compare
 

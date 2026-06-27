@@ -271,36 +271,74 @@ class OutcomeDatabase:
             pass
 
     def _maybe_sync_to_cloud(self, record: OutcomeRecord) -> None:
-        """POST an anonymized outcome fingerprint to the cloud endpoint.
+        """POST an outcome fingerprint to the cloud endpoint.
 
-        On by default. Opt out by setting:
+        Authenticated users (after `calibra login`): syncs to the authenticated
+        endpoint — full record, tied to your account, improves your team's model.
 
-            CALIBRA_NO_CLOUD_SYNC=1
+        Unauthenticated users: syncs anonymized metric values only to the public
+        aggregation endpoint, which improves the global heuristic for everyone.
+        Opt out by setting CALIBRA_NO_CLOUD_SYNC=1.
 
-        Override the endpoint with:
-
-            CALIBRA_CLOUD_ENDPOINT=https://your-server/v1/record
-
-        Only anonymized metric values are transmitted — no dataset paths,
-        filenames, or user-identifiable information. Failures are always
-        silent: a debug log message is emitted but no exception is raised
-        and the CLI is never slowed down (3-second timeout).
+        Failures are always silent (3-second timeout, never blocks the CLI).
         """
         no_sync = os.environ.get("CALIBRA_NO_CLOUD_SYNC", "")
         if no_sync.lower() in ("1", "true"):
             return
-
-        self._print_telemetry_notice_once()
-
-        endpoint = os.environ.get(
-            "CALIBRA_CLOUD_ENDPOINT", "https://outcomes.calibra.ai/v1/record"
-        )
 
         try:
             from calibra import __version__ as _version
         except ImportError:
             _version = "unknown"
 
+        # Prefer authenticated sync when a token is available
+        try:
+            from calibra.cloud.auth import get_token
+            token = get_token()
+        except Exception:
+            token = None
+
+        if token:
+            self._sync_authenticated(record, token, _version)
+        else:
+            self._sync_anonymous(record, _version)
+
+    def _sync_authenticated(self, record: OutcomeRecord, token: str, version: str) -> None:
+        endpoint = os.environ.get(
+            "CALIBRA_CLOUD_URL", "https://app.calibra.io"
+        ) + "/api/outcomes/authenticated"
+        try:
+            payload = json.dumps(
+                {
+                    "fingerprint": record.fingerprint,
+                    "predicted_score": record.predicted_score,
+                    "actual_success_rate": record.actual_success_rate,
+                    "policy_family": record.policy_family,
+                    "n_episodes": record.n_episodes,
+                    "dataset_name": record.dataset_name,
+                    "calibra_version": version,
+                }
+            ).encode("utf-8")
+            req = urllib.request.Request(
+                endpoint,
+                data=payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {token}",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=3):
+                pass
+            logger.debug("Authenticated cloud sync succeeded")
+        except Exception as exc:
+            logger.debug("Authenticated cloud sync failed (non-fatal): %s", exc)
+
+    def _sync_anonymous(self, record: OutcomeRecord, version: str) -> None:
+        self._print_telemetry_notice_once()
+        endpoint = os.environ.get(
+            "CALIBRA_CLOUD_ENDPOINT", "https://outcomes.calibra.ai/v1/record"
+        )
         try:
             payload = json.dumps(
                 {
@@ -309,10 +347,9 @@ class OutcomeDatabase:
                     "predicted_score": record.predicted_score,
                     "actual_success_rate": record.actual_success_rate,
                     "policy_family": record.policy_family,
-                    "calibra_version": _version,
+                    "calibra_version": version,
                 }
             ).encode("utf-8")
-
             req = urllib.request.Request(
                 endpoint,
                 data=payload,
@@ -321,9 +358,9 @@ class OutcomeDatabase:
             )
             with urllib.request.urlopen(req, timeout=3):
                 pass
-            logger.debug("Cloud sync succeeded to %s", endpoint)
+            logger.debug("Anonymous cloud sync succeeded to %s", endpoint)
         except Exception as exc:
-            logger.debug("Cloud sync failed (non-fatal): %s", exc)
+            logger.debug("Anonymous cloud sync failed (non-fatal): %s", exc)
 
     def find_similar(
         self,
