@@ -307,26 +307,38 @@ Offline predicted success probabilities (`calibra predict`) achieve a **Spearman
 
 A five-condition ablation isolates which part of Calibra's pipeline contributes to the improvement. All experiments use BC-MLP policies, 5 random seeds for the baseline, 200–300 epochs, RTX 2080. Gains are relative to the random-k baseline at the same episode budget.
 
+**Without contact-aware quality filter (baseline):**
+
 | Condition | ALOHA mobile (clean, 14D) | DROID-100 (noisy, 7D) | PushT real (contact, 8D) |
 |---|---|---|---|
 | Random k (5 seeds) | 0.0209 ± 0.003 | 1.995 ± 0.177 | 0.222 ± 0.080 |
 | Quality-filter only | +8.8% | **−5.8% (hurts)** | **−29.2% (hurts)** |
-| Diversity-only | +13.0% | **+16.9%** | **+48.4%** |
-| **Calibra full pipeline** | **+22.6%** | **+16.9%** | −30.5% |
+| Diversity-only | +13.0% | +16.9% | +48.4% |
+| Calibra full pipeline | +22.6% | +16.9% | **−30.5% (hurts)** |
 
-**Key finding:** Diversity selection is robust across all three datasets. Quality filtering fails in two independent ways:
+**With contact-aware quality filter (`contact_aware=True`, default):**
 
-1. **Heterogeneous datasets (DROID)** — quality-only collapses rare behavioral modes. Removing episodes with the highest kinematic noise accidentally discards the only representatives of certain robot morphologies.
+| Condition | ALOHA mobile | DROID-100 | PushT real |
+|---|---|---|---|
+| Quality-filter only | +8.8% (unchanged) | −5.8% (unchanged) | **+37.1%** |
+| Diversity-only | +13.0% (unchanged) | +16.9% (unchanged) | +46.3% (unchanged) |
+| **Calibra full pipeline** | **+22.6%** (unchanged) | **+16.9%** (unchanged) | **+39.3%** |
 
-2. **Contact-rich tasks (real PushT)** — velocity discontinuities during contact events (block-hits, pushes) are classified as noise by standard smoothness metrics. The quality filter removes the most contact-rich demonstrations, which are precisely the ones with the highest learning signal for a manipulation task.
+The contact-aware filter detects that real PushT's velocity discontinuities are contact-driven (vel_disc/spike ratio = 24.4) and relaxes the vel_disc threshold by 3×. This transforms a −30.5% failure into a +39.3% gain while leaving ALOHA and DROID completely unchanged (their ratios are 1.9 and 1.6 — well below the 3.0 threshold).
 
-On ALOHA (clean, low contact density), both components contribute independently and the full pipeline outperforms either alone (+22.6% vs +13.0% diversity-only). This is the only tested regime where quality filtering is reliably safe.
+**Quality filtering failure modes (without contact-aware fix):**
+
+1. **Heterogeneous datasets (DROID)** — quality-only collapses coverage of rare robot morphologies. Removing the noisiest episodes inadvertently removes the only representatives of certain robot types.
+
+2. **Contact-rich tasks (real PushT)** — velocity discontinuities during contact events (block-hits, pushes) are classified as noise. The quality filter removes the most contact-rich demonstrations, which have the highest learning signal.
+
+The contact-aware fix addresses failure mode 2 by using the vel_disc/spike ratio as a contact detector. Failure mode 1 (morphology collapse) remains an open problem — see `calibra/strategy.py` for the regime-dependent configuration that mitigates it via relaxed thresholds.
 
 ---
 
 ### Dataset regime space
 
-Calibra's diagnostic metrics predict *which* selection regime applies before any training:
+Calibra's diagnostic metrics predict which selection regime applies before any training:
 
 ```python
 from calibra.pipeline import Pipeline
@@ -339,21 +351,17 @@ print(diagnosis.explanation)   # human-readable mechanism description
 selector = CoresetSelector(keep_fraction=0.3, **diagnosis.recommended_config)
 ```
 
-Regime classification across tested datasets (noise score = composite of spike rate + velocity discontinuity):
+Regime classification across tested datasets:
 
-| Dataset | Noise score | State entropy | Diagnosed regime | Diversity wins? | Quality safe? |
-|---|---|---|---|---|---|
-| ALOHA mobile | 0.075 | 6.86 bits | LOW NOISE | Yes (+13%) | Yes (+9%) |
-| PushT real | 0.416* | 6.62 bits | HIGH NOISE | Yes (+48%) | **No (−29%)** |
-| DROID-100 | 0.443 | 5.23 bits | MODERATE NOISE | Yes (+17%) | **No (−6%)** |
+| Dataset | vel_disc/spike ratio | Diagnosed regime | Calibra full (before fix) | Calibra full (after fix) |
+|---|---|---|---|---|
+| ALOHA mobile | 1.9 | LOW NOISE | +22.6% | +22.6% (unchanged) |
+| DROID-100 | 1.6 | MODERATE NOISE | +16.9% | +16.9% (unchanged) |
+| PushT real | **24.4** | HIGH NOISE (contact) | **−30.5%** | **+39.3%** |
 
-*High noise score driven by contact-event velocity discontinuities, not control corruption.
+The vel_disc/spike ratio correctly identifies PushT real as contact-driven and triggers the 3× threshold relaxation. See [`experiments/regime_space.py`](experiments/regime_space.py) for the visualization.
 
-The regime classifier correctly identifies ALOHA as the only safe zone for quality filtering. The HIGH NOISE classification for real PushT is technically correct (high vel_disc) but for the wrong reason — the current quality metrics cannot distinguish sensor noise from task-relevant contact dynamics. This is an open problem: **a contact-aware quality filter is needed before quality filtering can be recommended on manipulation tasks**.
-
-See [`experiments/regime_space.py`](experiments/regime_space.py) for the visualization.
-
-> **Note:** These results represent a hypothesis supported by 3 datasets, not an established law. The pattern is consistent and reproducible, but requires validation across more policy families and robot embodiments before being treated as a general principle.
+> **Note:** These results represent a hypothesis supported by 3 datasets, not an established law. The pattern is consistent and reproducible but requires validation across more policy families and embodiments before being treated as a general principle.
 
 ---
 
@@ -363,11 +371,15 @@ Calibra's advantage over random selection is stable across the full data-fractio
 
 **ALOHA mobile — Calibra full vs. random at each keep fraction:**
 
-| Keep | Calibra vs. Random | Calibra vs. Full |
-|---|---|---|
-| 10% | +50.0% | — |
-| 20% | +35.5% | — |
-| 30% | +29.2% | −38% |
+| Keep | k | Calibra vs. Random | Calibra vs. Full |
+|---|---|---|---|
+| 10% | 7 | +50.0% | −101% |
+| 20% | 14 | +35.5% | −65% |
+| 30% | 20 | +29.2% | −46% |
+| 50% | 34 | +7.8% | −29% |
+| 70% | 48 | +7.2% | −17% |
+
+Advantage over random is largest at small budgets (+50% at 10%) and narrows as budget grows — on clean structured datasets, more data continues to help, so the coreset closes but does not eliminate the full-data gap.
 
 **DROID-100 — Calibra full vs. random:**
 

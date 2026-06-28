@@ -1,0 +1,45 @@
+{
+  "dataset": "lerobot/columbia_cairlab_pusht_real",
+  "keep_fraction": 0.3,
+  "n_epochs": 200,
+  "n_seeds": 5,
+  "train_episodes": 109,
+  "test_episodes": 27,
+  "ablation": [
+    {
+      "condition": "Random 30% (n=5 seeds)",
+      "n_episodes": 33,
+      "test_mse": 0.2229857251048088,
+      "test_mse_std": 0.07841712445875194,
+      "vs_random": 0.0
+    },
+    {
+      "condition": "Full dataset",
+      "n_episodes": 109,
+      "test_mse": 0.19026677310466766,
+      "test_mse_std": null,
+      "vs_random": 14.673115054680034
+    },
+    {
+      "condition": "Quality-filter only",
+      "n_episodes": 33,
+      "test_mse": 0.14018942415714264,
+      "test_mse_std": null,
+      "vs_random": 37.13076292607962
+    },
+    {
+      "condition": "Diversity-only",
+      "n_episodes": 33,
+      "test_mse": 0.11980324983596802,
+      "test_mse_std": null,
+      "vs_random": 46.27313036309498
+    },
+    {
+      "condition": "Calibra full",
+      "n_episodes": 33,
+      "test_mse": 0.13543981313705444,
+      "test_mse_std": null,
+      "vs_random": 39.26076968676161
+    }
+  ]
+}
