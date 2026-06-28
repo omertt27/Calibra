@@ -33,6 +33,7 @@ from calibra.score import compute_score
 from calibra.predict import predict_outcome
 from calibra.sim2real import analyze_gap
 from calibra.transfer import analyze_transfer
+from calibra.strategy import diagnose_regime, select_with_regime, SelectionRegime, RegimeDiagnosis
 
 __all__ = [
     # schema
@@ -73,4 +74,9 @@ __all__ = [
     "predict_outcome",
     "analyze_gap",
     "analyze_transfer",
+    # regime-adaptive strategy
+    "diagnose_regime",
+    "select_with_regime",
+    "SelectionRegime",
+    "RegimeDiagnosis",
 ]

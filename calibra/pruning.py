@@ -169,6 +169,7 @@ class CoresetSelector:
     entropy_weight: float = 0.0
     strategy: str = "diversity"
     latent_space: str = "none"
+    contact_aware: bool = True
 
     def select(
         self,
@@ -193,7 +194,8 @@ class CoresetSelector:
 
         # ── Stage 1: quality filtering ────────────────────────────────────────
         quality_scores = _compute_quality_scores(episodes, ep_data)
-        quality_fail_indices = _quality_filter(episodes, ep_data, self)
+        effective_max_vel_disc = _contact_aware_vel_disc(ep_data, self)
+        quality_fail_indices = _quality_filter(episodes, ep_data, self, effective_max_vel_disc)
         quality_fail_set = set(quality_fail_indices)
         quality_pass_indices = [i for i in range(n) if i not in quality_fail_set]
 
@@ -491,16 +493,81 @@ def _compute_quality_scores(
     return scores
 
 
+def _contact_aware_vel_disc(ep_data: dict, cfg: "CoresetSelector") -> float:
+    """
+    Return the effective vel_disc threshold, relaxed when vel_disc is likely
+    caused by contact dynamics rather than control noise.
+
+    Mechanism: velocity discontinuities have two sources —
+      (1) control noise / operator mistakes → also produces jerk spikes
+      (2) contact events (pushes, grasps) → abrupt direction reversals
+          with little or no accompanying jerk
+
+    Discriminant: the ratio mean_vel_disc / mean_spike_rate.
+      - When both are elevated together (ratio ~1-3), vel_disc is noise.
+      - When vel_disc >> spike (ratio > 5), vel_disc is contact-driven.
+
+    Observed values:
+      ALOHA mobile  : vel_disc=0.013, spike=0.007 → ratio=1.9  (noise)
+      DROID-100     : vel_disc=0.071, spike=0.046 → ratio=1.5  (noise)
+      PushT real    : vel_disc=0.293, spike=0.012 → ratio=24.4 (contact)
+
+    Scaling rule (contact ratio → vel_disc threshold multiplier):
+      ratio <= 3.0  → 1.0x (unchanged — vel_disc is genuine noise)
+      ratio == 10.0 → 2.0x (moderate contact signal)
+      ratio >= 20.0 → 3.0x (strong contact signal, capped)
+      Linear interpolation in [3, 20].
+
+    Only active when cfg.contact_aware=True.
+    Jerk spike and dropout thresholds are NOT relaxed — they encode genuine
+    corruption regardless of contact density.
+    """
+    if not cfg.contact_aware:
+        return cfg.max_vel_disc_rate
+
+    disc_rates = ep_data.get("per_episode_vel_disc_rate", [])
+    spike_rates = ep_data.get("per_episode_spike_rate", [])
+
+    valid_disc = [v for v in disc_rates if v is not None]
+    valid_spike = [v for v in spike_rates if v is not None]
+
+    if not valid_disc or not valid_spike:
+        return cfg.max_vel_disc_rate
+
+    mean_disc = float(np.mean(valid_disc))
+    mean_spike = float(np.mean(valid_spike))
+
+    # Avoid division by zero; if spikes are absent treat ratio as large
+    ratio = mean_disc / max(mean_spike, 0.001)
+
+    _RATIO_LOW = 3.0    # below this: no scaling
+    _RATIO_HIGH = 20.0  # above this: full 3x scale
+    _SCALE_MAX = 3.0
+
+    if ratio <= _RATIO_LOW:
+        scale = 1.0
+    elif ratio >= _RATIO_HIGH:
+        scale = _SCALE_MAX
+    else:
+        t = (ratio - _RATIO_LOW) / (_RATIO_HIGH - _RATIO_LOW)
+        scale = 1.0 + (_SCALE_MAX - 1.0) * t
+
+    return cfg.max_vel_disc_rate * scale
+
+
 def _quality_filter(
     episodes: list[Episode],
     ep_data: dict[str, list],
     cfg: "CoresetSelector",
+    effective_max_vel_disc: float | None = None,
 ) -> list[int]:
     """Return indices of episodes that fail quality thresholds (to be removed)."""
     spike_rates = ep_data.get("per_episode_spike_rate", [])
     disc_rates = ep_data.get("per_episode_vel_disc_rate", [])
     dropouts = ep_data.get("per_episode_dropout_fraction", [])
     ldlj_values = ep_data.get("per_episode_ldlj", [])
+
+    max_disc = effective_max_vel_disc if effective_max_vel_disc is not None else cfg.max_vel_disc_rate
 
     fail: list[int] = []
     for i, ep in enumerate(episodes):
@@ -514,7 +581,7 @@ def _quality_filter(
             continue
 
         disc = _safe_get(disc_rates, i)
-        if disc is not None and disc > cfg.max_vel_disc_rate:
+        if disc is not None and disc > max_disc:
             fail.append(i)
             continue
 
@@ -763,7 +830,8 @@ class ApproximateCoresetSelector(CoresetSelector):
 
         # Stage 1 is identical to the exact selector
         quality_scores = _compute_quality_scores(episodes, ep_data)
-        quality_fail_indices = _quality_filter(episodes, ep_data, self)
+        effective_max_vel_disc = _contact_aware_vel_disc(ep_data, self)
+        quality_fail_indices = _quality_filter(episodes, ep_data, self, effective_max_vel_disc)
         quality_fail_set = set(quality_fail_indices)
         quality_pass_indices = [i for i in range(n) if i not in quality_fail_set]
 

@@ -1,0 +1,88 @@
+{
+  "dataset": "lerobot/droid_100",
+  "keep_fraction": 0.3,
+  "n_epochs": 300,
+  "n_seeds": 5,
+  "train_episodes": 80,
+  "test_episodes": 20,
+  "ablation": [
+    {
+      "condition": "Random 30% (n=5 seeds)",
+      "n_episodes": 24,
+      "test_mse": 1.9947030782699584,
+      "test_mse_std": 0.1773858951762334,
+      "vs_random": 0.0
+    },
+    {
+      "condition": "Full dataset",
+      "n_episodes": 80,
+      "test_mse": 1.712613821029663,
+      "test_mse_std": null,
+      "vs_random": 14.14191717621233
+    },
+    {
+      "condition": "Quality-filter only",
+      "n_episodes": 24,
+      "test_mse": 2.1113460063934326,
+      "test_mse_std": null,
+      "vs_random": -5.847633635009012
+    },
+    {
+      "condition": "Diversity-only",
+      "n_episodes": 24,
+      "test_mse": 1.6570438146591187,
+      "test_mse_std": null,
+      "vs_random": 16.927795785210183
+    },
+    {
+      "condition": "Calibra full",
+      "n_episodes": 24,
+      "test_mse": 1.6569583415985107,
+      "test_mse_std": null,
+      "vs_random": 16.93208078689986
+    }
+  ],
+  "retention_curve": [
+    {
+      "keep_fraction": 0.1,
+      "k": 8,
+      "full_mse": 1.9081504344940186,
+      "random_mse": 2.007239023844401,
+      "calibra_mse": 1.587463617324829,
+      "calibra_vs_random_pct": 20.913075200958843
+    },
+    {
+      "keep_fraction": 0.2,
+      "k": 16,
+      "full_mse": 1.9081504344940186,
+      "random_mse": 2.0145967404047647,
+      "calibra_mse": 1.7084842920303345,
+      "calibra_vs_random_pct": 15.194725685544755
+    },
+    {
+      "keep_fraction": 0.3,
+      "k": 24,
+      "full_mse": 1.9081504344940186,
+      "random_mse": 1.8735090096791585,
+      "calibra_mse": 1.683770775794983,
+      "calibra_vs_random_pct": 10.127425750499516
+    },
+    {
+      "keep_fraction": 0.5,
+      "k": 40,
+      "full_mse": 1.9081504344940186,
+      "random_mse": 1.8245360851287842,
+      "calibra_mse": 1.6931527853012085,
+      "calibra_vs_random_pct": 7.200915394244014
+    },
+    {
+      "keep_fraction": 0.7,
+      "k": 56,
+      "full_mse": 1.9081504344940186,
+      "random_mse": 1.8522865772247314,
+      "calibra_mse": 1.7694522142410278,
+      "calibra_vs_random_pct": 4.472005790152288
+    }
+  ],
+  "full_dataset_mse": 1.9081504344940186
+}

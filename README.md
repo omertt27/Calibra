@@ -297,31 +297,97 @@ python collect_demos.py | calibra watch --stream --remediate
 
 ## Empirical Validation
 
-Calibra is backed by rigorous empirical testing across 16 standard robotic datasets (ALOHA, DROID-100, BridgeData, PushT, SVLA SO-100):
+Calibra is backed by empirical testing on real robotics datasets and coreset selection experiments.
 
-* **Predictor Success Correlation:** Offline predicted success probabilities (`calibra predict`) achieve a **Spearman Rank Correlation ($\rho$) of 0.5971** ($p = 0.0146$, statistically significant) with actual downstream policy success rates.
+### Predictor success correlation
 
-* **Coreset Pruning Efficiency — PushT BC-MLP benchmark** (reproducible, `seed=42`):
+Offline predicted success probabilities (`calibra predict`) achieve a **Spearman rank correlation (ρ) of 0.5971** (p = 0.0146, statistically significant) with actual downstream policy success rates across 16 standard datasets (ALOHA, DROID-100, BridgeData, PushT, SVLA SO-100).
 
-  500 scripted-expert episodes collected from `gym_pusht/PushT-v0` with 5D state observations. A 3-layer BC-MLP is trained on three subsets and evaluated over 100 rollouts.
+### Ablation study: which selection component drives the gains?
 
-  | Condition | Training steps | Avg coverage | SR ≥ 50% | Compute saved |
-  |---|---|---|---|---|
-  | Full dataset (100%) | 150,000 | 21.9% | 2% | — |
-  | **Calibra coreset** | **6,300** | **23.3%** | **8%** | **95.8%** |
-  | Random 30% baseline | 45,000 | 23.8% | 6% | 66.4% |
+A five-condition ablation isolates which part of Calibra's pipeline contributes to the improvement. All experiments use BC-MLP policies, 5 random seeds for the baseline, 200–300 epochs, RTX 2080. Gains are relative to the random-k baseline at the same episode budget.
 
-  Calibra's quality filter identifies 21 high-signal episodes out of 500 (rejecting 96% of demonstrations as low-quality). BC trained on those 21 episodes achieves **4× the success rate of full-dataset training** at **95.8% compute savings**, and outperforms random 30% selection in success rate (8% vs 6%) while saving an additional 29% compute.
+| Condition | ALOHA mobile (clean, 14D) | DROID-100 (noisy, 7D) | PushT real (contact, 8D) |
+|---|---|---|---|
+| Random k (5 seeds) | 0.0209 ± 0.003 | 1.995 ± 0.177 | 0.222 ± 0.080 |
+| Quality-filter only | +8.8% | **−5.8% (hurts)** | **−29.2% (hurts)** |
+| Diversity-only | +13.0% | **+16.9%** | **+48.4%** |
+| **Calibra full pipeline** | **+22.6%** | **+16.9%** | −30.5% |
 
-  To reproduce:
-  ```bash
-  pip install "calibra-robotics[lerobot]" gym-pusht gymnasium "pymunk==6.9.0"
-  PYTHONPATH=. python experiments/pusht_real_benchmark.py
-  ```
+**Key finding:** Diversity selection is robust across all three datasets. Quality filtering fails in two independent ways:
 
-For complete tables, curves, and replication steps, see [RESULTS.md](experiments/RESULTS.md) and run:
+1. **Heterogeneous datasets (DROID)** — quality-only collapses rare behavioral modes. Removing episodes with the highest kinematic noise accidentally discards the only representatives of certain robot morphologies.
+
+2. **Contact-rich tasks (real PushT)** — velocity discontinuities during contact events (block-hits, pushes) are classified as noise by standard smoothness metrics. The quality filter removes the most contact-rich demonstrations, which are precisely the ones with the highest learning signal for a manipulation task.
+
+On ALOHA (clean, low contact density), both components contribute independently and the full pipeline outperforms either alone (+22.6% vs +13.0% diversity-only). This is the only tested regime where quality filtering is reliably safe.
+
+---
+
+### Dataset regime space
+
+Calibra's diagnostic metrics predict *which* selection regime applies before any training:
+
+```python
+from calibra.pipeline import Pipeline
+from calibra.strategy import diagnose_regime
+
+report = Pipeline().run(batch)
+diagnosis = diagnose_regime(report)
+print(diagnosis.regime)        # SelectionRegime.LOW_NOISE / MODERATE_NOISE / HIGH_NOISE
+print(diagnosis.explanation)   # human-readable mechanism description
+selector = CoresetSelector(keep_fraction=0.3, **diagnosis.recommended_config)
+```
+
+Regime classification across tested datasets (noise score = composite of spike rate + velocity discontinuity):
+
+| Dataset | Noise score | State entropy | Diagnosed regime | Diversity wins? | Quality safe? |
+|---|---|---|---|---|---|
+| ALOHA mobile | 0.075 | 6.86 bits | LOW NOISE | Yes (+13%) | Yes (+9%) |
+| PushT real | 0.416* | 6.62 bits | HIGH NOISE | Yes (+48%) | **No (−29%)** |
+| DROID-100 | 0.443 | 5.23 bits | MODERATE NOISE | Yes (+17%) | **No (−6%)** |
+
+*High noise score driven by contact-event velocity discontinuities, not control corruption.
+
+The regime classifier correctly identifies ALOHA as the only safe zone for quality filtering. The HIGH NOISE classification for real PushT is technically correct (high vel_disc) but for the wrong reason — the current quality metrics cannot distinguish sensor noise from task-relevant contact dynamics. This is an open problem: **a contact-aware quality filter is needed before quality filtering can be recommended on manipulation tasks**.
+
+See [`experiments/regime_space.py`](experiments/regime_space.py) for the visualization.
+
+> **Note:** These results represent a hypothesis supported by 3 datasets, not an established law. The pattern is consistent and reproducible, but requires validation across more policy families and robot embodiments before being treated as a general principle.
+
+---
+
+### Retention curves
+
+Calibra's advantage over random selection is stable across the full data-fraction range (10%–70%) on clean and heterogeneous datasets. On contact-rich tasks, diversity-only selection (without quality filtering) should be used instead of the full pipeline.
+
+**ALOHA mobile — Calibra full vs. random at each keep fraction:**
+
+| Keep | Calibra vs. Random | Calibra vs. Full |
+|---|---|---|
+| 10% | +50.0% | — |
+| 20% | +35.5% | — |
+| 30% | +29.2% | −38% |
+
+**DROID-100 — Calibra full vs. random:**
+
+| Keep | Calibra vs. Random | Calibra vs. Full |
+|---|---|---|
+| 10% | +20.9% | +16.8% |
+| 20% | +15.2% | +10.5% |
+| 30% | +10.1% | +11.8% |
+| 50% | +7.2% | +11.3% |
+| 70% | +4.5% | +7.3% |
+
+On DROID, Calibra with 10% of episodes outperforms the full dataset by 16.8%.
+
+To reproduce all ablations:
 ```bash
-./experiments/reproduce_results.sh
+pip install "calibra-robotics[lerobot]" torch
+python experiments/ablation_benchmark.py --dataset lerobot/aloha_mobile_cabinet --n-epochs 300 --seeds 5 --curve --save-fig
+python experiments/ablation_benchmark.py --dataset lerobot/droid_100 --n-epochs 300 --seeds 5 --curve --save-fig
+python experiments/ablation_benchmark.py --dataset lerobot/columbia_cairlab_pusht_real --n-epochs 200 --seeds 5 --curve --save-fig
+python experiments/regime_space.py --save
 ```
 
 ---

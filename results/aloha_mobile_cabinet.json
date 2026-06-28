@@ -1,0 +1,54 @@
+{
+  "dataset": "lerobot/aloha_mobile_cabinet",
+  "keep_fraction": 0.3,
+  "n_epochs": 300,
+  "n_rollouts": 50,
+  "gym_pusht_available": true,
+  "train_episodes": 68,
+  "test_episodes": 17,
+  "results": [
+    {
+      "label": "Full dataset",
+      "n_episodes": 68,
+      "test_mse": 0.011066388338804245,
+      "success_rate": NaN,
+      "train_seconds": 270.9
+    },
+    {
+      "label": "Random (seed=0)",
+      "n_episodes": 20,
+      "test_mse": 0.022306688129901886,
+      "success_rate": NaN,
+      "train_seconds": 90.4
+    },
+    {
+      "label": "Random (seed=1)",
+      "n_episodes": 20,
+      "test_mse": 0.021138977259397507,
+      "success_rate": NaN,
+      "train_seconds": 94.0
+    },
+    {
+      "label": "Random (seed=2)",
+      "n_episodes": 20,
+      "test_mse": 0.021888669580221176,
+      "success_rate": NaN,
+      "train_seconds": 82.1
+    },
+    {
+      "label": "Calibra coreset",
+      "n_episodes": 20,
+      "test_mse": 0.015286780893802643,
+      "success_rate": NaN,
+      "train_seconds": 83.1
+    }
+  ],
+  "calibra_diagnostics": {
+    "n_original": 68,
+    "n_kept": 20,
+    "n_quality_failures": 0,
+    "n_diversity_pruned": 48,
+    "keep_fraction_actual": 0.29411764705882354,
+    "diag_seconds": 2.3
+  }
+}

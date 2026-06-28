@@ -1,0 +1,54 @@
+{
+  "dataset": "lerobot/droid_100",
+  "keep_fraction": 0.3,
+  "n_epochs": 300,
+  "n_rollouts": 50,
+  "gym_pusht_available": true,
+  "train_episodes": 80,
+  "test_episodes": 20,
+  "results": [
+    {
+      "label": "Full dataset",
+      "n_episodes": 80,
+      "test_mse": 1.8308371305465698,
+      "success_rate": NaN,
+      "train_seconds": 74.1
+    },
+    {
+      "label": "Random (seed=0)",
+      "n_episodes": 24,
+      "test_mse": 2.009875535964966,
+      "success_rate": NaN,
+      "train_seconds": 24.2
+    },
+    {
+      "label": "Random (seed=1)",
+      "n_episodes": 24,
+      "test_mse": 1.7396330833435059,
+      "success_rate": NaN,
+      "train_seconds": 20.1
+    },
+    {
+      "label": "Random (seed=2)",
+      "n_episodes": 24,
+      "test_mse": 2.314981460571289,
+      "success_rate": NaN,
+      "train_seconds": 19.4
+    },
+    {
+      "label": "Calibra coreset",
+      "n_episodes": 24,
+      "test_mse": 1.6995166540145874,
+      "success_rate": NaN,
+      "train_seconds": 24.9
+    }
+  ],
+  "calibra_diagnostics": {
+    "n_original": 80,
+    "n_kept": 24,
+    "n_quality_failures": 4,
+    "n_diversity_pruned": 52,
+    "keep_fraction_actual": 0.3,
+    "diag_seconds": 1.0
+  }
+}
