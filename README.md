@@ -553,6 +553,60 @@ ruff check .        # zero errors expected
 
 ---
 
+## Calibra for IL vs. World Models
+
+Calibra supports two data curation philosophies. The right one depends on your policy architecture. Both use the same tool — the same quality metrics, the same CLI — but apply different selection criteria in Stage 2 of `calibra prune`.
+
+### IL / behaviour cloning (diffusion policy, ACT, GR00T fine-tuning)
+
+```bash
+# For diffusion policy, ACT, GR00T fine-tuning
+calibra prune /data/demos --keep 0.3 --strategy diversity
+calibra watch /data/session/ --remediate
+```
+
+**Selection goal:** remove corrupted episodes, keep behaviorally diverse ones.  
+**Metrics that matter:** jerk spike rate, dropout, LDLJ, velocity discontinuity.
+
+Stage 2 runs greedy max-coverage over the quality-passing pool — maximising behavioural spread across the action-space. A policy trained on a diverse coreset generalises better than one trained on near-duplicate demonstrations.
+
+### World model training (JEPA-based, latent MPC)
+
+```bash
+# For JEPA-based world models (I-JEPA, V-JEPA successors, latent MPC)
+calibra prune /data/demos --keep 0.3 --strategy world-model
+calibra watch /data/session/ --world-model
+```
+
+**Selection goal:** select episodes that maximise what the world model doesn't yet know — highest latent prediction error relative to the current model state.  
+**Requires:** `pip install torch` (PyTorch is an optional dependency).
+
+Stage 2 scores each quality-passing episode by JEPA surprise (reconstruction error in latent space) and keeps the highest-surprise fraction. The result is a dataset that pushes the world model toward unexplored dynamics rather than reinforcing what it already knows.
+
+### Surprise × quality decision table
+
+| World-model surprise | Kinematic quality | Interpretation | Action |
+|---|---|---|---|
+| HIGH | FAIL (high jerk) | Corrupted episode | Prune |
+| HIGH | PASS (smooth) | Genuinely novel dynamics | Keep |
+| LOW | any | Redundant / well-covered | Prune |
+
+The table is the key insight: surprise alone is not sufficient. A noisy actuator or a packet-drop produces high prediction error but teaches the world model nothing useful. Stage 1 quality filtering — identical in both workflows — is what separates genuinely novel episodes from corrupted ones before surprise scoring ever runs.
+
+### Why the same data infrastructure works for both
+
+Clean data is a prerequisite for both paradigms. A JEPA trained on jittery, dropout-heavy data learns corrupted latent representations that degrade downstream planning and latent MPC rollouts. The quality filtering stage (Stage 1 of `calibra prune`) is therefore identical for both — only Stage 2 (greedy diversity selection vs. surprise-maximisation) changes.
+
+`calibra sim2real` reports a world-model transfer gap metric alongside the standard distribution-gap analysis, quantifying how much of the latent dynamics your sim fails to cover before you commit to training.
+
+### When to use which
+
+- **Using diffusion policy, ACT, or fine-tuning a GR00T/Octo checkpoint** → use `--strategy diversity`
+- **Training a JEPA world model from scratch, or maximising the information content of a small dataset** → use `--strategy world-model`
+- **Collecting new data in real-time** → `calibra watch --world-model` tells you which episodes are genuinely novel vs. redundant *as you collect*, so operators can prioritise effort on configurations the model hasn't seen
+
+---
+
 ## What Calibra is not
 
 - **Not a dataset score** ("your dataset is 7.4/10") — Calibra surfaces specific, falsifiable anomalies
