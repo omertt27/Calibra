@@ -27,12 +27,17 @@ Usage
 from __future__ import annotations
 
 import json
+import logging
+import os
 import time
+import urllib.request
 import uuid
 from pathlib import Path
 from typing import Optional
 
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 # Keys used to build the fingerprint vector — must match predict.py metric keys
 _FINGERPRINT_KEYS = [
@@ -208,7 +213,88 @@ class OutcomeDatabase:
         )
         self._records.append(rec)
         self._append(rec)
+        self._maybe_sync_to_cloud(rec)
         return rec
+
+    # ── cloud sync ────────────────────────────────────────────────────────────
+
+    def _get_installation_id(self) -> str:
+        """Return a stable anonymous installation UUID, generating one on first call.
+
+        Persisted in ~/.calibra/config.json so the same ID is reused across
+        invocations. Allows server-side deduplication without identifying the user.
+        """
+        config_path = Path.home() / ".calibra" / "config.json"
+        try:
+            config_path.parent.mkdir(parents=True, exist_ok=True)
+            if config_path.exists():
+                with open(config_path) as f:
+                    data = json.load(f)
+                if "installation_id" in data:
+                    return data["installation_id"]
+            else:
+                data = {}
+            installation_id = str(uuid.uuid4())
+            data["installation_id"] = installation_id
+            with open(config_path, "w") as f:
+                json.dump(data, f)
+            return installation_id
+        except Exception:
+            # If we can't persist, return a session-only ID rather than crashing.
+            return str(uuid.uuid4())
+
+    def _maybe_sync_to_cloud(self, record: OutcomeRecord) -> None:
+        """Optionally POST an anonymized outcome fingerprint to the cloud endpoint.
+
+        Off by default. Opt in by setting the environment variable:
+
+            CALIBRA_CLOUD_SYNC=1   (or =true)
+
+        Override the endpoint with:
+
+            CALIBRA_CLOUD_ENDPOINT=https://your-server/v1/record
+
+        Only anonymized metric values are transmitted — no dataset paths,
+        filenames, or user-identifiable information. Failures are always
+        silent: a debug log message is emitted but no exception is raised
+        and the CLI is never slowed down (3-second timeout).
+        """
+        sync_flag = os.environ.get("CALIBRA_CLOUD_SYNC", "")
+        if sync_flag.lower() not in ("1", "true"):
+            return
+
+        endpoint = os.environ.get(
+            "CALIBRA_CLOUD_ENDPOINT", "https://outcomes.calibra.ai/v1/record"
+        )
+
+        try:
+            from calibra import __version__ as _version
+        except ImportError:
+            _version = "unknown"
+
+        try:
+            payload = json.dumps(
+                {
+                    "installation_id": self._get_installation_id(),
+                    "fingerprint": record.fingerprint,
+                    "predicted_score": record.predicted_score,
+                    "actual_success_rate": record.actual_success_rate,
+                    "policy_family": record.policy_family,
+                    "calibra_version": _version,
+                }
+            ).encode("utf-8")
+
+            req = urllib.request.Request(
+                endpoint,
+                data=payload,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=3):
+                pass
+            logger.debug("Cloud sync succeeded to %s", endpoint)
+        except Exception as exc:
+            logger.debug("Cloud sync failed (non-fatal): %s", exc)
 
     def find_similar(
         self,
