@@ -133,9 +133,13 @@ def run_prune(argv: list[str]) -> None:
     )
     d.add_argument(
         "--strategy",
-        choices=["diversity", "influence", "energy", "novelty"],
+        choices=["diversity", "influence", "energy", "novelty", "world-model"],
         default="diversity",
-        help="Coreset selection strategy. Choose 'novelty' for transition-novelty pruning [Research Preview] (default: diversity)",
+        help=(
+            "Coreset selection strategy (default: diversity). "
+            "Choose 'novelty' for transition-novelty pruning [Research Preview]. "
+            "world-model: selects episodes maximizing JEPA world-model surprise (requires torch)."
+        ),
     )
     d.add_argument(
         "--latent-space",

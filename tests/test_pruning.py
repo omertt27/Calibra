@@ -238,3 +238,38 @@ class TestCoresetSelector:
         # Assert novelty score keys exist in diversity_scores output
         for ep_id in result.keep_episode_ids:
             assert ep_id in result.diversity_scores
+
+    def test_world_model_strategy(self):
+        torch = pytest.importorskip("torch")  # noqa: F841
+
+        rng = np.random.default_rng(0)
+        episodes = []
+        for i in range(5):
+            ts = np.arange(40) * 0.02
+            acts = rng.normal(0, float(i + 1), (40, 4)).astype(np.float32)
+            obs = rng.random((40, 6)).astype(np.float32)
+            episodes.append(
+                Episode(
+                    metadata=EpisodeMetadata(episode_id=f"wm_{i}"),
+                    timestamps=ts,
+                    observations={"state": obs},
+                    actions=acts,
+                )
+            )
+        batch = EpisodeBatch(
+            episodes=episodes,
+            dataset_name="wm_test",
+            format="hdf5",
+            source_path="/tmp/wm_test.h5",
+        )
+        report = Pipeline().run(batch)
+        result = CoresetSelector(
+            keep_fraction=0.5,
+            strategy="world-model",
+            max_spike_rate=1.0,
+            max_vel_disc_rate=1.0,
+            max_dropout_fraction=1.0,
+            min_ldlj=-1000.0,
+        ).select(batch, report)
+
+        assert len(result.keep_episode_ids) > 0

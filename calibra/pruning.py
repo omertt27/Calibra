@@ -247,6 +247,10 @@ class CoresetSelector:
             keep_indices, diversity_pruned_indices, diversity_scores = _select_energy(
                 self, batch, report, quality_pass_indices, k
             )
+        elif self.strategy == "world-model":
+            keep_indices, diversity_pruned_indices, diversity_scores = _select_world_model(
+                self, batch, report, quality_pass_indices, k
+            )
         else:
             entropy_scores = _compute_entropy_scores(episodes) if self.entropy_weight > 0 else {}
             latent_embeddings = None
@@ -280,6 +284,11 @@ class CoresetSelector:
         fail_ids = [episodes[i].metadata.episode_id for i in quality_fail_indices]
         div_pruned_ids = [episodes[i].metadata.episode_id for i in diversity_pruned_indices]
 
+        _method = (
+            "quality_filter + jepa_world_model_surprise"
+            if self.strategy == "world-model"
+            else "quality_filter + greedy_max_coverage"
+        )
         return PruningResult(
             keep_episode_ids=keep_ids,
             quality_fail_ids=fail_ids,
@@ -291,6 +300,7 @@ class CoresetSelector:
             n_quality_failures=len(fail_ids),
             n_diversity_pruned=len(div_pruned_ids),
             keep_fraction_actual=len(keep_ids) / max(n, 1),
+            method=_method,
         )
 
 
@@ -386,6 +396,49 @@ def _select_energy(
     diversity_scores = {
         episodes[i].metadata.episode_id: float(
             energy_data.get(episodes[i].metadata.episode_id, 0.0)
+        )
+        for i in quality_pass_indices
+    }
+
+    return keep_indices, diversity_pruned_indices, diversity_scores
+
+
+def _select_world_model(
+    self_selector: CoresetSelector,
+    batch: EpisodeBatch,
+    report: DiagnosticReport,
+    quality_pass_indices: list[int],
+    k: int,
+) -> tuple[list[int], list[int], dict[str, float]]:
+    import sys
+
+    from calibra.models.robot_jepa import score_by_jepa_surprise
+
+    episodes = batch.episodes
+
+    surprise_scores = score_by_jepa_surprise(batch, verbose=True)
+
+    if not surprise_scores:
+        print(
+            "  [world-model] torch not available or too few episodes — falling back to random selection",
+            file=sys.stderr,
+        )
+        keep_indices = quality_pass_indices[:k]
+        diversity_pruned_indices = quality_pass_indices[k:]
+        diversity_scores: dict[str, float] = {}
+        return keep_indices, diversity_pruned_indices, diversity_scores
+
+    sorted_pass = sorted(
+        quality_pass_indices,
+        key=lambda idx: surprise_scores.get(episodes[idx].metadata.episode_id, 0.0),
+        reverse=True,
+    )
+    keep_indices = sorted_pass[:k]
+    diversity_pruned_indices = sorted_pass[k:]
+
+    diversity_scores = {
+        episodes[i].metadata.episode_id: float(
+            surprise_scores.get(episodes[i].metadata.episode_id, 0.0)
         )
         for i in quality_pass_indices
     }
@@ -743,6 +796,10 @@ class ApproximateCoresetSelector(CoresetSelector):
             keep_indices, diversity_pruned_indices, diversity_scores = _select_energy(
                 self, batch, report, quality_pass_indices, k
             )
+        elif self.strategy == "world-model":
+            keep_indices, diversity_pruned_indices, diversity_scores = _select_world_model(
+                self, batch, report, quality_pass_indices, k
+            )
         else:
             entropy_scores = _compute_entropy_scores(episodes) if self.entropy_weight > 0 else {}
             latent_embeddings = None
@@ -774,6 +831,11 @@ class ApproximateCoresetSelector(CoresetSelector):
         fail_ids = [episodes[i].metadata.episode_id for i in quality_fail_indices]
         div_pruned_ids = [episodes[i].metadata.episode_id for i in diversity_pruned_indices]
 
+        _method = (
+            "quality_filter + jepa_world_model_surprise"
+            if self.strategy == "world-model"
+            else "quality_filter + approximate_minibatch_coverage"
+        )
         return PruningResult(
             keep_episode_ids=keep_ids,
             quality_fail_ids=fail_ids,
@@ -785,7 +847,7 @@ class ApproximateCoresetSelector(CoresetSelector):
             n_quality_failures=len(fail_ids),
             n_diversity_pruned=len(div_pruned_ids),
             keep_fraction_actual=len(keep_ids) / max(n, 1),
-            method="quality_filter + approximate_minibatch_coverage",
+            method=_method,
         )
 
 
