@@ -611,6 +611,13 @@ def run_watch(argv: list[str]) -> None:
     args = p.parse_args(argv)
 
     world_model = args.world_model
+    if args.stream and world_model:
+        print(
+            "warning: --world-model is not supported with --stream (no Episode objects). "
+            "World-model scoring disabled.",
+            file=sys.stderr,
+        )
+        world_model = False
 
     log_file = Path(args.log_file) if args.log_file else None
     session = WatchSession(
