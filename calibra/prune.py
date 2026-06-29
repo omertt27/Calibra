@@ -139,6 +139,7 @@ def run_prune(argv: list[str]) -> None:
             "Coreset selection strategy. "
             "Default: 'world-model' when --policy is not set (world-model-first), "
             "'diversity' when --policy is given (IL mode). "
+            "Choose 'novelty' for transition-novelty pruning [Research Preview]. "
             "world-model requires torch; falls back to diversity if unavailable."
         ),
     )
