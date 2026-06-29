@@ -51,12 +51,30 @@ Calibra solves the data side.
 
 ## Commands
 
+| Command | Description |
+|---|---|
+| `calibra` (default) | Full diagnostic audit report |
+| `calibra compare` | Evidence-backed cross-dataset comparison |
+| `calibra certify` | Structured pass/fail certification |
+| `calibra prune` | Two-stage coreset selection |
+| `calibra corrupt` | Inject synthetic corruptions to validate metric sensitivity |
+| `calibra retarget` | Convert absolute EEF actions to relative delta actions |
+| `calibra predict` | Predict training outcome before spending GPU time |
+| `calibra card` | Generate a HuggingFace dataset quality card |
+| `calibra watch` | Real-time teleoperation quality monitor |
+| `calibra score` | Composite 0–100 quality score across four dimensions |
+| `calibra sim2real` | Quantify sim-to-real distribution gap |
+| `calibra transfer` | Cross-embodiment compatibility scoring |
+| `calibra cure` | Automatic data remediation (smoothing, resampling, trimming) |
+| `calibra serve` | Local REST API server and web dashboard |
+
 ### 1. `audit` — full diagnostic report
 
 ```bash
 calibra /data/robot_demos.h5
 calibra lerobot/pusht --policy diffusion
 calibra /data/demo.h5 --policy act --json
+calibra /data/robot_demos.h5 --html-out report.html   # save visual HTML dashboard
 ```
 
 Runs four analyzers over every episode and flags anomalies with bootstrap confidence intervals and per-episode outlier detection.
@@ -292,6 +310,186 @@ python collect_demos.py | calibra watch --stream --remediate
 `--remediate` prints a specific operator instruction on every FAIL/WARN: what caused the failure and exactly how to fix the motion. Operators get feedback within seconds of saving an episode instead of discovering problems during training hours later.
 
 `--stream` reads JSON metric lines from stdin, enabling integration with teleoperation software without filesystem round-trips. See `examples/lerobot_watch_integration.py` for a drop-in integration snippet.
+
+### 10. `score` — composite 0–100 quality score
+
+```bash
+calibra score /data/robot_demos.h5
+calibra score lerobot/my_dataset --policy diffusion
+calibra score /data/my_ds --reference aloha --json
+calibra score hf://lerobot/pusht_image --badge   # print markdown badge for dataset cards
+```
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CALIBRA SCORE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Dataset  : my_demos
+  Episodes : 120  ·  Steps: 180000
+
+────────────────────────────────────────────────────────────
+  🟢  78.0 / 100  —  Good
+────────────────────────────────────────────────────────────
+
+  Temporal Stability       22.00/25  [█████████████████░░░]  88%
+     jitter_cv: 0.038
+     dropout_rate: 0.003
+
+  Control Smoothness       26.00/35  [██████████████░░░░░░]  74%
+     ldlj: -10.6
+     spike_rate: 0.021
+     vel_disc_rate: 0.027
+
+  Coverage / Diversity     19.00/25  [███████████████░░░░░]  76%
+     action_entropy_bits_per_dim: 2.9
+
+  Task Structure           11.00/15  [██████████████░░░░░░]  73%
+     trajectory_diversity: 0.31
+     short_episode_fraction: 0.04
+
+  0 critical flags  ·  3 warnings
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Aggregates all four diagnostic dimensions into a single 0–100 number: Temporal Stability (25 pts), Control Smoothness (35 pts), Coverage/Diversity (25 pts), and Task Structure (15 pts). Score categories: 90–100 Excellent, 75–89 Good, 60–74 Fair, 40–59 Poor, 0–39 Critical. Use `--badge` to generate a shields.io markdown badge for HuggingFace dataset cards. Exit codes: `0` = Good or better (≥75), `1` = Fair or Poor (40–74), `2` = Critical (<40).
+
+### 11. `sim2real` — sim-to-real distribution gap
+
+```bash
+calibra sim2real /data/sim_demos.h5 /data/real_demos.h5
+calibra sim2real lerobot/sim_dataset /data/real.h5 --policy pi0
+calibra sim2real /data/sim.h5 /data/real.h5 --json
+```
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CALIBRA SIM-TO-REAL GAP ANALYSIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Sim dataset  : isaac_lab_pick  (500 eps)
+  Real dataset : real_pick       (120 eps)
+
+────────────────────────────────────────────────────────────
+  🟡  Overall Transfer Risk: MEDIUM
+  📊  Pre-training Alignment Index (PAI): 71.3%
+────────────────────────────────────────────────────────────
+
+  🟢 Ldlj Gap                             [LOW]
+     Sim: -6.2   Real: -8.1   Δ = 1.9
+     → Real motions are smoother than sim.
+
+  🟡 Action Kl Divergence                 [MEDIUM]
+     Value: 0.73
+     → KL(sim||real) = 0.730. Significant action distribution mismatch.
+
+  🟢 Sim Coverage Of Real                 [LOW]
+     Value: 0.81
+     → Sim covers 81% of the real action space. Good coverage.
+
+  🟢 Control Frequency Gap                [LOW]
+     Sim: 50.0   Real: 50.0   Δ = 0.0
+     → Sim runs at 50 Hz, real at 50 Hz. Frequency match is good.
+
+────────────────────────────────────────────────────────────
+  RECOMMENDATIONS
+────────────────────────────────────────────────────────────
+  • Consider collecting a small real dataset (50–200 episodes) for
+    fine-tuning or domain randomisation in sim.
+  • Use `calibra prune` to select the sim episodes closest to the
+    real distribution before training.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Measures the distribution gap between a simulation and real-robot dataset across action-space KL divergence, trajectory smoothness delta, coverage overlap, transition dynamics, and control frequency mismatch. Reports an overall transfer risk level (LOW / MEDIUM / HIGH / CRITICAL) and a Pre-training Alignment Index (PAI, 0–100%) summarising how well the sim distribution covers real-world conditions. Exit codes: `0` = LOW or MEDIUM, `1` = HIGH, `2` = CRITICAL.
+
+### 12. `transfer` — cross-embodiment compatibility
+
+```bash
+calibra transfer /data/source_robot.h5 /data/target_robot.h5
+calibra transfer lerobot/aloha_mobile_cabinet lerobot/svla_so100_pickplace
+calibra transfer /data/source.h5 /data/target.h5 --json
+```
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CALIBRA CROSS-EMBODIMENT TRANSFER SCORE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Source : aloha_mobile_cabinet  (85 eps)
+  Target : franka_pick           (60 eps)
+
+────────────────────────────────────────────────────────────
+  🟡  Transfer Compatibility: ADAPT
+────────────────────────────────────────────────────────────
+
+  🟡 Action Dimensionality               [ADAPT]
+     Source has 14D actions, target has 7D. Subset retargeting
+     (drop extra dims) may work — use `calibra retarget` to convert.
+
+  ✅ Control Frequency                   [DIRECT]
+     Control frequencies are similar (50 Hz vs 50 Hz).
+
+  ✅ Trajectory Smoothness               [DIRECT]
+     Similar smoothness profiles (ΔLDLJ = 1.80).
+
+  ✅ Episode Length                      [DIRECT]
+     Similar episode lengths (410 vs 390 steps).
+
+  🟡 Action Range Overlap                [ADAPT]
+     Source covers 63% of target action range. Some target actions
+     have no source demonstrations.
+
+────────────────────────────────────────────────────────────
+  RECOMMENDATIONS
+────────────────────────────────────────────────────────────
+  • Normalise action spaces before mixing source and target data.
+  • Use `calibra retarget` if action dims differ.
+  • Consider weighting source data lower (e.g. 0.3×) than target data.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Scores the compatibility of reusing source-robot demonstrations to train a policy for a different target robot across five dimensions: action dimensionality, control frequency, trajectory smoothness, episode length, and action range overlap. Levels: DIRECT (mix freely), ADAPT (normalise or retarget first), DIFFICULT (targeted domain adaptation required), INCOMPATIBLE (structural mismatch). Exit codes: `0` = DIRECT or ADAPT, `1` = DIFFICULT, `2` = INCOMPATIBLE.
+
+### 13. `cure` — automatic data remediation
+
+```bash
+calibra cure /data/robot_demos.h5 --out cured/
+calibra cure /data/demos.h5 --remedy smooth,trim --out cured/
+calibra cure lerobot/pusht --hz 10 --out cured/ --format lerobot
+```
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  calibra cure — my_demos
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Episodes cured    : 120
+  Output directory  : /data/cured/
+  Manifest written  : /data/cured/cure_manifest.json
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Automatically applies kinematic and temporal fixes to every episode and writes cleaned per-episode `.npz` files. The default remedy pipeline is `smooth,interpolate,trim`: Savitzky-Golay filtering removes jerk spikes, uniform resampling resolves packet drops and timing jitter, and dead-time trimming cuts leading/trailing static segments. Use `--remedy` to apply a subset, `--hz` to pin the output control frequency, and `--trim-threshold` to tune the motion-detection sensitivity. A `cure_manifest.json` records original and cured step counts and Hz for every episode.
+
+### 14. `serve` — local REST API server
+
+```bash
+calibra serve                    # start on localhost:7842
+calibra serve --port 8000
+calibra serve --host 0.0.0.0
+```
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CALIBRA SERVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Web dashboard : http://localhost:7842
+  REST API      : http://localhost:7842/api/v1
+  Press Ctrl+C to stop.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Starts a local HTTP server that exposes all Calibra diagnostics as a REST API and serves the visual web dashboard at `http://localhost:7842`. Useful for programmatic access from scripts, CI pipeline integrations, and browsing dataset metrics in a browser without the terminal. Use `--host 0.0.0.0` to expose the server on all network interfaces.
 
 ---
 
