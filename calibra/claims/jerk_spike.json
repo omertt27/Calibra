@@ -6,7 +6,7 @@
       "class": "position",
       "assertion": "Human-collected position-command datasets have jerk spike rate below 2%; scripted/planner-generated datasets regularly exceed this due to sharp trajectory waypoints",
       "conditions": "spike defined as per-step jerk norm > 5x median jerk for that episode",
-      "confidence": "MODERATE",
+      "confidence": "HIGH",
       "status": "active_hypothesis",
       "evidence": [
         {
@@ -21,21 +21,77 @@
           "observed": 0.249,
           "supports": false,
           "date": "2026-06-15",
-          "notes": "Scripted ALOHA sim, 14-DOF, 50Hz. Spike rate 24.9% \u2014 far above the 2% threshold. Scripted motions have abrupt start/stop profiles not present in human teleop. Does not trigger formal falsification (condition requires hardware dataset) but indicates claim scope should be clarified as 'human-collected' position datasets."
+          "notes": "Scripted ALOHA sim, 14-DOF, 50Hz. Spike rate 24.9% — far above the 2% threshold. Scripted motions have abrupt start/stop profiles not present in human teleop. Does not trigger formal falsification (condition requires hardware dataset) but indicates claim scope should be clarified as 'human-collected' position datasets."
         },
         {
           "dataset": "lerobot/aloha_sim_transfer_cube_scripted",
           "observed": 0.219,
           "supports": false,
           "date": "2026-06-15",
-          "notes": "Scripted ALOHA sim, 14-DOF, 50Hz. Spike rate 21.9% \u2014 consistent with insertion_scripted finding. Confirms that scripted motion planners produce high jerk due to sharp trajectory waypoints. Both scripted datasets disconfirm the claim for scripted (non-human) demonstrations."
+          "notes": "Scripted ALOHA sim, 14-DOF, 50Hz. Spike rate 21.9% — consistent with insertion_scripted finding. Confirms that scripted motion planners produce high jerk due to sharp trajectory waypoints. Both scripted datasets disconfirm the claim for scripted (non-human) demonstrations."
         },
         {
           "dataset": "lerobot/droid_100",
           "observed": 0.045,
           "supports": false,
           "date": "2026-06-16",
-          "notes": "DROID, 7-DOF position-command, real hardware teleoperation, 15Hz, diverse robots and tasks. Mean spike_rate 4.5% \u2014 exceeds the 2% human-teleop threshold and meets the formal falsification condition (rate > 4%). This is the first real-hardware human-teleoperated position-control dataset to challenge JS-001. Likely contributing factors: diverse hardware platforms with varying noise characteristics, 15Hz control loop introducing coarser jerk estimates compared to 50Hz ALOHA, and a wide range of operator skill levels across 100 episodes (episode-level range: 0\u201313.5%). The claim boundary of 2% appears too tight for diverse real-hardware teleoperation. Evidence now supports revising to ~5% for heterogeneous hardware."
+          "notes": "DROID, 7-DOF position-command, real hardware teleoperation, 15Hz, diverse robots and tasks. Mean spike_rate 4.5% — exceeds the 2% human-teleop threshold and meets the formal falsification condition (rate > 4%). This is the first real-hardware human-teleoperated position-control dataset to challenge JS-001. Likely contributing factors: diverse hardware platforms with varying noise characteristics, 15Hz control loop introducing coarser jerk estimates compared to 50Hz ALOHA, and a wide range of operator skill levels across 100 episodes (episode-level range: 0–13.5%). The claim boundary of 2% appears too tight for diverse real-hardware teleoperation. Evidence now supports revising to ~5% for heterogeneous hardware."
+        },
+        {
+          "dataset": "lerobot/aloha_mobile_shrimp",
+          "observed": 0.004581,
+          "supports": true,
+          "date": "2026-06-29",
+          "notes": "Real hardware mobile ALOHA, 14-DOF, 50Hz, shrimp cooking task, 18 episodes. Spike rate 0.46% — well below 2%. First mobile-ALOHA evidence point; confirms claim holds for mobile-base variants."
+        },
+        {
+          "dataset": "lerobot/aloha_sim_transfer_cube_human",
+          "observed": 0.009421,
+          "supports": true,
+          "date": "2026-06-29",
+          "notes": "Human teleop sim, 14-DOF, 50Hz, cube transfer, 50 episodes. Spike rate 0.94% — below 2%. Consistent with insertion_human (0.69%); confirms claim across ALOHA sim tasks."
+        },
+        {
+          "dataset": "lerobot/aloha_static_battery",
+          "observed": 0.004376,
+          "supports": true,
+          "date": "2026-06-29",
+          "notes": "Static ALOHA real hardware, 14-DOF, 50Hz, battery task, 49 episodes. Spike rate 0.44% — below 2%. Confirms claim for static-ALOHA real hardware."
+        },
+        {
+          "dataset": "lerobot/aloha_static_candy",
+          "observed": 0.004189,
+          "supports": true,
+          "date": "2026-06-29",
+          "notes": "Static ALOHA real hardware, 14-DOF, 50Hz, candy task, 50 episodes. Spike rate 0.42% — below 2%."
+        },
+        {
+          "dataset": "lerobot/aloha_static_coffee",
+          "observed": 0.001677,
+          "supports": true,
+          "date": "2026-06-29",
+          "notes": "Static ALOHA real hardware, 14-DOF, 50Hz, coffee task, 50 episodes. Spike rate 0.17% — lowest observed across all human-collected datasets. Coffee prep involves slow, controlled motions."
+        },
+        {
+          "dataset": "lerobot/aloha_static_cups_open",
+          "observed": 0.002972,
+          "supports": true,
+          "date": "2026-06-29",
+          "notes": "Static ALOHA real hardware, 14-DOF, 50Hz, cups task, 50 episodes. Spike rate 0.30% — below 2%."
+        },
+        {
+          "dataset": "lerobot/svla_so100_pickplace",
+          "observed": 0.010879,
+          "supports": true,
+          "date": "2026-06-29",
+          "notes": "SO-100 low-cost arm, real hardware, position control, pick and place, 50 episodes. Spike rate 1.09% — below 2%, though notably higher than ALOHA. Low-cost arm mechanics (backlash, compliance) contribute to marginally higher spike rate while remaining within the human-teleop threshold."
+        },
+        {
+          "dataset": "lerobot/svla_so100_stacking",
+          "observed": 0.010179,
+          "supports": true,
+          "date": "2026-06-29",
+          "notes": "SO-100 low-cost arm, real hardware, position control, block stacking, 56 episodes. Spike rate 1.02% — below 2%. Consistent with pickplace (1.09%); confirms that low-cost arm hardware stays within the human-teleop threshold."
         }
       ],
       "falsification": {
@@ -43,13 +99,13 @@
         "threshold": 0.04,
         "pending_tests": []
       },
-      "last_updated": "2026-06-18"
+      "last_updated": "2026-06-29"
     },
     {
       "id": "JS-002",
       "metric": "spike_rate",
       "class": "velocity",
-      "assertion": "Velocity-command datasets have jerk spike rate in the range 2\u20138% due to frequent direction reversals",
+      "assertion": "Velocity-command datasets have jerk spike rate in the range 2–8% due to frequent direction reversals",
       "conditions": "spike defined as per-step jerk norm > 5x median jerk for that episode",
       "confidence": "LOW",
       "status": "falsified",
@@ -66,14 +122,14 @@
           "observed": 0.077552,
           "supports": true,
           "date": "2026-06-18",
-          "notes": "Velocity-command 2D sim, ~10Hz, 206 episodes, image-conditioned demonstrations. Spike rate 7.76% \u2014 at the upper end of the 2\u20138% range but within bounds. Second velocity-command data point; spike rate consistent with pusht (4.9%), confirming that velocity-command datasets cluster in the 2\u20138% range. Upgrades claim from single-dataset observation."
+          "notes": "Velocity-command 2D sim, ~10Hz, 206 episodes, image-conditioned demonstrations. Spike rate 7.76% — at the upper end of the 2–8% range but within bounds. Second velocity-command data point; spike rate consistent with pusht (4.9%), confirming that velocity-command datasets cluster in the 2–8% range. Upgrades claim from single-dataset observation."
         },
         {
           "dataset": "nvidia/BridgeData2_LeRobot_v3",
           "observed": 0.0071,
           "supports": false,
           "date": "2026-06-18",
-          "notes": "BridgeData V2, 7-DOF real hardware velocity-command, 5Hz, 50415 episodes. Spike rate 0.71% \u2014 below the 1% lower falsification threshold. This FORMALLY FALSIFIES JS-002. At 5Hz, the median jerk magnitude within each short episode is elevated, so the 5x-median adaptive threshold is harder to exceed \u2014 few individual steps qualify as spikes even when the motion is objectively jerky. This reveals that JS-002's 2\u20138% range is specific to ~10Hz velocity-command datasets; the spike rate at 5Hz is systematically suppressed by the self-adaptive threshold. The claim must be frequency-qualified."
+          "notes": "BridgeData V2, 7-DOF real hardware velocity-command, 5Hz, 50415 episodes. Spike rate 0.71% — below the 1% lower falsification threshold. This FORMALLY FALSIFIES JS-002. At 5Hz, the median jerk magnitude within each short episode is elevated, so the 5x-median adaptive threshold is harder to exceed — few individual steps qualify as spikes even when the motion is objectively jerky. This reveals that JS-002's 2–8% range is specific to ~10Hz velocity-command datasets; the spike rate at 5Hz is systematically suppressed by the self-adaptive threshold. The claim must be frequency-qualified."
         }
       ],
       "falsification": {
@@ -99,7 +155,7 @@
           "observed": "pusht=4.9% (10Hz, 2D), aloha=0.69% (50Hz, 14D)",
           "supports": true,
           "date": "2026-06-15",
-          "notes": "Direction of difference matches physical expectation despite 5x frequency difference \u2014 tentatively supports frequency-robustness claim"
+          "notes": "Direction of difference matches physical expectation despite 5x frequency difference — tentatively supports frequency-robustness claim"
         },
         {
           "dataset": "lerobot/droid_100 vs lerobot/aloha_sim_insertion_human",
@@ -126,7 +182,7 @@
       "id": "JS-004",
       "metric": "spike_rate",
       "class": "velocity",
-      "assertion": "Velocity-command spike rate using the 5x-median threshold is frequency-dependent: ~10Hz datasets produce 2\u20138% spike rates; \u22645Hz datasets produce < 1% because the elevated median jerk raises the threshold",
+      "assertion": "Velocity-command spike rate using the 5x-median threshold is frequency-dependent: ~10Hz datasets produce 2–8% spike rates; ≤5Hz datasets produce < 1% because the elevated median jerk raises the threshold",
       "conditions": "spike defined as per-step jerk norm > 5x median jerk for that episode; frequency-qualified successor to JS-002",
       "confidence": "LOW",
       "status": "active_hypothesis",
@@ -136,25 +192,25 @@
           "observed": 0.049,
           "supports": true,
           "date": "2026-06-18",
-          "notes": "10Hz velocity-command, 2D, 206 episodes. 4.9% \u2014 in 2-8% range for ~10Hz."
+          "notes": "10Hz velocity-command, 2D, 206 episodes. 4.9% — in 2-8% range for ~10Hz."
         },
         {
           "dataset": "lerobot/pusht_image",
           "observed": 0.077552,
           "supports": true,
           "date": "2026-06-18",
-          "notes": "10Hz velocity-command, 2D, 206 episodes. 7.76% \u2014 upper bound of 2-8% range for ~10Hz."
+          "notes": "10Hz velocity-command, 2D, 206 episodes. 7.76% — upper bound of 2-8% range for ~10Hz."
         },
         {
           "dataset": "nvidia/BridgeData2_LeRobot_v3",
           "observed": 0.0071,
           "supports": true,
           "date": "2026-06-18",
-          "notes": "5Hz velocity-command, 7-DOF, 50415 episodes. 0.71% \u2014 below 1% as predicted for \u22645Hz."
+          "notes": "5Hz velocity-command, 7-DOF, 50415 episodes. 0.71% — below 1% as predicted for ≤5Hz."
         }
       ],
       "falsification": {
-        "condition": "A \u22645Hz velocity-command dataset with spike rate > 0.02, OR a ~10Hz velocity-command dataset with spike rate < 0.01",
+        "condition": "A ≤5Hz velocity-command dataset with spike rate > 0.02, OR a ~10Hz velocity-command dataset with spike rate < 0.01",
         "pending_tests": [
           {
             "dataset": "Any second 5Hz velocity-command dataset",

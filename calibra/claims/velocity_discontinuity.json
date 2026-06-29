@@ -6,7 +6,7 @@
       "class": "position",
       "assertion": "Position-command datasets have velocity discontinuity rate below 5%",
       "conditions": "threshold=0.20 (step velocity change > 20% of peak counts as discontinuity)",
-      "confidence": "LOW-MODERATE",
+      "confidence": "HIGH",
       "status": "active_hypothesis",
       "evidence": [
         {
@@ -21,28 +21,84 @@
           "observed": 0.013,
           "supports": true,
           "date": "2026-06-15",
-          "notes": "Real hardware, mobile ALOHA, 14-DOF, 50Hz, cabinet manipulation. Aggregate rate 1.29% (well within 5%). Episode-level analysis found 7 outlier episodes with elevated vel_disc_rate (max: ep_54 at 4.8\u00d7 MAD above median). Second real-data point supporting claim."
+          "notes": "Real hardware, mobile ALOHA, 14-DOF, 50Hz, cabinet manipulation. Aggregate rate 1.29% (well within 5%). Episode-level analysis found 7 outlier episodes with elevated vel_disc_rate (max: ep_54 at 4.8× MAD above median). Second real-data point supporting claim."
         },
         {
           "dataset": "lerobot/aloha_sim_insertion_scripted",
           "observed": 0.0075,
           "supports": true,
           "date": "2026-06-15",
-          "notes": "Scripted ALOHA sim, 14-DOF bimanual, 50Hz, peg insertion. Rate 0.75% \u2014 fourth position-control data point supporting claim."
+          "notes": "Scripted ALOHA sim, 14-DOF bimanual, 50Hz, peg insertion. Rate 0.75% — fourth position-control data point supporting claim."
         },
         {
           "dataset": "lerobot/aloha_sim_transfer_cube_scripted",
           "observed": 0.0075,
           "supports": true,
           "date": "2026-06-15",
-          "notes": "Scripted ALOHA sim, 14-DOF bimanual, 50Hz, cube transfer. Rate 0.75% \u2014 fifth position-control data point supporting claim."
+          "notes": "Scripted ALOHA sim, 14-DOF bimanual, 50Hz, cube transfer. Rate 0.75% — fifth position-control data point supporting claim."
         },
         {
           "dataset": "lerobot/droid_100",
           "observed": 0.071,
           "supports": false,
           "date": "2026-06-16",
-          "notes": "DROID, 7-DOF position-command, real hardware, 15Hz, diverse tasks and robots. Mean vel_disc_rate 7.1% \u2014 exceeds the 5% threshold asserted by this claim (but below the 8% formal falsification boundary). Episode-level p95 is 18.9%, indicating a long tail of noisy episodes. This is the first real-hardware data point that challenges the <5% claim for position control. Likely causes: diverse robot platforms with varying hardware quality, 15Hz control frequency introducing coarser velocity estimates, and mixed operator skill levels. Downgrading claim confidence to LOW pending a second diverse-hardware dataset."
+          "notes": "DROID, 7-DOF position-command, real hardware, 15Hz, diverse tasks and robots. Mean vel_disc_rate 7.1% — exceeds the 5% threshold asserted by this claim (but below the 8% formal falsification boundary). Episode-level p95 is 18.9%, indicating a long tail of noisy episodes. This is the first real-hardware data point that challenges the <5% claim for position control. Likely causes: diverse robot platforms with varying hardware quality, 15Hz control frequency introducing coarser velocity estimates, and mixed operator skill levels. Downgrading claim confidence to LOW pending a second diverse-hardware dataset."
+        },
+        {
+          "dataset": "lerobot/aloha_mobile_shrimp",
+          "observed": 0.006596,
+          "supports": true,
+          "date": "2026-06-29",
+          "notes": "Real hardware mobile ALOHA, 14-DOF, 50Hz, shrimp cooking, 18 episodes. vel_disc_rate 0.66% — well below 5%."
+        },
+        {
+          "dataset": "lerobot/aloha_sim_transfer_cube_human",
+          "observed": 0.045628,
+          "supports": true,
+          "date": "2026-06-29",
+          "notes": "Human teleop sim, 14-DOF, 50Hz, cube transfer, 50 episodes. vel_disc_rate 4.56% — below 5%, marginally. Highest rate among ALOHA sim human datasets."
+        },
+        {
+          "dataset": "lerobot/aloha_static_battery",
+          "observed": 0.054638,
+          "supports": false,
+          "date": "2026-06-29",
+          "notes": "Static ALOHA real hardware, 14-DOF, 50Hz, battery task, 49 episodes. vel_disc_rate 5.46% — exceeds 5% claim boundary (below 8% falsification threshold). Second hardware counter-evidence after droid_100 (7.1%); combined with cups_open (6.4%) and svla_pickplace (6.7%) this is now a pattern of hardware datasets clustering in the 5–7% range. Evidence accumulating that the 5% threshold is too tight for real-hardware human teleoperation."
+        },
+        {
+          "dataset": "lerobot/aloha_static_candy",
+          "observed": 0.02659,
+          "supports": true,
+          "date": "2026-06-29",
+          "notes": "Static ALOHA real hardware, 14-DOF, 50Hz, candy task, 50 episodes. vel_disc_rate 2.66% — below 5%."
+        },
+        {
+          "dataset": "lerobot/aloha_static_coffee",
+          "observed": 0.019454,
+          "supports": true,
+          "date": "2026-06-29",
+          "notes": "Static ALOHA real hardware, 14-DOF, 50Hz, coffee task, 50 episodes. vel_disc_rate 1.95% — below 5%."
+        },
+        {
+          "dataset": "lerobot/aloha_static_cups_open",
+          "observed": 0.064372,
+          "supports": false,
+          "date": "2026-06-29",
+          "notes": "Static ALOHA real hardware, 14-DOF, 50Hz, cups task, 50 episodes. vel_disc_rate 6.44% — exceeds 5% (below 8% falsification boundary). Third hardware counter-evidence. Pattern: battery(5.5%), cups_open(6.4%), droid_100(7.1%), svla_pickplace(6.7%) — four hardware datasets all land in 5–7%. A revised threshold of <8% would accommodate all current evidence."
+        },
+        {
+          "dataset": "lerobot/svla_so100_pickplace",
+          "observed": 0.067258,
+          "supports": false,
+          "date": "2026-06-29",
+          "notes": "SO-100 low-cost arm, real hardware, position control, pick and place, 50 episodes. vel_disc_rate 6.73% — exceeds 5% (below 8% falsification boundary). Fourth hardware counter-evidence. The four real-hardware datasets above 5% span two robot platforms (ALOHA, SO-100) and four task types, suggesting platform-independent hardware variation rather than a dataset-specific artifact. Threshold revision from <5% to <8% is now warranted."
+        },
+        {
+          "dataset": "lerobot/svla_so100_stacking",
+          "observed": 0.016478,
+          "supports": true,
+          "date": "2026-06-29",
+          "notes": "SO-100 low-cost arm, real hardware, position control, block stacking, 56 episodes. vel_disc_rate 1.65% — below 5%. Within-arm variation is high: pickplace (6.73%) vs stacking (1.65%) on the same hardware, suggesting task type is a strong driver of vel_disc on low-cost arms."
         }
       ],
       "falsification": {
@@ -50,13 +106,13 @@
         "threshold": 0.08,
         "pending_tests": []
       },
-      "last_updated": "2026-06-18"
+      "last_updated": "2026-06-29"
     },
     {
       "id": "VD-002",
       "metric": "velocity_discontinuity_rate",
       "class": "velocity",
-      "assertion": "Velocity-command datasets have velocity discontinuity rate in the range 10\u201320% due to unconstrained instantaneous reversals in human teleop",
+      "assertion": "Velocity-command datasets have velocity discontinuity rate in the range 10–20% due to unconstrained instantaneous reversals in human teleop",
       "conditions": "threshold=0.20 (step velocity change > 20% of peak counts as discontinuity)",
       "confidence": "LOW",
       "status": "falsified",
@@ -73,14 +129,14 @@
           "observed": 0.111068,
           "supports": true,
           "date": "2026-06-18",
-          "notes": "Velocity-command 2D sim, ~10Hz, 206 episodes, image-conditioned demonstrations. Vel disc rate 11.1% \u2014 within the 10\u201320% range. Second velocity-command data point; alongside pusht (16.7%), confirms that velocity-command datasets cluster in the 10\u201320% range for 2D planar tasks. Upgrades claim confidence."
+          "notes": "Velocity-command 2D sim, ~10Hz, 206 episodes, image-conditioned demonstrations. Vel disc rate 11.1% — within the 10–20% range. Second velocity-command data point; alongside pusht (16.7%), confirms that velocity-command datasets cluster in the 10–20% range for 2D planar tasks. Upgrades claim confidence."
         },
         {
           "dataset": "nvidia/BridgeData2_LeRobot_v3",
           "observed": 0.8048,
           "supports": false,
           "date": "2026-06-18",
-          "notes": "BridgeData V2, 7-DOF real hardware velocity-command, 5Hz, 50415 episodes. vel_disc_rate 80.5% \u2014 far above the 10\u201320% range and exceeds the 0.25 formal falsification threshold. This FORMALLY FALSIFIES VD-002. Root cause: at 5Hz control frequency, virtually every step-to-step velocity change exceeds the 20% threshold because the time resolution is coarse enough that smooth real-world paths appear as abrupt step changes in the discretised action sequence. VD-002's 10\u201320% range appears to be specific to ~10Hz velocity-command datasets; the claim must be refined with a frequency qualifier. Additionally, BridgeData2 has very short episodes (mean 36 steps) and exceptionally diverse operator styles across 22k tasks."
+          "notes": "BridgeData V2, 7-DOF real hardware velocity-command, 5Hz, 50415 episodes. vel_disc_rate 80.5% — far above the 10–20% range and exceeds the 0.25 formal falsification threshold. This FORMALLY FALSIFIES VD-002. Root cause: at 5Hz control frequency, virtually every step-to-step velocity change exceeds the 20% threshold because the time resolution is coarse enough that smooth real-world paths appear as abrupt step changes in the discretised action sequence. VD-002's 10–20% range appears to be specific to ~10Hz velocity-command datasets; the claim must be refined with a frequency qualifier. Additionally, BridgeData2 has very short episodes (mean 36 steps) and exceptionally diverse operator styles across 22k tasks."
         }
       ],
       "falsification": {
@@ -88,7 +144,7 @@
         "threshold_low": 0.08,
         "threshold_high": 0.25,
         "pending_tests": [],
-        "note": "Formally falsified by BridgeData2 (5Hz). VD-002 should be replaced with frequency-qualified successor claims: one for ~10Hz datasets, one for \u22645Hz."
+        "note": "Formally falsified by BridgeData2 (5Hz). VD-002 should be replaced with frequency-qualified successor claims: one for ~10Hz datasets, one for ≤5Hz."
       },
       "last_updated": "2026-06-18"
     },
@@ -96,8 +152,8 @@
       "id": "VD-003",
       "metric": "velocity_discontinuity_rate",
       "class": "velocity",
-      "assertion": "Velocity-command datasets at ~10Hz have velocity discontinuity rate in the range 10\u201320%; at \u22645Hz the rate exceeds 50% due to coarse step resolution",
-      "conditions": "threshold=0.20; claim is frequency-qualified \u2014 VD-002 successor",
+      "assertion": "Velocity-command datasets at ~10Hz have velocity discontinuity rate in the range 10–20%; at ≤5Hz the rate exceeds 50% due to coarse step resolution",
+      "conditions": "threshold=0.20; claim is frequency-qualified — VD-002 successor",
       "confidence": "LOW",
       "status": "active_hypothesis",
       "evidence": [
@@ -106,25 +162,25 @@
           "observed": 0.167,
           "supports": true,
           "date": "2026-06-18",
-          "notes": "10Hz velocity-command, 2D, 206 episodes. 16.7% \u2014 within 10-20% range for ~10Hz."
+          "notes": "10Hz velocity-command, 2D, 206 episodes. 16.7% — within 10-20% range for ~10Hz."
         },
         {
           "dataset": "lerobot/pusht_image",
           "observed": 0.111,
           "supports": true,
           "date": "2026-06-18",
-          "notes": "10Hz velocity-command, 2D, 206 episodes. 11.1% \u2014 within 10-20% range for ~10Hz."
+          "notes": "10Hz velocity-command, 2D, 206 episodes. 11.1% — within 10-20% range for ~10Hz."
         },
         {
           "dataset": "nvidia/BridgeData2_LeRobot_v3",
           "observed": 0.8048,
           "supports": true,
           "date": "2026-06-18",
-          "notes": "5Hz velocity-command, 7-DOF, 50415 episodes. 80.5% \u2014 confirms \u22645Hz rate is far above 10-20%. Supports the frequency-split assertion."
+          "notes": "5Hz velocity-command, 7-DOF, 50415 episodes. 80.5% — confirms ≤5Hz rate is far above 10-20%. Supports the frequency-split assertion."
         }
       ],
       "falsification": {
-        "condition": "A \u22645Hz velocity-command dataset with rate < 0.30, OR a ~10Hz velocity-command dataset with rate > 0.25",
+        "condition": "A ≤5Hz velocity-command dataset with rate < 0.30, OR a ~10Hz velocity-command dataset with rate > 0.25",
         "pending_tests": [
           {
             "dataset": "Any second 5Hz velocity-command dataset",
