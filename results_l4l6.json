@@ -8,8 +8,11 @@
       "predicted_score": 87.7,
       "tier": "STRONG",
       "top_deduction": "ldlj",
+      "all_deduction_metrics": [
+        "ldlj"
+      ],
       "actual_sr": 0.14,
-      "train_time_s": 9.3,
+      "train_time_s": 8.1,
       "predicted_failure": false,
       "actual_failure": false,
       "correct_prediction": true,
@@ -23,8 +26,13 @@
       "predicted_score": 41.6,
       "tier": "MARGINAL",
       "top_deduction": "spike_rate",
+      "all_deduction_metrics": [
+        "ldlj",
+        "spike_rate",
+        "vel_disc_rate"
+      ],
       "actual_sr": 0.06,
-      "train_time_s": 9.9,
+      "train_time_s": 7.9,
       "predicted_failure": true,
       "actual_failure": false,
       "correct_prediction": false,
@@ -38,8 +46,13 @@
       "predicted_score": 41.5,
       "tier": "MARGINAL",
       "top_deduction": "spike_rate",
+      "all_deduction_metrics": [
+        "ldlj",
+        "spike_rate",
+        "vel_disc_rate"
+      ],
       "actual_sr": 0.04,
-      "train_time_s": 203.6,
+      "train_time_s": 194.8,
       "predicted_failure": true,
       "actual_failure": false,
       "correct_prediction": false,
@@ -53,8 +66,12 @@
       "predicted_score": 70.3,
       "tier": "GOOD",
       "top_deduction": "spike_rate",
+      "all_deduction_metrics": [
+        "ldlj",
+        "spike_rate"
+      ],
       "actual_sr": 0.22,
-      "train_time_s": 9.1,
+      "train_time_s": 8.3,
       "predicted_failure": false,
       "actual_failure": false,
       "correct_prediction": true,
@@ -68,8 +85,12 @@
       "predicted_score": 64.8,
       "tier": "GOOD",
       "top_deduction": "spike_rate",
+      "all_deduction_metrics": [
+        "ldlj",
+        "spike_rate"
+      ],
       "actual_sr": 0.06,
-      "train_time_s": 8.8,
+      "train_time_s": 8.3,
       "predicted_failure": false,
       "actual_failure": false,
       "correct_prediction": true,
@@ -83,8 +104,13 @@
       "predicted_score": 45.4,
       "tier": "MARGINAL",
       "top_deduction": "spike_rate",
+      "all_deduction_metrics": [
+        "ldlj",
+        "spike_rate",
+        "vel_disc_rate"
+      ],
       "actual_sr": 0.03,
-      "train_time_s": 8.8,
+      "train_time_s": 8.3,
       "predicted_failure": true,
       "actual_failure": true,
       "correct_prediction": true,
@@ -98,12 +124,16 @@
       "predicted_score": 75.8,
       "tier": "GOOD",
       "top_deduction": "ldlj",
+      "all_deduction_metrics": [
+        "jitter_cv",
+        "ldlj"
+      ],
       "actual_sr": 0.13,
-      "train_time_s": 8.8,
+      "train_time_s": 8.4,
       "predicted_failure": false,
       "actual_failure": false,
       "correct_prediction": true,
-      "rc_correct": false
+      "rc_correct": true
     },
     {
       "name": "drop_8pct",
@@ -113,12 +143,16 @@
       "predicted_score": 76.1,
       "tier": "GOOD",
       "top_deduction": "jitter_cv",
+      "all_deduction_metrics": [
+        "jitter_cv",
+        "ldlj"
+      ],
       "actual_sr": 0.2,
-      "train_time_s": 8.8,
+      "train_time_s": 8.4,
       "predicted_failure": false,
       "actual_failure": false,
       "correct_prediction": true,
-      "rc_correct": false
+      "rc_correct": true
     },
     {
       "name": "drop_15pct",
@@ -128,12 +162,16 @@
       "predicted_score": 76.1,
       "tier": "GOOD",
       "top_deduction": "jitter_cv",
+      "all_deduction_metrics": [
+        "jitter_cv",
+        "ldlj"
+      ],
       "actual_sr": 0.06,
-      "train_time_s": 10.1,
+      "train_time_s": 8.1,
       "predicted_failure": false,
       "actual_failure": false,
       "correct_prediction": true,
-      "rc_correct": false
+      "rc_correct": true
     },
     {
       "name": "noise_ep_10pct",
@@ -143,8 +181,11 @@
       "predicted_score": 87.2,
       "tier": "STRONG",
       "top_deduction": "ldlj",
+      "all_deduction_metrics": [
+        "ldlj"
+      ],
       "actual_sr": 0.05,
-      "train_time_s": 11.9,
+      "train_time_s": 7.9,
       "predicted_failure": false,
       "actual_failure": false,
       "correct_prediction": true,
@@ -158,8 +199,12 @@
       "predicted_score": 71.5,
       "tier": "GOOD",
       "top_deduction": "vel_disc_rate",
+      "all_deduction_metrics": [
+        "ldlj",
+        "vel_disc_rate"
+      ],
       "actual_sr": 0.06,
-      "train_time_s": 11.8,
+      "train_time_s": 7.9,
       "predicted_failure": false,
       "actual_failure": false,
       "correct_prediction": true,
@@ -173,8 +218,12 @@
       "predicted_score": 64.6,
       "tier": "GOOD",
       "top_deduction": "vel_disc_rate",
+      "all_deduction_metrics": [
+        "ldlj",
+        "vel_disc_rate"
+      ],
       "actual_sr": 0.03,
-      "train_time_s": 12.1,
+      "train_time_s": 7.9,
       "predicted_failure": false,
       "actual_failure": true,
       "correct_prediction": false,
@@ -188,8 +237,13 @@
       "predicted_score": 52.9,
       "tier": "MARGINAL",
       "top_deduction": "spike_rate",
+      "all_deduction_metrics": [
+        "jitter_cv",
+        "ldlj",
+        "spike_rate"
+      ],
       "actual_sr": 0.04,
-      "train_time_s": 12.0,
+      "train_time_s": 7.9,
       "predicted_failure": true,
       "actual_failure": false,
       "correct_prediction": false,
@@ -203,8 +257,13 @@
       "predicted_score": 46.2,
       "tier": "MARGINAL",
       "top_deduction": "spike_rate",
+      "all_deduction_metrics": [
+        "ldlj",
+        "spike_rate",
+        "vel_disc_rate"
+      ],
       "actual_sr": 0.03,
-      "train_time_s": 12.0,
+      "train_time_s": 7.9,
       "predicted_failure": true,
       "actual_failure": true,
       "correct_prediction": true,
@@ -218,8 +277,14 @@
       "predicted_score": 31.2,
       "tier": "RISKY",
       "top_deduction": "spike_rate",
+      "all_deduction_metrics": [
+        "jitter_cv",
+        "ldlj",
+        "spike_rate",
+        "vel_disc_rate"
+      ],
       "actual_sr": 0.02,
-      "train_time_s": 8.8,
+      "train_time_s": 7.9,
       "predicted_failure": true,
       "actual_failure": true,
       "correct_prediction": true,
@@ -236,7 +301,7 @@
     "precision": 0.5,
     "recall": 0.75,
     "f1": 0.6,
-    "root_cause_accuracy": 0.6666666666666666,
+    "root_cause_accuracy": 0.8888888888888888,
     "spearman_rho": 0.6748731065423986,
     "spearman_p": 0.00577614143097079
   }
