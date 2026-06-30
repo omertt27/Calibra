@@ -811,7 +811,7 @@ Three empirical baselines are shipped:
 | `svla_so100_stacking` | position | 15 Hz | 6 | 56 | ✓ real |
 | `bridgedata_v2` | velocity | 5 Hz | 7 | 50415 | ✓ real |
 
-Add your own with `scripts/profile_dataset.py` (see Contributing).
+You can profile additional datasets locally using `scripts/profile_dataset.py`.
 
 ---
 
@@ -830,33 +830,11 @@ Add your own with `scripts/profile_dataset.py` (see Contributing).
 
 ## Contributing
 
-Please read our [Contributing Guidelines](CONTRIBUTING.md) to get started with setting up development environments, formatting rules, testing, and submitting new dataset profiles or claims.
+Calibra is not open to external pull requests (PRs) or contributions at this time.
 
-### Profile more datasets (highest-value contribution)
+---
 
-
-The evidence base for `calibra compare` grows with every new reference profile. Priority targets from `calibra/claims/` pending tests:
-
-| Dataset | Why it matters |
-|---|---|
-| `lerobot/droid_100` | ✅ Profiled — large-scale real hardware, position control, validates VD-001 at scale |
-| `lerobot/svla_so100_pickplace` | ✅ Profiled — SO-100 low-cost arm, pick-and-place |
-| `nvidia/BridgeData2_LeRobot_v3` | ✅ Profiled — falsified VD-002 and JS-002; revealed frequency-dependent behaviour |
-| Any Isaac Lab sim dataset | Validates TEMP-001 (sim jitter) across a second simulator |
-| Any second 5Hz velocity-command dataset | Validates JS-004 and VD-003 successor claims |
-
-```bash
-python scripts/profile_dataset.py lerobot/droid_100 \
-  --control-mode position \
-  --out calibra/references/droid_100.json \
-  --note "DROID, real hardware, various robots, 15Hz"
-```
-
-After profiling, open `calibra/claims/*.json`, find claims with this dataset in `pending_tests`, add an evidence entry, then regenerate the docs:
-
-```bash
-python scripts/generate_claims_doc.py
-```
+## Development
 
 ### Repository layout
 
@@ -881,7 +859,7 @@ docs/
 └── claims.md               # Auto-generated from calibra/claims/ — do not edit
 ```
 
-### Development
+### Development setup
 
 ```bash
 git clone https://github.com/omerTT/Calibra

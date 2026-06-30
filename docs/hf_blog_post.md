@@ -183,17 +183,4 @@ running in ~10 seconds on CPU.
 LeRobot v1/v2 (Parquet + DuckDB), HuggingFace Hub IDs, HDF5 (Isaac Lab,
 Robomimic), RLDS / TF Datasets, MCAP / ROS2 bags.
 
-## Contributing
-
-The highest-value contribution is profiling a new dataset:
-
-```bash
-python scripts/profile_dataset.py lerobot/your_dataset \
-  --control-mode position \
-  --out calibra/references/your_dataset.json
-```
-
-Every new profile reduces the number of claims with LOW confidence and makes
-`calibra compare` more informative for everyone.
-
 **GitHub:** https://github.com/omerTT/Calibra

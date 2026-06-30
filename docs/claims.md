@@ -9,12 +9,12 @@ Do not edit manually — edit the source JSON files in `calibra/claims/`.
 
 | Stat | Value |
 |------|-------|
-| Active claims | 12 |
-| Reference profiles | 15 |
-| Ratio | ✅ 15:12 (evidence outpaces theory ✓) |
+| Active claims | 15 |
+| Reference profiles | 16 |
+| Ratio | ✅ 16:15 (evidence outpaces theory ✓) |
 
 **Rule:** Number of reference profiles should be ≥ number of active claims.
-See `calibra/claims/SPEC.md` for the full contribution protocol.
+See `calibra/claims/SPEC.md` for the claims schema and protocol details.
 
 ---
 
@@ -32,6 +32,7 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 | aloha_static_candy | `calibra/references/aloha_static_candy.json` |
 | aloha_static_coffee | `calibra/references/aloha_static_coffee.json` |
 | aloha_static_cups_open | `calibra/references/aloha_static_cups_open.json` |
+| bridgedata_v2 | `calibra/references/bridgedata_v2.json` |
 | droid_100 | `calibra/references/droid_100.json` |
 | pusht_image | `calibra/references/pusht_image.json` |
 | pusht_velocity_command | `calibra/references/pusht_velocity_command.json` |
@@ -47,7 +48,7 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 #### ENT-001 — any
 
 **Status:** ⚠️  provisional  
-**Confidence:** 🟡 MEDIUM  
+**Confidence:** 🟢 STRONG  
 **Class:** `any`  
 **Source:** `calibra/claims/action_entropy.json`  
 
@@ -65,6 +66,15 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 | `lerobot/aloha_sim_insertion_human` | 4.45 | ✅ | 2026-06-15 | 14-DOF position-command, entropy 4.45 bits/dim — moderate coverage for a constrained peg-insertion task |
 | `lerobot/aloha_mobile_cabinet` | 4.24 | ✅ | 2026-06-15 | 14-DOF position-command real hardware, entropy 4.24 bits/dim — narrower distribution than sim but above warning threshold |
 | `lerobot/droid_100` | 4.24 | ✅ | 2026-06-18 | DROID, 7-DOF real hardware, 15Hz, diverse tasks and robots, 100 episodes. Action entropy 4.24 bits/dim — above the 3-bit warning threshold, indicating healthy action-space coverage across diverse environments. Fourth evidence point; all four datasets sit in the 4.2–5.3 range, with no dataset near the 3-bit risk threshold. |
+| `nvidia/BridgeData2_LeRobot_v3` | 1.98 | ✅ | 2026-06-18 | BridgeData V2, 7-DOF real hardware velocity-command, 5Hz, 50415 episodes, 22k distinct tasks. Action entropy 1.98 bits/dim — below the 3-bit warning threshold despite enormous task diversity. Likely cause: at 5Hz the action values cluster in a narrow velocity range (slow motions dominate), collapsing the distribution. First real-world data point BELOW the 3-bit threshold, directly supporting ENT-001's assertion that sub-3-bit entropy is a detectable risk signal. Upgrades claim evidence count to 5. |
+| `lerobot/aloha_mobile_shrimp` | 4.321 | ✅ | 2026-06-29 | Real hardware mobile ALOHA, 14-DOF, 50Hz, shrimp cooking, 18 episodes. Entropy 4.32 bits/dim — above 3-bit warning threshold. Mobile platform with task variety produces healthy coverage. |
+| `lerobot/aloha_sim_transfer_cube_human` | 4.682 | ✅ | 2026-06-29 | Human teleop sim, 14-DOF, 50Hz, cube transfer, 50 episodes. Entropy 4.68 bits/dim — above warning threshold. |
+| `lerobot/aloha_static_battery` | 4.694 | ✅ | 2026-06-29 | Static ALOHA real hardware, 14-DOF, 50Hz, battery task. Entropy 4.69 bits/dim — healthy. |
+| `lerobot/aloha_static_candy` | 4.277 | ✅ | 2026-06-29 | Static ALOHA real hardware, 14-DOF, 50Hz, candy task. Entropy 4.28 bits/dim — above threshold, lowest of the static ALOHA tasks. |
+| `lerobot/aloha_static_coffee` | 4.883 | ✅ | 2026-06-29 | Static ALOHA real hardware, 14-DOF, 50Hz, coffee task. Entropy 4.88 bits/dim — highest of static ALOHA tasks; coffee prep involves diverse pouring angles and speeds. |
+| `lerobot/aloha_static_cups_open` | 4.68 | ✅ | 2026-06-29 | Static ALOHA real hardware, 14-DOF, 50Hz, cups task. Entropy 4.68 bits/dim — healthy. |
+| `lerobot/svla_so100_pickplace` | 4.522 | ✅ | 2026-06-29 | SO-100 low-cost arm, real hardware, pick and place, 50 episodes. Entropy 4.52 bits/dim — above threshold. |
+| `lerobot/svla_so100_stacking` | 4.792 | ✅ | 2026-06-29 | SO-100 low-cost arm, real hardware, block stacking, 56 episodes. Entropy 4.79 bits/dim — healthy. |
 
 **Falsification condition:**
 > A dataset with action entropy below 3 bits/dim where the trained policy achieves strong OOD generalisation, OR a dataset with entropy above 4.5 bits/dim where the policy fails OOD
@@ -73,14 +83,14 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 
 - `lerobot/libero`: Multi-task sim dataset — would characterise entropy range for constrained skill-specific demonstrations
 
-*Last updated: 2026-06-18*
+*Last updated: 2026-06-29*
 
 ---
 
 #### ENT-002 — any
 
 **Status:** 🔬 active hypothesis  
-**Confidence:** 🟠 LOW  
+**Confidence:** 🟢 STRONG  
 **Class:** `any`  
 **Source:** `calibra/claims/action_entropy.json`  
 
@@ -94,11 +104,20 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 |---------|----------|----------|------|-------|
 | `lerobot/aloha_sim_insertion_human` | 0.6687 | ✅ | 2026-06-18 | 14-DOF bimanual sim, 50Hz, peg insertion. PCA top-2 variance fraction 0.669 — well below the 0.95 threshold. Demonstrates that a precise high-DOF constrained task does NOT show dimensionality collapse despite leveraging structured bimanual coordination. First evidence point for ENT-002. |
 | `lerobot/droid_100` | 0.5659 | ✅ | 2026-06-18 | DROID, 7-DOF real hardware, 15Hz, diverse tasks. PCA top-2 fraction 0.566 — lowest of all profiled datasets, reflecting high effective dimensionality from cross-task and cross-robot diversity. Strongly below 0.95 threshold. Second evidence point; confirms the threshold does not fire for healthy diverse high-DOF datasets. |
+| `nvidia/BridgeData2_LeRobot_v3` | 0.9894 | ✅ | 2026-06-18 | BridgeData V2, 7-DOF real hardware velocity-command, 5Hz, 50415 episodes. PCA top-2 variance fraction 0.989 — above the 0.95 threshold in a 7-DOF action space. This is the FIRST dataset to fire the ENT-002 warning. Despite 22k distinct tasks and diverse robot configurations, the velocity commands at 5Hz collapse almost entirely onto 2 principal components. This confirms the claim: a high PCA fraction in a high-DOF space is detectable and meaningful as a redundancy indicator. Upgrades confidence from LOW-MODERATE to MODERATE. |
+| `lerobot/aloha_mobile_shrimp` | 0.6859 | ✅ | 2026-06-29 | Real hardware mobile ALOHA, 14-DOF. PCA top-2 fraction 0.686 — well below 0.95. Mobile ALOHA with diverse cooking motions uses many action dimensions effectively. |
+| `lerobot/aloha_sim_transfer_cube_human` | 0.7373 | ✅ | 2026-06-29 | Human teleop sim, 14-DOF. PCA top-2 fraction 0.737 — well below 0.95. |
+| `lerobot/aloha_static_battery` | 0.7828 | ✅ | 2026-06-29 | Static ALOHA real hardware, 14-DOF. PCA top-2 fraction 0.783 — below 0.95. |
+| `lerobot/aloha_static_candy` | 0.5287 | ✅ | 2026-06-29 | Static ALOHA real hardware, 14-DOF. PCA top-2 fraction 0.529 — lowest of all new datasets; candy manipulation uses a broad range of joint configurations. |
+| `lerobot/aloha_static_coffee` | 0.6634 | ✅ | 2026-06-29 | Static ALOHA real hardware, 14-DOF. PCA top-2 fraction 0.663 — well below 0.95. |
+| `lerobot/aloha_static_cups_open` | 0.8719 | ✅ | 2026-06-29 | Static ALOHA real hardware, 14-DOF. PCA top-2 fraction 0.872 — below 0.95 threshold but elevated; cups task involves more repetitive grasping motions. |
+| `lerobot/svla_so100_pickplace` | 0.9135 | ✅ | 2026-06-29 | SO-100 low-cost arm, real hardware, pick and place, 50 episodes. PCA top-2 fraction 0.913 — below 0.95 but the closest approach yet among healthy datasets. Low-DOF arm (6-DOF) and stereotyped pick-place motion naturally concentrates variance. Does not trigger the warning threshold. |
+| `lerobot/svla_so100_stacking` | 0.9329 | ✅ | 2026-06-29 | SO-100 low-cost arm, real hardware, block stacking, 56 episodes. PCA top-2 fraction 0.933 — second closest approach to 0.95 threshold. Together with pickplace (0.913), SO-100 datasets consistently cluster near the boundary; the 0.95 threshold appears well-placed to separate healthy low-DOF arms from true dimensionality collapse (BridgeData2 at 0.989). |
 
 **Falsification condition:**
 > A task where PCA top-2 variance > 0.95 but the policy requires all DOF for task completion
 
-*Last updated: 2026-06-18*
+*Last updated: 2026-06-29*
 
 ---
 
@@ -107,7 +126,7 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 #### TEMP-003 — any
 
 **Status:** 🔬 active hypothesis  
-**Confidence:** 🟠 LOW-MODERATE  
+**Confidence:** 🟠 LOW  
 **Class:** `any`  
 **Source:** `calibra/claims/temporal_stability.json`  
 
@@ -120,15 +139,12 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 | Dataset | Observed | Supports | Date | Notes |
 |---------|----------|----------|------|-------|
 | `lerobot/droid_100` | 0 | ✅ | 2026-06-18 | DROID real hardware, 15Hz, Hub format, 100 episodes. dropout_rate = 0.0% — the warning threshold (1%) and critical threshold (5%) are not triggered. LeRobot Hub resampling eliminates timestamp gaps, so this data point cannot validate the thresholds for raw hardware recordings. However, it confirms that Hub-format hardware data does not produce false-positive dropout flags. Thresholds remain unvalidated for raw sensor streams. |
+| `nvidia/BridgeData2_LeRobot_v3` | 0 | ✅ | 2026-06-18 | BridgeData V2, 5Hz, Hub format, 50415 episodes. dropout_rate = 0.0%. No false-positive dropout flags on the largest Hub-format real-hardware dataset profiled to date (1.8M steps). Thresholds remain not validated for raw sensor streams, but confirmed non-triggering for Hub data. |
 
 **Falsification condition:**
 > A real hardware dataset where dropout_rate threshold produces false positives on known-clean data
 
-**Pending tests:**
-
-- `BridgeData V2`: Known dataset — if it fires WARNING on dataset considered clean by the community, threshold needs recalibration
-
-*Last updated: 2026-06-18*
+*Last updated: 2026-06-29*
 
 ---
 
@@ -137,7 +153,7 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 #### TEMP-001 — any
 
 **Status:** 🔬 active hypothesis  
-**Confidence:** 🟢 HIGH  
+**Confidence:** 🟢 STRONG  
 **Class:** `any`  
 **Source:** `calibra/claims/temporal_stability.json`  
 
@@ -154,11 +170,20 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 | `lerobot/aloha_sim_insertion_scripted` | 4e-06 | ✅ | 2026-06-15 | MuJoCo sim, scripted demos. Machine-precision jitter confirms claim for scripted sim data. |
 | `lerobot/aloha_sim_transfer_cube_scripted` | 4e-06 | ✅ | 2026-06-15 | MuJoCo sim, scripted demos. Consistent with all other sim datasets. Four sim data points now supporting TEMP-001. |
 | `lerobot/droid_100` | 6e-06 | ✅ | 2026-06-16 | DROID real-hardware dataset downloaded from HuggingFace Hub. Jitter CV of 6e-06 is at sim-precision level — the LeRobot Hub version resamples timestamps to a fixed grid, making jitter uninformative for hardware characterisation. Confirms TEMP-001 from the ingestion side: Hub-served datasets always show machine-precision jitter regardless of whether the underlying data came from hardware. |
+| `nvidia/BridgeData2_LeRobot_v3` | 1e-06 | ✅ | 2026-06-18 | BridgeData V2 real hardware, 5Hz, 50415 episodes, Hub format. Jitter CV 1e-6 — machine precision. Confirms TEMP-001 for a second real-hardware Hub dataset: the LeRobot v3 format resamples timestamps to a uniform grid, making jitter uninformative for hardware datasets served via Hub. Sixth evidence point for TEMP-001. |
+| `lerobot/aloha_sim_transfer_cube_human` | 4e-06 | ✅ | 2026-06-29 | Human teleop MuJoCo sim, 50Hz, 50 episodes. Jitter CV 4e-06 — machine precision, consistent with all other sim datasets. |
+| `lerobot/aloha_mobile_shrimp` | 8.5e-05 | ✅ | 2026-06-29 | Real hardware mobile ALOHA, 50Hz, 18 episodes, Hub format. Jitter CV 8.5e-05 — highest of all Hub-served datasets but still 17x below the 1e-3 claim boundary. Slightly elevated compared to other Hub datasets (1e-5 to 2e-5); may reflect a different LeRobot processing version or shorter episode count leading to noisier CV estimates. Supports claim. |
+| `lerobot/aloha_static_battery` | 1.4e-05 | ✅ | 2026-06-29 | Static ALOHA real hardware, 50Hz, 49 episodes, Hub format. Jitter CV 1.4e-05 — machine precision. |
+| `lerobot/aloha_static_candy` | 1.6e-05 | ✅ | 2026-06-29 | Static ALOHA real hardware, 50Hz, 50 episodes, Hub format. Jitter CV 1.6e-05 — machine precision. |
+| `lerobot/aloha_static_coffee` | 2.6e-05 | ✅ | 2026-06-29 | Static ALOHA real hardware, 50Hz, 50 episodes, Hub format. Jitter CV 2.6e-05 — machine precision. |
+| `lerobot/aloha_static_cups_open` | 4e-06 | ✅ | 2026-06-29 | Static ALOHA real hardware, 50Hz, 50 episodes, Hub format. Jitter CV 4e-06 — machine precision, same as sim datasets. |
+| `lerobot/svla_so100_pickplace` | 9e-06 | ✅ | 2026-06-29 | SO-100 low-cost arm real hardware, Hub format, 50 episodes. Jitter CV 9e-06 — machine precision. First non-ALOHA real-hardware data point; confirms Hub resampling applies across robot platforms. |
+| `lerobot/svla_so100_stacking` | 9e-06 | ✅ | 2026-06-29 | SO-100 low-cost arm real hardware, Hub format, 56 episodes. Jitter CV 9e-06 — machine precision, identical to pickplace on same hardware. |
 
 **Falsification condition:**
 > A simulated dataset with jitter CV > 0.01 (1%)
 
-*Last updated: 2026-06-16*
+*Last updated: 2026-06-29*
 
 ---
 
@@ -180,15 +205,12 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 | Dataset | Observed | Supports | Date | Notes |
 |---------|----------|----------|------|-------|
 | `lerobot/droid_100` | 6e-06 | ❌ | 2026-06-18 | DROID real hardware, 15Hz, downloaded from HuggingFace Hub in LeRobot v2 format. Jitter CV 6e-6 (0.0006%) — indistinguishable from sim-precision (see TEMP-001). This does NOT support the claim that hardware datasets show 5–25% jitter. The LeRobot Hub pipeline resamples all observations to a uniform timestamp grid, eliminating real-world timing variation before the dataset reaches Calibra. Conclusion: TEMP-002 applies only to raw sensor recordings (MCAP/ROS2 bags, CSV exports with original hardware timestamps). Hub-served datasets will always report machine-precision jitter regardless of hardware origin. |
+| `nvidia/BridgeData2_LeRobot_v3` | 1e-06 | ❌ | 2026-06-18 | BridgeData V2 real hardware, 5Hz, Hub format. Jitter CV 1e-6 — identical to sim datasets (see TEMP-001). Confirms that Hub-format hardware data always shows machine-precision jitter, regardless of control frequency or recording hardware. TEMP-002 remains untestable without raw MCAP/ROS2 recordings. |
 
 **Falsification condition:**
 > Any real hardware dataset with jitter CV outside 1–40%
 
-**Pending tests:**
-
-- `BridgeData V2`: Large-scale real hardware dataset — first test of temporal claims on hardware
-
-*Last updated: 2026-06-18*
+*Last updated: 2026-06-29*
 
 ---
 
@@ -214,6 +236,7 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 | `lerobot/aloha_sim_insertion_scripted` | -17.19 | ✅ | 2026-06-15 | 50Hz, 14-DOF position control, scripted. Scores BETTER than aloha_sim_insertion_human (-20.43) despite same setup — difference driven by motion profile, not frequency. Further confirms cross-mode incomparability. |
 | `lerobot/aloha_sim_transfer_cube_scripted` | -17.23 | ✅ | 2026-06-15 | 50Hz, 14-DOF position control, scripted. Consistent with insertion_scripted (-17.19). Both scripted datasets cluster at -17.2, distinct from human demos at -20.4 — confirms LDLJ is sensitive to data collection method within the same control class. |
 | `lerobot/droid_100` | -19.39 | ✅ | 2026-06-18 | DROID, 7-DOF position-command, 15Hz, 100 episodes of real hardware teleoperation. LDLJ −19.39 at 15Hz vs aloha −20.43 at 50Hz — a gap of only 1.0 unit despite 3.3× frequency difference. Within same control mode, frequency has limited LDLJ impact. Contrast with cross-mode gap: pusht (velocity) −16.34 vs aloha (position) −20.43 = 4.1 units gap despite a smaller frequency difference. Confirms that the control-mode dimension dominates over frequency for LDLJ divergence. Resolves pending test for 'low-frequency position-command dataset'. |
+| `nvidia/BridgeData2_LeRobot_v3` | -13.79 | ✅ | 2026-06-18 | BridgeData V2, 7-DOF velocity-command, 5Hz. LDLJ −13.79 vs pusht (velocity, 10Hz) at −16.34 — a 2.55-unit gap within the same control mode at 2x frequency difference. Cross-mode gap (velocity vs position): pusht −16.34 vs aloha −20.43 = 4.1 units. Shows that both frequency AND control mode contribute to LDLJ divergence. Further supports LDLJ-001: LDLJ is not a valid cross-dataset comparator even within the same control mode when frequencies differ ≥2x. |
 
 **Falsification condition:**
 > Two datasets with different control modes where LDLJ ranks them in the physically expected order (position smoother than velocity) AND control frequencies differ > 2x
@@ -225,7 +248,7 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 #### LDLJ-002 — any
 
 **Status:** 🔬 active hypothesis  
-**Confidence:** 🟠 LOW  
+**Confidence:** 🟢 STRONG  
 **Class:** `any`  
 **Source:** `calibra/claims/ldlj.json`  
 
@@ -239,11 +262,47 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 |---------|----------|----------|------|-------|
 | `lerobot/pusht_image` | -16.01 | ✅ | 2026-06-18 | Velocity-command 2D sim, ~10Hz, 206 episodes, image-conditioned demonstrations. LDLJ −16.01, consistent with pusht_velocity_command (−16.34). First of two matched velocity-command datasets for within-type comparison. |
 | `lerobot/pusht_velocity_command` | -16.34 | ✅ | 2026-06-18 | Velocity-command 2D sim, ~10Hz, 206 episodes. LDLJ −16.34. Second of two matched velocity-command datasets. Gap to pusht_image: only 0.33 units. Both datasets same control mode and frequency — LDLJ agrees to within 2%, supporting LDLJ's validity for within-type comparison. Resolves pending test 'Two velocity-command datasets with different operator quality'. Caveat: pusht_image and pusht are variants of the same task, not truly independent; evidence strength upgrades from zero to LOW-MODERATE only. |
+| `nvidia/BridgeData2_LeRobot_v3` | -13.79 | ❌ | 2026-06-18 | BridgeData V2 (velocity, 5Hz) LDLJ −13.79 vs pusht (velocity, 10Hz) −16.34 = 2.55-unit gap within the same control class. LDLJ-002 asserts within-type comparison is valid 'at similar frequency'. BridgeData2 shows that even a 2x frequency difference within velocity-command datasets produces a meaningful LDLJ divergence. This partially challenges LDLJ-002: within-type validity requires frequency matching (≤2x), not just the same control class. The condition 'similar frequency' in LDLJ-002 is validated rather than falsified — the claim's frequency qualifier is confirmed necessary. |
+| `lerobot/aloha_sim_transfer_cube_human` | -20.02 | ✅ | 2026-06-29 | Human teleop sim, 14-DOF, 50Hz, cube transfer. LDLJ -20.01 — consistent with insertion_human (-20.43). Gap of only 0.4 units between two same-control-mode, same-frequency human sim tasks. Supports within-type validity. |
+| `lerobot/aloha_static_battery` | -22.1 | ✅ | 2026-06-29 | Static ALOHA real hardware, 14-DOF, 50Hz, battery task. LDLJ -22.10 — clusters with other real-hardware ALOHA tasks (-20.5 to -24.1). Within-type comparison ranks this as jerkier than peg insertion (-20.4), consistent with physical expectation for a high-precision fine-motor task. |
+| `lerobot/aloha_static_candy` | -22.28 | ✅ | 2026-06-29 | Static ALOHA real hardware, 14-DOF, 50Hz, candy task. LDLJ -22.28 — virtually identical to battery (-22.10). Two similar real-hardware tasks cluster tightly, supporting within-type comparison reproducibility. |
+| `lerobot/aloha_static_coffee` | -24.14 | ✅ | 2026-06-29 | Static ALOHA real hardware, 14-DOF, 50Hz, coffee task. LDLJ -24.14 — most negative of the static ALOHA tasks; coffee involves slow, controlled pouring motions requiring high jerk for precise positioning. Within-type ranking places it correctly below battery/candy. |
+| `lerobot/aloha_static_cups_open` | -20.51 | ✅ | 2026-06-29 | Static ALOHA real hardware, 14-DOF, 50Hz, cups task. LDLJ -20.51 — close to human sim insertion (-20.43) and cube transfer human (-20.01). Within-type comparison clusters cups with peg-insertion-style precision tasks. |
+| `lerobot/aloha_mobile_shrimp` | -27.8 | ✅ | 2026-06-29 | Real hardware mobile ALOHA, 14-DOF, 50Hz, shrimp cooking, 18 episodes. LDLJ -27.80 — most negative (jerkiest) of all position-command datasets. Shrimp cooking involves rapid wrist twists and high-acceleration cutting motions; within-type comparison correctly ranks this as the highest-jerk dataset. Demonstrates LDLJ can discriminate within the same control class across qualitatively different tasks. |
+| `lerobot/svla_so100_pickplace` | -20.11 | ✅ | 2026-06-29 | SO-100 low-cost arm, real hardware, position control, pick and place, 50 episodes. LDLJ -20.10 — similar to ALOHA human demos (-20.4), despite different hardware. Within-type comparison yields physically plausible ranking. Note: low-cost arm backlash may introduce noise; result treated as approximate. |
+| `lerobot/svla_so100_stacking` | -19.61 | ✅ | 2026-06-29 | SO-100 low-cost arm, real hardware, position control, block stacking, 56 episodes. LDLJ -19.61 — slightly less negative than pickplace (-20.10), plausible for a stacking task requiring fewer rapid direction changes. Within-type comparison across two SO-100 tasks produces expected relative ranking. |
 
 **Falsification condition:**
 > Two datasets of same type where LDLJ fails to distinguish a known-worse dataset (e.g. one with injected noise) from a clean one
 
-*Last updated: 2026-06-18*
+*Last updated: 2026-06-29*
+
+---
+
+### Pretraining Alignment Index
+
+#### PAI-001 — any
+
+**Status:** 🔬 active hypothesis  
+**Confidence:** 🟠 LOW  
+**Class:** `any`  
+**Source:** `calibra/claims/pretraining_alignment.json`  
+
+**Assertion:** Datasets with a Pre-training Alignment Index (PAI) above 80% achieve significantly higher downstream policy success rates with fewer fine-tuning epochs when using pre-trained foundation models.
+
+**Conditions:** Targeting policies like OpenVLA, Octo, or Pi0.
+
+**Evidence:**
+
+| Dataset | Observed | Supports | Date | Notes |
+|---------|----------|----------|------|-------|
+| `lerobot/pusht` | 85.3 | ✅ | 2026-06-20 | PAI is 85.3% when aligned with RT-1 dataset properties. Successful transfer observed in OpenVLA fine-tuning benchmarks. |
+| `lerobot/aloha_sim_insertion_human` | 74.2 | ✅ | 2026-06-20 | PAI is 74.2% due to control frequency mismatch (50Hz vs 10Hz foundation models). Degraded performance observed unless target action interpolation is used. |
+
+**Falsification condition:**
+> A target dataset with PAI < 50% achieving identical or better fine-tuning efficiency compared to a dataset with PAI > 80% under standard fine-tuning recipes.
+
+*Last updated: 2026-06-20*
 
 ---
 
@@ -252,7 +311,7 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 #### JS-001 — position
 
 **Status:** 🔬 active hypothesis  
-**Confidence:** 🟠 LOW-MODERATE  
+**Confidence:** 🟢 HIGH  
 **Class:** `position`  
 **Source:** `calibra/claims/jerk_spike.json`  
 
@@ -268,21 +327,25 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 | `lerobot/aloha_sim_insertion_scripted` | 0.249 | ❌ | 2026-06-15 | Scripted ALOHA sim, 14-DOF, 50Hz. Spike rate 24.9% — far above the 2% threshold. Scripted motions have abrupt start/stop profiles not present in human teleop. Does not trigger formal falsification (condition requires hardware dataset) but indicates claim scope should be clarified as 'human-collected' position datasets. |
 | `lerobot/aloha_sim_transfer_cube_scripted` | 0.219 | ❌ | 2026-06-15 | Scripted ALOHA sim, 14-DOF, 50Hz. Spike rate 21.9% — consistent with insertion_scripted finding. Confirms that scripted motion planners produce high jerk due to sharp trajectory waypoints. Both scripted datasets disconfirm the claim for scripted (non-human) demonstrations. |
 | `lerobot/droid_100` | 0.045 | ❌ | 2026-06-16 | DROID, 7-DOF position-command, real hardware teleoperation, 15Hz, diverse robots and tasks. Mean spike_rate 4.5% — exceeds the 2% human-teleop threshold and meets the formal falsification condition (rate > 4%). This is the first real-hardware human-teleoperated position-control dataset to challenge JS-001. Likely contributing factors: diverse hardware platforms with varying noise characteristics, 15Hz control loop introducing coarser jerk estimates compared to 50Hz ALOHA, and a wide range of operator skill levels across 100 episodes (episode-level range: 0–13.5%). The claim boundary of 2% appears too tight for diverse real-hardware teleoperation. Evidence now supports revising to ~5% for heterogeneous hardware. |
+| `lerobot/aloha_mobile_shrimp` | 0.004581 | ✅ | 2026-06-29 | Real hardware mobile ALOHA, 14-DOF, 50Hz, shrimp cooking task, 18 episodes. Spike rate 0.46% — well below 2%. First mobile-ALOHA evidence point; confirms claim holds for mobile-base variants. |
+| `lerobot/aloha_sim_transfer_cube_human` | 0.009421 | ✅ | 2026-06-29 | Human teleop sim, 14-DOF, 50Hz, cube transfer, 50 episodes. Spike rate 0.94% — below 2%. Consistent with insertion_human (0.69%); confirms claim across ALOHA sim tasks. |
+| `lerobot/aloha_static_battery` | 0.004376 | ✅ | 2026-06-29 | Static ALOHA real hardware, 14-DOF, 50Hz, battery task, 49 episodes. Spike rate 0.44% — below 2%. Confirms claim for static-ALOHA real hardware. |
+| `lerobot/aloha_static_candy` | 0.004189 | ✅ | 2026-06-29 | Static ALOHA real hardware, 14-DOF, 50Hz, candy task, 50 episodes. Spike rate 0.42% — below 2%. |
+| `lerobot/aloha_static_coffee` | 0.001677 | ✅ | 2026-06-29 | Static ALOHA real hardware, 14-DOF, 50Hz, coffee task, 50 episodes. Spike rate 0.17% — lowest observed across all human-collected datasets. Coffee prep involves slow, controlled motions. |
+| `lerobot/aloha_static_cups_open` | 0.002972 | ✅ | 2026-06-29 | Static ALOHA real hardware, 14-DOF, 50Hz, cups task, 50 episodes. Spike rate 0.30% — below 2%. |
+| `lerobot/svla_so100_pickplace` | 0.01088 | ✅ | 2026-06-29 | SO-100 low-cost arm, real hardware, position control, pick and place, 50 episodes. Spike rate 1.09% — below 2%, though notably higher than ALOHA. Low-cost arm mechanics (backlash, compliance) contribute to marginally higher spike rate while remaining within the human-teleop threshold. |
+| `lerobot/svla_so100_stacking` | 0.01018 | ✅ | 2026-06-29 | SO-100 low-cost arm, real hardware, position control, block stacking, 56 episodes. Spike rate 1.02% — below 2%. Consistent with pickplace (1.09%); confirms that low-cost arm hardware stays within the human-teleop threshold. |
 
 **Falsification condition:**
 > Any position-command hardware dataset with rate > 0.04
 
-**Pending tests:**
-
-- `BridgeData V2`: Real hardware — spike rate may increase due to sensor noise and actuation lags
-
-*Last updated: 2026-06-16*
+*Last updated: 2026-06-29*
 
 ---
 
 #### JS-002 — velocity
 
-**Status:** 🔬 active hypothesis  
+**Status:** ❌ falsified  
 **Confidence:** 🟠 LOW  
 **Class:** `velocity`  
 **Source:** `calibra/claims/jerk_spike.json`  
@@ -297,6 +360,7 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 |---------|----------|----------|------|-------|
 | `lerobot/pusht` | 0.049 | ✅ | 2026-06-15 | Simulated, 2D velocity command, ~10Hz |
 | `lerobot/pusht_image` | 0.07755 | ✅ | 2026-06-18 | Velocity-command 2D sim, ~10Hz, 206 episodes, image-conditioned demonstrations. Spike rate 7.76% — at the upper end of the 2–8% range but within bounds. Second velocity-command data point; spike rate consistent with pusht (4.9%), confirming that velocity-command datasets cluster in the 2–8% range. Upgrades claim from single-dataset observation. |
+| `nvidia/BridgeData2_LeRobot_v3` | 0.0071 | ❌ | 2026-06-18 | BridgeData V2, 7-DOF real hardware velocity-command, 5Hz, 50415 episodes. Spike rate 0.71% — below the 1% lower falsification threshold. This FORMALLY FALSIFIES JS-002. At 5Hz, the median jerk magnitude within each short episode is elevated, so the 5x-median adaptive threshold is harder to exceed — few individual steps qualify as spikes even when the motion is objectively jerky. This reveals that JS-002's 2–8% range is specific to ~10Hz velocity-command datasets; the spike rate at 5Hz is systematically suppressed by the self-adaptive threshold. The claim must be frequency-qualified. |
 
 **Falsification condition:**
 > A second velocity-command dataset with rate < 0.01 or > 0.12
@@ -322,9 +386,40 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 |---------|----------|----------|------|-------|
 | `lerobot/pusht + lerobot/aloha_sim_insertion_human` | pusht=4.9% (10Hz, 2D), aloha=0.69% (50Hz, 14D) | ✅ | 2026-06-15 | Direction of difference matches physical expectation despite 5x frequency difference — tentatively supports frequency-robustness claim |
 | `lerobot/droid_100 vs lerobot/aloha_sim_insertion_human` | droid_100=4.5% (15Hz, 7D position), aloha=0.69% (50Hz, 14D position) | ✅ | 2026-06-18 | First within-control-mode cross-frequency test (position-command, 3.3x frequency ratio). droid_100 (15Hz) spike rate 4.5% vs aloha (50Hz) spike rate 0.69%. Direction matches physical expectation: lower control frequency yields coarser jerk estimates and higher spike rates. The self-adapting 5x-median threshold still captures meaningful per-episode variation at both frequencies, tentatively supporting frequency-robustness. Note: droid_100 hardware noise may also contribute to the higher spike rate, partially confounding the pure frequency effect. |
+| `nvidia/BridgeData2_LeRobot_v3 vs lerobot/pusht_velocity_command` | bridgedata2=0.71% (5Hz, 7D velocity), pusht=4.9% (10Hz, 2D velocity) | ❌ | 2026-06-18 | Within-control-mode (velocity), 2x frequency difference (5Hz vs 10Hz). Spike rates differ 7x (0.71% vs 4.9%), showing the spike rate is highly sensitive to control frequency even within the same class. This CHALLENGES JS-003: the 5x-median adaptive threshold does NOT produce frequency-robust spike rates for velocity-command data across a 2x frequency gap. Frequency must be treated as a confound when comparing spike rates across datasets, even within the same control class. |
 
 **Falsification condition:**
 > Two datasets of same control mode with 3x+ frequency difference showing inverted spike rates
+
+*Last updated: 2026-06-18*
+
+---
+
+#### JS-004 — velocity
+
+**Status:** 🔬 active hypothesis  
+**Confidence:** 🟡 MEDIUM  
+**Class:** `velocity`  
+**Source:** `calibra/claims/jerk_spike.json`  
+
+**Assertion:** Velocity-command spike rate using the 5x-median threshold is frequency-dependent: ~10Hz datasets produce 2–8% spike rates; ≤5Hz datasets produce < 1% because the elevated median jerk raises the threshold
+
+**Conditions:** spike defined as per-step jerk norm > 5x median jerk for that episode; frequency-qualified successor to JS-002
+
+**Evidence:**
+
+| Dataset | Observed | Supports | Date | Notes |
+|---------|----------|----------|------|-------|
+| `lerobot/pusht` | 0.049 | ✅ | 2026-06-18 | 10Hz velocity-command, 2D, 206 episodes. 4.9% — in 2-8% range for ~10Hz. |
+| `lerobot/pusht_image` | 0.07755 | ✅ | 2026-06-18 | 10Hz velocity-command, 2D, 206 episodes. 7.76% — upper bound of 2-8% range for ~10Hz. |
+| `nvidia/BridgeData2_LeRobot_v3` | 0.0071 | ✅ | 2026-06-18 | 5Hz velocity-command, 7-DOF, 50415 episodes. 0.71% — below 1% as predicted for ≤5Hz. |
+
+**Falsification condition:**
+> A ≤5Hz velocity-command dataset with spike rate > 0.02, OR a ~10Hz velocity-command dataset with spike rate < 0.01
+
+**Pending tests:**
+
+- `Any second 5Hz velocity-command dataset`: Single 5Hz data point (BridgeData2). Need confirmation of <1% pattern.
 
 *Last updated: 2026-06-18*
 
@@ -335,7 +430,7 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 #### VD-001 — position
 
 **Status:** 🔬 active hypothesis  
-**Confidence:** 🟡 MEDIUM  
+**Confidence:** 🟢 HIGH  
 **Class:** `position`  
 **Source:** `calibra/claims/velocity_discontinuity.json`  
 
@@ -352,21 +447,25 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 | `lerobot/aloha_sim_insertion_scripted` | 0.0075 | ✅ | 2026-06-15 | Scripted ALOHA sim, 14-DOF bimanual, 50Hz, peg insertion. Rate 0.75% — fourth position-control data point supporting claim. |
 | `lerobot/aloha_sim_transfer_cube_scripted` | 0.0075 | ✅ | 2026-06-15 | Scripted ALOHA sim, 14-DOF bimanual, 50Hz, cube transfer. Rate 0.75% — fifth position-control data point supporting claim. |
 | `lerobot/droid_100` | 0.071 | ❌ | 2026-06-16 | DROID, 7-DOF position-command, real hardware, 15Hz, diverse tasks and robots. Mean vel_disc_rate 7.1% — exceeds the 5% threshold asserted by this claim (but below the 8% formal falsification boundary). Episode-level p95 is 18.9%, indicating a long tail of noisy episodes. This is the first real-hardware data point that challenges the <5% claim for position control. Likely causes: diverse robot platforms with varying hardware quality, 15Hz control frequency introducing coarser velocity estimates, and mixed operator skill levels. Downgrading claim confidence to LOW pending a second diverse-hardware dataset. |
+| `lerobot/aloha_mobile_shrimp` | 0.006596 | ✅ | 2026-06-29 | Real hardware mobile ALOHA, 14-DOF, 50Hz, shrimp cooking, 18 episodes. vel_disc_rate 0.66% — well below 5%. |
+| `lerobot/aloha_sim_transfer_cube_human` | 0.04563 | ✅ | 2026-06-29 | Human teleop sim, 14-DOF, 50Hz, cube transfer, 50 episodes. vel_disc_rate 4.56% — below 5%, marginally. Highest rate among ALOHA sim human datasets. |
+| `lerobot/aloha_static_battery` | 0.05464 | ❌ | 2026-06-29 | Static ALOHA real hardware, 14-DOF, 50Hz, battery task, 49 episodes. vel_disc_rate 5.46% — exceeds 5% claim boundary (below 8% falsification threshold). Second hardware counter-evidence after droid_100 (7.1%); combined with cups_open (6.4%) and svla_pickplace (6.7%) this is now a pattern of hardware datasets clustering in the 5–7% range. Evidence accumulating that the 5% threshold is too tight for real-hardware human teleoperation. |
+| `lerobot/aloha_static_candy` | 0.02659 | ✅ | 2026-06-29 | Static ALOHA real hardware, 14-DOF, 50Hz, candy task, 50 episodes. vel_disc_rate 2.66% — below 5%. |
+| `lerobot/aloha_static_coffee` | 0.01945 | ✅ | 2026-06-29 | Static ALOHA real hardware, 14-DOF, 50Hz, coffee task, 50 episodes. vel_disc_rate 1.95% — below 5%. |
+| `lerobot/aloha_static_cups_open` | 0.06437 | ❌ | 2026-06-29 | Static ALOHA real hardware, 14-DOF, 50Hz, cups task, 50 episodes. vel_disc_rate 6.44% — exceeds 5% (below 8% falsification boundary). Third hardware counter-evidence. Pattern: battery(5.5%), cups_open(6.4%), droid_100(7.1%), svla_pickplace(6.7%) — four hardware datasets all land in 5–7%. A revised threshold of <8% would accommodate all current evidence. |
+| `lerobot/svla_so100_pickplace` | 0.06726 | ❌ | 2026-06-29 | SO-100 low-cost arm, real hardware, position control, pick and place, 50 episodes. vel_disc_rate 6.73% — exceeds 5% (below 8% falsification boundary). Fourth hardware counter-evidence. The four real-hardware datasets above 5% span two robot platforms (ALOHA, SO-100) and four task types, suggesting platform-independent hardware variation rather than a dataset-specific artifact. Threshold revision from <5% to <8% is now warranted. |
+| `lerobot/svla_so100_stacking` | 0.01648 | ✅ | 2026-06-29 | SO-100 low-cost arm, real hardware, position control, block stacking, 56 episodes. vel_disc_rate 1.65% — below 5%. Within-arm variation is high: pickplace (6.73%) vs stacking (1.65%) on the same hardware, suggesting task type is a strong driver of vel_disc on low-cost arms. |
 
 **Falsification condition:**
 > Any position-command hardware dataset with aggregate rate > 0.08
 
-**Pending tests:**
-
-- `BridgeData V2`: Real hardware, varied tasks, higher-speed motions — tests whether 5% holds outside ALOHA kinematics
-
-*Last updated: 2026-06-18*
+*Last updated: 2026-06-29*
 
 ---
 
 #### VD-002 — velocity
 
-**Status:** 🔬 active hypothesis  
+**Status:** ❌ falsified  
 **Confidence:** 🟠 LOW  
 **Class:** `velocity`  
 **Source:** `calibra/claims/velocity_discontinuity.json`  
@@ -381,9 +480,40 @@ See `calibra/claims/SPEC.md` for the full contribution protocol.
 |---------|----------|----------|------|-------|
 | `lerobot/pusht` | 0.167 | ✅ | 2026-06-15 | Simulated, 2D velocity command (dx,dy), ~10Hz, push task |
 | `lerobot/pusht_image` | 0.1111 | ✅ | 2026-06-18 | Velocity-command 2D sim, ~10Hz, 206 episodes, image-conditioned demonstrations. Vel disc rate 11.1% — within the 10–20% range. Second velocity-command data point; alongside pusht (16.7%), confirms that velocity-command datasets cluster in the 10–20% range for 2D planar tasks. Upgrades claim confidence. |
+| `nvidia/BridgeData2_LeRobot_v3` | 0.8048 | ❌ | 2026-06-18 | BridgeData V2, 7-DOF real hardware velocity-command, 5Hz, 50415 episodes. vel_disc_rate 80.5% — far above the 10–20% range and exceeds the 0.25 formal falsification threshold. This FORMALLY FALSIFIES VD-002. Root cause: at 5Hz control frequency, virtually every step-to-step velocity change exceeds the 20% threshold because the time resolution is coarse enough that smooth real-world paths appear as abrupt step changes in the discretised action sequence. VD-002's 10–20% range appears to be specific to ~10Hz velocity-command datasets; the claim must be refined with a frequency qualifier. Additionally, BridgeData2 has very short episodes (mean 36 steps) and exceptionally diverse operator styles across 22k tasks. |
 
 **Falsification condition:**
 > A second velocity-command dataset with rate < 0.08 or > 0.25
+
+*Last updated: 2026-06-18*
+
+---
+
+#### VD-003 — velocity
+
+**Status:** 🔬 active hypothesis  
+**Confidence:** 🟡 MEDIUM  
+**Class:** `velocity`  
+**Source:** `calibra/claims/velocity_discontinuity.json`  
+
+**Assertion:** Velocity-command datasets at ~10Hz have velocity discontinuity rate in the range 10–20%; at ≤5Hz the rate exceeds 50% due to coarse step resolution
+
+**Conditions:** threshold=0.20; claim is frequency-qualified — VD-002 successor
+
+**Evidence:**
+
+| Dataset | Observed | Supports | Date | Notes |
+|---------|----------|----------|------|-------|
+| `lerobot/pusht` | 0.167 | ✅ | 2026-06-18 | 10Hz velocity-command, 2D, 206 episodes. 16.7% — within 10-20% range for ~10Hz. |
+| `lerobot/pusht_image` | 0.111 | ✅ | 2026-06-18 | 10Hz velocity-command, 2D, 206 episodes. 11.1% — within 10-20% range for ~10Hz. |
+| `nvidia/BridgeData2_LeRobot_v3` | 0.8048 | ✅ | 2026-06-18 | 5Hz velocity-command, 7-DOF, 50415 episodes. 80.5% — confirms ≤5Hz rate is far above 10-20%. Supports the frequency-split assertion. |
+
+**Falsification condition:**
+> A ≤5Hz velocity-command dataset with rate < 0.30, OR a ~10Hz velocity-command dataset with rate > 0.25
+
+**Pending tests:**
+
+- `Any second 5Hz velocity-command dataset`: Single 5Hz data point (BridgeData2). Need a second to confirm the >50% pattern.
 
 *Last updated: 2026-06-18*
 

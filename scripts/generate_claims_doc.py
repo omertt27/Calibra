@@ -86,7 +86,7 @@ def render_claims_doc(claims: list[dict], references: list[str]) -> str:
         f"({'evidence outpaces theory ✓' if ratio_ok else 'theory outpacing evidence — run more profiles first'}) |",
         "",
         "**Rule:** Number of reference profiles should be ≥ number of active claims.",
-        "See `calibra/claims/SPEC.md` for the full contribution protocol.",
+        "See `calibra/claims/SPEC.md` for the claims schema and protocol details.",
         "",
         "---",
         "",
