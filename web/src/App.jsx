@@ -216,6 +216,22 @@ Predicting training outcomes based on reference database...
 export default function App() {
   const [activeTab, setActiveTab] = useState('landing');
   const [cliTab, setCliTab] = useState('audit');
+
+  // Fleet dashboard — auth + reports + community
+  const CLOUD_URL = 'https://app.calibra.io';
+  const [authToken, setAuthToken] = useState(() => localStorage.getItem('calibra_token') || '');
+  const [authUser, setAuthUser] = useState(null);
+  const [authView, setAuthView] = useState('login'); // 'login' | 'signup'
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [fleetTab, setFleetTab] = useState('reports'); // 'reports' | 'community'
+  const [reportList, setReportList] = useState([]);
+  const [reportDetail, setReportDetail] = useState(null);
+  const [reportsLoading, setReportsLoading] = useState(false);
+  const [communityStats, setCommunityStats] = useState(null);
+  const [communityRegistry, setCommunityRegistry] = useState(null);
   
   // Settings Workspace States
   const [selectedDatasetKey, setSelectedDatasetKey] = useState('custom_aloha');
@@ -278,6 +294,85 @@ export default function App() {
       setIsAnalyzing(false);
     }
   };
+
+  // Fleet dashboard auth + data handlers
+  const fleetHeaders = (token) => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token}` });
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthLoading(true);
+    const endpoint = authView === 'login'
+      ? `${CLOUD_URL}/api/users/login`
+      : `${CLOUD_URL}/api/users/signup`;
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: authEmail, password: authPassword }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setAuthError(err.detail || `Error ${res.status}`);
+        return;
+      }
+      const data = await res.json();
+      const token = data.token;
+      localStorage.setItem('calibra_token', token);
+      setAuthToken(token);
+      const meRes = await fetch(`${CLOUD_URL}/api/me`, { headers: fleetHeaders(token) });
+      if (meRes.ok) setAuthUser(await meRes.json());
+    } catch (err) {
+      setAuthError(String(err));
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('calibra_token');
+    setAuthToken('');
+    setAuthUser(null);
+    setReportList([]);
+    setReportDetail(null);
+  };
+
+  const loadReports = async (token) => {
+    setReportsLoading(true);
+    try {
+      const res = await fetch(`${CLOUD_URL}/api/reports`, { headers: fleetHeaders(token) });
+      if (res.ok) setReportList(await res.json());
+    } finally {
+      setReportsLoading(false);
+    }
+  };
+
+  const loadCommunityData = async () => {
+    try {
+      const [statsRes, registryRes] = await Promise.all([
+        fetch(`${CLOUD_URL}/v1/stats`),
+        fetch(`${CLOUD_URL}/api/registry/public`),
+      ]);
+      if (statsRes.ok) setCommunityStats(await statsRes.json());
+      if (registryRes.ok) setCommunityRegistry(await registryRes.json());
+    } catch { /* silent */ }
+  };
+
+  useEffect(() => {
+    if (authToken) {
+      fetch(`${CLOUD_URL}/api/me`, { headers: fleetHeaders(authToken) })
+        .then(r => r.ok ? r.json() : null)
+        .then(u => { if (u) setAuthUser(u); else { localStorage.removeItem('calibra_token'); setAuthToken(''); } })
+        .catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'fleet') {
+      loadCommunityData();
+      if (authToken) loadReports(authToken);
+    }
+  }, [activeTab]);
 
   // Generate 2D Behavioral Embedding Space (Deterministically LCG-seeded)
   const embeddingPoints = useMemo(() => {
@@ -1005,12 +1100,19 @@ export default function App() {
             >
               <BookOpen size={15} /> Overview
             </button>
-            <button 
-              onClick={() => setActiveTab('simulator')} 
+            <button
+              onClick={() => setActiveTab('simulator')}
               className={`tab-btn ${activeTab === 'simulator' ? 'tab-btn-active' : ''}`}
               style={{ width: 'auto', padding: '8px 18px' }}
             >
               <Activity size={15} /> Control Panel & Curation Workspace
+            </button>
+            <button
+              onClick={() => setActiveTab('fleet')}
+              className={`tab-btn ${activeTab === 'fleet' ? 'tab-btn-active' : ''}`}
+              style={{ width: 'auto', padding: '8px 18px' }}
+            >
+              <Database size={15} /> Fleet Dashboard
             </button>
             <a
               href="/Calibra/docs/"
@@ -1938,6 +2040,191 @@ export default function App() {
               </div>
 
             </div>
+
+          </div>
+        )}
+
+        {/* FLEET DASHBOARD TAB */}
+        {activeTab === 'fleet' && (
+          <div className="animate-fade-in-up" style={{ display: 'flex', flexDirection: 'column', gap: '32px', paddingBottom: '80px' }}>
+
+            {/* Auth Panel */}
+            {!authUser ? (
+              <div className="glass-card" style={{ maxWidth: '440px', margin: '0 auto', width: '100%' }}>
+                <h2 style={{ marginBottom: '4px' }}>{authView === 'login' ? 'Sign in to Calibra Cloud' : 'Create an account'}</h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '24px' }}>
+                  {authView === 'login' ? 'Access your report history and community predictions.' : 'Free plan: 5 reports. Pro: unlimited.'}
+                </p>
+                <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={authEmail}
+                    onChange={e => setAuthEmail(e.target.value)}
+                    required
+                    style={{ padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontSize: '14px', outline: 'none' }}
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={authPassword}
+                    onChange={e => setAuthPassword(e.target.value)}
+                    required
+                    style={{ padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontSize: '14px', outline: 'none' }}
+                  />
+                  {authError && <p style={{ color: 'var(--danger)', fontSize: '13px', margin: 0 }}>{authError}</p>}
+                  <button
+                    type="submit"
+                    disabled={authLoading}
+                    style={{ padding: '10px', borderRadius: '8px', background: 'var(--accent)', border: 'none', color: '#fff', fontWeight: 600, cursor: authLoading ? 'not-allowed' : 'pointer', opacity: authLoading ? 0.7 : 1, fontSize: '14px' }}
+                  >
+                    {authLoading ? 'Please wait…' : authView === 'login' ? 'Sign in' : 'Create account'}
+                  </button>
+                </form>
+                <p style={{ marginTop: '16px', fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center' }}>
+                  {authView === 'login' ? "Don't have an account? " : 'Already have an account? '}
+                  <button
+                    onClick={() => { setAuthView(authView === 'login' ? 'signup' : 'login'); setAuthError(''); }}
+                    style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '13px', padding: 0 }}
+                  >
+                    {authView === 'login' ? 'Sign up' : 'Sign in'}
+                  </button>
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* User bar */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Signed in as </span>
+                    <span style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600 }}>{authUser.email}</span>
+                    <span style={{ marginLeft: '10px', padding: '2px 8px', borderRadius: '4px', background: authUser.plan === 'pro' ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.07)', color: authUser.plan === 'pro' ? '#a78bfa' : 'var(--text-muted)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{authUser.plan}</span>
+                  </div>
+                  <button onClick={handleLogout} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', padding: '6px 14px', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '13px' }}>Sign out</button>
+                </div>
+
+                {/* Fleet sub-tabs */}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {['reports', 'community'].map(t => (
+                    <button
+                      key={t}
+                      onClick={() => setFleetTab(t)}
+                      className={`tab-btn ${fleetTab === t ? 'tab-btn-active' : ''}`}
+                      style={{ width: 'auto', padding: '7px 18px', textTransform: 'capitalize' }}
+                    >
+                      {t === 'reports' ? <><FileCheck size={14} /> Report History</> : <><BarChart3 size={14} /> Community</>}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Report History */}
+                {fleetTab === 'reports' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <h3 style={{ margin: 0 }}>Your Reports <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: '14px' }}>({reportList.length} / {authUser.plan === 'pro' ? '∞' : '5'})</span></h3>
+                      <button
+                        onClick={() => loadReports(authToken)}
+                        style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '6px 12px', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <RefreshCw size={12} /> Refresh
+                      </button>
+                    </div>
+
+                    {reportsLoading && <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Loading…</p>}
+
+                    {!reportsLoading && reportList.length === 0 && (
+                      <div className="glass-card" style={{ textAlign: 'center', padding: '48px 24px' }}>
+                        <Database size={32} style={{ color: 'var(--text-muted)', marginBottom: '12px' }} />
+                        <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: 0 }}>No reports yet. Run <code style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', background: 'rgba(255,255,255,0.07)', padding: '2px 6px', borderRadius: '4px' }}>calibra card &lt;dataset&gt; --push</code> to upload one.</p>
+                      </div>
+                    )}
+
+                    {!reportsLoading && reportList.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {reportList.map(r => (
+                          <div
+                            key={r.id}
+                            onClick={() => {
+                              if (reportDetail?.id === r.id) { setReportDetail(null); return; }
+                              fetch(`${CLOUD_URL}/api/reports/${r.id}`, { headers: fleetHeaders(authToken) })
+                                .then(res => res.ok ? res.json() : null)
+                                .then(d => d && setReportDetail(d))
+                                .catch(() => {});
+                            }}
+                            style={{ padding: '14px 18px', borderRadius: '10px', border: `1px solid ${reportDetail?.id === r.id ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.07)'}`, background: reportDetail?.id === r.id ? 'rgba(99,102,241,0.07)' : 'rgba(255,255,255,0.02)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                          >
+                            <div>
+                              <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>{r.dataset_name}</span>
+                              <span style={{ marginLeft: '12px', fontSize: '12px', color: 'var(--text-muted)' }}>{new Date(r.created_at * 1000).toLocaleDateString()}</span>
+                            </div>
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{r.id}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {reportDetail && (
+                      <div className="glass-card" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: '400px', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontFamily: 'inherit' }}>
+                          <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-primary)' }}>{reportDetail.dataset_name}</span>
+                          <button onClick={() => setReportDetail(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>×</button>
+                        </div>
+                        {JSON.stringify(reportDetail.report, null, 2)}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Community Tab */}
+                {fleetTab === 'community' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+                    {/* Stats Cards */}
+                    {communityStats && (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
+                        {[
+                          { label: 'Total Outcomes', value: communityStats.total_outcomes?.toLocaleString() ?? '—' },
+                          { label: 'Installations', value: communityStats.installations?.toLocaleString() ?? '—' },
+                          { label: 'Mean Prediction Error', value: communityStats.mean_absolute_error != null ? `${communityStats.mean_absolute_error.toFixed(1)}%` : '—' },
+                          { label: 'Certified Datasets', value: communityStats.certified_datasets?.toLocaleString() ?? '—' },
+                        ].map(s => (
+                          <div key={s.label} className="glass-card" style={{ textAlign: 'center', padding: '20px' }}>
+                            <div style={{ fontSize: '26px', fontWeight: 800, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{s.value}</div>
+                            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{s.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Certified Registry */}
+                    <div>
+                      <h3 style={{ marginBottom: '12px' }}>Certified Dataset Registry</h3>
+                      {!communityRegistry && <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Loading…</p>}
+                      {communityRegistry && communityRegistry.datasets.length === 0 && (
+                        <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>No certified datasets yet. Run <code style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', background: 'rgba(255,255,255,0.07)', padding: '2px 6px', borderRadius: '4px' }}>calibra card &lt;dataset&gt; --push</code> to certify yours.</p>
+                      )}
+                      {communityRegistry && communityRegistry.datasets.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {communityRegistry.datasets.map(d => (
+                            <div key={d.dataset_id} style={{ padding: '12px 18px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(16,185,129,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <CheckCircle2 size={15} style={{ color: 'var(--success)', flexShrink: 0 }} />
+                                <span style={{ fontSize: '14px', fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>{d.dataset_id}</span>
+                              </div>
+                              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>v{d.calibra_version}</span>
+                                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{new Date(d.certified_at * 1000).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                )}
+              </>
+            )}
 
           </div>
         )}

@@ -38,6 +38,7 @@ from calibra import __version__
 from calibra.pipeline import Pipeline
 from calibra.schema.report import DiagnosticReport, RiskLevel
 from calibra.predict import predict_outcome
+from calibra.score import compute_score
 
 
 _WIDTH = 60
@@ -119,6 +120,7 @@ def generate_card(
 
     metrics = _extract_metrics(report)
     pred = predict_outcome(report, policy_family=policy_family, use_outcome_db=False)
+    score_result = compute_score(report)
 
     n_crit = len(report.flags_at_level(RiskLevel.CRITICAL))
     n_warn = len(report.flags_at_level(RiskLevel.WARNING))
@@ -176,6 +178,10 @@ def generate_card(
     pred_score = pred["predicted_score"]
     pred_lo, pred_hi = pred["predicted_range"]
 
+    cs = score_result["total_score"]
+    cs_cat = score_result["category"]
+    dims = score_result["dimensions"]
+
     card = f"""\
 ## Dataset Quality Report (Calibra v{__version__})
 
@@ -184,6 +190,14 @@ def generate_card(
 > **{report.dataset_name}** · Profiled on {today} · {report.n_episodes} episodes · {report.n_samples:,} steps · policy: `{policy_str}`
 
 **Certification status:** {status}
+**Calibra Score:** {cs:.1f} / 100 — *{cs_cat}*
+
+| Dimension | Score | Max |
+|-----------|------:|----:|
+| Temporal Stability | {dims['temporal_stability']['score']:.1f} | {dims['temporal_stability']['max']} |
+| Control Smoothness | {dims['control_smoothness']['score']:.1f} | {dims['control_smoothness']['max']} |
+| Coverage Diversity | {dims['coverage_diversity']['score']:.1f} | {dims['coverage_diversity']['max']} |
+| Task Structure | {dims['task_structure']['score']:.1f} | {dims['task_structure']['max']} |
 
 ### Metric Summary
 
@@ -223,15 +237,18 @@ def generate_yaml_frontmatter(report: DiagnosticReport) -> str:
     """
     Generate YAML front-matter tags for HuggingFace dataset cards.
 
-    Adds `calibra_certified: true/false` and quality metric tags.
+    Adds `calibra_certified`, `calibra_score`, and quality metric tags.
     """
     n_crit = len(report.flags_at_level(RiskLevel.CRITICAL))
     certified = "true" if n_crit == 0 else "false"
+    score_result = compute_score(report)
 
     return (
         f"calibra_certified: {certified}\n"
         f'calibra_version: "{__version__}"\n'
         f"calibra_n_episodes: {report.n_episodes}\n"
+        f"calibra_score: {score_result['total_score']:.1f}\n"
+        f'calibra_score_category: "{score_result["category"]}"\n'
     )
 
 

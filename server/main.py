@@ -44,6 +44,8 @@ from pydantic import BaseModel, Field
 
 DB_PATH = Path(os.environ.get("CALIBRA_DB_PATH", "/data/outcomes.db"))
 
+PLAN_LIMITS: dict[str, Optional[int]] = {"free": 5, "pro": None}  # None = unlimited
+
 # ── schema ─────────────────────────────────────────────────────────────────────
 
 CREATE_OUTCOMES = """
@@ -250,6 +252,11 @@ async def push_report(
     user: sqlite3.Row = Depends(_auth_required),
 ):
     """Store a DiagnosticReport and return a shareable URL."""
+    plan = user["plan"]
+    limit = PLAN_LIMITS.get(plan)
+    if limit is not None and user["project_count"] >= limit:
+        raise HTTPException(402, f"Free plan limit ({limit} reports) reached. Upgrade to Pro.")
+
     report_id = str(uuid.uuid4())[:12]
     base_url = os.environ.get("CALIBRA_BASE_URL", "https://app.calibra.io")
     with _get_conn() as conn:
@@ -263,6 +270,42 @@ async def push_report(
         )
         conn.commit()
     return {"id": report_id, "url": f"{base_url}/reports/{report_id}"}
+
+
+# ── GET /api/reports ───────────────────────────────────────────────────────────
+
+@app.get("/api/reports")
+async def list_reports(user: sqlite3.Row = Depends(_auth_required)):
+    """List the authenticated user's stored diagnostic reports."""
+    with _get_conn() as conn:
+        rows = conn.execute(
+            "SELECT id, dataset_name, created_at FROM reports WHERE user_token=? ORDER BY created_at DESC LIMIT 100",
+            (user["token"],),
+        ).fetchall()
+    return [
+        {"id": r["id"], "dataset_name": r["dataset_name"], "created_at": r["created_at"]}
+        for r in rows
+    ]
+
+
+# ── GET /api/reports/{id} ──────────────────────────────────────────────────────
+
+@app.get("/api/reports/{report_id}")
+async def get_report(report_id: str, user: sqlite3.Row = Depends(_auth_required)):
+    """Fetch a single stored report by ID."""
+    with _get_conn() as conn:
+        row = conn.execute(
+            "SELECT id, dataset_name, report_json, created_at FROM reports WHERE id=? AND user_token=?",
+            (report_id, user["token"]),
+        ).fetchone()
+    if not row:
+        raise HTTPException(404, "Report not found")
+    return {
+        "id": row["id"],
+        "dataset_name": row["dataset_name"],
+        "created_at": row["created_at"],
+        "report": json.loads(row["report_json"]),
+    }
 
 
 # ── POST /api/outcomes/authenticated ──────────────────────────────────────────
@@ -509,6 +552,118 @@ async def dataset_badge(dataset_id: str):
     label = _BADGE_LABELS.get(status, "Calibra")
     url = f"https://img.shields.io/badge/{label}-{color}?style=flat-square"
     return RedirectResponse(url, status_code=302)
+
+
+# ── POST /api/community/similar ───────────────────────────────────────────────
+
+class SimilarRequest(BaseModel):
+    fingerprint: dict[str, Optional[float]]
+    policy_family: str = "generic"
+    k: int = Field(default=5, ge=1, le=20)
+
+
+@app.post("/api/community/similar")
+async def community_similar(
+    body: SimilarRequest,
+    user: sqlite3.Row = Depends(_auth_required),
+):
+    """
+    Find the k most similar past outcomes in the community database for a
+    given metric fingerprint. Pro feature: enables cross-lab blended predictions.
+    """
+    _NORM_RANGES_LOCAL: dict[str, tuple[float, float]] = {
+        "ldlj": (-30.0, 0.0),
+        "spike_rate": (0.0, 0.20),
+        "vel_disc_rate": (0.0, 0.40),
+        "dropout_rate": (0.0, 0.20),
+        "jitter_cv": (0.0, 0.50),
+        "action_entropy": (0.0, 6.0),
+        "contact_phase_fraction": (0.0, 0.50),
+        "jepa_surprise": (0.0, 1.0),
+    }
+
+    try:
+        import numpy as np
+    except ImportError:
+        raise HTTPException(500, "numpy not available on server")
+
+    fp = body.fingerprint
+    keys = list(_NORM_RANGES_LOCAL.keys())
+
+    def _norm_vec(fingerprint: dict) -> "np.ndarray":
+        vec = []
+        for k in keys:
+            val = fingerprint.get(k)
+            if val is None:
+                vec.append(0.5)
+                continue
+            lo, hi = _NORM_RANGES_LOCAL[k]
+            span = hi - lo
+            vec.append(float(np.clip((val - lo) / span, 0.0, 1.0)) if span > 0 else 0.5)
+        return np.array(vec, dtype=float)
+
+    query_vec = _norm_vec(fp)
+
+    col_list = ", ".join(keys)
+    with _get_conn() as conn:
+        where = " WHERE policy_family = ?" if body.policy_family != "generic" else ""
+        params = (body.policy_family,) if body.policy_family != "generic" else ()
+        rows = conn.execute(
+            f"SELECT id, policy_family, actual_rate, {col_list} FROM outcomes{where}",
+            params,
+        ).fetchall()
+
+    if not rows:
+        return {"similar": [], "n_community": 0}
+
+    scored = []
+    for row in rows:
+        rec_fp = {k: row[k] for k in keys}
+        rec_vec = _norm_vec(rec_fp)
+        dist = float(np.linalg.norm(query_vec - rec_vec))
+        if body.policy_family and row["policy_family"] == body.policy_family:
+            dist *= 0.7
+        if dist <= 0.4:
+            scored.append({"id": row["id"], "policy_family": row["policy_family"], "actual_rate": row["actual_rate"], "distance": round(dist, 3)})
+
+    scored.sort(key=lambda x: x["distance"])
+    top_k = scored[: body.k]
+
+    blended_score: Optional[float] = None
+    if top_k:
+        weights = np.array([1.0 / (s["distance"] + 1e-6) for s in top_k])
+        weights /= weights.sum()
+        blended_score = round(float(sum(w * s["actual_rate"] * 100.0 for w, s in zip(weights, top_k))), 1)
+
+    return {
+        "similar": top_k,
+        "n_community": len(rows),
+        "blended_predicted_success": blended_score,
+    }
+
+
+# ── GET /api/registry/public ───────────────────────────────────────────────────
+
+@app.get("/api/registry/public")
+async def public_registry():
+    """Return a paginated list of all Calibra-certified datasets."""
+    with _get_conn() as conn:
+        rows = conn.execute(
+            "SELECT dataset_id, status, updated_ts, calibra_version FROM badges "
+            "WHERE status='CERTIFIED' ORDER BY updated_ts DESC LIMIT 200"
+        ).fetchall()
+    return {
+        "datasets": [
+            {
+                "dataset_id": r["dataset_id"],
+                "status": r["status"],
+                "certified_at": r["updated_ts"],
+                "calibra_version": r["calibra_version"],
+            }
+            for r in rows
+        ],
+        "total": len(rows),
+    }
 
 
 # ── weight recalibration ───────────────────────────────────────────────────────
