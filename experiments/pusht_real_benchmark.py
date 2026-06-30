@@ -20,6 +20,7 @@ Usage:
     PYTHONPATH=. python experiments/pusht_real_benchmark.py
 """
 
+import argparse
 import random
 import time
 import pathlib
@@ -171,8 +172,8 @@ def get_calibra_coreset(batch, keep_fraction=KEEP_FRACTION):
     return sorted(int(e) for e in result.keep_episode_ids)
 
 
-def get_random_baseline(n_total, keep_fraction=KEEP_FRACTION):
-    rng = random.Random(SEED)
+def get_random_baseline(n_total, keep_fraction=KEEP_FRACTION, seed=SEED):
+    rng = random.Random(seed)
     n_keep = round(n_total * keep_fraction)
     return sorted(rng.sample(range(n_total), n_keep))
 
@@ -229,7 +230,7 @@ def train_policy(states, actions, label):
 # ── Evaluation in PushT simulator ────────────────────────────────────────────
 
 
-def evaluate_policy(policy, n_episodes=N_EVAL_EPISODES):
+def evaluate_policy(policy, n_episodes=N_EVAL_EPISODES, seed=SEED):
     """
     Evaluate policy in PushT and return (avg_coverage, success_rate_50pct).
 
@@ -249,7 +250,7 @@ def evaluate_policy(policy, n_episodes=N_EVAL_EPISODES):
 
     env = gym.make("gym_pusht/PushT-v0", obs_type="state", render_mode=None)
     policy.eval()
-    rng = np.random.default_rng(SEED)
+    rng = np.random.default_rng(seed)
     coverages = []
 
     with torch.no_grad():
@@ -273,52 +274,41 @@ def evaluate_policy(policy, n_episodes=N_EVAL_EPISODES):
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 
-def main():
-    torch.manual_seed(SEED)
-    np.random.seed(SEED)
+def run_single_seed(seed: int, keep_fraction: float = KEEP_FRACTION) -> list[dict]:
+    """Run the full collect→select→train→eval pipeline for one seed."""
+    torch.manual_seed(seed)
+    np.random.seed(seed)
 
-    print("=== Calibra PushT Coreset Benchmark ===\n")
+    print(f"\n── Seed {seed} ──────────────────────────────────────────────────────")
 
-    # ── Step 1: collect demonstrations ───────────────────────────────────────
-    print("Step 1: Collecting demonstration data...")
-    batch = collect_gym_data(N_COLLECT_EPISODES, SEED)
+    batch = collect_gym_data(N_COLLECT_EPISODES, seed)
     n_total = len(batch.episodes)
 
-    # ── Step 2: compute coreset splits ───────────────────────────────────────
-    print("\nStep 2: Computing episode splits...")
-    calibra_indices = get_calibra_coreset(batch, KEEP_FRACTION)
-    random_indices = get_random_baseline(n_total, KEEP_FRACTION)
+    calibra_indices = get_calibra_coreset(batch, keep_fraction)
+    random_indices = get_random_baseline(n_total, keep_fraction, seed=seed)
     full_indices = list(range(n_total))
 
-    print(f"  Total episodes : {n_total}")
-    print(f"  Calibra coreset: {len(calibra_indices)} episodes")
-    print(f"  Random baseline: {len(random_indices)} episodes")
+    print(f"  Calibra coreset: {len(calibra_indices)} / {n_total} episodes")
 
-    # ── Step 3: extract training tensors ─────────────────────────────────────
-    print("\nStep 3: Extracting training tensors...")
     conditions = [
-        ("Full dataset (100%)",            *get_tensors(batch, full_indices)),
-        (f"Calibra {int(KEEP_FRACTION*100)}% coreset", *get_tensors(batch, calibra_indices)),
-        (f"Random  {int(KEEP_FRACTION*100)}% baseline", *get_tensors(batch, random_indices)),
+        ("Full dataset (100%)",                        *get_tensors(batch, full_indices)),
+        (f"Calibra {int(keep_fraction*100)}% coreset", *get_tensors(batch, calibra_indices)),
+        (f"Random  {int(keep_fraction*100)}% baseline", *get_tensors(batch, random_indices)),
     ]
 
-    # ── Step 4: train and evaluate ────────────────────────────────────────────
-    print("\nStep 4: Training and evaluating policies...")
     results = []
     full_time = None
-
     for label, states, actions in conditions:
-        print(f"\n  Condition: {label} ({len(states):,} steps)")
+        print(f"\n  [{label}] {len(states):,} steps")
         policy, elapsed = train_policy(states, actions, label)
-
-        print(f"  Evaluating in PushT simulator ({N_EVAL_EPISODES} episodes)...")
-        avg_cov, sr50 = evaluate_policy(policy)
+        avg_cov, sr50 = evaluate_policy(policy, seed=seed)
 
         if full_time is None:
             full_time = elapsed
         compute_savings = 1.0 - (elapsed / full_time) if full_time else 0.0
 
         results.append({
+            "seed": seed,
             "label": label,
             "n_steps": len(states),
             "train_time_s": elapsed,
@@ -326,25 +316,72 @@ def main():
             "avg_coverage": avg_cov,
             "success_rate_50": sr50,
         })
+        cov_str = f"{avg_cov*100:.1f}%" if avg_cov is not None else "N/A"
+        sr_str  = f"{sr50*100:.1f}%"    if sr50  is not None else "N/A"
+        print(f"    Avg cov: {cov_str}  SR≥50%: {sr_str}  compute saved: {compute_savings*100:.1f}%")
 
-    # ── Step 5: print results ─────────────────────────────────────────────────
-    print("\n" + "=" * 80)
-    print("  RESULTS — gym_pusht/PushT-v0 (scripted expert, seed=42, reproducible)")
-    print("=" * 80)
-    print(f"  {'Condition':<35} {'Steps':>7} {'Avg Cov':>9} {'SR>=50%':>8} {'Compute saved':>14}")
-    print("  " + "-" * 76)
-    for r in results:
-        cov = f"{r['avg_coverage'] * 100:.1f}%" if r["avg_coverage"] is not None else "N/A"
-        sr  = f"{r['success_rate_50'] * 100:.1f}%" if r["success_rate_50"] is not None else "N/A"
-        print(
-            f"  {r['label']:<35} {r['n_steps']:>7,} {cov:>9} {sr:>8}"
-            f" {r['compute_savings'] * 100:>13.1f}%"
-        )
-    print("=" * 80)
+    return results
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Calibra PushT coreset benchmark")
+    parser.add_argument(
+        "--seeds", type=int, nargs="+", default=[SEED],
+        help="Random seeds to evaluate (default: 42). "
+             "Multiple seeds compute mean ± std.",
+    )
+    parser.add_argument(
+        "--keep-fraction", type=float, default=KEEP_FRACTION,
+        help=f"Coreset keep fraction (default: {KEEP_FRACTION})",
+    )
+    args = parser.parse_args()
+
+    print("=== Calibra PushT Coreset Benchmark ===")
+    print(f"  Seeds: {args.seeds}  |  Keep fraction: {args.keep_fraction*100:.0f}%%")
+
+    all_results: list[dict] = []
+    for seed in args.seeds:
+        all_results.extend(run_single_seed(seed, args.keep_fraction))
+
+    # ── Per-seed table ────────────────────────────────────────────────────────
+    if len(args.seeds) > 1:
+        print("\n" + "=" * 90)
+        print("  PER-SEED RESULTS")
+        print("=" * 90)
+        print(f"  {'Seed':>5}  {'Condition':<35} {'Steps':>7} {'Avg Cov':>9} {'SR>=50%':>8}")
+        print("  " + "-" * 68)
+        for r in all_results:
+            cov = f"{r['avg_coverage']*100:.1f}%" if r["avg_coverage"] is not None else "N/A"
+            sr  = f"{r['success_rate_50']*100:.1f}%" if r["success_rate_50"] is not None else "N/A"
+            print(f"  {r['seed']:>5}  {r['label']:<35} {r['n_steps']:>7,} {cov:>9} {sr:>8}")
+
+    # ── Aggregate table (mean ± std) ──────────────────────────────────────────
+    import collections
+    by_label: dict[str, list[dict]] = collections.defaultdict(list)
+    for r in all_results:
+        by_label[r["label"]].append(r)
+
+    print("\n" + "=" * 90)
+    seeds_str = " ".join(str(s) for s in args.seeds)
+    print(f"  AGGREGATE RESULTS — {len(args.seeds)} seed(s): [{seeds_str}]")
+    print("=" * 90)
+    print(f"  {'Condition':<35} {'Steps':>7} {'Avg Cov':>14} {'SR>=50%':>14} {'Compute saved':>14}")
+    print("  " + "-" * 86)
+    for label, runs in by_label.items():
+        steps = runs[0]["n_steps"]
+        covs = [r["avg_coverage"] for r in runs if r["avg_coverage"] is not None]
+        srs  = [r["success_rate_50"] for r in runs if r["success_rate_50"] is not None]
+        saves = [r["compute_savings"] for r in runs]
+
+        cov_str  = (f"{np.mean(covs)*100:.1f}±{np.std(covs)*100:.1f}%"  if covs  else "N/A")
+        sr_str   = (f"{np.mean(srs)*100:.1f}±{np.std(srs)*100:.1f}%"   if srs   else "N/A")
+        save_str = f"{np.mean(saves)*100:.1f}%"
+        print(f"  {label:<35} {steps:>7,} {cov_str:>14} {sr_str:>14} {save_str:>14}")
+    print("=" * 90)
     print()
     print("To reproduce:")
     print('  pip install "calibra-robotics[lerobot]" gym-pusht gymnasium "pymunk==6.9.0"')
-    print("  PYTHONPATH=. python experiments/pusht_real_benchmark.py")
+    print(f"  PYTHONPATH=. python experiments/pusht_real_benchmark.py --seeds {seeds_str}")
 
 
 if __name__ == "__main__":

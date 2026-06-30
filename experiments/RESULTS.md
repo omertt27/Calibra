@@ -133,9 +133,10 @@ We validate that `calibra predict` can flag training failures **before any GPU t
 | Mixed: spike 5% + noisy 20% | 46.2 | MARGINAL | 3% | ✅ |
 | Mixed: spike 10% + drop 10% + noisy 25% | 31.2 | RISKY | 2% | ✅ |
 
-**Notes on incorrect predictions:**
+**Notes on incorrect predictions & anomalies:**
 - **3 false positives** (random subset, full dataset, mixed spike+drop): Calibra correctly scores these as poor quality (41–53 pts). Actual SR is 4–6%, which is essentially failure-level vs the 14% Calibra coreset baseline. These are borderline calls at the 4% SR threshold.
 - **1 false negative** (40% noisy episodes): 40% contamination of a 21-episode coreset (= ~8 bad episodes) degrades training to 3% SR, but aggregate quality metrics are partially masked by the 60% clean majority. This is the genuine detection limit.
+- **Resolution of the `spike_2pct` anomaly:** In the single-run benchmark, the 2% spike injection condition achieved an anomalous success rate of 22% (higher than the clean coreset's 14%). A 10-seed variance sweep (`experiments/check_pusht_variance.py`) resolved this anomaly: Clean coreset success rate averages **14.8% $\pm$ 6.3%** while the Spike 2% condition averages **11.0% $\pm$ 5.9%** (recovering the expected Clean > Spike trend). The single-run discrepancy was a direct artifact of policy training seed variance (e.g., on seed 48, Spike 2% reached 25% vs. Clean at 7%).
 
 **Root-cause methodology note:** Root-cause is evaluated as "does any flagged deduction match the injected fault?" (not just the top deduction). On PushT velocity-command data, `ldlj` is structurally at CRITICAL and dominates the top position — checking all deductions is the correct metric. Frame drops manifest as elevated `jitter_cv` (zero-gap duplicate timestamps), which Calibra correctly flags.
 

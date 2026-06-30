@@ -1,0 +1,41 @@
+[
+  {
+    "dataset": "lerobot/aloha_mobile_cabinet",
+    "n_episodes": 85,
+    "calibra_score": 61.7,
+    "full_mse_mean": 0.011740484833717346,
+    "full_mse_std": 0.001171797304389264,
+    "calibra_mse_mean": 0.01860027350485325,
+    "calibra_mse_std": 0.00163160901917721,
+    "random_mse_mean": 0.01990121491253376,
+    "random_mse_std": 0.0017577249256208074,
+    "calibra_vs_random_pct": 6.53699491914526,
+    "n_seeds": 5
+  },
+  {
+    "dataset": "lerobot/droid_100",
+    "n_episodes": 100,
+    "calibra_score": 37.8,
+    "full_mse_mean": 1.9223302841186523,
+    "full_mse_std": 0.18743416056216067,
+    "calibra_mse_mean": 1.7408137798309327,
+    "calibra_mse_std": 0.27755313605891807,
+    "random_mse_mean": 1.932946538925171,
+    "random_mse_std": 0.20989118401077472,
+    "calibra_vs_random_pct": 9.93988996721426,
+    "n_seeds": 5
+  },
+  {
+    "dataset": "lerobot/pusht",
+    "n_episodes": 206,
+    "calibra_score": 85.4,
+    "full_mse_mean": 0.04025083780288696,
+    "full_mse_std": 0.0028917007808426424,
+    "calibra_mse_mean": 0.038436300307512286,
+    "calibra_mse_std": 0.002496050939189068,
+    "random_mse_mean": 0.04329627379775047,
+    "random_mse_std": 0.0024045595732847826,
+    "calibra_vs_random_pct": 11.224923218428776,
+    "n_seeds": 5
+  }
+]

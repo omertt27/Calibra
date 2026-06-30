@@ -22,6 +22,10 @@ Please describe the tests that you ran to verify your changes. Provide instructi
 - **Dataset verification (if applicable):** did you test against local sample HDF5/Parquet files?
 - **Claims doc check:** did `python scripts/generate_claims_doc.py --check` pass?
 
+## Contributor License Agreement
+
+- [ ] I have read [CONTRIBUTING.md](../CONTRIBUTING.md) and agree to the Calibra CLA. I confirm this contribution is my original work and I grant the Licensor the rights described there.
+
 ## Checklist
 
 - [ ] My code follows the style guidelines of this project (ran `ruff check .` and `ruff format .`)

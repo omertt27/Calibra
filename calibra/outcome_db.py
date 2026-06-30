@@ -495,3 +495,72 @@ class OutcomeDatabase:
 
     def list_records(self) -> list[dict]:
         return [r.to_dict() for r in self._records]
+
+
+# ── global weight download ────────────────────────────────────────────────────
+
+
+def download_global_weights(db: OutcomeDatabase) -> Optional[dict[str, float]]:
+    """
+    Download community-calibrated penalty weights from Calibra Cloud and save
+    them to ~/.calibra/weights.json so future `calibra predict` runs use them.
+
+    If the local database has ≥10 records, the downloaded weights are blended
+    70% community / 30% local before saving.
+    """
+    import sys
+
+    base = os.environ.get("CALIBRA_CLOUD_URL", "https://app.calibra.io")
+    endpoint = f"{base}/v1/weights/latest"
+
+    try:
+        req = urllib.request.Request(endpoint, headers={"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+    except Exception as exc:
+        print(f"error: could not reach Calibra Cloud ({endpoint}): {exc}", file=sys.stderr)
+        return None
+
+    global_weights: dict[str, float] = data.get("weights", {})
+    if not global_weights:
+        print(
+            "No community weights available yet — the model improves as more users record outcomes.",
+            file=sys.stderr,
+        )
+        return None
+
+    version = data.get("version", "unknown")
+    n_records = "?"
+    if version.startswith("global-v"):
+        try:
+            n_records = int(version[len("global-v"):])
+        except ValueError:
+            pass
+
+    print(f"Community weights downloaded (version={version}, fitted on {n_records} outcomes).")
+
+    local_weights = db.calibrate_weights()
+    if local_weights:
+        n_local = len(db._records)
+        print(f"Blending: 70% community + 30% local ({n_local} local records).")
+        merged: dict[str, float] = {}
+        for key in set(global_weights) | set(local_weights):
+            g = global_weights.get(key, 0.0)
+            loc = local_weights.get(key, 0.0)
+            merged[key] = round(0.7 * g + 0.3 * loc, 2)
+        source = "community+local"
+    else:
+        merged = {k: round(v, 2) for k, v in global_weights.items()}
+        source = "community"
+
+    weights_path = Path.home() / ".calibra" / "weights.json"
+    weights_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(weights_path, "w") as f:
+        json.dump({"weights": merged, "source": source, "version": version}, f, indent=2)
+
+    print(f"\nWeights saved to {weights_path} — active on next `calibra predict` run.\n")
+    print("Applied weights (warning-level penalty per metric):")
+    for metric, weight in sorted(merged.items()):
+        print(f"  {metric:<30} {weight:.2f}")
+
+    return merged

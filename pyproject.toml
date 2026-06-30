@@ -6,6 +6,7 @@ build-backend = "hatchling.build"
 name = "calibra-robotics"
 version = "0.6.0"
 description = "Dataset reliability and risk profiling for robotics imitation learning"
+license = {text = "BSL-1.1"}
 requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.0",

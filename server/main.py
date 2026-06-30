@@ -8,6 +8,7 @@ aggregates them into a global calibration dataset, and serves:
   POST /v1/badge            — register a dataset certification result
   GET  /v1/stats            — public aggregate stats (total records, MAE, improving curve)
   GET  /v1/weights/latest   — latest calibrated penalty weights (downloaded by `calibra calibrate`)
+  GET  /v1/percentiles      — community metric percentiles (used by `calibra compare --community`)
   GET  /badge/{dataset_id}  — shields.io redirect for HuggingFace dataset quality badge
 
 Storage: SQLite (single file, zero external deps). Swap for Postgres by changing DB_URL.
@@ -426,6 +427,46 @@ async def get_weights():
         "ts": row["ts"],
         "weights": json.loads(row["weights"]),
     }
+
+
+# ── GET /v1/percentiles ────────────────────────────────────────────────────────
+
+@app.get("/v1/percentiles")
+async def get_community_percentiles(policy_family: Optional[str] = None):
+    """
+    Return p25/p50/p75/p90 for each metric across all recorded outcomes.
+
+    Used by `calibra compare --community` to show how a dataset ranks
+    against the broader Calibra user base. Public — no auth required.
+    """
+    where = " WHERE policy_family = ?" if policy_family else ""
+    params = (policy_family,) if policy_family else ()
+    col_list = ", ".join(_FINGERPRINT_KEYS)
+
+    with _get_conn() as conn:
+        rows = conn.execute(
+            f"SELECT {col_list} FROM outcomes{where}", params
+        ).fetchall()
+
+    n = len(rows)
+    if n < 5:
+        return {"n": n, "policy_family": policy_family or "all", "percentiles": {}}
+
+    result: dict[str, dict] = {}
+    for i, col in enumerate(_FINGERPRINT_KEYS):
+        vals = sorted(r[i] for r in rows if r[i] is not None)
+        if not vals:
+            continue
+        k = len(vals)
+        result[col] = {
+            "p25": vals[int(k * 0.25)],
+            "p50": vals[int(k * 0.50)],
+            "p75": vals[int(k * 0.75)],
+            "p90": vals[min(int(k * 0.90), k - 1)],
+            "n": k,
+        }
+
+    return {"n": n, "policy_family": policy_family or "all", "percentiles": result}
 
 
 # ── GET /badge/{dataset_id} ────────────────────────────────────────────────────

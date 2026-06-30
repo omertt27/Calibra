@@ -9,37 +9,80 @@
     {
       "condition": "Random 30% (n=5 seeds)",
       "n_episodes": 33,
-      "test_mse": 0.2229857251048088,
-      "test_mse_std": 0.07841712445875194,
+      "test_mse": 0.22136133909225464,
+      "test_mse_std": 0.07744652826413105,
       "vs_random": 0.0
     },
     {
       "condition": "Full dataset",
       "n_episodes": 109,
-      "test_mse": 0.19026677310466766,
+      "test_mse": 0.19176465272903442,
       "test_mse_std": null,
-      "vs_random": 14.673115054680034
+      "vs_random": 13.370305078831082
     },
     {
       "condition": "Quality-filter only",
       "n_episodes": 33,
-      "test_mse": 0.14018942415714264,
+      "test_mse": 0.15062306821346283,
       "test_mse_std": null,
-      "vs_random": 37.13076292607962
+      "vs_random": 31.95601868369205
     },
     {
       "condition": "Diversity-only",
       "n_episodes": 33,
-      "test_mse": 0.11980324983596802,
+      "test_mse": 0.11637961119413376,
       "test_mse_std": null,
-      "vs_random": 46.27313036309498
+      "vs_random": 47.42550272266317
     },
     {
       "condition": "Calibra full",
       "n_episodes": 33,
-      "test_mse": 0.13543981313705444,
+      "test_mse": 0.13389767706394196,
       "test_mse_std": null,
-      "vs_random": 39.26076968676161
+      "vs_random": 39.511715273759386
     }
-  ]
+  ],
+  "retention_curve": [
+    {
+      "keep_fraction": 0.1,
+      "k": 11,
+      "full_mse": 0.1938135325908661,
+      "random_mse": 0.26047848413387936,
+      "calibra_mse": 0.11297352612018585,
+      "calibra_vs_random_pct": 56.62846146550811
+    },
+    {
+      "keep_fraction": 0.2,
+      "k": 22,
+      "full_mse": 0.1938135325908661,
+      "random_mse": 0.23447572936614355,
+      "calibra_mse": 0.11937889456748962,
+      "calibra_vs_random_pct": 49.08688635271306
+    },
+    {
+      "keep_fraction": 0.3,
+      "k": 33,
+      "full_mse": 0.1938135325908661,
+      "random_mse": 0.2308876266082128,
+      "calibra_mse": 0.13280054926872253,
+      "calibra_vs_random_pct": 42.48260453815122
+    },
+    {
+      "keep_fraction": 0.5,
+      "k": 54,
+      "full_mse": 0.1938135325908661,
+      "random_mse": 0.23543709516525269,
+      "calibra_mse": 0.15964217483997345,
+      "calibra_vs_random_pct": 32.193278749076896
+    },
+    {
+      "keep_fraction": 0.7,
+      "k": 76,
+      "full_mse": 0.1938135325908661,
+      "random_mse": 0.204306960105896,
+      "calibra_mse": 0.17356914281845093,
+      "calibra_vs_random_pct": 15.044919307454382
+    }
+  ],
+  "full_dataset_mse": 0.1938135325908661
 }

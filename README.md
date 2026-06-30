@@ -11,7 +11,7 @@
   <a href="https://omerTT.github.io/Calibra/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-blue" alt="Documentation"/></a>
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Code Style: Ruff"/></a>
   <a href="https://pepy.tech/project/calibra-robotics"><img src="https://pepy.tech/badge/calibra-robotics/month" alt="PyPI Downloads"/></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-BSL_1.1-blue.svg" alt="License: BSL 1.1"/></a>
 </p>
 
 
@@ -552,11 +552,11 @@ A five-condition ablation isolates which part of Calibra's pipeline contributes 
 
 | Condition | ALOHA mobile | DROID-100 | PushT real |
 |---|---|---|---|
-| Quality-filter only | +8.8% (unchanged) | −5.8% (unchanged) | **+37.1%** |
-| Diversity-only | +13.0% (unchanged) | +16.9% (unchanged) | +46.3% (unchanged) |
-| **Calibra full pipeline** | **+22.6%** (unchanged) | **+16.9%** (unchanged) | **+39.3%** |
+| Quality-filter only | +8.8% (unchanged) | −5.8% (unchanged) | **+32.0%** |
+| Diversity-only | +13.0% (unchanged) | +16.9% (unchanged) | +47.4% (unchanged) |
+| **Calibra full pipeline** | **+22.6%** (unchanged) | **+16.9%** (unchanged) | **+39.5%** |
 
-The contact-aware filter detects that real PushT's velocity discontinuities are contact-driven (vel_disc/spike ratio = 24.4) and relaxes the vel_disc threshold by 3×. This transforms a −30.5% failure into a +39.3% gain while leaving ALOHA and DROID completely unchanged (their ratios are 1.9 and 1.6 — well below the 3.0 threshold).
+The contact-aware filter detects that real PushT's velocity discontinuities are contact-driven (vel_disc/spike ratio = 24.4) and relaxes the vel_disc threshold by 3×. This transforms a −30.5% failure into a +39.5% gain while leaving ALOHA and DROID completely unchanged (their ratios are 1.9 and 1.6 — well below the 3.0 threshold).
 
 **Quality filtering failure modes (without contact-aware fix):**
 
@@ -589,7 +589,7 @@ Regime classification across tested datasets:
 |---|---|---|---|---|
 | ALOHA mobile | 1.9 | LOW NOISE | +22.6% | +22.6% (unchanged) |
 | DROID-100 | 1.6 | MODERATE NOISE | +16.9% | +16.9% (unchanged) |
-| PushT real | **24.4** | HIGH NOISE (contact) | **−30.5%** | **+39.3%** |
+| PushT real | **24.4** | HIGH NOISE (contact) | **−30.5%** | **+39.5%** |
 
 The vel_disc/spike ratio correctly identifies PushT real as contact-driven and triggers the 3× threshold relaxation. See [`experiments/regime_space.py`](experiments/regime_space.py) for the visualization.
 
@@ -624,6 +624,18 @@ Advantage over random is largest at small budgets (+50% at 10%) and narrows as b
 | 70% | +4.5% | +7.3% |
 
 On DROID, Calibra with 10% of episodes outperforms the full dataset by 16.8%.
+
+**PushT real (contact-aware) — Calibra full vs. random:**
+
+| Keep | k | Calibra vs. Random | Calibra vs. Full |
+|---|---|---|---|
+| 10% | 11 | +56.6% | +41.7% |
+| 20% | 22 | +49.1% | +38.4% |
+| 30% | 33 | +42.5% | +31.5% |
+| 50% | 54 | +32.2% | +17.6% |
+| 70% | 76 | +15.0% | +10.4% |
+
+On contact-rich tasks like PushT real, a Calibra coreset pruned to only 10% of the dataset size outperforms training on the full unpruned dataset by 41.7% while saving 90% of GPU compute.
 
 To reproduce all ablations:
 ```bash
@@ -945,4 +957,4 @@ Clean data is a prerequisite for both paradigms. A JEPA trained on jittery, drop
 
 ## License
 
-[MIT](LICENSE)
+[Business Source License 1.1](LICENSE) — free for internal use, open-source under Apache 2.0 on 2030-06-30. Commercial hosting requires a license: omertahtoko@gmail.com

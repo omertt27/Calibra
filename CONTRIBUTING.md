@@ -6,6 +6,20 @@ Following these guidelines ensures a smooth contribution process for everyone.
 
 ---
 
+## Contributor License Agreement (CLA)
+
+Calibra is licensed under the [Business Source License 1.1](LICENSE). By submitting a pull request, you agree to the following:
+
+1. **You grant the Licensor (omerTT) a perpetual, worldwide, non-exclusive, royalty-free license** to use, reproduce, modify, sublicense, and distribute your contribution as part of Calibra under any license terms the Licensor chooses, including future commercial or open-source licenses.
+2. **You confirm that your contribution is your original work** and that you have the right to grant the above license (i.e., it does not include code owned by your employer or a third party without their permission).
+3. **You understand that Calibra is not MIT-licensed.** Using or distributing Calibra in violation of the BSL 1.1 terms requires a separate commercial license — contact omertahtoko@gmail.com.
+
+You do not need to sign anything separately. Checking the CLA box in the pull request template is your agreement on record.
+
+For questions about licensing or commercial use, open an issue or email omertahtoko@gmail.com.
+
+---
+
 ## Code of Conduct
 
 By participating in this project, you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.md).

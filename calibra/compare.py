@@ -16,8 +16,10 @@ hf:// URIs are supported and stripped before passing to the ingestion layer.
 from __future__ import annotations
 
 import json
+import os
 import sys
 import textwrap
+import urllib.request
 from pathlib import Path
 from typing import Optional
 
@@ -667,6 +669,116 @@ def _ref_is_scripted(ref_metrics: dict[str, Optional[float]]) -> bool:
     return spike is not None and vd is not None and spike > 0.10 and vd < 0.015
 
 
+# ── community comparison ──────────────────────────────────────────────────────
+
+# Direction: True = higher raw value is better (higher rank)
+_COMMUNITY_HIGHER_BETTER = {"action_entropy", "contact_phase_fraction"}
+# All other fingerprint metrics: lower value is better
+
+_COMMUNITY_LABELS = {
+    "ldlj": "LDLJ (smoothness)",
+    "spike_rate": "Jerk spike rate",
+    "vel_disc_rate": "Velocity discontinuity",
+    "dropout_rate": "Timestamp dropout",
+    "jitter_cv": "Timestamp jitter CV",
+    "action_entropy": "Action entropy",
+    "contact_phase_fraction": "Contact phase fraction",
+}
+
+
+def fetch_community_percentiles(policy_family: str) -> Optional[dict]:
+    """GET /v1/percentiles from Calibra Cloud. Returns None on any failure."""
+    base = os.environ.get("CALIBRA_CLOUD_URL", "https://app.calibra.io")
+    url = f"{base}/v1/percentiles?policy_family={policy_family}"
+    try:
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return json.loads(resp.read())
+    except Exception:
+        return None
+
+
+def _pct_rank(val: float, p: dict, higher_better: bool) -> Optional[float]:
+    """Estimate percentile rank (0–100, higher = better) for val given p25/50/75/90."""
+    p25, p50, p75, p90 = p.get("p25"), p.get("p50"), p.get("p75"), p.get("p90")
+    if None in (p25, p50, p75, p90):
+        return None
+    # Raw position in the sorted distribution (0 = lowest, 100 = highest)
+    if val <= p25:
+        raw = max(0.0, 25.0 * val / p25) if p25 != 0 else 25.0
+    elif val <= p50:
+        raw = 25.0 + 25.0 * (val - p25) / max(p50 - p25, 1e-9)
+    elif val <= p75:
+        raw = 50.0 + 25.0 * (val - p50) / max(p75 - p50, 1e-9)
+    elif val <= p90:
+        raw = 75.0 + 15.0 * (val - p75) / max(p90 - p75, 1e-9)
+    else:
+        raw = 90.0
+    return raw if higher_better else 100.0 - raw
+
+
+def render_community_section(
+    your_metrics: dict[str, Optional[float]],
+    community: dict,
+    policy_family: str,
+) -> str:
+    n_community = community.get("n", 0)
+    percentiles = community.get("percentiles", {})
+    divider = "─" * _WIDTH
+    thick = "━" * _WIDTH
+
+    lines = [
+        "",
+        thick,
+        f"COMMUNITY COMPARISON  ({policy_family} · {n_community} datasets in Calibra Cloud)",
+        thick,
+        f"  {'Metric':<28} {'Yours':>8}  {'p50':>8}  {'Rank':>6}  Status",
+        divider,
+    ]
+
+    for key in ["vel_disc_rate", "spike_rate", "ldlj", "jitter_cv", "dropout_rate", "action_entropy"]:
+        val = your_metrics.get(key)
+        p = percentiles.get(key)
+        label = _COMMUNITY_LABELS.get(key, key)
+
+        if val is None or p is None:
+            lines.append(f"  {label:<28} {'n/a':>8}  {'n/a':>8}  {'—':>6}")
+            continue
+
+        higher_better = key in _COMMUNITY_HIGHER_BETTER or key == "ldlj"
+        rank = _pct_rank(val, p, higher_better)
+        p50 = p.get("p50")
+
+        if key in ("ldlj",):
+            val_str = f"{val:.2f}"
+            p50_str = f"{p50:.2f}" if p50 is not None else "n/a"
+        elif key in ("jitter_cv",):
+            val_str = f"{val:.4f}"
+            p50_str = f"{p50:.4f}" if p50 is not None else "n/a"
+        else:
+            val_str = f"{val:.1%}"
+            p50_str = f"{p50:.1%}" if p50 is not None else "n/a"
+
+        if rank is None:
+            rank_str, status = "—", ""
+        elif rank >= 75:
+            rank_str, status = f"top {100 - rank:.0f}%", "✅"
+        elif rank >= 40:
+            rank_str, status = f"{rank:.0f}th", "🟡"
+        else:
+            rank_str, status = f"bot {rank:.0f}%", "⚠️ "
+
+        lines.append(f"  {label:<28} {val_str:>8}  {p50_str:>8}  {rank_str:>6}  {status}")
+
+    lines += [
+        divider,
+        "  Rank = percentile better than X% of community (higher is better for all metrics).",
+        "  Run `calibra calibrate --global` to download community-fitted prediction weights.",
+        thick,
+    ]
+    return "\n".join(lines)
+
+
 # ── entry point ───────────────────────────────────────────────────────────────
 
 
@@ -701,6 +813,21 @@ def run_compare(argv: list[str]) -> None:
     )
     p.add_argument(
         "--no-recommendations", action="store_true", help="Skip the Recommended Actions section"
+    )
+    p.add_argument(
+        "--community",
+        action="store_true",
+        help=(
+            "Append a community percentile table showing how your dataset ranks "
+            "against all datasets in Calibra Cloud. Requires an internet connection."
+        ),
+    )
+    p.add_argument(
+        "--policy",
+        "-p",
+        metavar="FAMILY",
+        default="generic",
+        help="Policy family for community percentile lookup (e.g. 'diffusion', 'act'). Default: generic",
     )
     args = p.parse_args(argv)
 
@@ -786,3 +913,20 @@ def run_compare(argv: list[str]) -> None:
         ref_scripted=ref_scripted,
     )
     print(output)
+
+    if args.community:
+        log(f"Fetching community percentiles for policy_family={args.policy!r} ...")
+        community = fetch_community_percentiles(args.policy)
+        if community and community.get("n", 0) >= 5:
+            print(render_community_section(your_metrics, community, args.policy))
+        elif community is not None:
+            print(
+                f"\n[community] Only {community.get('n', 0)} records in Calibra Cloud for "
+                f"'{args.policy}' — need ≥5 to show percentiles. Record outcomes with "
+                "`calibra predict --record-outcome RATE` to contribute."
+            )
+        else:
+            print(
+                "\n[community] Could not reach Calibra Cloud. Check your connection or set "
+                "CALIBRA_CLOUD_URL to a reachable server."
+            )

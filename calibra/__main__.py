@@ -173,21 +173,47 @@ def main() -> None:
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "calibrate":
+        _cal_p = argparse.ArgumentParser(prog="calibra calibrate")
+        _cal_p.add_argument(
+            "--global",
+            dest="use_global",
+            action="store_true",
+            help=(
+                "Download community-calibrated weights from Calibra Cloud and save to "
+                "~/.calibra/weights.json. If ≥10 local outcomes exist, blends 70%% community "
+                "+ 30%% local. Active on next `calibra predict` run."
+            ),
+        )
+        _cal_args = _cal_p.parse_args(sys.argv[2:])
+
         from calibra.outcome_db import OutcomeDatabase
 
         db = OutcomeDatabase()
         print(db.summary())
-        suggested = db.calibrate_weights()
-        if suggested:
-            print("\nSuggested penalty weights from accumulated outcomes:")
-            for metric, weight in suggested.items():
-                print(f"  {metric:<30} {weight:.2f}")
-            print("\nTo apply: update _WEIGHTS in calibra/predict.py with these values.")
+
+        if _cal_args.use_global:
+            from calibra.outcome_db import download_global_weights
+
+            download_global_weights(db)
         else:
-            print("\nNeed ≥10 recorded outcomes to calibrate weights.")
-            print(
-                "Run `calibra predict <dataset> --record-outcome <rate>` after each training run."
-            )
+            suggested = db.calibrate_weights()
+            if suggested:
+                print("\nSuggested penalty weights from accumulated local outcomes:")
+                for metric, weight in suggested.items():
+                    print(f"  {metric:<30} {weight:.2f}")
+                print(
+                    "\nTo apply locally: copy these into _WEIGHTS in calibra/predict.py, or"
+                    "\nrun `calibra calibrate --global` to blend with community data and"
+                    "\nsave to ~/.calibra/weights.json (applied automatically)."
+                )
+            else:
+                print("\nNeed ≥10 recorded outcomes to calibrate local weights.")
+                print(
+                    "Run `calibra predict <dataset> --record-outcome <rate>` after each training run."
+                )
+                print(
+                    "Or use `calibra calibrate --global` to download community weights now."
+                )
         return
 
     parser = argparse.ArgumentParser(
