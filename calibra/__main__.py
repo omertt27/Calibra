@@ -7,6 +7,8 @@ CLI entry point.
     python -m calibra prune <path> --keep FRACTION [--out coreset_index.json]
     python -m calibra corrupt <path> --drop-frames RATE [--add-jitter-ms STD] ...
     python -m calibra retarget <path> [--out DIR] [--obs-key-pos KEY] [--obs-key-quat KEY]
+    python -m calibra sft-select <path|hub-id> --keep FRACTION [--out coreset_index.json]
+    python -m calibra sft-outcome --coreset coreset_index.json [--record-outcome RATE]
 
 Examples:
     python -m calibra /data/robot_demos.h5
@@ -86,6 +88,18 @@ def main() -> None:
         from calibra.prune import run_prune
 
         run_prune(sys.argv[2:])
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "sft-select":
+        from calibra.sft_select import run_sft_select
+
+        run_sft_select(sys.argv[2:])
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "sft-outcome":
+        from calibra.sft_outcome import run_sft_outcome
+
+        run_sft_outcome(sys.argv[2:])
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "corrupt":

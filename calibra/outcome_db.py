@@ -40,7 +40,7 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 # Keys used to build the fingerprint vector — must match predict.py metric keys
-_FINGERPRINT_KEYS = [
+_ROBOTICS_KEYS = [
     "ldlj",
     "spike_rate",
     "vel_disc_rate",
@@ -51,7 +51,7 @@ _FINGERPRINT_KEYS = [
 ]
 
 # Per-metric normalization ranges (maps raw value to [0, 1] for distance calcs)
-_NORM_RANGES: dict[str, tuple[float, float]] = {
+_ROBOTICS_NORM_RANGES: dict[str, tuple[float, float]] = {
     "ldlj": (-30.0, 0.0),  # more negative = worse
     "spike_rate": (0.0, 0.20),
     "vel_disc_rate": (0.0, 0.40),
@@ -61,15 +61,46 @@ _NORM_RANGES: dict[str, tuple[float, float]] = {
     "contact_phase_fraction": (0.0, 0.50),  # higher = better
 }
 
+# LLM/SFT domain — mirrors calibra.llm.select's SFTSelectionResult.aggregate_fingerprint
+_LLM_SFT_KEYS = [
+    "mean_coherence",
+    "repetition_rate",
+    "template_ratio",
+    "mean_response_length",
+    "diversity_nn_dist",
+]
 
-def _normalize(fingerprint: dict[str, float]) -> np.ndarray:
+_LLM_SFT_NORM_RANGES: dict[str, tuple[float, float]] = {
+    "mean_coherence": (0.0, 1.0),  # higher = better
+    "repetition_rate": (0.0, 0.50),  # higher = worse
+    "template_ratio": (0.0, 0.50),  # higher = worse
+    "mean_response_length": (0.0, 200.0),  # higher = better, up to a point
+    "diversity_nn_dist": (0.0, 0.60),  # higher = better
+}
+
+# Domain registry: each domain has its own fingerprint schema. Distance/similarity
+# comparisons only ever happen within a single domain (see find_similar).
+_DOMAIN_SCHEMAS: dict[str, dict[str, object]] = {
+    "robotics": {"keys": _ROBOTICS_KEYS, "norm_ranges": _ROBOTICS_NORM_RANGES},
+    "llm_sft": {"keys": _LLM_SFT_KEYS, "norm_ranges": _LLM_SFT_NORM_RANGES},
+}
+
+# Backward-compatible aliases — "robotics" was the only domain before multi-domain support.
+_FINGERPRINT_KEYS = _ROBOTICS_KEYS
+_NORM_RANGES = _ROBOTICS_NORM_RANGES
+
+
+def _normalize(fingerprint: dict[str, float], domain: str = "robotics") -> np.ndarray:
+    schema = _DOMAIN_SCHEMAS[domain]
+    keys: list[str] = schema["keys"]  # type: ignore[assignment]
+    norm_ranges: dict[str, tuple[float, float]] = schema["norm_ranges"]  # type: ignore[assignment]
     vec = []
-    for key in _FINGERPRINT_KEYS:
+    for key in keys:
         val = fingerprint.get(key)
         if val is None:
             vec.append(0.5)  # unknown → mid-range
             continue
-        lo, hi = _NORM_RANGES[key]
+        lo, hi = norm_ranges[key]
         span = hi - lo
         vec.append(float(np.clip((val - lo) / span, 0.0, 1.0)) if span > 0 else 0.5)
     return np.array(vec, dtype=float)
@@ -86,6 +117,7 @@ class OutcomeRecord:
         "n_episodes",
         "dataset_name",
         "notes",
+        "domain",
     )
 
     def __init__(
@@ -99,6 +131,7 @@ class OutcomeRecord:
         n_episodes: int,
         dataset_name: str,
         notes: str,
+        domain: str = "robotics",
     ) -> None:
         self.record_id = record_id
         self.timestamp = timestamp
@@ -109,6 +142,7 @@ class OutcomeRecord:
         self.n_episodes = n_episodes
         self.dataset_name = dataset_name
         self.notes = notes
+        self.domain = domain
 
     def to_dict(self) -> dict:
         return {
@@ -121,6 +155,7 @@ class OutcomeRecord:
             "n_episodes": self.n_episodes,
             "dataset_name": self.dataset_name,
             "notes": self.notes,
+            "domain": self.domain,
         }
 
     @classmethod
@@ -135,11 +170,12 @@ class OutcomeRecord:
             n_episodes=d.get("n_episodes", 0),
             dataset_name=d.get("dataset_name", "unknown"),
             notes=d.get("notes", ""),
+            domain=d.get("domain", "robotics"),
         )
 
     @property
     def normalized(self) -> np.ndarray:
-        return _normalize(self.fingerprint)
+        return _normalize(self.fingerprint, self.domain)
 
 
 _DEFAULT_DB_PATH = Path.home() / ".calibra" / "outcomes.jsonl"
@@ -190,15 +226,19 @@ class OutcomeDatabase:
         n_episodes: int = 0,
         dataset_name: str = "unknown",
         notes: str = "",
+        domain: str = "robotics",
     ) -> OutcomeRecord:
         """
         Add a new observed outcome to the database.
 
         Parameters
         ----------
-        fingerprint         : metric values from predict._extract_metrics()
+        fingerprint         : metric values from predict._extract_metrics() (robotics) or
+                               calibra.llm.select's SFTSelectionResult.aggregate_fingerprint (llm_sft)
         predicted_score     : Calibra's predicted score (0–100) before training
-        actual_success_rate : observed policy success rate (0.0–1.0)
+        actual_success_rate : observed policy success rate (0.0–1.0) or SFT eval score (0.0-1.0)
+        domain              : fingerprint schema this record belongs to — "robotics" (default)
+                               or "llm_sft". Similarity search only ever compares within a domain.
         """
         rec = OutcomeRecord(
             record_id=str(uuid.uuid4())[:8],
@@ -210,6 +250,7 @@ class OutcomeDatabase:
             n_episodes=n_episodes,
             dataset_name=dataset_name,
             notes=notes,
+            domain=domain,
         )
         self._records.append(rec)
         self._append(rec)
@@ -317,6 +358,7 @@ class OutcomeDatabase:
                     "n_episodes": record.n_episodes,
                     "dataset_name": record.dataset_name,
                     "calibra_version": version,
+                    "domain": record.domain,
                 }
             ).encode("utf-8")
             req = urllib.request.Request(
@@ -348,6 +390,7 @@ class OutcomeDatabase:
                     "actual_success_rate": record.actual_success_rate,
                     "policy_family": record.policy_family,
                     "calibra_version": version,
+                    "domain": record.domain,
                 }
             ).encode("utf-8")
             req = urllib.request.Request(
@@ -368,9 +411,14 @@ class OutcomeDatabase:
         policy_family: Optional[str] = None,
         k: int = 5,
         max_distance: float = 0.4,
+        domain: str = "robotics",
     ) -> list[tuple[OutcomeRecord, float]]:
         """
         Return up to k records whose fingerprint is within max_distance.
+
+        Only records in the same `domain` are considered — a robotics fingerprint
+        and an llm_sft fingerprint are not comparable, so cross-domain records are
+        excluded rather than distance-scored.
 
         Returns list of (record, distance) sorted by ascending distance.
         Policy family is used as a soft filter: if family matches, distance
@@ -379,9 +427,11 @@ class OutcomeDatabase:
         if not self._records:
             return []
 
-        query = _normalize(fingerprint)
+        query = _normalize(fingerprint, domain)
         scored: list[tuple[OutcomeRecord, float]] = []
         for rec in self._records:
+            if rec.domain != domain:
+                continue
             dist = float(np.linalg.norm(query - rec.normalized))
             if policy_family and rec.policy_family == policy_family:
                 dist *= 0.7
@@ -432,16 +482,21 @@ class OutcomeDatabase:
         Fit new penalty weights from accumulated outcomes using non-negative
         least-squares regression.
 
+        Robotics-only: weight calibration targets `calibra/predict.py`'s
+        `_THRESHOLDS`, which don't have an llm_sft equivalent yet, so non-robotics
+        records are excluded from the fit rather than silently corrupting it.
+
         Returns a dict of {metric: suggested_penalty_at_warning} if enough
-        data is available (≥ 10 records), else None.
+        robotics data is available (≥ 10 records), else None.
         """
-        if len(self._records) < 10:
+        records = [r for r in self._records if r.domain == "robotics"]
+        if len(records) < 10:
             return None
 
         # Build design matrix: rows = records, cols = normalized metric deviations
         X_rows = []
         y = []
-        for rec in self._records:
+        for rec in records:
             fp = rec.fingerprint
             # Feature: how far each metric is from its warning threshold (positive = over threshold)
             from calibra.predict import _THRESHOLDS
@@ -483,14 +538,17 @@ class OutcomeDatabase:
             return "Outcome database: 0 records. Run `calibra predict --record-outcome` after training."
         errors = [abs(r.predicted_score / 100.0 - r.actual_success_rate) for r in self._records]
         mae = float(np.mean(errors)) * 100.0
+        n_robotics = sum(1 for r in self._records if r.domain == "robotics")
+        n_llm_sft = n - n_robotics
         lines = [
             f"Outcome database: {n} record(s) at {self.path}",
-            f"  Mean absolute error (predicted vs actual): {mae:.1f}%",
+            f"  By domain: robotics={n_robotics}, llm_sft={n_llm_sft}",
+            f"  Mean absolute error (predicted vs actual), all domains: {mae:.1f}%",
         ]
-        if n >= 10:
-            lines.append("  Enough data for weight calibration — run `calibra calibrate`.")
+        if n_robotics >= 10:
+            lines.append("  Enough robotics data for weight calibration — run `calibra calibrate`.")
         else:
-            lines.append(f"  Need {10 - n} more record(s) for weight calibration.")
+            lines.append(f"  Need {10 - n_robotics} more robotics record(s) for weight calibration.")
         return "\n".join(lines)
 
     def list_records(self) -> list[dict]:

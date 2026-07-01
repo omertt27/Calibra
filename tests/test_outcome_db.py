@@ -279,3 +279,88 @@ def test_corrupt_jsonl_line_is_skipped(tmp_path):
     )
     db = OutcomeDatabase(path=p)
     assert len(db._records) == 1  # corrupt line skipped silently
+
+
+# ── multi-domain support ──────────────────────────────────────────────────────
+
+
+def _make_sft_fp(**kwargs) -> dict:
+    base = {
+        "mean_coherence": 0.55,
+        "repetition_rate": 0.10,
+        "template_ratio": 0.05,
+        "mean_response_length": 40.0,
+        "diversity_nn_dist": 0.30,
+    }
+    base.update(kwargs)
+    return base
+
+
+def test_old_jsonl_line_without_domain_defaults_to_robotics(tmp_path):
+    p = tmp_path / "outcomes.jsonl"
+    p.write_text(
+        '{"record_id":"a","timestamp":0,"fingerprint":{},'
+        '"predicted_score":70,"actual_success_rate":0.7,'
+        '"policy_family":"act","n_episodes":50,'
+        '"dataset_name":"ds","notes":""}\n'
+    )
+    db = OutcomeDatabase(path=p)
+    assert db._records[0].domain == "robotics"
+
+
+def test_record_domain_defaults_to_robotics(tmp_path):
+    db = _db(tmp_path)
+    rec = db.record(_make_fp(), predicted_score=70.0, actual_success_rate=0.7)
+    assert rec.domain == "robotics"
+
+
+def test_record_llm_sft_domain_persists(tmp_path):
+    db = _db(tmp_path)
+    rec = db.record(
+        _make_sft_fp(),
+        predicted_score=65.0,
+        actual_success_rate=0.70,
+        policy_family="llama3-8b-sft",
+        domain="llm_sft",
+    )
+    assert rec.domain == "llm_sft"
+    db2 = _db(tmp_path)
+    assert db2._records[0].domain == "llm_sft"
+
+
+def test_find_similar_is_scoped_to_domain(tmp_path):
+    db = _db(tmp_path)
+    db.record(
+        _make_fp(), predicted_score=70.0, actual_success_rate=0.7, dataset_name="robo_ds",
+        domain="robotics",
+    )
+    db.record(
+        _make_sft_fp(), predicted_score=65.0, actual_success_rate=0.7, dataset_name="sft_ds",
+        domain="llm_sft",
+    )
+
+    robotics_similar = db.find_similar(_make_fp(), domain="robotics")
+    assert len(robotics_similar) == 1
+    assert robotics_similar[0][0].dataset_name == "robo_ds"
+
+    sft_similar = db.find_similar(_make_sft_fp(), domain="llm_sft")
+    assert len(sft_similar) == 1
+    assert sft_similar[0][0].dataset_name == "sft_ds"
+
+
+def test_calibrate_weights_ignores_non_robotics_records(tmp_path):
+    db = _db(tmp_path)
+    # 12 llm_sft records — should never count toward the robotics-only calibration.
+    for _ in range(12):
+        db.record(
+            _make_sft_fp(), predicted_score=65.0, actual_success_rate=0.7, domain="llm_sft"
+        )
+    assert db.calibrate_weights() is None
+
+
+def test_normalize_accepts_llm_sft_domain():
+    from calibra.outcome_db import _DOMAIN_SCHEMAS
+
+    fp = _make_sft_fp()
+    vec = _normalize(fp, domain="llm_sft")
+    assert vec.shape == (len(_DOMAIN_SCHEMAS["llm_sft"]["keys"]),)

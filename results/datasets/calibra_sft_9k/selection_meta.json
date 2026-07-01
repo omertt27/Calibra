@@ -1,0 +1,28 @@
+{
+  "method": "quality_filter + greedy_max_coverage (sft_adapter)",
+  "n_original": 52002,
+  "n_quality_fail": 6031,
+  "n_quality_pass": 45971,
+  "n_kept": 9000,
+  "n_diversity_pruned": 36971,
+  "keep_fraction_actual": 0.17307,
+  "thresholds": {
+    "min_coherence": 0.1,
+    "max_repetition_rate": 0.4,
+    "min_response_length_words": 5
+  },
+  "sanity": {
+    "selected": {
+      "mean_coherence": 0.7188,
+      "mean_repetition_rate": 0.0362,
+      "mean_response_length_words": 45.7,
+      "coverage_avg_nn_dist": 0.9582
+    },
+    "random_9k": {
+      "mean_coherence": 0.6382,
+      "mean_repetition_rate": 0.0302,
+      "mean_response_length_words": 44.0,
+      "coverage_avg_nn_dist": 0.8994
+    }
+  }
+}

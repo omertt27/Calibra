@@ -57,7 +57,11 @@ CREATE TABLE IF NOT EXISTS outcomes (
     calibra_version  TEXT NOT NULL,
     predicted_score  REAL NOT NULL,
     actual_rate      REAL NOT NULL,
-    -- metric fingerprint columns
+    domain           TEXT NOT NULL DEFAULT 'robotics',
+    fingerprint_json TEXT,
+    -- robotics metric fingerprint columns (domain='robotics' only; other domains
+    -- store their fingerprint in fingerprint_json instead, since their metric
+    -- sets differ from robotics' fixed columns)
     ldlj             REAL,
     spike_rate       REAL,
     vel_disc_rate    REAL,
@@ -68,6 +72,21 @@ CREATE TABLE IF NOT EXISTS outcomes (
     jepa_surprise    REAL
 )
 """
+
+# Columns added after the initial release — kept out of CREATE_OUTCOMES' happy path
+# so an already-deployed sqlite file (created before these existed) can be migrated
+# in place via ALTER TABLE rather than requiring a destructive rebuild.
+_OUTCOMES_MIGRATION_COLUMNS: list[tuple[str, str]] = [
+    ("domain", "TEXT NOT NULL DEFAULT 'robotics'"),
+    ("fingerprint_json", "TEXT"),
+]
+
+
+def _migrate_schema(conn: sqlite3.Connection) -> None:
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(outcomes)").fetchall()}
+    for col_name, col_def in _OUTCOMES_MIGRATION_COLUMNS:
+        if col_name not in existing:
+            conn.execute(f"ALTER TABLE outcomes ADD COLUMN {col_name} {col_def}")
 
 CREATE_BADGES = """
 CREATE TABLE IF NOT EXISTS badges (
@@ -130,6 +149,7 @@ def _init_db() -> None:
         conn.execute(CREATE_WEIGHTS)
         conn.execute(CREATE_USERS)
         conn.execute(CREATE_REPORTS)
+        _migrate_schema(conn)
         conn.commit()
 
 
@@ -177,6 +197,7 @@ class OutcomeRecord(BaseModel):
     actual_success_rate: float = Field(ge=0.0, le=1.0)
     policy_family: str = "generic"
     calibra_version: str = "unknown"
+    domain: str = "robotics"
 
 
 class BadgeRegistration(BaseModel):
@@ -323,15 +344,16 @@ async def record_outcome_authenticated(
             """
             INSERT INTO outcomes
               (id, ts, installation_id, policy_family, calibra_version,
-               predicted_score, actual_rate,
+               predicted_score, actual_rate, domain, fingerprint_json,
                ldlj, spike_rate, vel_disc_rate, dropout_rate,
                jitter_cv, action_entropy, contact_phase_fraction, jepa_surprise)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """,
             (
                 record_id, time.time(), user["email"],
                 body.policy_family, body.calibra_version,
                 body.predicted_score, body.actual_success_rate,
+                body.domain, json.dumps(fp),
                 fp.get("ldlj"), fp.get("spike_rate"), fp.get("vel_disc_rate"),
                 fp.get("dropout_rate"), fp.get("jitter_cv"), fp.get("action_entropy"),
                 fp.get("contact_phase_fraction"), fp.get("jepa_surprise"),
@@ -355,10 +377,10 @@ async def record_outcome(body: OutcomeRecord):
             """
             INSERT INTO outcomes
               (id, ts, installation_id, policy_family, calibra_version,
-               predicted_score, actual_rate,
+               predicted_score, actual_rate, domain, fingerprint_json,
                ldlj, spike_rate, vel_disc_rate, dropout_rate,
                jitter_cv, action_entropy, contact_phase_fraction, jepa_surprise)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """,
             (
                 record_id,
@@ -368,6 +390,8 @@ async def record_outcome(body: OutcomeRecord):
                 body.calibra_version,
                 body.predicted_score,
                 body.actual_success_rate,
+                body.domain,
+                json.dumps(fp),
                 fp.get("ldlj"),
                 fp.get("spike_rate"),
                 fp.get("vel_disc_rate"),
@@ -481,8 +505,12 @@ async def get_community_percentiles(policy_family: Optional[str] = None):
 
     Used by `calibra compare --community` to show how a dataset ranks
     against the broader Calibra user base. Public — no auth required.
+
+    Robotics-only: scoped to domain='robotics' since these columns aren't
+    populated for other domains (e.g. llm_sft, which stores its fingerprint in
+    fingerprint_json instead — see /api/community/similar for that path).
     """
-    where = " WHERE policy_family = ?" if policy_family else ""
+    where = " WHERE domain = 'robotics' AND policy_family = ?" if policy_family else " WHERE domain = 'robotics'"
     params = (policy_family,) if policy_family else ()
     col_list = ", ".join(_FINGERPRINT_KEYS)
 
@@ -560,6 +588,31 @@ class SimilarRequest(BaseModel):
     fingerprint: dict[str, Optional[float]]
     policy_family: str = "generic"
     k: int = Field(default=5, ge=1, le=20)
+    domain: str = "robotics"
+
+
+# Per-domain normalization ranges, mirroring calibra.outcome_db._DOMAIN_SCHEMAS on the
+# client. Kept as a local duplicate (not imported from the `calibra` package) to match
+# this server's existing style of not depending on the client library.
+_DOMAIN_NORM_RANGES: dict[str, dict[str, tuple[float, float]]] = {
+    "robotics": {
+        "ldlj": (-30.0, 0.0),
+        "spike_rate": (0.0, 0.20),
+        "vel_disc_rate": (0.0, 0.40),
+        "dropout_rate": (0.0, 0.20),
+        "jitter_cv": (0.0, 0.50),
+        "action_entropy": (0.0, 6.0),
+        "contact_phase_fraction": (0.0, 0.50),
+        "jepa_surprise": (0.0, 1.0),
+    },
+    "llm_sft": {
+        "mean_coherence": (0.0, 1.0),
+        "repetition_rate": (0.0, 0.50),
+        "template_ratio": (0.0, 0.50),
+        "mean_response_length": (0.0, 200.0),
+        "diversity_nn_dist": (0.0, 0.60),
+    },
+}
 
 
 @app.post("/api/community/similar")
@@ -570,17 +623,14 @@ async def community_similar(
     """
     Find the k most similar past outcomes in the community database for a
     given metric fingerprint. Pro feature: enables cross-lab blended predictions.
+
+    `domain` selects the fingerprint schema ("robotics" or "llm_sft") — only
+    outcomes recorded in the same domain are compared, since their metric sets
+    (and therefore distances) aren't comparable across domains.
     """
-    _NORM_RANGES_LOCAL: dict[str, tuple[float, float]] = {
-        "ldlj": (-30.0, 0.0),
-        "spike_rate": (0.0, 0.20),
-        "vel_disc_rate": (0.0, 0.40),
-        "dropout_rate": (0.0, 0.20),
-        "jitter_cv": (0.0, 0.50),
-        "action_entropy": (0.0, 6.0),
-        "contact_phase_fraction": (0.0, 0.50),
-        "jepa_surprise": (0.0, 1.0),
-    }
+    norm_ranges = _DOMAIN_NORM_RANGES.get(body.domain)
+    if norm_ranges is None:
+        raise HTTPException(400, f"unknown domain: {body.domain!r}")
 
     try:
         import numpy as np
@@ -588,7 +638,7 @@ async def community_similar(
         raise HTTPException(500, "numpy not available on server")
 
     fp = body.fingerprint
-    keys = list(_NORM_RANGES_LOCAL.keys())
+    keys = list(norm_ranges.keys())
 
     def _norm_vec(fingerprint: dict) -> "np.ndarray":
         vec = []
@@ -597,31 +647,47 @@ async def community_similar(
             if val is None:
                 vec.append(0.5)
                 continue
-            lo, hi = _NORM_RANGES_LOCAL[k]
+            lo, hi = norm_ranges[k]
             span = hi - lo
             vec.append(float(np.clip((val - lo) / span, 0.0, 1.0)) if span > 0 else 0.5)
         return np.array(vec, dtype=float)
 
     query_vec = _norm_vec(fp)
 
-    col_list = ", ".join(keys)
-    with _get_conn() as conn:
-        where = " WHERE policy_family = ?" if body.policy_family != "generic" else ""
-        params = (body.policy_family,) if body.policy_family != "generic" else ()
-        rows = conn.execute(
-            f"SELECT id, policy_family, actual_rate, {col_list} FROM outcomes{where}",
-            params,
-        ).fetchall()
+    where_clauses = ["domain = ?"]
+    params: list = [body.domain]
+    if body.policy_family != "generic":
+        where_clauses.append("policy_family = ?")
+        params.append(body.policy_family)
+    where = " WHERE " + " AND ".join(where_clauses)
+
+    if body.domain == "robotics":
+        col_list = ", ".join(keys)
+        with _get_conn() as conn:
+            rows = conn.execute(
+                f"SELECT id, policy_family, actual_rate, {col_list} FROM outcomes{where}",
+                params,
+            ).fetchall()
+        row_fingerprints = [({k: row[k] for k in keys}, row) for row in rows]
+    else:
+        with _get_conn() as conn:
+            rows = conn.execute(
+                f"SELECT id, policy_family, actual_rate, fingerprint_json FROM outcomes{where}",
+                params,
+            ).fetchall()
+        row_fingerprints = [
+            (json.loads(row["fingerprint_json"]) if row["fingerprint_json"] else {}, row)
+            for row in rows
+        ]
 
     if not rows:
         return {"similar": [], "n_community": 0}
 
     scored = []
-    for row in rows:
-        rec_fp = {k: row[k] for k in keys}
+    for rec_fp, row in row_fingerprints:
         rec_vec = _norm_vec(rec_fp)
         dist = float(np.linalg.norm(query_vec - rec_vec))
-        if body.policy_family and row["policy_family"] == body.policy_family:
+        if body.policy_family != "generic" and row["policy_family"] == body.policy_family:
             dist *= 0.7
         if dist <= 0.4:
             scored.append({"id": row["id"], "policy_family": row["policy_family"], "actual_rate": row["actual_rate"], "distance": round(dist, 3)})
