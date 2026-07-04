@@ -98,6 +98,11 @@ class JEPAWatchScorer:
             scores = score_by_jepa_surprise(
                 batch, config=RobotJEPAConfig(n_epochs=30, batch_size=256)
             )
+            if not scores:
+                # No torch — lightweight PCA/linear-predictor baseline (v1).
+                from calibra.world_model.surprise import compute_surprise_scores
+
+                scores = compute_surprise_scores(batch)
             self._scores.update(scores)
             self._trained = True
         except Exception:

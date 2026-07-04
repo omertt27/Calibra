@@ -287,7 +287,7 @@ class CoresetSelector:
         div_pruned_ids = [episodes[i].metadata.episode_id for i in diversity_pruned_indices]
 
         _method = (
-            "quality_filter + jepa_world_model_surprise"
+            _world_model_method_label(self)
             if self.strategy == "world-model"
             else "quality_filter + greedy_max_coverage"
         )
@@ -405,6 +405,15 @@ def _select_energy(
     return keep_indices, diversity_pruned_indices, diversity_scores
 
 
+def _world_model_method_label(self_selector: CoresetSelector) -> str:
+    backend = getattr(self_selector, "_world_model_backend", "jepa")
+    return {
+        "jepa": "quality_filter + jepa_world_model_surprise",
+        "lightweight": "quality_filter + lightweight_latent_surprise",
+        "random": "quality_filter + random_selection",
+    }[backend]
+
+
 def _select_world_model(
     self_selector: CoresetSelector,
     batch: EpisodeBatch,
@@ -419,12 +428,30 @@ def _select_world_model(
     episodes = batch.episodes
 
     surprise_scores = score_by_jepa_surprise(batch, verbose=True)
+    self_selector._world_model_backend = "jepa"
+
+    if not surprise_scores:
+        # No torch (or torch failed) — fall back to the non-torch lightweight
+        # baseline: PCA/random-projection encoder + closed-form linear
+        # next-latent predictor. Same {episode_id: surprise} contract as the
+        # JEPA scorer, so the rest of this function is unaffected.
+        from calibra.world_model.surprise import compute_surprise_scores
+
+        surprise_scores = compute_surprise_scores(batch)
+        self_selector._world_model_backend = "lightweight"
+        if surprise_scores:
+            print(
+                "  [world-model] torch unavailable — using lightweight "
+                "PCA/linear-predictor surprise baseline (v1)",
+                file=sys.stderr,
+            )
 
     if not surprise_scores:
         print(
-            "  [world-model] torch not available or too few episodes — falling back to random selection",
+            "  [world-model] insufficient data for surprise scoring — falling back to random selection",
             file=sys.stderr,
         )
+        self_selector._world_model_backend = "random"
         keep_indices = quality_pass_indices[:k]
         diversity_pruned_indices = quality_pass_indices[k:]
         diversity_scores: dict[str, float] = {}
@@ -900,7 +927,7 @@ class ApproximateCoresetSelector(CoresetSelector):
         div_pruned_ids = [episodes[i].metadata.episode_id for i in diversity_pruned_indices]
 
         _method = (
-            "quality_filter + jepa_world_model_surprise"
+            _world_model_method_label(self)
             if self.strategy == "world-model"
             else "quality_filter + approximate_minibatch_coverage"
         )

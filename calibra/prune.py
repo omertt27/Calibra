@@ -362,6 +362,12 @@ def run_prune(argv: list[str]) -> None:
     # Human-readable summary to stdout
     print(result.summary())
 
+    if args.strategy == "world-model":
+        from calibra.world_model.surprise import format_world_model_summary
+
+        print()
+        print(format_world_model_summary(result, batch))
+
     if args.json:
         print(json.dumps(out_data, indent=2))
 
