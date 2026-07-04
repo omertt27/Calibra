@@ -845,6 +845,8 @@ calibra/
 ├── analyzers/          # Pipeline analyzers: temporal, smoothness, coverage, task_structure
 ├── ingestion/          # Format adapters (lerobot, hdf5, rlds, mcap) + registry
 ├── comparison/         # DatasetComparator, EpisodeCurator
+├── world_model/        # Lightweight (non-torch) world-model surprise scoring + curation
+├── models/             # RobotJEPA — trained world model (optional, requires torch)
 ├── schema/             # EpisodeBatch, DiagnosticReport, normalization layer
 ├── claims/             # Falsifiable claim registry (JSON + SPEC.md)
 ├── knowledge_base/     # claims.yaml (auto-generated — edit the source JSON files)
@@ -864,7 +866,7 @@ docs/
 ```bash
 git clone https://github.com/omerTT/Calibra
 pip install -e '.[all,dev]'
-pytest              # 377 tests
+pytest              # 596 tests
 ruff check .        # zero errors expected
 ```
 
@@ -896,9 +898,28 @@ calibra watch /data/session/ --world-model
 ```
 
 **Selection goal:** select episodes that maximise what the world model doesn't yet know — highest latent prediction error relative to the current model state.  
-**Requires:** `pip install torch` (PyTorch is an optional dependency).
+**Works out of the box** — no extra install required.
 
-Stage 2 scores each quality-passing episode by JEPA surprise (reconstruction error in latent space) and keeps the highest-surprise fraction. The result is a dataset that pushes the world model toward unexplored dynamics rather than reinforcing what it already knows.
+Stage 2 scores each quality-passing episode by latent prediction error and keeps the highest-surprise fraction. Two backends compute that score, chosen automatically:
+
+- **Lightweight baseline (default, core install):** a closed-form encoder (PCA / random projection) and a closed-form linear next-latent predictor — no gradient descent, no GPU, fit in milliseconds. See `calibra/world_model/surprise.py`.
+- **Trained JEPA (advanced, `pip install torch`):** a small MLP encoder/predictor trained with a VICReg objective (`calibra/models/robot_jepa.py`) for higher-fidelity surprise scores on larger datasets.
+
+`calibra prune --strategy world-model` and `calibra watch --world-model` use the trained JEPA when torch is installed and fall back to the lightweight baseline otherwise — same CLI flags, same output shape, no code changes required either way. The result is a dataset that pushes the world model toward unexplored dynamics rather than reinforcing what it already knows.
+
+```
+WORLD-MODEL CURATION SUMMARY
+
+Original episodes: 1000
+Quality failures: 87
+High-surprise kept: 300
+Low-surprise pruned: 613
+
+Top novel episodes:
+  ep_104  surprise=0.82  reason="unusual contact dynamics"
+  ep_511  surprise=0.77  reason="rare state-space excursion"
+  ep_208  surprise=0.74  reason="long-horizon recovery"
+```
 
 ### Surprise × quality decision table
 
