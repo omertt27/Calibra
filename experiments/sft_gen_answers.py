@@ -58,17 +58,17 @@ _DEFAULT_MAX_NEW_TOKENS = 1024
 
 def _load_mt_bench_questions() -> list[dict]:
     if _MT_BENCH_CACHE.exists():
-        questions = [json.loads(l) for l in _MT_BENCH_CACHE.read_text().splitlines() if l.strip()]
+        questions = [json.loads(line) for line in _MT_BENCH_CACHE.read_text().splitlines() if line.strip()]
         print(f"  Loaded {len(questions)} MT-Bench questions from cache")
         return questions
 
-    print(f"  Fetching MT-Bench questions from FastChat repo ...", flush=True)
+    print("  Fetching MT-Bench questions from FastChat repo ...", flush=True)
     _MT_BENCH_CACHE.parent.mkdir(parents=True, exist_ok=True)
     try:
         with urllib.request.urlopen(_MT_BENCH_URL, timeout=30) as resp:
             content = resp.read().decode()
         _MT_BENCH_CACHE.write_text(content)
-        questions = [json.loads(l) for l in content.splitlines() if l.strip()]
+        questions = [json.loads(line) for line in content.splitlines() if line.strip()]
         print(f"  Fetched and cached {len(questions)} questions → {_MT_BENCH_CACHE}")
         return questions
     except Exception as e:
@@ -186,7 +186,7 @@ def main() -> None:
             print(f"  [{i + 1 - len(done_ids):>2}/{len(questions) - len(done_ids)}] "
                   f"Q{qid} ({category}) done", flush=True)
 
-    total = sum(1 for l in out_path.read_text().splitlines() if l.strip())
+    total = sum(1 for line in out_path.read_text().splitlines() if line.strip())
     print(f"\nAnswers written: {total} questions → {out_path}")
     print(f"Next: python experiments/sft_score_mtbench.py --answers {out_path}")
 

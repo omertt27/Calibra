@@ -384,6 +384,8 @@ def _poll_watch(
 
 def _make_stream_episode(fname: str, actions: list, states: list):
     """Build a minimal Episode from raw action/state arrays for JEPA scoring."""
+    import numpy as np
+
     from calibra.schema.episode import Episode, EpisodeMetadata
 
     act_arr = np.array(actions, dtype=np.float32)

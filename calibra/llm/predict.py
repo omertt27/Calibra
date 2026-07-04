@@ -19,7 +19,6 @@ Usage
 
 from __future__ import annotations
 
-from typing import Optional
 
 # (metric_key, penalty at warning, penalty at critical, direction)
 _SFT_WEIGHTS: dict[str, tuple[float, float, str]] = {

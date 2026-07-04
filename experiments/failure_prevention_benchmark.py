@@ -49,9 +49,7 @@ import argparse
 import json
 import sys
 import time
-from copy import deepcopy
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import torch
@@ -554,7 +552,8 @@ def save_figures(rows: list[dict], metrics: dict) -> None:
     cm = np.array([[metrics["tn"], metrics["fp"]],
                    [metrics["fn"], metrics["tp"]]])
     ax.imshow(cm, cmap="Blues", vmin=0, vmax=max(1, len(rows) // 2))
-    ax.set_xticks([0, 1]); ax.set_yticks([0, 1])
+    ax.set_xticks([0, 1])
+    ax.set_yticks([0, 1])
     ax.set_xticklabels(["Pred. Success", "Pred. Failure"], fontsize=9)
     ax.set_yticklabels(["Act. Success", "Act. Failure"], fontsize=9)
     for i in range(2):
@@ -574,7 +573,7 @@ def save_figures(rows: list[dict], metrics: dict) -> None:
     ax.spines["right"].set_visible(False)
     names  = [r["name"] for r in rows]
     srs    = [r["actual_sr"] * 100 for r in rows]
-    bars   = ax.bar(range(len(rows)), srs, color=colors, edgecolor="white", width=0.6)
+    ax.bar(range(len(rows)), srs, color=colors, edgecolor="white", width=0.6)
     ax.axhline(SR_FAIL_THRESHOLD * 100, color="#E91E63", linestyle="--",
                linewidth=1.5, label="Fail threshold")
     ax.set_xticks(range(len(rows)))

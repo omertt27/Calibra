@@ -98,7 +98,8 @@ def _collect(batch):
 
 
 def _train_bc(batch, n_epochs=200, lr=1e-3, batch_size=256, hidden=256):
-    import torch, torch.nn as nn
+    import torch
+    import torch.nn as nn
     device = (torch.device("cuda") if torch.cuda.is_available()
               else torch.device("mps") if torch.backends.mps.is_available()
               else torch.device("cpu"))
@@ -123,7 +124,9 @@ def _train_bc(batch, n_epochs=200, lr=1e-3, batch_size=256, hidden=256):
         for i in range(0, N, batch_size):
             idx = perm[i:i+batch_size]
             loss = ((net(S_n[idx]) - A_n[idx]) ** 2).mean()
-            opt.zero_grad(); loss.backward(); opt.step()
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
     return dict(net=net, s_mean=s_mean, s_std=s_std, a_mean=a_mean, a_std=a_std, device=device)
 
 
@@ -218,7 +221,7 @@ def run_ablation(
     """Run all 5 ablation conditions and return list of result dicts."""
     k = max(1, round(len(train_batch.episodes) * keep_fraction))
 
-    print(f"  Running Calibra pipeline ...", flush=True)
+    print("  Running Calibra pipeline ...", flush=True)
     t0 = time.perf_counter()
     report = _run_calibra_pipeline(train_batch)
     print(f"  Pipeline done in {time.perf_counter()-t0:.1f}s", flush=True)
@@ -276,7 +279,7 @@ def run_retention_curve(
     n_random_seeds: int = 3,
 ) -> list[dict]:
     """Sweep keep_fraction. At each point: Calibra full vs. random mean."""
-    print(f"  Running Calibra pipeline ...", flush=True)
+    print("  Running Calibra pipeline ...", flush=True)
     t0 = time.perf_counter()
     report = _run_calibra_pipeline(train_batch)
     print(f"  Pipeline done in {time.perf_counter()-t0:.1f}s", flush=True)
@@ -335,16 +338,16 @@ def print_ablation(dataset_name: str, keep_fraction: float, rows: list[dict]) ->
     d_gain = rows_by_name.get("Diversity-only", {}).get("vs_random", 0)
     f_gain = rows_by_name.get("Calibra full", {}).get("vs_random", 0)
 
-    print(f"\n  Mechanism interpretation:")
+    print("\n  Mechanism interpretation:")
     if q_gain > 1 and d_gain > 1:
         print(f"  Both quality filter (+{q_gain:.1f}%) and diversity (+{d_gain:.1f}%) contribute.")
         print(f"  Full pipeline ({f_gain:+.1f}%) confirms they are complementary.")
     elif q_gain > d_gain:
         print(f"  Quality filter is the primary driver ({q_gain:+.1f}% vs diversity {d_gain:+.1f}%).")
-        print(f"  Dataset has real corruption that naive sampling retains.")
+        print("  Dataset has real corruption that naive sampling retains.")
     else:
         print(f"  Diversity selection is the primary driver ({d_gain:+.1f}% vs quality {q_gain:+.1f}%).")
-        print(f"  Dataset is clean but redundant.")
+        print("  Dataset is clean but redundant.")
     print()
 
 
@@ -429,7 +432,6 @@ def save_curve_figure(dataset_name: str, curve: list[dict], full_mse: float) -> 
     fracs = [r["keep_fraction"] * 100 for r in curve]
     rnd   = [r["random_mse"] for r in curve]
     cal   = [r["calibra_mse"] for r in curve]
-    full_x = [fracs[0], fracs[-1]]
 
     fig, ax = plt.subplots(figsize=(8, 5))
     ax.plot(fracs, rnd, "s--", color="#EF4444", linewidth=2, label="Random pruned", zorder=3)

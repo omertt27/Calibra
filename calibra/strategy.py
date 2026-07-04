@@ -47,11 +47,15 @@ Usage
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from calibra.schema.report import DiagnosticReport
+
+if TYPE_CHECKING:
+    from calibra.pruning import PruningResult
+    from calibra.schema.episode import EpisodeBatch
 
 
 class SelectionRegime(str, Enum):
@@ -243,13 +247,13 @@ class RegimeDiagnosis:
         label = _REGIME_LABELS[self.regime]
         lines = [
             "=" * 60,
-            f"  CALIBRA REGIME DIAGNOSIS",
+            "  CALIBRA REGIME DIAGNOSIS",
             "=" * 60,
             f"  Regime      : {label}",
             f"  Noise score : {self.noise_score:.3f}  (0=clean, 1=corrupted)",
             f"  Calibrated  : {self.n_datasets_calibrated} datasets",
             "-" * 60,
-            f"  Evidence:",
+            "  Evidence:",
             f"    spike_fraction   = {self.evidence['spike_fraction']:.4f}",
             f"    vel_disc_rate    = {self.evidence['vel_disc_rate']:.4f}",
             f"    dropout_fraction = {self.evidence['dropout_fraction']:.4f}",
@@ -257,7 +261,7 @@ class RegimeDiagnosis:
             "-" * 60,
             f"  {self.explanation}",
             "-" * 60,
-            f"  Recommended CoresetSelector config:",
+            "  Recommended CoresetSelector config:",
         ]
         for k, v in self.recommended_config.items():
             lines.append(f"    {k:<28} = {v}")

@@ -28,7 +28,6 @@ import argparse
 import pathlib
 import sys
 
-import numpy as np
 
 REPO_ROOT = pathlib.Path(__file__).parent.parent
 sys.path.insert(0, str(REPO_ROOT))
@@ -115,7 +114,6 @@ def plot(save: bool = False) -> None:
     try:
         import matplotlib.pyplot as plt
         import matplotlib.patches as mpatches
-        from matplotlib.patches import FancyArrowPatch
     except ImportError:
         print("matplotlib not installed. pip install matplotlib")
         return

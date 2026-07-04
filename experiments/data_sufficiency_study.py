@@ -316,7 +316,6 @@ def _plot_curves(results: list[dict], fractions: list[float]) -> None:
             color=c, linewidth=1.5, label=r["dataset"][:20],
         )
         knee_pct = r["calibra_knee_pct"]
-        knee_score = r["score_at_knee"]
         ax.axvline(x=knee_pct, color=c, linestyle="--", alpha=0.3, linewidth=0.8)
     ax.set_xlabel("Dataset fraction used (%)")
     ax.set_ylabel("Predicted success score (0–100)")

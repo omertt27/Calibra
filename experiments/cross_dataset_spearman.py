@@ -107,7 +107,8 @@ def _collect(batch):
 
 def _train_bc(batch, n_epochs: int = 200, lr: float = 1e-3,
               batch_size: int = 256, hidden: int = 256, seed: int = 0):
-    import torch, torch.nn as nn
+    import torch
+    import torch.nn as nn
     torch.manual_seed(seed)
 
     device = (torch.device("cuda") if torch.cuda.is_available()
@@ -137,7 +138,9 @@ def _train_bc(batch, n_epochs: int = 200, lr: float = 1e-3,
         for i in range(0, N, batch_size):
             idx = perm[i:i+batch_size]
             loss = ((net(S_n[idx]) - A_n[idx]) ** 2).mean()
-            opt.zero_grad(); loss.backward(); opt.step()
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
 
     return dict(net=net, s_mean=s_mean, s_std=s_std,
                 a_mean=a_mean, a_std=a_std, device=device)
@@ -182,7 +185,6 @@ def _calibra_quality_score(batch) -> tuple[object, float]:
     from calibra.predict import predict_outcome
 
     report = Pipeline().run(batch)
-    obs_key = _obs_key(batch.episodes[0]) if batch.episodes else None
     action_dim = batch.episodes[0].actions.shape[1] if batch.episodes else 6
     policy_family = "act" if action_dim >= 6 else "diffusion"
     pred = predict_outcome(report, policy_family=policy_family, use_outcome_db=False)
@@ -363,7 +365,7 @@ def print_report(rows: list[dict]) -> None:
     print(f"    ρ(RndMSE,   CalMSE)         = {rho3:+.4f}  p={p3:.4g}"
           f"  (sanity: Calibra tracks dataset difficulty)")
 
-    print(f"\n  Target: |ρ| > 0.65 for publication claim")
+    print("\n  Target: |ρ| > 0.65 for publication claim")
     print(f"  {'✅ PASS' if abs(rho1) > 0.65 or abs(rho2) > 0.65 else '⚠️  below target'}")
     print(f"{'='*_W}\n")
 
@@ -412,7 +414,8 @@ def main(argv=None):
                 rows.append(row)
             except Exception as e:
                 print(f"  [ERROR] {ds}: {e}")
-                import traceback; traceback.print_exc()
+                import traceback
+                traceback.print_exc()
 
     print_report(rows)
 

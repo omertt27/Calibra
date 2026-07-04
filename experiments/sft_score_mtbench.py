@@ -143,7 +143,6 @@ def _score_file(
         scored = {r["question_id"]: r for r in existing.get("per_question", [])}
         print(f"  Resuming: {len(scored)} questions already scored")
 
-    total = len(answers)
     remaining = [qid for qid in answers if qid not in scored]
     print(f"  Scoring {len(remaining)} remaining questions with {judge_model} ...")
 
@@ -292,7 +291,7 @@ def main() -> None:
     for cat, score in result["per_category"].items():
         print(f"  {cat:<14}: {score:.2f}")
     print(f"\nScores → {out_path}")
-    print(f"Run with --compare to see all conditions side by side.")
+    print("Run with --compare to see all conditions side by side.")
 
 
 if __name__ == "__main__":

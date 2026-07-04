@@ -34,11 +34,8 @@ import argparse
 import json
 import sys
 from dataclasses import dataclass
-from typing import Optional
 
-import numpy as np
 
-from calibra import __version__
 from calibra.pipeline import Pipeline
 from calibra.schema.episode import EpisodeBatch
 from calibra.schema.report import DiagnosticReport
@@ -98,7 +95,7 @@ class SurpriseResult:
 
         if novel:
             lines += [
-                f"  NOVEL DYNAMICS  (high surprise, low jerk — KEEP for world model training)",
+                "  NOVEL DYNAMICS  (high surprise, low jerk — KEEP for world model training)",
                 _THIN,
             ]
             for s in novel[:top]:
@@ -112,7 +109,7 @@ class SurpriseResult:
 
         if corrupted:
             lines += [
-                f"  CORRUPTED  (high surprise, high jerk — PRUNE)",
+                "  CORRUPTED  (high surprise, high jerk — PRUNE)",
                 _THIN,
             ]
             for s in corrupted[:top]:
@@ -126,7 +123,7 @@ class SurpriseResult:
 
         if redundant:
             lines += [
-                f"  REDUNDANT  (low surprise — near-duplicate dynamics)",
+                "  REDUNDANT  (low surprise — near-duplicate dynamics)",
                 _THIN,
                 f"  {len(redundant)} episodes with surprise < {_SURPRISE_HIGH:.2f}",
                 "",

@@ -12,7 +12,6 @@ from experiments.failure_prevention_benchmark import (
     build_condition_batch,
     train_bc,
     evaluate_bc,
-    DEVICE,
     SEED,
     KEEP_FRACTION,
 )

@@ -38,9 +38,12 @@ import pathlib
 import random
 import sys
 import time
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from calibra.schema.episode import Episode, EpisodeBatch
 
 REPO_ROOT = pathlib.Path(__file__).parent.parent
 sys.path.insert(0, str(REPO_ROOT))
@@ -336,8 +339,8 @@ def print_results(dataset_name: str, keep: float, rows: list[dict]) -> None:
     print(f"  CALIBRA REAL IL BENCHMARK - {dataset_name.upper()}")
     print(_THICK)
     print(f"  Keep fraction : {keep:.0%}")
-    print(f"  Evaluation    : held-out test MSE + gym rollout success" if HAS_GYM_PUSHT else
-          f"  Evaluation    : held-out test MSE (install gym-pusht for rollout success)")
+    print("  Evaluation    : held-out test MSE + gym rollout success" if HAS_GYM_PUSHT else
+          "  Evaluation    : held-out test MSE (install gym-pusht for rollout success)")
     print(_THIN)
     hdr = f"  {'Strategy':<22} {'Episodes':>8}  {'Test MSE':>10}"
     if HAS_GYM_PUSHT:
@@ -597,7 +600,6 @@ def main(argv: list[str] | None = None) -> None:
     # 6. Spearman correlation: Calibra quality signal vs. test MSE
     #    (across the 3 strategies — full, random, calibra — ranked by n_episodes and mse)
     all_mses = [full_mse] + [r["test_mse"] for r in random_seed_rows] + [calibra_mse]
-    all_labels = ["Full"] + [f"Rand-{i}" for i in range(len(random_seed_rows))] + ["Calibra"]
     if len(all_mses) >= 3:
         data_fracs = [1.0] + [args.keep] * len(random_seed_rows) + [calibra_stats["keep_fraction_actual"]]
         x = np.argsort(np.argsort(data_fracs))

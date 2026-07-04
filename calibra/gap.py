@@ -37,7 +37,6 @@ from typing import Optional
 
 import numpy as np
 
-from calibra import __version__
 from calibra.pipeline import Pipeline
 from calibra.schema.episode import EpisodeBatch
 from calibra.schema.report import DiagnosticReport
@@ -192,9 +191,6 @@ def analyze_coverage_gap(
     cluster_counts = np.bincount(labels, minlength=n_clusters)
     target_per_cluster = max(1, round(n_ep / n_clusters))
 
-    # Estimate entropy improvement from filling each gap
-    # Uses the action entropy weight from the predict rubric
-    current_entropy = _marginal_entropy(features)
     gaps: list[CoverageGap] = []
 
     for c in range(n_clusters):

@@ -39,7 +39,6 @@ from typing import Optional
 
 import numpy as np
 
-from calibra import __version__
 from calibra.pipeline import Pipeline
 from calibra.schema.episode import EpisodeBatch
 from calibra.schema.report import DiagnosticReport
@@ -99,7 +98,7 @@ class DiagnoseResult:
         lines += [
             _THIN,
             "  COVERAGE ANALYSIS",
-            f"    Nearest training episode : "
+            "    Nearest training episode : "
             + (f"{self.nearest_episode.episode_id} (distance: {self.nearest_episode.distance:.3f})"
                if self.nearest_episode else "N/A"),
             f"    Episodes within d<{_COVERAGE_CLOSE} : {self.n_within_close}  "
@@ -266,7 +265,7 @@ def diagnose_failure(
 
     # Estimate success rate after targeted collection
     if n_to_collect > 0:
-        from calibra.gap import _entropy_gain_estimate, _ENTROPY_WEIGHT_PER_BIT
+        from calibra.gap import _ENTROPY_WEIGHT_PER_BIT
         # Rough entropy gain from adding n_to_collect episodes near failure point
         entropy_gain = min(0.5, n_to_collect * 0.03)
         success_delta = entropy_gain * _ENTROPY_WEIGHT_PER_BIT
@@ -353,7 +352,7 @@ def _encode_failure_jepa(failure_actions: np.ndarray, batch: EpisodeBatch) -> np
     Falls back to action-space mean/std if torch unavailable.
     """
     try:
-        from calibra.models.robot_jepa import RobotJEPA, RobotJEPAConfig
+        from calibra.models.robot_jepa import RobotJEPA, RobotJEPAConfig  # noqa: F401
         import torch as _t  # noqa: F401
     except ImportError:
         feat = np.concatenate([
