@@ -3,17 +3,27 @@ Ablation + Retention Curve Benchmark
 =====================================
 Answers two questions that determine whether Calibra's gains are real:
 
-  1. ABLATION — which component drives the improvement?
-     Conditions (all at the same episode budget k):
+  1. ABLATION — which component drives the improvement, and does Calibra beat
+     established coreset methods (not just random)?
+     Conditions (all at the same episode budget k, same features, same pipeline):
        - Full dataset         (all data, upper bound)
        - Random k             (no selection, baseline)
+       - K-Center greedy      (published: Gonzalez farthest-point sampling)
+       - Herding              (published: mean-matching greedy selection)
+       - Facility Location    (published: greedy submodular coverage)
        - Quality-filter only  (remove bad episodes, keep top-k by quality score)
        - Diversity-only       (no quality filter, greedy max-coverage of k)
        - Calibra full         (quality filter + diversity selection)
 
+     The three published baselines run on the SAME behavioral features as Calibra's
+     diversity stage, so the only variable is the selection algorithm. They see the
+     full set with no quality filtering — isolating whether Calibra's quality-aware
+     two-stage pipeline beats off-the-shelf coreset geometry.
+
      If quality-only beats random but diversity-only doesn't -> quality filter is the mechanism.
      If both beat random and full > both -> they are complementary and the interaction matters.
-     On DROID-style noisy data we expect: quality-only >= full > diversity-only > random.
+     On DROID-style noisy data we expect: quality-only >= full > diversity-only > random,
+     and Calibra full > the best published baseline (which has no notion of data quality).
 
   2. RETENTION CURVE — is the Pareto advantage stable across data fractions?
      Sweeps keep_fraction in [0.10, 0.20, 0.30, 0.50, 0.70, 1.00].
@@ -97,9 +107,18 @@ def _collect(batch):
     return np.concatenate(states_all), np.concatenate(actions_all)
 
 
+<<<<<<< Updated upstream
 def _train_bc(batch, n_epochs=200, lr=1e-3, batch_size=256, hidden=256):
     import torch
     import torch.nn as nn
+=======
+def _train_bc(batch, n_epochs=200, lr=1e-3, batch_size=256, hidden=256, seed=None):
+    import torch, torch.nn as nn
+    if seed is not None:
+        torch.manual_seed(seed)
+        np.random.seed(seed)
+        random.seed(seed)
+>>>>>>> Stashed changes
     device = (torch.device("cuda") if torch.cuda.is_available()
               else torch.device("mps") if torch.backends.mps.is_available()
               else torch.device("cpu"))
@@ -162,6 +181,138 @@ def _subset_from_ids(batch, keep_ids):
     keep_set = set(keep_ids)
     chosen = [ep for ep in batch.episodes if ep.metadata.episode_id in keep_set]
     return EpisodeBatch(chosen, batch.dataset_name + "_sub", batch.format, batch.source_path)
+
+
+def _subset_from_indices(batch, indices, tag):
+    from calibra.schema.episode import EpisodeBatch
+    eps = list(batch.episodes)
+    chosen = [eps[i] for i in indices]
+    return EpisodeBatch(chosen, batch.dataset_name + tag, batch.format, batch.source_path)
+
+
+# ── published coreset baselines ───────────────────────────────────────────────
+#
+# K-Center greedy, Herding, and Facility Location are classic data-selection
+# methods from the coreset / active-learning literature. To make the comparison
+# fair, all three operate on the SAME per-episode feature representation Calibra's
+# diversity stage uses (normalized [action_mean, action_std] per dim — the
+# behavioral branch of calibra.pruning._build_feature_matrix). The only variable
+# across conditions is therefore the SELECTION ALGORITHM, not the features or the
+# training/eval pipeline. Unlike Calibra, these baselines see the full set with no
+# quality filtering — they select purely on behavioral geometry.
+
+def _episode_feature_matrix(batch) -> np.ndarray:
+    """(n_episodes, 2*action_dim) behavioral features, min-max normalized to [0, 1].
+
+    Matches the behavioral representation used by Calibra's diversity selector so
+    the baselines are compared on identical features.
+    """
+    # Determine action_dim from the first non-empty episode so empty episodes get
+    # a correctly-sized zero row (a single dataset has one consistent action_dim).
+    action_dim = 1
+    for ep in batch.episodes:
+        a = ep.actions
+        if a.size:
+            action_dim = a.shape[1] if a.ndim > 1 else 1
+            break
+
+    rows = []
+    for ep in batch.episodes:
+        acts = ep.actions
+        if acts.ndim == 1:
+            acts = acts[:, np.newaxis]
+        if len(acts) == 0:
+            rows.append(np.zeros(2 * action_dim, dtype=np.float64))
+            continue
+        rows.append(np.concatenate([acts.mean(axis=0), acts.std(axis=0)]))
+    mat = np.stack(rows, axis=0).astype(np.float64)
+    mat = np.nan_to_num(mat, nan=0.0, posinf=0.0, neginf=0.0)
+    lo, hi = mat.min(axis=0), mat.max(axis=0)
+    scale = hi - lo
+    scale[scale == 0] = 1.0  # constant features contribute nothing
+    return (mat - lo) / scale
+
+
+def _kcenter_indices(feats: np.ndarray, k: int, seed: int = 0) -> list[int]:
+    """Gonzalez greedy k-center (farthest-point sampling). O(N*K*D)."""
+    n = len(feats)
+    if k >= n:
+        return list(range(n))
+    rng = np.random.default_rng(seed)
+    start = int(rng.integers(n))
+    selected = [start]
+    min_d = np.linalg.norm(feats - feats[start], axis=1)
+    for _ in range(k - 1):
+        i = int(np.argmax(min_d))
+        selected.append(i)
+        min_d = np.minimum(min_d, np.linalg.norm(feats - feats[i], axis=1))
+    return selected
+
+
+def _herding_indices(feats: np.ndarray, k: int) -> list[int]:
+    """Greedy herding: pick points so the running mean matches the full-set mean.
+
+    At step t, choose the unselected episode that minimizes
+    || target_mean - mean(selected + {i}) ||. O(N*K*D).
+    """
+    n = len(feats)
+    if k >= n:
+        return list(range(n))
+    target = feats.mean(axis=0)
+    chosen = np.zeros(n, dtype=bool)
+    running = np.zeros_like(target)
+    selected: list[int] = []
+    for t in range(k):
+        cand_mean = (running + feats) / (t + 1)          # (N, D)
+        errs = np.linalg.norm(cand_mean - target, axis=1)
+        errs[chosen] = np.inf
+        i = int(np.argmin(errs))
+        selected.append(i)
+        chosen[i] = True
+        running = running + feats[i]
+    return selected
+
+
+def _facility_location_indices(feats: np.ndarray, k: int) -> list[int]:
+    """Greedy submodular facility-location: maximize sum_i max_{j in S} sim(i, j).
+
+    Similarity is a Gaussian kernel over feature distance with sigma = median
+    pairwise distance. O(N^2) memory — intended for benchmark-scale datasets
+    (up to a few thousand episodes).
+    """
+    n = len(feats)
+    if k >= n:
+        return list(range(n))
+    diff = feats[:, None, :] - feats[None, :, :]
+    dist = np.linalg.norm(diff, axis=2)                  # (N, N)
+    pos = dist[dist > 0]
+    sigma = float(np.median(pos)) if pos.size else 1.0
+    if sigma == 0:
+        sigma = 1.0
+    sim = np.exp(-(dist ** 2) / (2 * sigma ** 2))
+    chosen = np.zeros(n, dtype=bool)
+    cur_max = np.zeros(n)                                 # max sim of each i to selected set
+    selected: list[int] = []
+    for _ in range(k):
+        gains = np.maximum(sim - cur_max[:, None], 0.0).sum(axis=0)
+        gains[chosen] = -np.inf
+        j = int(np.argmax(gains))
+        selected.append(j)
+        chosen[j] = True
+        cur_max = np.maximum(cur_max, sim[:, j])
+    return selected
+
+
+def select_kcenter(batch, k, seed=0):
+    return _subset_from_indices(batch, _kcenter_indices(_episode_feature_matrix(batch), k, seed), "_kcenter")
+
+
+def select_herding(batch, k):
+    return _subset_from_indices(batch, _herding_indices(_episode_feature_matrix(batch), k), "_herding")
+
+
+def select_facility(batch, k):
+    return _subset_from_indices(batch, _facility_location_indices(_episode_feature_matrix(batch), k), "_facility")
 
 
 # ── ablation selectors ────────────────────────────────────────────────────────
@@ -228,43 +379,57 @@ def run_ablation(
 
     conditions = [
         ("Full dataset",        lambda: train_batch),
+        # published coreset baselines (same features, no quality filter)
+        ("K-Center greedy",     lambda: select_kcenter(train_batch, k, seed=0)),
+        ("Herding",             lambda: select_herding(train_batch, k)),
+        ("Facility Location",   lambda: select_facility(train_batch, k)),
+        # Calibra ablation ladder
         ("Quality-filter only", lambda: select_quality_only(train_batch, report, k)),
         ("Diversity-only",      lambda: select_diversity_only(train_batch, report, k)),
         ("Calibra full",        lambda: select_calibra_full(train_batch, report, k)),
     ]
 
-    # Random seeds (averaged)
-    random_mses = []
-    for seed in range(n_random_seeds):
-        sub = _random_subset(train_batch, k, seed=seed * 17 + 42)
-        art = _train_bc(sub, n_epochs=n_epochs)
-        random_mses.append(_eval_mse(art, test_batch))
+    # Every condition is trained over the SAME set of training seeds so per-seed
+    # MSEs are paired across conditions (enables a paired significance test).
+    # Selection is deterministic per condition, so only BC training varies by seed;
+    # the random baseline additionally varies its subset per seed.
+    seeds = list(range(n_random_seeds))
+
+    random_mses = [
+        _eval_mse(_train_bc(_random_subset(train_batch, k, seed=s * 17 + 42),
+                            n_epochs=n_epochs, seed=s), test_batch)
+        for s in seeds
+    ]
     random_mean = float(np.mean(random_mses))
     random_std = float(np.std(random_mses))
 
     rows = [{
-        "condition": f"Random {keep_fraction:.0%} (n={n_random_seeds} seeds)",
+        "condition": "Random",
         "n_episodes": k,
         "test_mse": random_mean,
         "test_mse_std": random_std,
+        "per_seed_mse": random_mses,
         "vs_random": 0.0,
     }]
-    print(f"  Random avg (k={k}, {n_random_seeds} seeds): mse={random_mean:.5f} +/- {random_std:.5f}", flush=True)
+    print(f"  Random (k={k}, {n_random_seeds} seeds): mse={random_mean:.5f} +/- {random_std:.5f}", flush=True)
 
     for label, make_subset in conditions:
-        sub = make_subset()
-        art = _train_bc(sub, n_epochs=n_epochs)
-        mse = _eval_mse(art, test_batch)
-        delta = (random_mean - mse) / random_mean * 100  # % improvement vs random (positive = better)
+        sub = make_subset()                                  # deterministic subset
+        per_seed = [_eval_mse(_train_bc(sub, n_epochs=n_epochs, seed=s), test_batch) for s in seeds]
+        mse = float(np.mean(per_seed))
+        sd = float(np.std(per_seed))
+        delta = (random_mean - mse) / random_mean * 100      # % improvement vs random (positive = better)
         rows.append({
             "condition": label,
             "n_episodes": len(sub.episodes),
             "test_mse": mse,
-            "test_mse_std": None,
+            "test_mse_std": sd,
+            "per_seed_mse": per_seed,
             "vs_random": delta,
         })
         marker = "+++ " if label == "Calibra full" else "    "
-        print(f"  {marker}{label:<26} k={len(sub.episodes):>3}  mse={mse:.5f}  vs_random={delta:+.1f}%", flush=True)
+        print(f"  {marker}{label:<26} k={len(sub.episodes):>3}  "
+              f"mse={mse:.5f}+/-{sd:.5f}  vs_random={delta:+.1f}%", flush=True)
 
     return rows
 
@@ -347,7 +512,26 @@ def print_ablation(dataset_name: str, keep_fraction: float, rows: list[dict]) ->
         print("  Dataset has real corruption that naive sampling retains.")
     else:
         print(f"  Diversity selection is the primary driver ({d_gain:+.1f}% vs quality {q_gain:+.1f}%).")
+<<<<<<< Updated upstream
         print("  Dataset is clean but redundant.")
+=======
+        print(f"  Dataset is clean but redundant.")
+
+    # Headline vs. published coreset baselines
+    baseline_gains = {
+        name: rows_by_name[name]["vs_random"]
+        for name in ("K-Center greedy", "Herding", "Facility Location")
+        if name in rows_by_name
+    }
+    if baseline_gains:
+        best_bn = max(baseline_gains, key=baseline_gains.get)
+        best_bg = baseline_gains[best_bn]
+        print(f"\n  vs. published baselines:")
+        for name, g in baseline_gains.items():
+            print(f"    {name:<20} {g:+.1f}% vs random")
+        print(f"  Best baseline: {best_bn} ({best_bg:+.1f}%). "
+              f"Calibra full ({f_gain:+.1f}%) -> {f_gain - best_bg:+.1f}% vs {best_bn}.")
+>>>>>>> Stashed changes
     print()
 
 
@@ -379,13 +563,20 @@ def save_ablation_figure(dataset_name: str, keep_fraction: float, rows: list[dic
     mses = [r["test_mse"] for r in rows]
     colors = []
     for r in rows:
-        if "Full" in r["condition"]:
+        c = r["condition"]
+        if "Full" in c:
             colors.append("#6B7280")
-        elif "Random" in r["condition"]:
+        elif "Random" in c:
             colors.append("#EF4444")
-        elif "Quality" in r["condition"]:
+        elif "K-Center" in c:
+            colors.append("#14B8A6")
+        elif "Herding" in c:
+            colors.append("#EC4899")
+        elif "Facility" in c:
+            colors.append("#A16207")
+        elif "Quality" in c:
             colors.append("#F59E0B")
-        elif "Diversity" in r["condition"]:
+        elif "Diversity" in c:
             colors.append("#8B5CF6")
         else:
             colors.append("#2563EB")
@@ -408,6 +599,9 @@ def save_ablation_figure(dataset_name: str, keep_fraction: float, rows: list[dic
     legend = [
         mpatches.Patch(color="#6B7280", label="Full dataset"),
         mpatches.Patch(color="#EF4444", label="Random k"),
+        mpatches.Patch(color="#14B8A6", label="K-Center greedy"),
+        mpatches.Patch(color="#EC4899", label="Herding"),
+        mpatches.Patch(color="#A16207", label="Facility Location"),
         mpatches.Patch(color="#F59E0B", label="Quality-filter only"),
         mpatches.Patch(color="#8B5CF6", label="Diversity-only"),
         mpatches.Patch(color="#2563EB", label="Calibra full pipeline"),
