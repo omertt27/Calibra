@@ -568,6 +568,62 @@ The contact-aware fix addresses failure mode 2 by using the vel_disc/spike ratio
 
 ---
 
+### Coreset baseline comparison — vs. published selection methods
+
+The ablation above compares Calibra against random selection. To test it against the coreset / data-selection literature, we add three published baselines — **K-Center greedy** (Gonzalez farthest-point sampling), **Herding** (mean-matching), and **Facility Location** (greedy submodular coverage) — all run on the *same* per-episode behavioral features as Calibra's diversity stage, so the only variable is the selection algorithm. Every condition is trained over **5 shared seeds** with per-seed MSEs paired across conditions, enabling a paired *t*-test. Keep fraction 30%, BC-MLP, RTX 2080.
+
+**Per-dataset improvement vs. random (5-seed mean):**
+
+| Method (keep 30%) | ALOHA mobile | DROID-100 | PushT real |
+|---|---:|---:|---:|
+| Full dataset (100%) | +41.4% | +12.0% | +12.8% |
+| K-Center greedy | +21.4% | +3.9% | +46.8% |
+| Herding | −17.0% | +2.5% | −19.7% |
+| Facility Location | +17.3% | +3.4% | +43.9% |
+| Quality-filter only | +5.5% | +7.0% | +36.2% |
+| **Diversity-only** | +17.8% | **+24.3%** | +46.4% |
+| **Calibra full** | +18.7% | +16.3% | +38.5% |
+
+**Aggregate across the 3 datasets** (`experiments/aggregate_ablation.py`):
+
+| Method | Mean rank ↓ | Mean vs-random |
+|---|---:|---:|
+| **Diversity-only** | **2.00** | **+29.5%** |
+| K-Center greedy | 2.00 | +24.0% |
+| Calibra full | 2.67 | +24.5% |
+| Facility Location | 4.00 | +21.5% |
+| Quality-filter only | 4.33 | +16.2% |
+| Random | 6.33 | 0.0% |
+| Herding | 6.67 | −11.4% |
+| *Oracle (best method per dataset)* | *1.00* | *+30.8%* |
+
+**Calibra full — Win/Tie/Loss vs. each method** (paired *t*-test, α = 0.05):
+
+| Opponent | W-T-L | Notes |
+|---|:---:|---|
+| Random | 2-1-0 | never loses |
+| K-Center greedy | 1-1-1 | tie on ALOHA (p=0.37), win DROID, loss PushT |
+| Herding | 3-0-0 | dominates |
+| Facility Location | 1-1-1 | wins DROID, loses PushT |
+| Quality-filter only | 2-1-0 | quality+diversity ≥ quality alone |
+| Diversity-only | 0-1-2 | **loses to its own diversity stage on DROID & PushT** |
+
+**Takeaways:**
+
+1. **Calibra's diversity (coverage) selection is the strongest method** — best mean improvement (**+29.5%**), tied-best mean rank (2.00), and more *consistent* than K-Center (worst rank 3 vs. K-Center's rank-4 on DROID). It never significantly loses to any published baseline.
+2. **The quality filter is regime-dependent, not a universal default.** On these clean teleop datasets it drags the full pipeline below diversity-only (significant on DROID and PushT). It pays off only when real corruption is present (see the failure-prediction and `corrupt` benchmarks). The recommended default is diversity-only, with quality-filtering gated on detected corruption.
+3. **Adaptive-across-methods headroom is small** — the oracle (+30.8%) beats the best fixed method (diversity-only, +29.5%) by only **1.3 points**, so no complex regime-adaptive selector is warranted on this evidence.
+
+To reproduce:
+```bash
+python experiments/ablation_benchmark.py --dataset lerobot/aloha_mobile_cabinet --seeds 5 --json results/ablation_aloha.json
+python experiments/ablation_benchmark.py --dataset lerobot/droid_100 --seeds 5 --json results/ablation_droid.json
+python experiments/ablation_benchmark.py --dataset lerobot/columbia_cairlab_pusht_real --seeds 5 --json results/ablation_pusht_real.json
+python experiments/aggregate_ablation.py results/ablation_*.json
+```
+
+---
+
 ### Dataset regime space
 
 Calibra's diagnostic metrics predict which selection regime applies before any training:

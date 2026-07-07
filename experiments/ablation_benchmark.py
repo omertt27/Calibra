@@ -107,18 +107,13 @@ def _collect(batch):
     return np.concatenate(states_all), np.concatenate(actions_all)
 
 
-<<<<<<< Updated upstream
-def _train_bc(batch, n_epochs=200, lr=1e-3, batch_size=256, hidden=256):
+def _train_bc(batch, n_epochs=200, lr=1e-3, batch_size=256, hidden=256, seed=None):
     import torch
     import torch.nn as nn
-=======
-def _train_bc(batch, n_epochs=200, lr=1e-3, batch_size=256, hidden=256, seed=None):
-    import torch, torch.nn as nn
     if seed is not None:
         torch.manual_seed(seed)
         np.random.seed(seed)
         random.seed(seed)
->>>>>>> Stashed changes
     device = (torch.device("cuda") if torch.cuda.is_available()
               else torch.device("mps") if torch.backends.mps.is_available()
               else torch.device("cpu"))
@@ -512,10 +507,7 @@ def print_ablation(dataset_name: str, keep_fraction: float, rows: list[dict]) ->
         print("  Dataset has real corruption that naive sampling retains.")
     else:
         print(f"  Diversity selection is the primary driver ({d_gain:+.1f}% vs quality {q_gain:+.1f}%).")
-<<<<<<< Updated upstream
         print("  Dataset is clean but redundant.")
-=======
-        print(f"  Dataset is clean but redundant.")
 
     # Headline vs. published coreset baselines
     baseline_gains = {
@@ -526,12 +518,11 @@ def print_ablation(dataset_name: str, keep_fraction: float, rows: list[dict]) ->
     if baseline_gains:
         best_bn = max(baseline_gains, key=baseline_gains.get)
         best_bg = baseline_gains[best_bn]
-        print(f"\n  vs. published baselines:")
+        print("\n  vs. published baselines:")
         for name, g in baseline_gains.items():
             print(f"    {name:<20} {g:+.1f}% vs random")
         print(f"  Best baseline: {best_bn} ({best_bg:+.1f}%). "
               f"Calibra full ({f_gain:+.1f}%) -> {f_gain - best_bg:+.1f}% vs {best_bn}.")
->>>>>>> Stashed changes
     print()
 
 
