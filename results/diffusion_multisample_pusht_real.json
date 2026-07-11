@@ -1,0 +1,94 @@
+{
+  "dataset": "lerobot/columbia_cairlab_pusht_real",
+  "policy": "diffusion",
+  "diffusion_config": {
+    "chunk": 16,
+    "stride": 4,
+    "max_windows": 30000,
+    "n_diffusion_steps": 100,
+    "hidden": 512,
+    "time_dim": 128,
+    "lr": 0.0002,
+    "batch_size": 256,
+    "n_epochs": 100,
+    "max_steps": null,
+    "eval_samples": 10
+  },
+  "keep_fraction": 0.3,
+  "n_epochs": 100,
+  "n_seeds": 5,
+  "train_episodes": 109,
+  "test_episodes": 27,
+  "ablation": [
+    {
+      "condition": "Random",
+      "n_episodes": 33,
+      "test_mse": 0.2566458761692047,
+      "test_mse_std": 0.08273270965351705,
+      "per_seed_mse": [
+        0.3452662229537964,
+        0.30329036712646484,
+        0.16015182435512543,
+        0.3213186264038086,
+        0.1532023400068283
+      ],
+      "vs_random": 0.0
+    },
+    {
+      "condition": "Full dataset",
+      "n_episodes": 109,
+      "test_mse": 0.21753637492656708,
+      "test_mse_std": 0.0016972287778940583,
+      "per_seed_mse": [
+        0.21672408282756805,
+        0.21512892842292786,
+        0.21910811960697174,
+        0.21692527830600739,
+        0.21979546546936035
+      ],
+      "vs_random": 15.238702381040023
+    },
+    {
+      "condition": "K-Center greedy",
+      "n_episodes": 33,
+      "test_mse": 0.14557552933692933,
+      "test_mse_std": 0.0016535768793297036,
+      "per_seed_mse": [
+        0.14859099686145782,
+        0.1452735811471939,
+        0.14453299343585968,
+        0.14574113488197327,
+        0.14373894035816193
+      ],
+      "vs_random": 43.27766667836405
+    },
+    {
+      "condition": "Diversity-only",
+      "n_episodes": 33,
+      "test_mse": 0.14783791005611419,
+      "test_mse_std": 0.0005521026583486999,
+      "per_seed_mse": [
+        0.14855067431926727,
+        0.14739994704723358,
+        0.147957906126976,
+        0.14703556895256042,
+        0.1482454538345337
+      ],
+      "vs_random": 42.396148240213385
+    },
+    {
+      "condition": "Calibra full",
+      "n_episodes": 33,
+      "test_mse": 0.15472711622714996,
+      "test_mse_std": 0.0010974274691694945,
+      "per_seed_mse": [
+        0.15332163870334625,
+        0.1551779955625534,
+        0.15652115643024445,
+        0.15467628836631775,
+        0.15393850207328796
+      ],
+      "vs_random": 39.71182450438458
+    }
+  ]
+}

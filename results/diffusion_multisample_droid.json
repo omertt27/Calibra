@@ -1,0 +1,94 @@
+{
+  "dataset": "lerobot/droid_100",
+  "policy": "diffusion",
+  "diffusion_config": {
+    "chunk": 16,
+    "stride": 4,
+    "max_windows": 30000,
+    "n_diffusion_steps": 100,
+    "hidden": 512,
+    "time_dim": 128,
+    "lr": 0.0002,
+    "batch_size": 256,
+    "n_epochs": 100,
+    "max_steps": null,
+    "eval_samples": 10
+  },
+  "keep_fraction": 0.3,
+  "n_epochs": 100,
+  "n_seeds": 5,
+  "train_episodes": 80,
+  "test_episodes": 20,
+  "ablation": [
+    {
+      "condition": "Random",
+      "n_episodes": 24,
+      "test_mse": 0.92261803150177,
+      "test_mse_std": 0.10165078056824497,
+      "per_seed_mse": [
+        0.9393519163131714,
+        0.7870776057243347,
+        0.9364973902702332,
+        0.8582148551940918,
+        1.091948390007019
+      ],
+      "vs_random": 0.0
+    },
+    {
+      "condition": "Full dataset",
+      "n_episodes": 80,
+      "test_mse": 0.851438558101654,
+      "test_mse_std": 0.005924704949092161,
+      "per_seed_mse": [
+        0.8423154950141907,
+        0.8566260933876038,
+        0.8590791821479797,
+        0.8498378396034241,
+        0.849334180355072
+      ],
+      "vs_random": 7.714944968532129
+    },
+    {
+      "condition": "K-Center greedy",
+      "n_episodes": 24,
+      "test_mse": 0.8060774326324462,
+      "test_mse_std": 0.005703004546123775,
+      "per_seed_mse": [
+        0.7995169758796692,
+        0.8094131946563721,
+        0.8075782656669617,
+        0.8141752481460571,
+        0.7997034788131714
+      ],
+      "vs_random": 12.631511079360495
+    },
+    {
+      "condition": "Diversity-only",
+      "n_episodes": 24,
+      "test_mse": 0.7228555798530578,
+      "test_mse_std": 0.005052003126895867,
+      "per_seed_mse": [
+        0.7196289896965027,
+        0.7315770387649536,
+        0.7167105078697205,
+        0.7244387865066528,
+        0.7219225764274597
+      ],
+      "vs_random": 21.651696024578396
+    },
+    {
+      "condition": "Calibra full",
+      "n_episodes": 24,
+      "test_mse": 0.773560631275177,
+      "test_mse_std": 0.004062308908048121,
+      "per_seed_mse": [
+        0.7730845808982849,
+        0.7734150886535645,
+        0.7779541015625,
+        0.7769590020179749,
+        0.7663903832435608
+      ],
+      "vs_random": 16.155916656426957
+    }
+  ]
+}

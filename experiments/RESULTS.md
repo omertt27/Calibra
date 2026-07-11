@@ -6,9 +6,11 @@ This document presents the empirical validation results of Calibra's coreset pru
 
 ## 1. Coreset Curation Benchmarks
 
-### 1.1. Real-Data gym_pusht/PushT-v0 Benchmark (Scripted Expert)
+### 1.1. Real-Data gym_pusht/PushT-v0 Benchmark (Scripted Expert) — *exploratory single-seed case study*
 
 We evaluated Calibra's coreset selection on the standard `gym_pusht/PushT-v0` task using a scripted expert policy (5D state observations) across 500 collected demonstration episodes. A 3-layer behavior cloning MLP (BC-MLP) was trained on three conditions and evaluated over 100 simulator rollouts.
+
+> ⚠️ **This is a single-seed run and is reported as exploratory evidence, not a general result.** Absolute success rates are low (2–8%), and the 10-seed variance sweep in §3 shows the clean coreset averages **14.8% ± 6.3%** — single-run gaps at this scale fall within training-seed noise. Rely on the seeded, paired-*t* ablation (5 seeds, 3 datasets) in `README.md` for the headline curation result. The "compute saved" figures are *optimization-step* reductions under this benchmark's episode-scaled step schedule, not a universal training-cost reduction from keeping 30% of episodes.
 
 #### Results Table
 
@@ -21,7 +23,7 @@ We evaluated Calibra's coreset selection on the standard `gym_pusht/PushT-v0` ta
 #### Key Takeaways
 
 1. **High-Quality Filtering:** Calibra's quality filter successfully identified **21 high-signal episodes out of 500** (rejecting 96% of the scripted demos as low-quality/corrupted).
-2. **Superior Success Rate:** BC trained on those 21 episodes achieves **4× the success rate of full-dataset training** (8.0% vs. 2.0%) while saving **95.8% in training compute**.
+2. **Superior Success Rate (single-seed):** In this single run, BC trained on those 21 episodes reached 8.0% success vs. 2.0% for full-dataset training, and used 95.8% fewer optimization steps under the episode-scaled step schedule. Both absolute rates are low and the gap is within seed variance (see §3), so this is exploratory, not a general "4×" claim.
 3. **Outperforming Random Baselines:** Compared to random 30% selection (which saves 66.4% compute with 6.0% success rate), Calibra's coreset achieves a higher success rate while saving an additional 29.4% compute.
 4. **The Negative Effect of Poor Data:** The full dataset actually performs the worst. This is because it includes many poor-quality demonstrations that confuse Behavior Cloning (BC) policies. Calibra correctly identifies and discards them.
 
@@ -111,7 +113,7 @@ We validate that `calibra predict` can flag training failures **before any GPU t
 |---|---|---|---|
 | L6 Spearman ρ | > 0.65 | **0.6749** (p=0.006) | ✅ PASS |
 | L4 failure prediction accuracy | ≥ 70% | **73.3%** (11/15) | ✅ PASS |
-| L4 root-cause accuracy (single-fault) | ≥ 80% | **100%** (9/9) | ✅ PASS |
+| L4 root-cause accuracy (single-fault) | ≥ 80% | **88.9%** (8/9) | ✅ PASS |
 
 #### Per-condition breakdown
 

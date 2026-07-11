@@ -19,6 +19,8 @@
 
 Calibra tells you what is wrong with your robot demonstrations — and removes the redundant ones — before you waste GPU time training on bad data.
 
+> **Source-available and local-first** (BSL 1.1) — free for research and internal use; converts to Apache 2.0 on 2030-06-30. See [LICENSE](LICENSE) and [LICENSING.md](LICENSING.md). Not OSI open source: reselling Calibra as a hosted/managed service requires a commercial license.
+
 ```bash
 pip install calibra-robotics
 calibra compare hf://lerobot/my_dataset aloha
@@ -495,22 +497,24 @@ Starts a local HTTP server that exposes all Calibra diagnostics as a REST API an
 
 ## Empirical Validation
 
-Calibra is backed by empirical testing on real robotics datasets and coreset selection experiments.
+Calibra is a **dataset observability framework** for diagnosing, predicting, and curating robotics training data. Its diversity-based selection component is *competitive with established coreset methods* (K-Center, Facility Location) rather than a claimed improvement over them, and its offline metrics provide *measurable, moderate* pre-training predictive signal. The results below are reported at the strength the evidence supports — seeded, paired comparisons are the headline; single-seed runs are labelled exploratory.
 
 ### Deployed GPU Benchmarks (RTX 2080)
 
 To validate Calibra's real-world impact, we ran full policy training and evaluation loops on an RTX 2080 GPU under two critical validation setups.
 
-#### 1. Coreset Curation Benchmark (`gym_pusht/PushT-v0`)
-Evaluates policy learning efficiency and final success rates when training a Behavior Cloning (BC) policy on a curated **30% Calibra coreset** vs. the full raw dataset and a random 30% baseline.
+#### 1. Coreset Curation Benchmark (`gym_pusht/PushT-v0`) — *exploratory single-seed case study*
+Trains a Behavior Cloning (BC) policy on a curated **30% Calibra coreset** vs. the full raw dataset and a random 30% baseline.
 
-| Curation Condition | Training Steps | Avg Coverage | Success Rate ($\text{SR} \ge 50\%$) | Compute Saved | CUDA Train Time |
+| Curation Condition | Training Steps | Avg Coverage | Success Rate ($\text{SR} \ge 50\%$) | Optimization Steps Saved | CUDA Train Time |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Full Raw Dataset (100%)** | 150,000 | 21.9% | 2.0% | Base (0.0% saved) | 186.7s |
-| **Calibra 30% Coreset** | **6,300** | **23.3%** | **8.0%** | **95.8% saved** | **7.8s** |
-| **Random 30% Baseline** | 45,000 | 23.8% | 6.0% | 69.5% saved | 56.9s |
+| **Calibra 30% Coreset** | **6,300** | **23.3%** | **8.0%** | **95.8% fewer steps** | **7.8s** |
+| **Random 30% Baseline** | 45,000 | 23.8% | 6.0% | 69.5% fewer steps | 56.9s |
 
-* **Key Takeaway:** Calibra's 30% coreset (only 21 selected high-signal episodes) out-performed full training by **4×** while saving **95.8% of GPU training steps** (completing in under 8 seconds instead of over 3 minutes).
+> ⚠️ **Reported as exploratory evidence, not a general result.** This is a **single-seed** run and absolute success rates are low (2–8%). A 10-seed variance sweep (`experiments/check_pusht_variance.py`) shows the clean coreset averages **14.8% ± 6.3%**, so single-run gaps at this scale are within training-seed noise. The seeded, paired-*t* ablation below (5 seeds, 3 datasets) is the result to rely on.
+>
+> **On the 95.8% figure:** the coreset used 6,300 optimization steps vs. 150,000 for full-data under this benchmark's *episode-scaled* step schedule — i.e. 95.8% fewer optimization steps and 95.8% lower measured train time *under this protocol*. This does **not** imply that retaining 30% of episodes universally cuts training cost by 95.8%; the saving depends on the training-budget protocol.
 
 To reproduce:
 ```bash
@@ -520,7 +524,7 @@ python experiments/pusht_real_benchmark.py
 #### 2. Failure Prediction & Correlation Benchmark (`calibra predict`)
 Validates that Calibra can intercept dataset failures *before* wasting GPU compute. Tested across 15 PushT dataset variants corrupted with controlled noise (frame drops, joystick spikes, noisy episodes) at varying severity levels.
 
-* **Predictive Correlation (L6):** Spearman **$\rho = 0.6749$** ($p = 0.0057$, highly significant), confirming offline scores reliably predict downstream task success.
+* **Predictive Correlation (L6, within-PushT corruption severity):** Spearman **$\rho = 0.6749$** ($p = 0.0057$) between offline scores and downstream success *across the 15 corruption-severity variants of a single task*. This measures sensitivity to corruption severity — it is a different question from the cross-dataset ranking correlation reported below.
 * **Failure Prediction Accuracy (L4):** **73.3%** (11/15 conditions correctly classified as PASS/FAIL prior to training).
 * **Root-Cause Accuracy (L4):** **88.9%** (8/9 single-fault modes correctly identified, pinpointing teleoperation spikes and packet loss).
 
@@ -533,7 +537,9 @@ python experiments/failure_prevention_benchmark.py --save-fig --out-json results
 
 ### Predictor success correlation
 
-Offline predicted success probabilities (`calibra predict`) achieve a **Spearman rank correlation (ρ) of 0.5971** (p = 0.0146, statistically significant) with actual downstream policy success rates across 16 standard datasets (ALOHA, DROID-100, BridgeData, PushT, SVLA SO-100).
+Offline predicted success probabilities (`calibra predict`) achieve a **Spearman rank correlation (ρ) of 0.5971** (p = 0.0146, statistically significant) with actual downstream policy success rates across **seven verified dataset conditions** (ALOHA sim × 4, PushT image, Mobile ALOHA × 2). This is a *cross-dataset ranking* correlation and is distinct from the within-PushT corruption-severity correlation (ρ = 0.6749) reported above. DROID-100 and BridgeData V2 are **excluded** from this correlation due to a control-mode mismatch (velocity-command datasets have structurally high vel_disc that the current rubric over-penalises).
+
+> Calibra ships **reference profiles for 16 datasets** — a separate count from the seven datasets used in this correlation.
 
 ### Ablation study: which selection component drives the gains?
 
@@ -620,6 +626,86 @@ python experiments/ablation_benchmark.py --dataset lerobot/aloha_mobile_cabinet 
 python experiments/ablation_benchmark.py --dataset lerobot/droid_100 --seeds 5 --json results/ablation_droid.json
 python experiments/ablation_benchmark.py --dataset lerobot/columbia_cairlab_pusht_real --seeds 5 --json results/ablation_pusht_real.json
 python experiments/aggregate_ablation.py results/ablation_*.json
+```
+
+---
+
+### Cross-architecture check — BC-MLP, ACT, and Diffusion Policy
+
+The ablation above uses a BC-MLP learner. To test whether the findings are an
+artifact of that one architecture, we re-ran the **entire** benchmark — identical
+datasets, splits, seeds, and byte-identical coreset selection — swapping only the
+downstream learner across three families:
+
+- **BC-MLP** — deterministic 3-layer regressor (the original ablation).
+- **ACT** — Action Chunking Transformer: a state-conditioned CVAE with a
+  transformer encoder–decoder that predicts a 16-step action chunk (masked L1 + KL).
+  `experiments/act_ablation_benchmark.py`.
+- **Diffusion Policy** — a state-conditioned DDPM that denoises a 16-step action
+  chunk. `experiments/diffusion_ablation_benchmark.py`.
+
+All at 5 seeds, keep 30%, RTX 2080. Every coreset is identical across the three;
+only the policy changes.
+
+> **Scope.** These are *state-based* policies scored on **offline first-action
+> prediction error** (the action each policy executes), not image-conditioned
+> policies evaluated by simulator rollout. They test whether the *selection
+> ranking* transfers across learners, not task-level success rate. Diffusion is a
+> stochastic sampler, so it is evaluated by single-sample first-action MSE and is
+> only compared **relative to Random / by rank within the diffusion learner** —
+> absolute MSE is never compared across policy families.
+
+**Mean improvement over Random (5 seeds, keep 30%, 3 datasets; per-method mean rank in parentheses):**
+
+| Method (keep 30%) | BC-MLP | ACT | Diffusion |
+|---|---:|---:|---:|
+| **Diversity-only** | +29.5% (2.0) | +26.5% (2.0) | +11.9% (2.7) |
+| **Calibra full** | +24.5% (2.7) | +23.7% (3.0) | **+13.8% (1.3)** |
+| K-Center greedy | +24.0% (2.0) | +23.1% (2.7) | +10.1% (4.0) |
+| Facility Location | +21.5% (4.0) | +18.4% (3.7) | +8.7% (4.3) |
+| Quality-filter only | +16.2% (4.3) | +17.4% (4.7) | +11.1% (3.3) |
+| Random | 0.0% (6.3) | 0.0% (5.7) | 0.0% (5.7) |
+| Herding | −11.4% (6.7) | −7.5% (6.3) | −5.5% (6.7) |
+
+**Rank agreement of the method ordering (Spearman ρ):** BC↔ACT **1.00**, BC↔Diffusion **0.86**, ACT↔Diffusion **0.86** (Kendall τ = 1.00 / 0.71 / 0.71). Changing the learner from an MLP to a transformer (BC→ACT) did not change the method ordering at all; changing to a generative policy (→Diffusion) altered some details but preserved most of the ranking.
+
+**What holds across all three, and the one thing that shifts:**
+
+1. **The core ranking is architecture-robust** (ρ ≥ 0.86). Coverage-based selection (Diversity-only / Calibra full) **consistently outperformed Random across all three evaluated policy architectures**; K-Center and Facility Location are mid-pack; and **Herding was worst under every learner**. Calibra full was *never significantly worse than the best published coreset baseline* (K-Center) under any learner.
+2. **Diversity-only (coverage) selection is the best-or-tied-best method under all three learners.** In the single-sample diffusion run above, Calibra full's quality filter appeared to lift it to the top rank — but two robustness checks (below) overturn that. Under both equal compute and multi-sample-averaged evaluation, **Diversity-only is again the top method under diffusion** and Calibra full significantly loses to it on DROID and PushT (p<0.001) — the *same* quality-filter drag seen on BC-MLP and ACT. So the honest conclusion is that **the quality filter is a drag on clean data under all three architectures**, and the apparent diffusion exception did not survive robustness checks.
+3. **Practical takeaway:** diversity/coverage selection is the safe default across all three architectures; quality filtering pays off only under detected corruption (see the failure-prediction and `corrupt` benchmarks), not on clean teleop data.
+
+**Robustness checks on the diffusion learner (5 key conditions, 5 seeds).** Because diffusion is a stochastic sampler evaluated by single-sample first-action MSE, we ran two controls — reported *alongside* the single-sample numbers, not replacing them:
+
+| Method | Single-sample (default) | Equal compute (5000 steps) | Multi-sample (10× avg) |
+|---|---:|---:|---:|
+| **Diversity-only** | +11.9% (rank 2.7) | +23.4% (**1.67**) | +22.9% (**1.67**) |
+| Calibra full | +13.8% (1.33) | +19.3% (2.33) | +21.2% (2.00) |
+| K-Center greedy | +10.1% (4.0) | +22.0% (2.00) | +20.2% (2.33) |
+
+- **Equal compute** (`--max-steps 5000`, identical optimizer steps for every condition): Full-dataset's default-protocol advantage was largely a compute artifact — its vs-random gap collapses from +59/+14/+36% to +2.6/−6.4/+3.6% (ALOHA/DROID/PushT) once steps are equalized, while the coreset selection ranking is unchanged. The coreset advantage is not a compute artifact.
+- **Multi-sample** (`--eval-samples 10`, averaging sampler noise): the method ranking is stable and matches the equal-compute ranking — confirming the single-sample diffusion result's *ranking* was not merely sampler noise, even though the specific "Calibra full first" ordering was.
+
+To reproduce:
+```bash
+# ACT
+python experiments/act_ablation_benchmark.py --dataset lerobot/aloha_mobile_cabinet --seeds 5 --json results/act_ablation_aloha.json
+python experiments/act_ablation_benchmark.py --dataset lerobot/droid_100 --seeds 5 --json results/act_ablation_droid.json
+python experiments/act_ablation_benchmark.py --dataset lerobot/columbia_cairlab_pusht_real --seeds 5 --json results/act_ablation_pusht_real.json
+python experiments/aggregate_ablation.py results/act_ablation_*.json
+# Diffusion Policy
+python experiments/diffusion_ablation_benchmark.py --dataset lerobot/aloha_mobile_cabinet --seeds 5 --json results/diffusion_ablation_aloha.json
+python experiments/diffusion_ablation_benchmark.py --dataset lerobot/droid_100 --seeds 5 --json results/diffusion_ablation_droid.json
+python experiments/diffusion_ablation_benchmark.py --dataset lerobot/columbia_cairlab_pusht_real --seeds 5 --json results/diffusion_ablation_pusht_real.json
+python experiments/aggregate_ablation.py results/diffusion_ablation_*.json
+# Diffusion robustness checks (per dataset; --conditions restricts to the 5 key methods)
+#   equal compute:  add  --max-steps 5000
+#   multi-sample:   add  --eval-samples 10
+python experiments/diffusion_ablation_benchmark.py --dataset lerobot/droid_100 --seeds 5 \
+    --max-steps 5000 --conditions "Full dataset,K-Center greedy,Diversity-only,Calibra full" \
+    --json results/diffusion_equalstep_droid.json
+# NOTE: aggregate_ablation.py takes explicit paths — shell globs like results/*.json are not
+# expanded by PowerShell, so pass filenames (or run from bash).
 ```
 
 ---

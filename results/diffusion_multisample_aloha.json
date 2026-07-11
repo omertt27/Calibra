@@ -1,0 +1,94 @@
+{
+  "dataset": "lerobot/aloha_mobile_cabinet",
+  "policy": "diffusion",
+  "diffusion_config": {
+    "chunk": 16,
+    "stride": 4,
+    "max_windows": 30000,
+    "n_diffusion_steps": 100,
+    "hidden": 512,
+    "time_dim": 128,
+    "lr": 0.0002,
+    "batch_size": 256,
+    "n_epochs": 100,
+    "max_steps": null,
+    "eval_samples": 10
+  },
+  "keep_fraction": 0.3,
+  "n_epochs": 100,
+  "n_seeds": 5,
+  "train_episodes": 68,
+  "test_episodes": 17,
+  "ablation": [
+    {
+      "condition": "Random",
+      "n_episodes": 20,
+      "test_mse": 0.338630223274231,
+      "test_mse_std": 0.019109338939475192,
+      "per_seed_mse": [
+        0.3234610855579376,
+        0.3278053402900696,
+        0.3679856061935425,
+        0.3544304668903351,
+        0.31946861743927
+      ],
+      "vs_random": 0.0
+    },
+    {
+      "condition": "Full dataset",
+      "n_episodes": 68,
+      "test_mse": 0.14549261033535005,
+      "test_mse_std": 0.007130415871884129,
+      "per_seed_mse": [
+        0.14835640788078308,
+        0.15348343551158905,
+        0.14667342603206635,
+        0.14683489501476288,
+        0.13211488723754883
+      ],
+      "vs_random": 57.0349601613892
+    },
+    {
+      "condition": "K-Center greedy",
+      "n_episodes": 20,
+      "test_mse": 0.3229744851589203,
+      "test_mse_std": 0.01958573661365004,
+      "per_seed_mse": [
+        0.31801024079322815,
+        0.3117283284664154,
+        0.32714882493019104,
+        0.3579496145248413,
+        0.30003541707992554
+      ],
+      "vs_random": 4.623254818762082
+    },
+    {
+      "condition": "Diversity-only",
+      "n_episodes": 20,
+      "test_mse": 0.32269132137298584,
+      "test_mse_std": 0.015424019412609331,
+      "per_seed_mse": [
+        0.311023473739624,
+        0.31013795733451843,
+        0.3300372362136841,
+        0.3498295843601227,
+        0.31242835521698
+      ],
+      "vs_random": 4.706875171132445
+    },
+    {
+      "condition": "Calibra full",
+      "n_episodes": 20,
+      "test_mse": 0.31228838562965394,
+      "test_mse_std": 0.017565942510524745,
+      "per_seed_mse": [
+        0.30270281434059143,
+        0.30534815788269043,
+        0.31239014863967896,
+        0.34567853808403015,
+        0.2953222692012787
+      ],
+      "vs_random": 7.778938746186509
+    }
+  ]
+}
