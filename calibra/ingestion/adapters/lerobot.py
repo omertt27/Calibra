@@ -16,6 +16,8 @@ Supports:
   - HuggingFace Hub URIs:      "hf://lerobot/pusht"
   - Local disk (v1):  directory with metadata.json or dataset_dict.json
   - Local disk (v2):  directory with meta/info.json + Parquet shards
+  - Local disk (v3):  directory with meta/info.json (codebase_version "v3.0")
+                      + Parquet shards; same fast path as v2
                       (fast path: DuckDB reads Parquet directly without
                        loading image columns into RAM)
 
@@ -130,7 +132,7 @@ class LeRobotReader(DatasetReader):
         else:
             p = Path(bare)
             if (p / "meta" / "info.json").exists():
-                # v2 format: DuckDB fast path, pyarrow fallback
+                # v2/v3 format (meta/info.json + Parquet shards): DuckDB fast path, pyarrow fallback
                 try:
                     return self._read_local_v2_duckdb(p, path)
                 except ImportError:

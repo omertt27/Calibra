@@ -12,6 +12,58 @@ from typing import Optional
 
 from calibra.schema.report import DiagnosticReport, RiskLevel
 
+# Metric name fragments used to route flags into health categories.
+_QUALITY_TERMS = {"ldlj", "jerk", "velocity_discontinuity", "smoothness", "action"}
+_SYNCHRONY_TERMS = {"timestamp", "jitter", "dropout", "contact", "sync", "temporal"}
+_COVERAGE_TERMS = {"ssl", "novelty", "coverage", "diversity", "outlier"}
+
+
+def _compute_health_score(report: DiagnosticReport) -> dict[str, int]:
+    """
+    Derive a 0–100 composite health score and four category sub-scores from
+    the report's RiskFlags.  No new analyzers needed — scores are a function
+    of flag severity and category membership.
+    """
+    quality_flags, sync_flags, coverage_flags, integrity_flags = [], [], [], []
+
+    for flag in report.flags:
+        key = flag.metric.lower()
+        if any(t in key for t in _QUALITY_TERMS):
+            quality_flags.append(flag)
+        elif any(t in key for t in _SYNCHRONY_TERMS):
+            sync_flags.append(flag)
+        elif any(t in key for t in _COVERAGE_TERMS):
+            coverage_flags.append(flag)
+        else:
+            integrity_flags.append(flag)
+
+    def _cat(flags: list) -> int:
+        score = 100
+        for f in flags:
+            score -= 20 if f.level == RiskLevel.CRITICAL else 8 if f.level == RiskLevel.WARNING else 0
+        return max(0, score)
+
+    overall = 100
+    for f in report.flags:
+        overall -= 12 if f.level == RiskLevel.CRITICAL else 4 if f.level == RiskLevel.WARNING else 0
+    overall = max(0, overall)
+
+    return {
+        "overall": overall,
+        "quality": _cat(quality_flags),
+        "synchrony": _cat(sync_flags),
+        "coverage": _cat(coverage_flags),
+        "integrity": _cat(integrity_flags),
+    }
+
+
+def _score_color_class(score: int) -> str:
+    if score >= 80:
+        return "score-green"
+    if score >= 60:
+        return "score-yellow"
+    return "score-red"
+
 
 def generate_html_report(
     report: DiagnosticReport, output_path: str, outliers: Optional[dict] = None
@@ -19,6 +71,10 @@ def generate_html_report(
     """
     Generate a standalone HTML dashboard report and write it to `output_path`.
     """
+    # Health score
+    hs = _compute_health_score(report)
+    hs_color = _score_color_class(hs["overall"])
+
     # Extract metrics for charts
     labels = [f"Ep {i}" for i in range(report.n_episodes)]
 
@@ -90,17 +146,58 @@ def generate_html_report(
         }
     </script>
     <style>
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+        /* ── Health Score Dashboard ── */
+        .health-panel {
+            border-radius: 14px;
+            padding: 20px;
+            background: rgba(15,23,42,0.6);
+            border: 1px solid rgba(99,102,241,0.18);
         }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #0f172a;
+        .health-top { display: flex; align-items: center; gap: 18px; margin-bottom: 18px; }
+        .score-ring {
+            flex-shrink: 0;
+            width: 76px; height: 76px;
+            border-radius: 50%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            border: 4px solid;
+            transition: border-color 0.3s;
         }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 3px;
+        .score-green { border-color: #22c55e; }
+        .score-yellow { border-color: #f59e0b; }
+        .score-red { border-color: #ef4444; }
+        .score-ring .score-num {
+            font-size: 26px; font-weight: 800; line-height: 1;
+            color: #fff;
         }
+        .score-ring .score-denom { font-size: 10px; color: #64748b; margin-top: 1px; }
+        .score-meta h3 { font-size: 13px; font-weight: 700; color: #e2e8f0; margin-bottom: 4px; }
+        .score-meta p { font-size: 11px; color: #64748b; line-height: 1.4; }
+        .score-bars { display: flex; flex-direction: column; gap: 10px; }
+        .score-bar-row {
+            display: grid;
+            grid-template-columns: 80px 1fr 30px;
+            align-items: center;
+            gap: 8px;
+        }
+        .score-bar-label { font-size: 11px; color: #94a3b8; }
+        .score-bar-track {
+            height: 6px; border-radius: 3px;
+            background: rgba(51,65,85,0.6);
+            overflow: hidden;
+        }
+        .score-bar-fill {
+            height: 100%; border-radius: 3px;
+            transition: width 0.6s ease;
+        }
+        .fill-green { background: #22c55e; }
+        .fill-yellow { background: #f59e0b; }
+        .fill-red { background: #ef4444; }
+        .score-bar-val { font-size: 11px; color: #64748b; text-align: right; font-variant-numeric: tabular-nums; }
     </style>
 </head>
 <body class="h-full flex flex-col font-sans">
@@ -129,6 +226,43 @@ def generate_html_report(
     <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
         <!-- Sidebar Navigation & Status Summary -->
         <section class="w-full lg:w-80 border-r border-slate-800 bg-slate-900/20 p-6 flex flex-col gap-6 overflow-y-auto">
+            <!-- Dataset Health Score -->
+            <div class="health-panel">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Dataset Health</div>
+                <div class="health-top">
+                    <div class="score-ring __HEALTH_COLOR__">
+                        <span class="score-num">__HEALTH_OVERALL__</span>
+                        <span class="score-denom">/100</span>
+                    </div>
+                    <div class="score-meta">
+                        <h3>__HEALTH_LABEL__</h3>
+                        <p>Based on __N_FLAGS__ diagnostic flag(s) across all analyzers.</p>
+                    </div>
+                </div>
+                <div class="score-bars">
+                    <div class="score-bar-row">
+                        <span class="score-bar-label">Quality</span>
+                        <div class="score-bar-track"><div class="score-bar-fill __QUALITY_FILL__" style="width:__QUALITY__%"></div></div>
+                        <span class="score-bar-val">__QUALITY__</span>
+                    </div>
+                    <div class="score-bar-row">
+                        <span class="score-bar-label">Synchrony</span>
+                        <div class="score-bar-track"><div class="score-bar-fill __SYNCHRONY_FILL__" style="width:__SYNCHRONY__%"></div></div>
+                        <span class="score-bar-val">__SYNCHRONY__</span>
+                    </div>
+                    <div class="score-bar-row">
+                        <span class="score-bar-label">Coverage</span>
+                        <div class="score-bar-track"><div class="score-bar-fill __COVERAGE_FILL__" style="width:__COVERAGE__%"></div></div>
+                        <span class="score-bar-val">__COVERAGE__</span>
+                    </div>
+                    <div class="score-bar-row">
+                        <span class="score-bar-label">Integrity</span>
+                        <div class="score-bar-track"><div class="score-bar-fill __INTEGRITY_FILL__" style="width:__INTEGRITY__%"></div></div>
+                        <span class="score-bar-val">__INTEGRITY__</span>
+                    </div>
+                </div>
+            </div>
+
             <div>
                 <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Overall Diagnostics</h2>
                 <div class="rounded-xl border border-slate-800 p-4 bg-slate-900/50 flex flex-col gap-4">
@@ -473,6 +607,25 @@ def generate_html_report(
 </html>
 """
 
+    # Health score label
+    def _health_label(score: int) -> str:
+        if score >= 90:
+            return "Excellent"
+        if score >= 75:
+            return "Good"
+        if score >= 60:
+            return "Fair"
+        if score >= 40:
+            return "Poor"
+        return "Critical"
+
+    def _fill_cls(score: int) -> str:
+        if score >= 80:
+            return "fill-green"
+        if score >= 60:
+            return "fill-yellow"
+        return "fill-red"
+
     # Do placeholders replacement
     html_content = (
         html_template.replace("__DATASET_NAME__", report.dataset_name)
@@ -490,6 +643,19 @@ def generate_html_report(
         .replace("__VEL_VALS__", json.dumps(vel_disc_vals))
         .replace("__SSL_VALS__", json.dumps(ssl_novelty_vals))
         .replace("__JITTER_VALS__", json.dumps(jitter_vals))
+        # Health score panel
+        .replace("__HEALTH_OVERALL__", str(hs["overall"]))
+        .replace("__HEALTH_COLOR__", hs_color)
+        .replace("__HEALTH_LABEL__", _health_label(hs["overall"]))
+        .replace("__N_FLAGS__", str(len(report.flags)))
+        .replace("__QUALITY__", str(hs["quality"]))
+        .replace("__QUALITY_FILL__", _fill_cls(hs["quality"]))
+        .replace("__SYNCHRONY__", str(hs["synchrony"]))
+        .replace("__SYNCHRONY_FILL__", _fill_cls(hs["synchrony"]))
+        .replace("__COVERAGE__", str(hs["coverage"]))
+        .replace("__COVERAGE_FILL__", _fill_cls(hs["coverage"]))
+        .replace("__INTEGRITY__", str(hs["integrity"]))
+        .replace("__INTEGRITY_FILL__", _fill_cls(hs["integrity"]))
     )
 
     Path(output_path).write_text(html_content, encoding="utf-8")

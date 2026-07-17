@@ -242,6 +242,12 @@ def run_certify(argv: list[str]) -> None:
         action="store_true",
         help="Output report as JSON instead of human-readable text",
     )
+    p.add_argument(
+        "--report",
+        metavar="PATH",
+        help="Write a schema-versioned CalibraReport JSON to PATH "
+             "(e.g. results/lerobot/pusht/latest.json)",
+    )
     args = p.parse_args(argv)
 
     dataset_path = args.path
@@ -310,5 +316,17 @@ def run_certify(argv: list[str]) -> None:
         print(json.dumps(out, indent=2))
     else:
         print(render_certificate(report, grade, args.reference, extra_steps))
+
+    if args.report:
+        from calibra.report_json import assemble_public_report, dataset_info_from_report
+
+        dataset_info = dataset_info_from_report(report)
+        public = assemble_public_report(
+            report,
+            dataset_info=dataset_info,
+            profile=args.reference,
+        )
+        public.write(args.report)
+        log(f"  Report written → {args.report}")
 
     sys.exit(exit_code)

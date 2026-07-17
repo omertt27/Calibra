@@ -35,6 +35,12 @@ calibra card    /data/my_demos.h5 --push                   # push quality card t
 calibra watch   /data/session/ --remediate                 # real-time operator feedback
 calibra watch   --stream --remediate                       # pipe metrics from collect script
 calibra calibrate                                          # re-fit weights from training history
+
+# Bulk auditing & leaderboard site
+calibra audit-all --org lerobot --out ./results            # audit every dataset in an HF org
+calibra audit-all --dataset lerobot/pusht lerobot/aloha_sim_insertion_human
+calibra site --results ./results --out ./site              # generate static leaderboard website
+calibra certify /data/my_demos --report results/pusht/latest.json  # write CalibraReport JSON
 ```
 
 ---
@@ -55,9 +61,9 @@ Calibra solves the data side.
 
 | Command | Description |
 |---|---|
-| `calibra` (default) | Full diagnostic audit report |
+| `calibra` (default) | Full diagnostic audit report with dataset health score dashboard |
 | `calibra compare` | Evidence-backed cross-dataset comparison |
-| `calibra certify` | Structured pass/fail certification |
+| `calibra certify` | Structured pass/fail certification; `--report` writes a CalibraReport JSON |
 | `calibra prune` | Two-stage coreset selection |
 | `calibra corrupt` | Inject synthetic corruptions to validate metric sensitivity |
 | `calibra retarget` | Convert absolute EEF actions to relative delta actions |
@@ -69,6 +75,8 @@ Calibra solves the data side.
 | `calibra transfer` | Cross-embodiment compatibility scoring |
 | `calibra cure` | Automatic data remediation (smoothing, resampling, trimming) |
 | `calibra serve` | Local REST API server and web dashboard |
+| `calibra audit-all` | Bulk-audit an entire HF org or explicit dataset list; writes CalibraReport JSONs |
+| `calibra site` | Generate a static leaderboard website from `audit-all` results |
 
 ### 1. `audit` — full diagnostic report
 
@@ -79,7 +87,7 @@ calibra /data/demo.h5 --policy act --json
 calibra /data/robot_demos.h5 --html-out report.html   # save visual HTML dashboard
 ```
 
-Runs four analyzers over every episode and flags anomalies with bootstrap confidence intervals and per-episode outlier detection.
+Runs four analyzers over every episode and flags anomalies with bootstrap confidence intervals and per-episode outlier detection. The `--html-out` dashboard now includes a **Dataset Health Score panel** — a composite 0–100 score derived from diagnostic flags, broken down into four sub-scores: Quality, Synchrony, Coverage, and Integrity (color-coded green/yellow/red).
 
 ### 2. `compare` — evidence-backed cross-dataset comparison
 
@@ -137,6 +145,7 @@ Every interpretation is backed by a falsifiable claim in `calibra/claims/` with 
 calibra certify /data/my_demos
 calibra certify /data/my_demos --reference aloha --policy diffusion --strict
 calibra certify hf://lerobot/my_dataset --json   # for CI pipelines
+calibra certify /data/my_demos --report results/my_demos/latest.json  # write CalibraReport JSON
 ```
 
 ```
@@ -167,6 +176,8 @@ calibra certify hf://lerobot/my_dataset --json   # for CI pipelines
 ```
 
 Exit codes: `0` = CERTIFIED, `1` = PROVISIONALLY CERTIFIED (warnings), `2` = NOT CERTIFIED (critical failures). Wire into CI with `--json` for machine-readable output.
+
+`--report PATH` writes a schema-versioned **CalibraReport** JSON to the given path (e.g. `results/lerobot/pusht/latest.json`). This is the same structured format produced by `audit-all` and consumed by `calibra site` — use it to integrate individual certification runs into the leaderboard pipeline.
 
 ### 4. `prune` — coreset selection
 
@@ -473,7 +484,65 @@ calibra cure lerobot/pusht --hz 10 --out cured/ --format lerobot
 
 Automatically applies kinematic and temporal fixes to every episode and writes cleaned per-episode `.npz` files. The default remedy pipeline is `smooth,interpolate,trim`: Savitzky-Golay filtering removes jerk spikes, uniform resampling resolves packet drops and timing jitter, and dead-time trimming cuts leading/trailing static segments. Use `--remedy` to apply a subset, `--hz` to pin the output control frequency, and `--trim-threshold` to tune the motion-detection sensitivity. A `cure_manifest.json` records original and cured step counts and Hz for every episode.
 
-### 14. `serve` — local REST API server
+### 14. `audit-all` — bulk dataset auditor
+
+```bash
+calibra audit-all --org lerobot                        # audit every dataset in an HF org
+calibra audit-all --org lerobot --out ./results --workers 8
+calibra audit-all --dataset lerobot/pusht lerobot/aloha_sim_insertion_human
+calibra audit-all --org lerobot --force                # re-audit even if cached
+calibra audit-all --org lerobot --limit 5 --dry-run    # preview without running
+```
+
+```
+Discovering datasets (org=lerobot) ...
+Found 47 dataset(s).
+[1/47] lerobot/pusht  auditing ...
+[1/47] lerobot/pusht  OK  score=74.2 grade=C cert=provisional  8.3s
+[2/47] lerobot/aloha_sim_insertion_human  auditing ...
+...
+
+Done.  audited=45  skipped=2  failed=0  mean_score=71.8
+Manifest: results/manifest.json
+```
+
+Bulk-audits a HuggingFace org or an explicit list of dataset repo IDs in parallel. For each dataset it runs `Pipeline().analyze_path()`, assembles a schema-validated **CalibraReport** JSON, and writes it to a revision-stamped path:
+
+```
+results/<org>/<slug>/<revision-sha[:8]>/<timestamp>.json
+results/<org>/<slug>/latest.json    ← always up-to-date symlink
+```
+
+A `manifest.json` is written to the output root with an aggregate summary. Skips datasets whose current revision is already cached; use `--force` to re-audit. Supports `--workers N` for parallel execution (default 4) and `--format` to override the adapter for all datasets. Requires `pip install huggingface-hub`.
+
+### 15. `site` — static leaderboard website
+
+```bash
+calibra site --results ./results --out ./site
+calibra site --results ./results --out ./site --title "My Robot Lab Leaderboard"
+```
+
+```
+Building site from 47 report(s) → site/
+  leaderboard  → site/index.html
+  dataset page → site/lerobot/pusht/index.html
+  dataset page → site/lerobot/aloha_sim_insertion_human/index.html
+  ...
+Done. 47 dataset(s) → site/index.html
+```
+
+Reads the `results/` directory tree produced by `audit-all` and generates a self-contained static website with no server or Python runtime required:
+
+| Output | Description |
+|---|---|
+| `site/index.html` | Sortable, filterable dataset leaderboard with search and grade/cert filters |
+| `site/<org>/<slug>/index.html` | Per-dataset detail page: quality dimensions, findings, policy recommendations |
+| `site/<org>/<slug>/badge.svg` | Embeddable shields.io-style quality badge |
+| `site/<org>/<slug>/history.json` | Score history across dataset revisions (for external consumers) |
+
+The leaderboard is fully client-side (no build step, no dependencies) and can be hosted on GitHub Pages, Netlify, or any static file server.
+
+### 16. `serve` — local REST API server
 
 ```bash
 calibra serve                    # start on localhost:7842
@@ -961,7 +1030,7 @@ You can profile additional datasets locally using `scripts/profile_dataset.py`.
 
 | Format | Extra install | Notes |
 |---|---|---|
-| LeRobot v2 (Parquet shards) | `calibra[lerobot]` | DuckDB lazy scan — image columns never enter RAM |
+| LeRobot v2/v3 (Parquet shards) | `calibra[lerobot]` | DuckDB lazy scan — image columns never enter RAM; v3 uses the same fast path as v2 |
 | LeRobot v1 (HF datasets) | `calibra[lerobot]` | HuggingFace `datasets` + pandas groupby |
 | HuggingFace Hub | `calibra[lerobot]` | `lerobot/pusht`, `hf://lerobot/pusht` |
 | HDF5 (Isaac Lab, Robomimic) | `calibra[hdf5]` | Convention A + B |
@@ -985,11 +1054,18 @@ calibra/
 ├── core/               # Public API: LazyDatasetReader, SchemaNormalizer, mappings.yaml
 ├── metrics/            # Standalone pure-numpy functions (no pipeline needed)
 ├── analyzers/          # Pipeline analyzers: temporal, smoothness, coverage, task_structure
-├── ingestion/          # Format adapters (lerobot, hdf5, rlds, mcap) + registry
+├── ingestion/          # Format adapters (lerobot v1/v2/v3, hdf5, rlds, mcap) + registry
 ├── comparison/         # DatasetComparator, EpisodeCurator
 ├── world_model/        # Lightweight (non-torch) world-model surprise scoring + curation
 ├── models/             # RobotJEPA — trained world model (optional, requires torch)
-├── schema/             # EpisodeBatch, DiagnosticReport, normalization layer
+├── schema/
+│   ├── report.py           # EpisodeBatch, DiagnosticReport, normalization layer (internal)
+│   ├── public_report.py    # CalibraReport — stable public JSON contract (versioned)
+│   └── scoring.py          # Scoring rubric v1.0: dimension weights, grade thresholds
+├── audit_all.py        # calibra audit-all — bulk HF org / dataset auditor
+├── report_json.py      # Assemble CalibraReport from DiagnosticReport
+├── report_html.py      # HTML dashboard (includes Dataset Health Score panel)
+├── site.py             # calibra site — static leaderboard + per-dataset page generator
 ├── claims/             # Falsifiable claim registry (JSON + SPEC.md)
 ├── knowledge_base/     # claims.yaml (auto-generated — edit the source JSON files)
 ├── references/         # Profiled reference datasets (JSON)

@@ -2,6 +2,9 @@
 CLI entry point.
 
     python -m calibra <path> [--policy FAMILY] [--format FORMAT] [--json] [--strict]
+    python -m calibra audit-all --org lerobot [--out DIR] [--workers N] [--force]
+    python -m calibra audit-all --dataset lerobot/pusht lerobot/aloha_sim_insertion_human
+    python -m calibra site [--results DIR] [--out DIR] [--title "..."]
     python -m calibra compare <path> <reference> [--format FORMAT]
     python -m calibra certify <path> [--reference REF] [--policy FAMILY]
     python -m calibra prune <path> --keep FRACTION [--out coreset_index.json]
@@ -70,6 +73,18 @@ def main() -> None:
         from calibra.cloud.push import run_cloud
 
         run_cloud(sys.argv[2:])
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "site":
+        from calibra.site import run_site
+
+        run_site(sys.argv[2:])
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "audit-all":
+        from calibra.audit_all import run_audit_all
+
+        run_audit_all(sys.argv[2:])
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "compare":
