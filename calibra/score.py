@@ -78,6 +78,9 @@ _ENTROPY_CRITICAL = 1.5
 _TRAJ_DIV_GOOD = 0.4  # trajectory diversity score
 _SHORT_EP_WARNING = 0.05
 
+_ACTION_DROPOUT_WARNING = 0.05
+_ACTION_DROPOUT_CRITICAL = 0.15
+
 
 def _clamp(v: float, lo: float = 0.0, hi: float = 1.0) -> float:
     return max(lo, min(hi, v))
@@ -98,6 +101,7 @@ def _score_temporal(report: DiagnosticReport) -> tuple[float, dict]:
     t = _raw(report, "temporal_stability")
     jitter = t.get("jitter", {}).get("mean_cv", None)
     dropout = t.get("dropout", {}).get("mean_dropout_fraction", None)
+    action_dropout = t.get("action_dropout", {}).get("mean_zero_action_fraction", None)
 
     deduction = 0.0
     details: dict = {}
@@ -105,18 +109,26 @@ def _score_temporal(report: DiagnosticReport) -> tuple[float, dict]:
     if jitter is not None:
         details["jitter_cv"] = jitter
         if jitter >= _JITTER_CV_CRITICAL:
-            deduction += 12.5
+            deduction += 8.5
         elif jitter >= _JITTER_CV_WARNING:
             frac = (jitter - _JITTER_CV_WARNING) / (_JITTER_CV_CRITICAL - _JITTER_CV_WARNING)
-            deduction += 12.5 * _clamp(frac)
+            deduction += 8.5 * _clamp(frac)
 
     if dropout is not None:
         details["dropout_rate"] = dropout
         if dropout >= _DROPOUT_CRITICAL:
-            deduction += 12.5
+            deduction += 8.5
         elif dropout >= _DROPOUT_WARNING:
             frac = (dropout - _DROPOUT_WARNING) / (_DROPOUT_CRITICAL - _DROPOUT_WARNING)
-            deduction += 12.5 * _clamp(frac)
+            deduction += 8.5 * _clamp(frac)
+
+    if action_dropout is not None:
+        details["action_dropout_rate"] = action_dropout
+        if action_dropout >= _ACTION_DROPOUT_CRITICAL:
+            deduction += 8.0
+        elif action_dropout >= _ACTION_DROPOUT_WARNING:
+            frac = (action_dropout - _ACTION_DROPOUT_WARNING) / (_ACTION_DROPOUT_CRITICAL - _ACTION_DROPOUT_WARNING)
+            deduction += 8.0 * _clamp(frac)
 
     score = max(0.0, _MAX_TEMPORAL - deduction)
     return score, details
@@ -268,12 +280,21 @@ def compute_score(report: DiagnosticReport) -> dict:
     c_score, c_details = _score_coverage(report)
     st_score, st_details = _score_structure(report)
 
-    total = (t_score + s_score + c_score + st_score) / _MAX_TOTAL * 100.0
+    # Quality-gated diversity: coverage and task-structure only get full credit
+    # when temporal integrity and smoothness are both healthy.  Without this gate,
+    # high-entropy noise (random corrupted actions) earns full coverage credit even
+    # on unusable datasets.
+    integrity_gate = (t_score / _MAX_TEMPORAL + s_score / _MAX_SMOOTHNESS) / 2.0
+    c_score_eff = c_score * integrity_gate
+    st_score_eff = st_score * integrity_gate
+
+    total = (t_score + s_score + c_score_eff + st_score_eff) / _MAX_TOTAL * 100.0
     total = round(total, 1)
 
     return {
         "total_score": total,
         "category": _category(total),
+        "integrity_gate": round(integrity_gate, 3),
         "dimensions": {
             "temporal_stability": {
                 "score": round(t_score, 2),
@@ -286,12 +307,14 @@ def compute_score(report: DiagnosticReport) -> dict:
                 "details": s_details,
             },
             "coverage_diversity": {
-                "score": round(c_score, 2),
+                "score": round(c_score_eff, 2),
+                "score_raw": round(c_score, 2),
                 "max": _MAX_COVERAGE,
                 "details": c_details,
             },
             "task_structure": {
-                "score": round(st_score, 2),
+                "score": round(st_score_eff, 2),
+                "score_raw": round(st_score, 2),
                 "max": _MAX_STRUCTURE,
                 "details": st_details,
             },

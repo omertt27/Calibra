@@ -31,6 +31,7 @@ from calibra.schema.public_report import (
     DatasetInfo,
     DimensionResult,
     EnvironmentInfo,
+    EpisodeVerdicts,
     Finding,
     MetricValue,
     OverallResult,
@@ -53,6 +54,21 @@ from calibra.schema.scoring import (
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
+
+def _pruning_to_verdicts(pruning_result) -> EpisodeVerdicts:
+    """Convert an internal PruningResult to the public EpisodeVerdicts contract."""
+    reject_ids = list(pruning_result.quality_fail_ids) + list(pruning_result.diversity_pruned_ids)
+    return EpisodeVerdicts(
+        keep_episode_ids=list(pruning_result.keep_episode_ids),
+        reject_episode_ids=reject_ids,
+        reason_codes=dict(pruning_result.fail_reasons),
+        quality_scores=dict(pruning_result.quality_scores),
+        n_original=pruning_result.n_original,
+        n_kept=pruning_result.n_kept,
+        keep_fraction_actual=round(pruning_result.keep_fraction_actual, 4),
+        method=pruning_result.method,
+    )
+
 
 def _flag_to_finding(flag: RiskFlag) -> Finding:
     code = flag.metric.upper().replace(".", "_")
@@ -161,6 +177,8 @@ def assemble_public_report(
     dataset_info: DatasetInfo,
     sampling: Optional[SamplingConfig] = None,
     profile: Optional[str] = None,
+    pruning_result=None,
+    episode_hashes: Optional[dict] = None,
 ) -> CalibraReport:
     """
     Convert a DiagnosticReport into the public CalibraReport contract.
@@ -213,6 +231,8 @@ def assemble_public_report(
 
     # Compute report ID from the body (excluding the id field itself)
     now = datetime.now(timezone.utc)
+    verdicts = _pruning_to_verdicts(pruning_result) if pruning_result is not None else None
+    ep_hashes: dict = episode_hashes or {}
     id_body = {
         "schema_version": "1.0.0",
         "generated_at": now.isoformat(),
@@ -220,6 +240,8 @@ def assemble_public_report(
         "dataset": dataset_info.model_dump(),
         "audit": audit_cfg.model_dump(),
         "results": results.model_dump(),
+        "episode_verdicts": verdicts.model_dump() if verdicts is not None else None,
+        "episode_hashes": ep_hashes,
     }
     report_id = CalibraReport.compute_id(id_body)
 
@@ -234,6 +256,8 @@ def assemble_public_report(
         dataset=dataset_info,
         audit=audit_cfg,
         results=results,
+        episode_verdicts=verdicts,
+        episode_hashes=ep_hashes,
     )
 
 

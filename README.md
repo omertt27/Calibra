@@ -14,46 +14,122 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-BSL_1.1-blue.svg" alt="License: BSL 1.1"/></a>
 </p>
 
+**Data quality, curation, and compute efficiency for robot learning.**
 
-**Dataset observability and coreset selection for robotics imitation learning.**
-
-Calibra tells you what is wrong with your robot demonstrations — and removes the redundant ones — before you waste GPU time training on bad data.
-
-> **Source-available and local-first** (BSL 1.1) — free for research and internal use; converts to Apache 2.0 on 2030-06-30. See [LICENSE](LICENSE) and [LICENSING.md](LICENSING.md). Not OSI open source: reselling Calibra as a hosted/managed service requires a commercial license.
+Calibra identifies corrupted, redundant, and underrepresented robot demonstrations before training. It helps robotics teams select smaller, higher-value datasets, diagnose data failures, and avoid wasting GPU time on low-quality or repetitive episodes.
 
 ```bash
 pip install calibra-robotics
-calibra compare hf://lerobot/my_dataset aloha
-calibra certify /data/my_demos --reference aloha --policy diffusion
-calibra prune   /data/100k_episodes --keep 0.3 --out coreset.json
-calibra retarget /data/isaac_lab.h5 --out retargeted/
 
-# New in v0.6.0
-calibra predict /data/my_demos.h5 --policy gr00t          # predict training success before training
-calibra predict /data/my_demos.h5 --record-outcome 0.82   # close the loop after training
-calibra card    /data/my_demos.h5 --push                   # push quality card to HuggingFace Hub
-calibra watch   /data/session/ --remediate                 # real-time operator feedback
-calibra watch   --stream --remediate                       # pipe metrics from collect script
-calibra calibrate                                          # re-fit weights from training history
-
-# Bulk auditing & leaderboard site
-calibra audit-all --org lerobot --out ./results            # audit every dataset in an HF org
-calibra audit-all --dataset lerobot/pusht lerobot/aloha_sim_insertion_human
-calibra site --results ./results --out ./site              # generate static leaderboard website
-calibra certify /data/my_demos --report results/pusht/latest.json  # write CalibraReport JSON
+calibra audit /data/demos.h5
+calibra prune /data/demos.h5 --keep 0.3 --out coreset.json
+calibra certify /data/demos.h5 --policy diffusion
 ```
+
+> **Source-available and local-first** (BSL 1.1) — free for research and internal use; converts to Apache 2.0 on 2030-06-30. See [LICENSE](LICENSE) and [LICENSING.md](LICENSING.md). Not OSI open source: reselling Calibra as a hosted/managed service requires a commercial license.
 
 ---
 
-## The problem
+## Why Calibra
+
+Robot-learning performance depends not only on the policy architecture, but also on which demonstrations are used for training.
 
 Robot learning labs collect thousands of demonstration episodes. Naively training on all of them:
 
 - **Silently trains on bad data** — jerk spikes, dropped frames, communication lag, and stuck actuators all look like valid training signal to your policy.
 - **Wastes compute on redundancy** — in a 10,000-episode dataset, 60–80% of episodes are near-duplicates. GPU cost scales with volume, not uniqueness.
-- **Produces undiagnosable failures** — when a policy stalls or flails, you have no idea whether the cause is the architecture, the training recipe, or the data itself.
+- **Produces undiagnosable failures** — when a policy stalls or flails, you have no way to tell whether the cause is the architecture, the training recipe, or the data itself.
 
-Calibra solves the data side.
+Calibra analyzes:
+
+- temporal corruption and dropped frames
+- motion smoothness and control discontinuities
+- behavioral coverage and redundancy
+- contact-rich and task-relevant trajectories
+- latent novelty for world-model training
+
+It then recommends which episodes to keep, review, repair, or remove.
+
+---
+
+## Headline result
+
+Across ALOHA Mobile, DROID-100, and real PushT datasets, coverage-based curation consistently outperformed random selection at the same episode budget across three policy families — BC-MLP, ACT, and Diffusion Policy. **Method rankings were stable across architectures (Spearman ρ ≥ 0.86).**
+
+**Mean improvement over random selection (5 seeds, 30% retention, 3 datasets):**
+
+| Method | BC-MLP | ACT | Diffusion Policy |
+|---|---:|---:|---:|
+| Diversity-only | **+29.5%** | **+26.5%** | +11.9% |
+| Calibra full | +24.5% | +23.7% | **+13.8%** |
+| K-Center | +24.0% | +23.1% | +10.1% |
+| Facility Location | +21.5% | +18.4% | +8.7% |
+| Random | 0.0% | 0.0% | 0.0% |
+
+Results use five shared seeds, identical selected episodes across policy architectures, and paired comparisons against random selection. Metric: offline first-action prediction error (state-based policies). [Full ablation, robustness checks, and retention curves →](#empirical-validation)
+
+The central finding: **behavioral coverage is a robust default for robot-data selection**. Quality filtering improves results only when measurable corruption is present — on clean teleop data it is a drag across all three architectures.
+
+On contact-rich data (real PushT), a Calibra coreset at 10% of the full dataset **outperforms training on the full dataset by 41.7%**, using 90% fewer training episodes and proportionally fewer training steps under the episode-scaled benchmark protocol.
+
+---
+
+## What Calibra provides
+
+### Audit
+
+Detect timestamp jitter, frame drops, motion discontinuities, weak coverage, short episodes, and task-structure anomalies. Flags include 95% bootstrap confidence intervals and per-episode outlier detection.
+
+```bash
+calibra audit /data/demos.h5
+calibra audit /data/demos.h5 --html-out report.html
+calibra audit lerobot/pusht --policy diffusion
+```
+
+### Prune
+
+Select a smaller training set using quality-aware behavioral coverage. Two-stage pipeline: remove corrupted episodes first, then maximize behavioral diversity from the remainder.
+
+```bash
+calibra prune /data/demos.h5 --keep 0.3 --out coreset.json
+calibra prune /data/demos.h5 --keep 0.3 --strategy world-model
+```
+
+### Predict
+
+Estimate training readiness before launching an expensive experiment. Record outcomes after training to improve future predictions from your lab's actual history.
+
+```bash
+calibra predict /data/demos.h5 --policy diffusion
+calibra predict /data/demos.h5 --record-outcome 0.82
+```
+
+### Monitor
+
+Give teleoperators immediate feedback when a newly recorded episode contains detectable problems — within seconds of saving, not hours later during training.
+
+```bash
+calibra watch /data/session/ --remediate
+python collect_demos.py | calibra watch --stream --remediate
+```
+
+### World-model curation
+
+Retain clean trajectories with high latent prediction error instead of repeatedly training on already-covered dynamics.
+
+```bash
+calibra prune /data/demos --keep 0.3 --strategy world-model
+```
+
+### Evidence, not opaque scoring
+
+Every aggregate score decomposes into its underlying metrics, per-episode findings, confidence intervals, and remediation recommendations. Calibra separates directly measured dataset signals, evidence-backed interpretations, and predictive estimates with explicit confidence levels. Every interpretation in `calibra compare` output is backed by a falsifiable claim in `calibra/claims/` with an evidence count, confidence rating, and a stated falsification condition.
+
+---
+
+## License
+
+[Business Source License 1.1](LICENSE) — free for research and internal use, converts to Apache 2.0 on 2030-06-30. Offering Calibra as a hosted or managed commercial service requires a separate license. See [LICENSE](LICENSE) and [LICENSING.md](LICENSING.md). Contact: omertahtoko@gmail.com
 
 ---
 
@@ -61,10 +137,10 @@ Calibra solves the data side.
 
 | Command | Description |
 |---|---|
-| `calibra` (default) | Full diagnostic audit report with dataset health score dashboard |
+| `calibra` (default) | Full diagnostic audit report with dataset health score dashboard; `--cache-dir` for incremental analysis |
 | `calibra compare` | Evidence-backed cross-dataset comparison |
 | `calibra certify` | Structured pass/fail certification; `--report` writes a CalibraReport JSON |
-| `calibra prune` | Two-stage coreset selection |
+| `calibra prune` | Two-stage coreset selection; `--report` writes episode verdicts; `--cache-dir` for incremental analysis |
 | `calibra corrupt` | Inject synthetic corruptions to validate metric sensitivity |
 | `calibra retarget` | Convert absolute EEF actions to relative delta actions |
 | `calibra predict` | Predict training outcome before spending GPU time |
@@ -85,9 +161,12 @@ calibra /data/robot_demos.h5
 calibra lerobot/pusht --policy diffusion
 calibra /data/demo.h5 --policy act --json
 calibra /data/robot_demos.h5 --html-out report.html   # save visual HTML dashboard
+calibra /data/demos.h5 --cache-dir .calibra/cache     # incremental analysis
 ```
 
-Runs four analyzers over every episode and flags anomalies with bootstrap confidence intervals and per-episode outlier detection. The `--html-out` dashboard now includes a **Dataset Health Score panel** — a composite 0–100 score derived from diagnostic flags, broken down into four sub-scores: Quality, Synchrony, Coverage, and Integrity (color-coded green/yellow/red).
+Runs four analyzers over every episode and flags anomalies with bootstrap confidence intervals and per-episode outlier detection. The `--html-out` dashboard includes a **Dataset Health Score panel** — a composite 0–100 score derived from diagnostic flags, broken down into four sub-scores: Quality, Synchrony, Coverage, and Integrity (color-coded green/yellow/red).
+
+`--cache-dir DIR` enables incremental analysis: the pipeline result is stored in a file-based cache keyed by a SHA-256 fingerprint of the episode manifest. On unchanged data, the next run returns instantly from cache. Useful when collecting daily demos and re-auditing the same dataset repeatedly.
 
 ### 2. `compare` — evidence-backed cross-dataset comparison
 
@@ -137,7 +216,7 @@ RECOMMENDED ACTIONS
 ────────────────────────────────────────────────────────
 ```
 
-Every interpretation is backed by a falsifiable claim in `calibra/claims/` with an evidence count, confidence rating, and a stated falsification condition. Calibra never guesses.
+Every interpretation is backed by a falsifiable claim in `calibra/claims/` with an evidence count, confidence rating, and a stated falsification condition. Calibra separates directly measured signals, evidence-backed interpretations, and predictive estimates with explicit confidence levels.
 
 ### 3. `certify` — structured pass/fail certification
 
@@ -185,6 +264,15 @@ Exit codes: `0` = CERTIFIED, `1` = PROVISIONALLY CERTIFIED (warnings), `2` = NOT
 calibra prune /data/100k_episodes --keep 0.3 --out coreset.json
 calibra prune /data/my_ds --keep 0.5 --quality-only
 calibra prune /data/my_ds --keep 0.25 --max-spike-rate 0.03 --max-vel-disc-rate 0.08
+
+# Write a schema-versioned CalibraReport with per-episode verdicts (recommended)
+calibra prune /data/demos.h5 --keep 0.3 --report results/my_ds/latest.json
+
+# GR00T fine-tuning: strict quality thresholds + entropy-weighted diversity
+calibra prune demos.hdf5 --keep 0.3 --policy gr00t --report results/franka/latest.json
+
+# Incremental analysis: skip re-running the pipeline on unchanged episodes
+calibra prune /data/demos.h5 --keep 0.3 --cache-dir .calibra/cache --report results/latest.json
 ```
 
 ```
@@ -208,6 +296,10 @@ Two-stage pipeline:
 Use `--entropy-weight 0.4` (or `--policy gr00t`) to bias selection toward high-entropy (informationally rich) episodes, which improves GR00T fine-tuning outcomes. Alternatively, use `--strategy influence` to select episodes based on estimated learning value (combining action novelty, task contact representation, and Shannon entropy).
 
 Output `coreset.json` contains `keep_episode_ids`, `quality_fail_ids`, `diversity_pruned_ids`, and per-episode quality and diversity scores.
+
+**`--report PATH`** writes a schema-versioned **CalibraReport JSON** to the given path. This is the stable machine-readable contract for all downstream systems (training pipelines, CI, HuggingFace metadata). The report includes `episode_verdicts` — a structured list of approved and rejected episode IDs, per-episode reason codes (e.g. `jerk_spike`, `diversity_pruned`), quality scores, and per-episode SHA-256 content hashes for future change detection. See the [Integrations](#integrations) section for how to consume this report.
+
+**`--cache-dir DIR`** caches the diagnostic pipeline result keyed by a SHA-256 fingerprint of the episode manifest. On repeated runs with unchanged data, the pipeline is skipped and coreset selection proceeds immediately from cache — typically 10–50× faster on large datasets collected incrementally.
 
 ### 5. `corrupt` — validate metric sensitivity
 
@@ -365,7 +457,7 @@ calibra score hf://lerobot/pusht_image --badge   # print markdown badge for data
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-Aggregates all four diagnostic dimensions into a single 0–100 number: Temporal Stability (25 pts), Control Smoothness (35 pts), Coverage/Diversity (25 pts), and Task Structure (15 pts). Score categories: 90–100 Excellent, 75–89 Good, 60–74 Fair, 40–59 Poor, 0–39 Critical. Use `--badge` to generate a shields.io markdown badge for HuggingFace dataset cards. Exit codes: `0` = Good or better (≥75), `1` = Fair or Poor (40–74), `2` = Critical (<40).
+Aggregates all four diagnostic dimensions into a single 0–100 number: Temporal Stability (25 pts), Control Smoothness (35 pts), Coverage/Diversity (25 pts), and Task Structure (15 pts). Score categories: 90–100 Excellent, 75–89 Good, 60–74 Fair, 40–59 Poor, 0–39 Critical. Use `--badge` to generate a shields.io markdown badge for HuggingFace dataset cards. Every aggregate score decomposes into its underlying per-metric findings and confidence intervals. Exit codes: `0` = Good or better (≥75), `1` = Fair or Poor (40–74), `2` = Critical (<40).
 
 ### 11. `sim2real` — sim-to-real distribution gap
 
@@ -561,6 +653,158 @@ calibra serve --host 0.0.0.0
 ```
 
 Starts a local HTTP server that exposes all Calibra diagnostics as a REST API and serves the visual web dashboard at `http://localhost:7842`. Useful for programmatic access from scripts, CI pipeline integrations, and browsing dataset metrics in a browser without the terminal. Use `--host 0.0.0.0` to expose the server on all network interfaces.
+
+---
+
+## Integrations
+
+Calibra bridges the gap between dataset curation and training pipelines. The public `CalibraReport` JSON contract is the stable handoff between them — produced by `calibra prune --report` and consumed by training code without importing any Calibra internals.
+
+### LeRobot (HuggingFace)
+
+```python
+from calibra.integrations.lerobot import (
+    recommended_episode_ids,
+    rejected_episode_ids,
+    rejection_reason_codes,
+    load_dataset,
+    filter_by_report,
+)
+
+# 1. Get approved episode IDs from a CalibraReport
+ids = recommended_episode_ids("results/pusht/latest.json")
+# → ['0', '4', '7', '12', ...]
+
+# 2. Load a HuggingFace LeRobot dataset filtered to approved episodes
+ds = load_dataset("lerobot/pusht", report_path="results/pusht/latest.json")
+# ds is a datasets.Dataset with only the Calibra-approved episodes
+
+# 3. Filter an already-loaded dataset
+from datasets import load_dataset as hf_load
+full = hf_load("lerobot/pusht", split="train")
+ds = filter_by_report(full, "results/pusht/latest.json")
+
+# 4. Inspect rejection reasons
+codes = rejection_reason_codes("results/pusht/latest.json")
+# → {"42": ["jerk_spike", "timestamp_dropout"], "7": ["diversity_pruned"]}
+```
+
+**End-to-end workflow:**
+
+```bash
+# 1. Record demos with LeRobot
+lerobot-record --robot-type so100 --repo-id $HF_USER/my_dataset
+
+# 2. Curate and write the report
+calibra prune /path/to/my_dataset --keep 0.3 --report results/my_dataset/latest.json
+
+# 3. Train on the coreset
+python - <<'EOF'
+from calibra.integrations.lerobot import load_dataset
+ds = load_dataset("/path/to/my_dataset", report_path="results/my_dataset/latest.json")
+ds.save_to_disk("./my_dataset_coreset")
+EOF
+
+lerobot-train policy=act dataset_repo_id=./my_dataset_coreset
+```
+
+**Benchmark:** `experiments/lerobot_coreset_benchmark.py` runs the full sweep on any LeRobot v2 HuggingFace dataset, comparing Calibra coreset vs. random vs. full at keep fractions 10–100%, evaluated by held-out trajectory MSE.
+
+```bash
+pip install calibra-robotics datasets torch matplotlib
+python experiments/lerobot_coreset_benchmark.py --dataset lerobot/pusht --keep 0.1 0.3 0.5
+```
+
+### Isaac Lab → GR00T (NVIDIA)
+
+```python
+from calibra.integrations.isaac_lab import (
+    recommended_demo_indices,
+    rejected_demo_indices,
+    rejection_reason_codes,
+    export_gr00t_manifest,
+    filter_hdf5,
+)
+
+# 1. Get approved demo indices (0-based integers matching HDF5 group order)
+indices = recommended_demo_indices("results/franka/latest.json")
+# → [0, 3, 7, 11, ...]
+
+# 2. Export a GR00T training manifest
+manifest_path = export_gr00t_manifest(
+    report_path="results/franka/latest.json",
+    demos_path="demos/franka_pick.hdf5",
+    out_path="gr00t_manifest.json",
+)
+
+# 3. Write a filtered HDF5 with only Calibra-approved demos
+filter_hdf5(
+    src="demos/franka_pick.hdf5",
+    report_path="results/franka/latest.json",
+    dst="demos/franka_pick_coreset.hdf5",
+)
+```
+
+**End-to-end workflow:**
+
+```bash
+# 1. Record Isaac Lab demos (produces demos.hdf5)
+python scripts/robosuite_collect_data.py
+
+# 2. Curate with GR00T-tuned thresholds and write the report
+calibra prune demos.hdf5 --keep 0.3 --policy gr00t --report results/franka/latest.json
+
+# 3. Export GR00T manifest and filtered HDF5
+python - <<'EOF'
+from calibra.integrations.isaac_lab import export_gr00t_manifest, filter_hdf5
+export_gr00t_manifest("results/franka/latest.json", demos_path="demos.hdf5")
+filter_hdf5("demos.hdf5", "results/franka/latest.json", "demos_coreset.hdf5")
+EOF
+
+# 4. Fine-tune GR00T on the coreset
+python -m gr00t.train --manifest gr00t_manifest.json --demo-file demos_coreset.hdf5
+```
+
+**GR00T manifest format:**
+```json
+{
+  "schema_version": "1.0.0",
+  "calibra_report": "/abs/path/results/franka/latest.json",
+  "dataset_path": "/abs/path/demos/franka_pick.hdf5",
+  "n_demos_total": 200,
+  "n_demos_selected": 60,
+  "keep_fraction": 0.30,
+  "method": "calibra-diversity",
+  "demo_indices": [0, 3, 7, 11, "..."],
+  "demo_ids": ["demo_0", "demo_3", "demo_7", "demo_11", "..."],
+  "reason_codes": {"42": ["jerk_spike"], "7": ["diversity_pruned"]},
+  "created_at": "2026-07-23T12:00:00+00:00"
+}
+```
+
+**Benchmark:** `experiments/isaac_lab_gr00t_benchmark.py` runs the full sweep on synthetic 7-DOF arm data, comparing Calibra (with GR00T thresholds) vs. random selection at multiple keep fractions.
+
+```bash
+pip install calibra-robotics torch numpy matplotlib
+python experiments/isaac_lab_gr00t_benchmark.py --n-demos 300 --keep 0.2 0.3 0.5
+```
+
+### Incremental analysis (daily pipelines)
+
+When collecting demos daily and re-auditing the same dataset, use `--cache-dir` to skip the pipeline on unchanged episodes:
+
+```bash
+# Day 1: full audit takes ~30s
+calibra prune /data/demos --keep 0.3 --cache-dir .calibra/cache --report results/latest.json
+
+# Day 2: 10 new episodes added — cache hit for unchanged episodes, re-runs only on new ones
+calibra prune /data/demos --keep 0.3 --cache-dir .calibra/cache --report results/latest.json
+# → [cache hit]  pipeline skipped (fingerprint unchanged for 90% of data)
+```
+
+The cache is keyed by a 24-char SHA-256 fingerprint of sorted `(episode_id, content_hash)` pairs plus the policy family. Any episode change — re-recording, re-processing, or adding episodes — invalidates the fingerprint for the full batch, triggering a fresh pipeline run.
+
+The `episode_hashes` field in the CalibraReport JSON records each episode's SHA-256[:16] content hash so downstream systems can detect future changes without re-running Calibra.
 
 ---
 
@@ -779,6 +1023,43 @@ python experiments/diffusion_ablation_benchmark.py --dataset lerobot/droid_100 -
 
 ---
 
+### Rare-mode preservation — controlled multimodal benchmark
+
+The coreset benchmark above measures average success rate. A tougher test is **worst-group success**: can a heavily compressed coreset still cover a rare behavioural mode that random selection frequently misses?
+
+**Setup:** 2D point-mass navigation with a vertical wall and two goals — Goal A (upper-right, 140 episodes) and Goal B (lower-right, 20 episodes), a 7:1 imbalance. At low retention budgets, random selection often draws zero or one B episode, making B a silent failure. Calibra's diversity-aware selector explicitly samples from underrepresented regions of the action space. Worst-group success = min(A success, B success). 5 random seeds per fraction.
+
+**Results (BC policy, 5-seed mean; `experiments/multigoal_obstacle_benchmark.py`):**
+
+| Keep | Episodes | Cal Overall | Cal Worst | Rand Overall | Rand Worst | Episodes saved |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **5%** | **8** | **99.3%** | **98.7%** | 68.3% ±21% | 36.5% | 95% |
+| **10%** | **16** | **100.0%** | **100.0%** | 84.5% ±17.6% | 69.1% | 90% |
+| 20% | 32 | 100.0% | 100.0% | 95.5% ±7.2% | 91.2% | 80% |
+| 30% | 48 | 100.0% | 100.0% | 99.9% ±0.3% | 99.7% | 70% |
+| 50% | 80 | 100.0% | 100.0% | 99.6% ±0.5% | 99.2% | 50% |
+| 100% | 160 | 100.0% | 100.0% | 99.9% ±0.3% | 99.7% | — |
+
+At **5% retention** (8 episodes), Calibra achieves 98.7% worst-group vs. 36.5% for random — a **62-point gap**. Calibra selected 3 Goal-B episodes out of 8 total slots, overrepresenting the rare mode 4.5× relative to its population share. At **10% retention** (16 episodes), Calibra matches full-dataset performance on both goals while random still misses B in roughly 1 in 3 seeds.
+
+To reproduce:
+```bash
+pip install calibra-robotics torch numpy
+python experiments/multigoal_obstacle_benchmark.py
+```
+
+**Diagnostic validity sweep (same environment):** each corruption family is swept in isolation to verify that each metric responds to the defect it targets:
+
+| Corruption | Score behaviour | Status |
+|---|---|:---:|
+| Frame dropout (0 → 80%) | 57.9 → 24.8 (monotone decrease) | Correct |
+| Jerk spikes (0 → 20%) | 57.9 → 42.0 (saturates at 5% spike rate) | Correct (saturation documented) |
+| Duplicates (0 → 90%) | 57.9 → 44.6 (monotone decrease) | Correct |
+| Episode truncation (100% → 10%) | 57.9 → 68.6 (inversion at 10%) | Known gap — short episodes only expose the smooth approach phase; task-progress signals would fix this |
+| Observation lag (0 → 16 frames) | 57.9 → 57.9 (no response) | Known gap — current temporal metrics do not detect shifted observation windows |
+
+---
+
 ### Dataset regime space
 
 Calibra's diagnostic metrics predict which selection regime applies before any training:
@@ -846,7 +1127,7 @@ On DROID, Calibra with 10% of episodes outperforms the full dataset by 16.8%.
 | 50% | 54 | +32.2% | +17.6% |
 | 70% | 76 | +15.0% | +10.4% |
 
-On contact-rich tasks like PushT real, a Calibra coreset pruned to only 10% of the dataset size outperforms training on the full unpruned dataset by 41.7% while saving 90% of GPU compute.
+On contact-rich tasks like PushT real, a Calibra coreset at 10% of the dataset size outperforms training on the full unpruned dataset by 41.7%, using 90% fewer training episodes and proportionally fewer training steps under the episode-scaled benchmark protocol.
 
 To reproduce all ablations:
 ```bash
@@ -1026,70 +1307,6 @@ You can profile additional datasets locally using `scripts/profile_dataset.py`.
 
 ---
 
-## Formats supported
-
-| Format | Extra install | Notes |
-|---|---|---|
-| LeRobot v2/v3 (Parquet shards) | `calibra[lerobot]` | DuckDB lazy scan — image columns never enter RAM; v3 uses the same fast path as v2 |
-| LeRobot v1 (HF datasets) | `calibra[lerobot]` | HuggingFace `datasets` + pandas groupby |
-| HuggingFace Hub | `calibra[lerobot]` | `lerobot/pusht`, `hf://lerobot/pusht` |
-| HDF5 (Isaac Lab, Robomimic) | `calibra[hdf5]` | Convention A + B |
-| RLDS / TF Datasets | `calibra[rlds]` | tensorflow-datasets |
-| MCAP / ROS2 bags | `calibra[mcap]` | mcap + mcap-ros2-support |
-
----
-
-## Contributing
-
-Calibra is not open to external pull requests (PRs) or contributions at this time.
-
----
-
-## Development
-
-### Repository layout
-
-```
-calibra/
-├── core/               # Public API: LazyDatasetReader, SchemaNormalizer, mappings.yaml
-├── metrics/            # Standalone pure-numpy functions (no pipeline needed)
-├── analyzers/          # Pipeline analyzers: temporal, smoothness, coverage, task_structure
-├── ingestion/          # Format adapters (lerobot v1/v2/v3, hdf5, rlds, mcap) + registry
-├── comparison/         # DatasetComparator, EpisodeCurator
-├── world_model/        # Lightweight (non-torch) world-model surprise scoring + curation
-├── models/             # RobotJEPA — trained world model (optional, requires torch)
-├── schema/
-│   ├── report.py           # EpisodeBatch, DiagnosticReport, normalization layer (internal)
-│   ├── public_report.py    # CalibraReport — stable public JSON contract (versioned)
-│   └── scoring.py          # Scoring rubric v1.0: dimension weights, grade thresholds
-├── audit_all.py        # calibra audit-all — bulk HF org / dataset auditor
-├── report_json.py      # Assemble CalibraReport from DiagnosticReport
-├── report_html.py      # HTML dashboard (includes Dataset Health Score panel)
-├── site.py             # calibra site — static leaderboard + per-dataset page generator
-├── claims/             # Falsifiable claim registry (JSON + SPEC.md)
-├── knowledge_base/     # claims.yaml (auto-generated — edit the source JSON files)
-├── references/         # Profiled reference datasets (JSON)
-└── interpretations/    # Metric interpretation docs (Markdown)
-
-scripts/
-├── profile_dataset.py      # Profile any dataset → references/<name>.json
-└── generate_claims_doc.py  # Regenerate docs/claims.md + CI ratio check
-
-docs/
-└── claims.md               # Auto-generated from calibra/claims/ — do not edit
-```
-
-### Development setup
-
-```bash
-git clone https://github.com/omerTT/Calibra
-pip install -e '.[all,dev]'
-pytest              # 596 tests
-ruff check .        # zero errors expected
-```
-
----
-
 ## Calibra for IL vs. World Models
 
 Calibra supports two data curation philosophies. The right one depends on your policy architecture. Both use the same tool — the same quality metrics, the same CLI — but apply different selection criteria in Stage 2 of `calibra prune`.
@@ -1165,10 +1382,74 @@ Clean data is a prerequisite for both paradigms. A JEPA trained on jittery, drop
 
 ## What Calibra is not
 
-- **Not a dataset score** ("your dataset is 7.4/10") — Calibra surfaces specific, falsifiable anomalies
-- **Not an AI assistant** — it runs deterministic mathematical estimators, not a language model
-- **Not a cloud service** — it runs entirely locally against your files
-- **Not a replacement for domain expertise** — it tells you *what* to look at; you decide *what to do*
+- **Not only a dataset score** — every aggregate score decomposes into specific metrics, per-episode findings, confidence intervals, and actionable evidence.
+- **Not an AI assistant** — it runs deterministic mathematical estimators, not a language model.
+- **Not a cloud service** — it runs entirely locally against your files.
+- **Not a replacement for domain expertise** — it tells you *what* to look at; you decide *what to do*.
+
+---
+
+## Formats supported
+
+| Format | Extra install | Notes |
+|---|---|---|
+| LeRobot v2/v3 (Parquet shards) | `calibra[lerobot]` | DuckDB lazy scan — image columns never enter RAM; v3 uses the same fast path as v2 |
+| LeRobot v1 (HF datasets) | `calibra[lerobot]` | HuggingFace `datasets` + pandas groupby |
+| HuggingFace Hub | `calibra[lerobot]` | `lerobot/pusht`, `hf://lerobot/pusht` |
+| HDF5 (Isaac Lab, Robomimic) | `calibra[hdf5]` | Convention A + B |
+| RLDS / TF Datasets | `calibra[rlds]` | tensorflow-datasets |
+| MCAP / ROS2 bags | `calibra[mcap]` | mcap + mcap-ros2-support |
+
+---
+
+## Contributing
+
+Calibra is not open to external pull requests (PRs) or contributions at this time.
+
+---
+
+## Development
+
+### Repository layout
+
+```
+calibra/
+├── core/               # Public API: LazyDatasetReader, SchemaNormalizer, mappings.yaml
+├── metrics/            # Standalone pure-numpy functions (no pipeline needed)
+├── analyzers/          # Pipeline analyzers: temporal, smoothness, coverage, task_structure
+├── ingestion/          # Format adapters (lerobot v1/v2/v3, hdf5, rlds, mcap) + registry
+├── comparison/         # DatasetComparator, EpisodeCurator
+├── world_model/        # Lightweight (non-torch) world-model surprise scoring + curation
+├── models/             # RobotJEPA — trained world model (optional, requires torch)
+├── schema/
+│   ├── report.py           # EpisodeBatch, DiagnosticReport, normalization layer (internal)
+│   ├── public_report.py    # CalibraReport — stable public JSON contract (versioned)
+│   └── scoring.py          # Scoring rubric v1.0: dimension weights, grade thresholds
+├── audit_all.py        # calibra audit-all — bulk HF org / dataset auditor
+├── report_json.py      # Assemble CalibraReport from DiagnosticReport
+├── report_html.py      # HTML dashboard (includes Dataset Health Score panel)
+├── site.py             # calibra site — static leaderboard + per-dataset page generator
+├── claims/             # Falsifiable claim registry (JSON + SPEC.md)
+├── knowledge_base/     # claims.yaml (auto-generated — edit the source JSON files)
+├── references/         # Profiled reference datasets (JSON)
+└── interpretations/    # Metric interpretation docs (Markdown)
+
+scripts/
+├── profile_dataset.py      # Profile any dataset → references/<name>.json
+└── generate_claims_doc.py  # Regenerate docs/claims.md + CI ratio check
+
+docs/
+└── claims.md               # Auto-generated from calibra/claims/ — do not edit
+```
+
+### Development setup
+
+```bash
+git clone https://github.com/omerTT/Calibra
+pip install -e '.[all,dev]'
+pytest              # 596 tests
+ruff check .        # zero errors expected
+```
 
 ---
 

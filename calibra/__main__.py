@@ -286,6 +286,15 @@ def main() -> None:
         metavar="PATH",
         help="Path to save the visual HTML dashboard report",
     )
+    parser.add_argument(
+        "--cache-dir",
+        metavar="DIR",
+        default=None,
+        help=(
+            "Cache directory for incremental analysis (e.g. .calibra/cache). "
+            "On unchanged data, returns the cached result instantly."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -293,11 +302,18 @@ def main() -> None:
     if args.format:
         reader = _get_reader(args.format)
 
+    cache = None
+    if args.cache_dir:
+        from calibra.cache import AuditCache
+        cache = AuditCache(args.cache_dir)
+
+    pipeline = Pipeline()
     try:
-        report = Pipeline().analyze_path(
+        report = pipeline.analyze_path(
             args.path,
             policy_family=args.policy,
             reader=reader,
+            cache=cache,
         )
     except Exception as exc:
         print(f"error: {exc}", file=sys.stderr)

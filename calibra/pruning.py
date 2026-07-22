@@ -44,7 +44,7 @@ Usage
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
@@ -97,6 +97,7 @@ class PruningResult:
     n_diversity_pruned: int
     keep_fraction_actual: float
     method: str = "quality_filter + greedy_max_coverage"
+    fail_reasons: dict[str, list[str]] = field(default_factory=dict)
 
     def summary(self) -> str:
         lines = [
@@ -129,6 +130,7 @@ class PruningResult:
             "diversity_pruned_ids": self.diversity_pruned_ids,
             "quality_scores": self.quality_scores,
             "diversity_scores": self.diversity_scores,
+            "fail_reasons": self.fail_reasons,
         }
 
 
@@ -195,7 +197,7 @@ class CoresetSelector:
         # ── Stage 1: quality filtering ────────────────────────────────────────
         quality_scores = _compute_quality_scores(episodes, ep_data)
         effective_max_vel_disc = _contact_aware_vel_disc(ep_data, self)
-        quality_fail_indices = _quality_filter(episodes, ep_data, self, effective_max_vel_disc)
+        quality_fail_indices, quality_fail_reasons = _quality_filter(episodes, ep_data, self, effective_max_vel_disc)
         quality_fail_set = set(quality_fail_indices)
         quality_pass_indices = [i for i in range(n) if i not in quality_fail_set]
 
@@ -212,6 +214,7 @@ class CoresetSelector:
                 n_quality_failures=n,
                 n_diversity_pruned=0,
                 keep_fraction_actual=0.0,
+                fail_reasons=quality_fail_reasons,
             )
 
         # ── Stage 2: diversity selection ──────────────────────────────────────
@@ -286,6 +289,11 @@ class CoresetSelector:
         fail_ids = [episodes[i].metadata.episode_id for i in quality_fail_indices]
         div_pruned_ids = [episodes[i].metadata.episode_id for i in diversity_pruned_indices]
 
+        all_fail_reasons = dict(quality_fail_reasons)
+        _stage2_code = _get_stage2_reason_code(self.strategy)
+        for ep_id in div_pruned_ids:
+            all_fail_reasons.setdefault(ep_id, []).append(_stage2_code)
+
         _method = (
             _world_model_method_label(self)
             if self.strategy == "world-model"
@@ -303,6 +311,7 @@ class CoresetSelector:
             n_diversity_pruned=len(div_pruned_ids),
             keep_fraction_actual=len(keep_ids) / max(n, 1),
             method=_method,
+            fail_reasons=all_fail_reasons,
         )
 
 
@@ -582,13 +591,24 @@ def _contact_aware_vel_disc(ep_data: dict, cfg: "CoresetSelector") -> float:
     return cfg.max_vel_disc_rate * scale
 
 
+def _get_stage2_reason_code(strategy: str) -> str:
+    """Map a coreset strategy name to its Stage 2 rejection reason code."""
+    return {
+        "novelty": "novelty_pruned",
+        "transition_novelty": "novelty_pruned",
+        "influence": "influence_pruned",
+        "energy": "energy_pruned",
+        "world-model": "world_model_pruned",
+    }.get(strategy, "diversity_pruned")
+
+
 def _quality_filter(
     episodes: list[Episode],
     ep_data: dict[str, list],
     cfg: "CoresetSelector",
     effective_max_vel_disc: float | None = None,
-) -> list[int]:
-    """Return indices of episodes that fail quality thresholds (to be removed)."""
+) -> tuple[list[int], dict[str, list[str]]]:
+    """Return (fail_indices, {episode_id: [reason_codes]}) for episodes failing thresholds."""
     spike_rates = ep_data.get("per_episode_spike_rate", [])
     disc_rates = ep_data.get("per_episode_vel_disc_rate", [])
     dropouts = ep_data.get("per_episode_dropout_fraction", [])
@@ -597,31 +617,37 @@ def _quality_filter(
     max_disc = effective_max_vel_disc if effective_max_vel_disc is not None else cfg.max_vel_disc_rate
 
     fail: list[int] = []
+    reasons: dict[str, list[str]] = {}
     for i, ep in enumerate(episodes):
+        ep_reasons: list[str] = []
+
         if ep.n_steps < cfg.min_length:
+            ep_reasons.append("short_episode")
             fail.append(i)
+            reasons[ep.metadata.episode_id] = ep_reasons
             continue
 
         spike = _safe_get(spike_rates, i)
         if spike is not None and spike > cfg.max_spike_rate:
-            fail.append(i)
-            continue
+            ep_reasons.append("jerk_spike")
 
         disc = _safe_get(disc_rates, i)
         if disc is not None and disc > max_disc:
-            fail.append(i)
-            continue
+            ep_reasons.append("velocity_discontinuity")
 
         drop = _safe_get(dropouts, i)
         if drop is not None and drop > cfg.max_dropout_fraction:
-            fail.append(i)
-            continue
+            ep_reasons.append("timestamp_dropout")
 
         ldlj = _safe_get(ldlj_values, i)
         if ldlj is not None and ldlj < cfg.min_ldlj:
-            fail.append(i)
+            ep_reasons.append("low_smoothness")
 
-    return fail
+        if ep_reasons:
+            fail.append(i)
+            reasons[ep.metadata.episode_id] = ep_reasons
+
+    return fail, reasons
 
 
 # ── Stage 2: behavioral feature extraction ────────────────────────────────────
@@ -858,7 +884,7 @@ class ApproximateCoresetSelector(CoresetSelector):
         # Stage 1 is identical to the exact selector
         quality_scores = _compute_quality_scores(episodes, ep_data)
         effective_max_vel_disc = _contact_aware_vel_disc(ep_data, self)
-        quality_fail_indices = _quality_filter(episodes, ep_data, self, effective_max_vel_disc)
+        quality_fail_indices, quality_fail_reasons = _quality_filter(episodes, ep_data, self, effective_max_vel_disc)
         quality_fail_set = set(quality_fail_indices)
         quality_pass_indices = [i for i in range(n) if i not in quality_fail_set]
 
@@ -875,6 +901,7 @@ class ApproximateCoresetSelector(CoresetSelector):
                 n_diversity_pruned=0,
                 keep_fraction_actual=0.0,
                 method="quality_filter + approximate_minibatch_coverage",
+                fail_reasons=quality_fail_reasons,
             )
 
         k = max(1, round(n * self.keep_fraction))
@@ -926,6 +953,11 @@ class ApproximateCoresetSelector(CoresetSelector):
         fail_ids = [episodes[i].metadata.episode_id for i in quality_fail_indices]
         div_pruned_ids = [episodes[i].metadata.episode_id for i in diversity_pruned_indices]
 
+        all_fail_reasons = dict(quality_fail_reasons)
+        _stage2_code = _get_stage2_reason_code(self.strategy)
+        for ep_id in div_pruned_ids:
+            all_fail_reasons.setdefault(ep_id, []).append(_stage2_code)
+
         _method = (
             _world_model_method_label(self)
             if self.strategy == "world-model"
@@ -943,6 +975,7 @@ class ApproximateCoresetSelector(CoresetSelector):
             n_diversity_pruned=len(div_pruned_ids),
             keep_fraction_actual=len(keep_ids) / max(n, 1),
             method=_method,
+            fail_reasons=all_fail_reasons,
         )
 
 

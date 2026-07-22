@@ -441,5 +441,271 @@ def run_il_ceiling_experiment():
     return results
 
 
+# ── coreset selection benchmark ────────────────────────────────────────────────
+
+
+def run_coreset_benchmark():
+    """
+    Coreset Selection Benchmark (Phase 3)
+    ======================================
+    At 0% corruption, vary keep_fraction across [0.10, 0.25, 0.50, 0.75, 1.00].
+    For each fraction, compare three strategies:
+      - Full dataset (100% baseline)
+      - Random subset (5-seed average)
+      - Calibra coreset (greedy max-coverage)
+
+    Measures:
+      - BC success rate (policy quality)
+      - Real training wall-clock seconds (compute cost)
+
+    Key claim: Calibra coreset at K% episodes matches or exceeds the full-data
+    baseline while using proportionally fewer compute seconds.
+    """
+    import random
+    import torch  # noqa: F401 — guard early
+
+    from calibra.pipeline import Pipeline
+    from calibra.pruning import CoresetSelector
+    from calibra.schema.episode import EpisodeBatch
+
+    print("\n" + "=" * 65)
+    print("  Calibra — Coreset Selection Benchmark (Phase 3)")
+    print("=" * 65)
+
+    goal = np.array([0.8, 0.8], dtype=np.float32)
+    N_EPISODES = 200
+    N_EPOCHS = 120
+    N_TRIALS_EVAL = 200
+    KEEP_FRACTIONS = [0.10, 0.25, 0.50, 0.75, 1.00]
+    N_RANDOM_SEEDS = 5
+
+    print(f"\nBuilding clean dataset ({N_EPISODES} episodes, 0% corruption) ...")
+    full_batch = build_dataset(n_episodes=N_EPISODES, corruption_rate=0.0, goal=goal)
+
+    print("Running Calibra diagnostics on full dataset ...", flush=True)
+    report = Pipeline().run(full_batch)
+
+    # Full-data baseline: train once, record time and success
+    print("\n[100% baseline]", flush=True)
+    t0 = time.perf_counter()
+    full_artifacts = train_bc(full_batch, n_epochs=N_EPOCHS)
+    full_train_s = time.perf_counter() - t0
+    full_success = evaluate_bc(*full_artifacts, goal=goal, n_trials=N_TRIALS_EVAL)
+    print(f"  Success: {full_success:.1%}  |  Train time: {full_train_s:.1f}s")
+
+    results = []
+
+    for frac in KEEP_FRACTIONS:
+        k = max(1, round(N_EPISODES * frac))
+        print(f"\n[keep {frac:.0%}  ->  {k} episodes]", flush=True)
+        row: dict = {"keep_fraction": frac, "n_episodes": k}
+
+        # ── Calibra coreset ──────────────────────────────────────────────────
+        # Disable quality filtering: synthetic PD-controller data trips real-robot
+        # thresholds (high acceleration at episode start). We want pure diversity
+        # selection on already-clean data.
+        selector = CoresetSelector(
+            keep_fraction=frac,
+            max_spike_rate=1.0,
+            max_vel_disc_rate=1.0,
+            max_dropout_fraction=1.0,
+            min_ldlj=-1e6,
+        )
+        prune_res = selector.select(full_batch, report)
+        calibra_eps = [
+            ep for ep in full_batch.episodes
+            if ep.metadata.episode_id in prune_res.keep_episode_ids
+        ]
+        calibra_batch = EpisodeBatch(
+            episodes=calibra_eps,
+            dataset_name=f"calibra_{frac:.0%}",
+            format=full_batch.format,
+            source_path=full_batch.source_path,
+        )
+
+        print("  [Calibra] training ...", end=" ", flush=True)
+        t0 = time.perf_counter()
+        cal_artifacts = train_bc(calibra_batch, n_epochs=N_EPOCHS)
+        cal_train_s = time.perf_counter() - t0
+        cal_success = evaluate_bc(*cal_artifacts, goal=goal, n_trials=N_TRIALS_EVAL)
+        print(f"success={cal_success:.1%}  time={cal_train_s:.1f}s")
+        row["calibra_success"] = cal_success
+        row["calibra_train_s"] = round(cal_train_s, 2)
+
+        # ── Random subset (averaged over N_RANDOM_SEEDS seeds) ──────────────
+        rand_successes = []
+        rand_times = []
+        all_ids = [ep.metadata.episode_id for ep in full_batch.episodes]
+        for seed in range(N_RANDOM_SEEDS):
+            random.seed(seed)
+            kept_ids = set(random.sample(all_ids, k))
+            rand_eps = [ep for ep in full_batch.episodes if ep.metadata.episode_id in kept_ids]
+            rand_batch = EpisodeBatch(
+                episodes=rand_eps,
+                dataset_name=f"random_{frac:.0%}_s{seed}",
+                format=full_batch.format,
+                source_path=full_batch.source_path,
+            )
+            t0 = time.perf_counter()
+            rand_artifacts = train_bc(rand_batch, n_epochs=N_EPOCHS)
+            rand_times.append(time.perf_counter() - t0)
+            rand_successes.append(
+                evaluate_bc(*rand_artifacts, goal=goal, n_trials=N_TRIALS_EVAL)
+            )
+        rand_success = float(np.mean(rand_successes))
+        rand_train_s = float(np.mean(rand_times))
+        print(
+            f"  [Random] success={rand_success:.1%} (±{np.std(rand_successes):.1%})"
+            f"  time={rand_train_s:.1f}s"
+        )
+        row["random_success"] = rand_success
+        row["random_success_std"] = float(np.std(rand_successes))
+        row["random_train_s"] = round(rand_train_s, 2)
+
+        results.append(row)
+
+    # ── print results table ───────────────────────────────────────────────────
+    print("\n")
+    print("=" * 80)
+    print("  CORESET SELECTION BENCHMARK RESULTS")
+    print(f"  Full-data baseline: success={full_success:.1%}  train_time={full_train_s:.1f}s")
+    print("=" * 80)
+    print(
+        f"  {'Keep':>6}  {'N':>5}  "
+        f"{'Calibra Succ':>13}  {'Calibra Time':>13}  "
+        f"{'Random Succ':>12}  {'Random Time':>12}  {'Compute Saved':>14}"
+    )
+    print("-" * 80)
+    for r in results:
+        compute_saved = 100.0 * (1.0 - r["keep_fraction"])
+        print(
+            f"  {r['keep_fraction']:>5.0%}  {r['n_episodes']:>5}  "
+            f"  {r['calibra_success']:>10.1%}  "
+            f"  {r['calibra_train_s']:>9.1f}s  "
+            f"  {r['random_success']:>9.1%}  "
+            f"  {r['random_train_s']:>9.1f}s  "
+            f"  {compute_saved:>11.0f}%"
+        )
+    print("=" * 80)
+
+    # ── figure ────────────────────────────────────────────────────────────────
+    try:
+        import matplotlib.pyplot as plt
+
+        fracs = [r["keep_fraction"] * 100 for r in results]
+        cal_succ = [r["calibra_success"] * 100 for r in results]
+        rand_succ = [r["random_success"] * 100 for r in results]
+        rand_std = [r["random_success_std"] * 100 for r in results]
+        full_line = [full_success * 100] * len(fracs)
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+
+        # Left: success rate vs retention
+        ax1.axhline(full_success * 100, color="#6b7280", linewidth=1.5,
+                    linestyle="--", label="Full data (100%)")
+        ax1.plot(fracs, cal_succ, "o-", color="#2563eb", linewidth=2, label="Calibra coreset")
+        ax1.errorbar(fracs, rand_succ, yerr=rand_std, fmt="s--", color="#dc2626",
+                     linewidth=1.5, capsize=4, label=f"Random (avg {N_RANDOM_SEEDS} seeds)")
+        ax1.set_xlabel("Retention fraction (%)", fontsize=12)
+        ax1.set_ylabel("BC success rate (%)", fontsize=12)
+        ax1.set_title("Policy Quality vs. Dataset Size", fontsize=12)
+        ax1.legend(fontsize=10)
+        ax1.grid(True, alpha=0.3)
+        ax1.set_ylim(0, 110)
+
+        # Right: training time vs retention
+        cal_times = [r["calibra_train_s"] for r in results]
+        rand_times_plot = [r["random_train_s"] for r in results]
+        ax2.plot(fracs, cal_times, "o-", color="#2563eb", linewidth=2, label="Calibra coreset")
+        ax2.plot(fracs, rand_times_plot, "s--", color="#dc2626", linewidth=1.5, label="Random")
+        ax2.axhline(full_train_s, color="#6b7280", linewidth=1.5,
+                    linestyle="--", label="Full data (100%)")
+        ax2.set_xlabel("Retention fraction (%)", fontsize=12)
+        ax2.set_ylabel("Training wall-clock (seconds)", fontsize=12)
+        ax2.set_title("Compute Cost vs. Dataset Size", fontsize=12)
+        ax2.legend(fontsize=10)
+        ax2.grid(True, alpha=0.3)
+
+        fig.suptitle(
+            "Calibra Coreset Benchmark — Policy Quality & Compute vs. Retention",
+            fontsize=13, y=1.02,
+        )
+        fig.tight_layout()
+        out = FIG_DIR / "fig_coreset_benchmark.pdf"
+        fig.savefig(out, bbox_inches="tight")
+        print(f"\n  Figure saved to {out}")
+        plt.close()
+    except ImportError:
+        print("\n  (matplotlib not installed — skipping figure)")
+
+    return {"full_baseline": {"success": full_success, "train_s": full_train_s}, "sweep": results}
+
+
+# ── correlation analysis ────────────────────────────────────────────────────────
+
+
+def compute_score_success_correlation(ceiling_results: list[dict]) -> None:
+    """
+    Computes Pearson and Spearman ρ between Calibra quality score and BC success
+    rate using the data already produced by run_il_ceiling_experiment().
+    Prints the correlation coefficients — the key single-number paper claim.
+    """
+    scores = np.array([r["calibra_score"] for r in ceiling_results])
+    success_id = np.array([r["bc_success_id"] for r in ceiling_results])
+    success_ood = np.array([r["bc_success_ood"] for r in ceiling_results])
+
+    def pearson(x: np.ndarray, y: np.ndarray) -> float:
+        x_c = x - x.mean()
+        y_c = y - y.mean()
+        denom = np.sqrt((x_c ** 2).sum() * (y_c ** 2).sum())
+        return float((x_c * y_c).sum() / denom) if denom > 1e-12 else 0.0
+
+    def spearman(x: np.ndarray, y: np.ndarray) -> float:
+        rx = np.argsort(np.argsort(x)).astype(float)
+        ry = np.argsort(np.argsort(y)).astype(float)
+        return pearson(rx, ry)
+
+    r_id = pearson(scores, success_id)
+    rho_id = spearman(scores, success_id)
+    r_ood = pearson(scores, success_ood)
+    rho_ood = spearman(scores, success_ood)
+
+    print("\n")
+    print("=" * 55)
+    print("  CALIBRA SCORE <-> BC SUCCESS CORRELATION")
+    print("=" * 55)
+    print(f"  In-distribution:  Pearson r={r_id:+.3f}  Spearman rho={rho_id:+.3f}")
+    print(f"  Out-of-dist:      Pearson r={r_ood:+.3f}  Spearman rho={rho_ood:+.3f}")
+    print("=" * 55)
+
+    try:
+        import matplotlib.pyplot as plt
+
+        fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+        for ax, y, label, r_val, rho_val in [
+            (axes[0], success_id * 100, "In-distribution", r_id, rho_id),
+            (axes[1], success_ood * 100, "Out-of-distribution", r_ood, rho_ood),
+        ]:
+            ax.scatter(scores, y, color="#2563eb", s=60, zorder=3)
+            m, b = np.polyfit(scores, y, 1)
+            x_line = np.linspace(scores.min(), scores.max(), 100)
+            ax.plot(x_line, m * x_line + b, "--", color="#dc2626", linewidth=1.5)
+            ax.set_xlabel("Calibra quality score", fontsize=11)
+            ax.set_ylabel(f"BC success rate — {label} (%)", fontsize=11)
+            ax.set_title(f"{label}\nPearson r={r_val:+.3f}  Spearman rho={rho_val:+.3f}", fontsize=11)
+            ax.grid(True, alpha=0.3)
+
+        fig.suptitle("Calibra Score vs. Policy Success Correlation", fontsize=13)
+        fig.tight_layout()
+        out = FIG_DIR / "fig_score_correlation.pdf"
+        fig.savefig(out, bbox_inches="tight")
+        print(f"  Correlation figure saved to {out}")
+        plt.close()
+    except ImportError:
+        pass
+
+
 if __name__ == "__main__":
-    run_il_ceiling_experiment()
+    ceiling_results = run_il_ceiling_experiment()
+    compute_score_success_correlation(ceiling_results)
+    run_coreset_benchmark()

@@ -144,6 +144,45 @@ class AuditResults(BaseModel):
     recommendations: Recommendations
 
 
+# ── episode verdicts ──────────────────────────────────────────────────────────
+
+class EpisodeVerdicts(BaseModel):
+    """
+    Per-episode selection output from a calibra prune run.
+
+    This is the machine-readable contract for downstream systems:
+    training pipelines, CI/CD checks, dataset version managers.
+
+    reason_codes maps episode_id → list of failure codes, e.g.:
+      {"42": ["jerk_spike", "timestamp_dropout"], "7": ["diversity_pruned"]}
+
+    Standard reason codes
+    ---------------------
+    Stage 1 (quality filter):
+      short_episode         — fewer than min_length steps
+      jerk_spike            — spike_rate exceeded threshold
+      velocity_discontinuity — vel_disc_rate exceeded threshold
+      timestamp_dropout     — frame dropout fraction exceeded threshold
+      low_smoothness        — LDLJ below minimum threshold
+
+    Stage 2 (diversity / novelty selection):
+      diversity_pruned      — redundant under greedy max-coverage
+      novelty_pruned        — low transition novelty score
+      influence_pruned      — low influence score
+      energy_pruned         — low dynamics energy / surprisal
+      world_model_pruned    — low world-model surprise score
+    """
+
+    keep_episode_ids: list[str] = []
+    reject_episode_ids: list[str] = []
+    reason_codes: dict[str, list[str]] = {}    # episode_id → [reason, ...]
+    quality_scores: dict[str, float] = {}       # episode_id → composite quality score
+    n_original: int = 0
+    n_kept: int = 0
+    keep_fraction_actual: float = 0.0
+    method: str = ""
+
+
 # ── top-level contract ────────────────────────────────────────────────────────
 
 class CalibraReport(BaseModel):
@@ -152,6 +191,10 @@ class CalibraReport(BaseModel):
     dataset: DatasetInfo
     audit: AuditConfig
     results: AuditResults
+    episode_verdicts: Optional[EpisodeVerdicts] = None
+    # Incremental analysis: per-episode SHA-256[:16] of timestamps+actions.
+    # Present when the report was produced with --cache-dir; absent otherwise.
+    episode_hashes: dict[str, str] = {}
 
     def to_json(self, indent: int = 2) -> str:
         return self.model_dump_json(indent=indent)

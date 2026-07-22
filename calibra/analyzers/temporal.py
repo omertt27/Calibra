@@ -53,6 +53,13 @@ _ALIGN_CRITICAL = 0.05
 
 _CAMERA_PREFIXES = ("camera", "cam", "rgb", "depth", "wrist", "overhead")
 
+# Action-dropout thresholds: fraction of steps with near-zero action magnitude.
+# Zero actions indicate dropped commands — distinct from timestamp dropout and
+# invisible to the spike detector (silence looks smooth).
+_ACTION_DROPOUT_WARNING = 0.05   # 5 % of steps
+_ACTION_DROPOUT_CRITICAL = 0.15  # 15 %
+_ACTION_ZERO_THRESHOLD = 0.05    # |a| < threshold * action_std counts as zero
+
 # ── camera-physics drift thresholds (frames) ─────────────────────────────────
 # Conservative defaults derived from GR00T N1 documentation: 2 frames at 50 Hz
 # (40 ms) is the threshold above which multi-step action prediction degrades.
@@ -149,6 +156,11 @@ class TemporalAnalyzer(Analyzer):
         if drift_flag is not None:
             flags.append(drift_flag)
             raw["camera_physics_drift"] = drift_raw
+
+        action_dropout_flag, action_dropout_raw = self._check_action_dropout(batch)
+        if action_dropout_flag:
+            flags.append(action_dropout_flag)
+        raw["action_dropout"] = action_dropout_raw
 
         hints = self._policy_hints(flags, policy_family, raw)
 
@@ -619,6 +631,119 @@ class TemporalAnalyzer(Analyzer):
                 sum(1 for lag in lag_samples if abs(lag) > self.drift_warning_frames)
                 / len(lag_samples)
             ),
+        ), raw
+
+    # ── metric: action-value dropout ─────────────────────────────────────────
+
+    def _check_action_dropout(self, batch: EpisodeBatch) -> tuple[Optional[RiskFlag], dict]:
+        """
+        Detect state-inconsistent zero actions: steps where the action is near-zero
+        in magnitude but the state continues to move significantly.
+
+        This distinguishes dropped commands (action=0 while state still drifts due to
+        inertia) from legitimate goal-hovering (action≈0 AND state≈stationary), which
+        pure action-magnitude checks cannot separate.
+
+        Requires proprioceptive observations ("proprio" key or any 1-D obs array).
+        Falls back to pure action-magnitude check when state data is unavailable.
+        """
+        all_actions = []
+        for ep in batch.episodes:
+            if ep.actions is not None and len(ep.actions) > 1:
+                all_actions.append(ep.actions)
+
+        if not all_actions:
+            return None, {"skipped": "no action data"}
+
+        all_a = np.concatenate(all_actions, axis=0)
+        action_std = float(np.mean(np.std(all_a, axis=0))) if all_a.ndim > 1 else float(np.std(all_a))
+        action_std = action_std or 1.0
+        dim = all_a.shape[1] if all_a.ndim > 1 else 1
+        zero_thresh = _ACTION_ZERO_THRESHOLD * action_std * (dim ** 0.5)
+
+        ep_fracs = []
+        has_state = False
+
+        for ep in batch.episodes:
+            if ep.actions is None or len(ep.actions) < 2:
+                continue
+
+            a = ep.actions
+            a_mag = np.linalg.norm(a, axis=1) if a.ndim > 1 else np.abs(a)
+            action_near_zero = a_mag < zero_thresh
+
+            # Try to find a 1-D state array for inconsistency check
+            state_arr: Optional[np.ndarray] = None
+            for key in ("proprio", "state", "robot_state", "joint_pos"):
+                if key in ep.observations:
+                    candidate = ep.observations[key]
+                    if candidate.ndim == 2 and candidate.shape[0] == len(a):
+                        state_arr = candidate
+                        break
+            if state_arr is None:
+                for v in ep.observations.values():
+                    if v.ndim == 2 and v.shape[0] == len(a) and v.shape[1] <= 64:
+                        state_arr = v
+                        break
+
+            if state_arr is not None:
+                has_state = True
+                # State change magnitude for each transition (aligned to action indices)
+                state_delta = np.linalg.norm(np.diff(state_arr, axis=0), axis=1)
+                state_std = float(np.mean(np.std(state_arr, axis=0))) or 1.0
+                state_moving_thresh = _ACTION_ZERO_THRESHOLD * state_std * (state_arr.shape[1] ** 0.5)
+                # Compare action[t] to state delta between t and t+1
+                n = min(len(action_near_zero), len(state_delta))
+                inconsistent = action_near_zero[:n] & (state_delta[:n] > state_moving_thresh)
+                ep_fracs.append(float(np.mean(inconsistent)))
+            else:
+                # Fallback: pure magnitude check
+                ep_fracs.append(float(np.mean(action_near_zero)))
+
+        if not ep_fracs:
+            return None, {"skipped": "no valid episodes"}
+
+        arr = np.array(ep_fracs)
+        stat, lo, hi = _bootstrap_ci(arr, np.mean, self.n_bootstrap, self.ci_level)
+        raw = {
+            "mean_zero_action_fraction": float(stat),
+            "ci_lower": float(lo),
+            "ci_upper": float(hi),
+            "zero_threshold": float(zero_thresh),
+            "state_inconsistency_used": has_state,
+            "episode_values": ep_fracs,
+        }
+
+        level = self._threshold_level(stat, _ACTION_DROPOUT_WARNING, _ACTION_DROPOUT_CRITICAL)
+        if level == RiskLevel.OK:
+            return RiskFlag(
+                level=RiskLevel.OK,
+                metric="action_dropout_rate",
+                observed=ObservedValue(value=stat, unit="fraction", ci_lower=lo, ci_upper=hi,
+                                       ci_level=self.ci_level, ci_method="bootstrap"),
+                threshold=_ACTION_DROPOUT_WARNING,
+                interpretation="Action-dropout rate is within acceptable range.",
+                implication="No silent command-dropout detected.",
+                affected_fraction=float(stat),
+            ), raw
+
+        return RiskFlag(
+            level=level,
+            metric="action_dropout_rate",
+            observed=ObservedValue(value=stat, unit="fraction", ci_lower=lo, ci_upper=hi,
+                                   ci_level=self.ci_level, ci_method="bootstrap"),
+            threshold=_ACTION_DROPOUT_WARNING,
+            interpretation=(
+                f"{stat:.1%} of steps have near-zero actions while the state continues "
+                "to move — indicating dropped commands rather than goal-convergence."
+            ),
+            implication=(
+                "Silent action dropout corrupts demonstration quality: the robot "
+                "appears stationary while the observation continues, teaching the "
+                "policy to output zero actions in states where motion is required. "
+                "Inspect and remove affected episodes before training."
+            ),
+            affected_fraction=float(stat),
         ), raw
 
     # ── helpers ──────────────────────────────────────────────────────────────

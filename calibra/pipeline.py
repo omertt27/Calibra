@@ -78,6 +78,7 @@ class Pipeline:
         self,
         batch: EpisodeBatch,
         policy_family: Optional[str] = None,
+        cache=None,
     ) -> DiagnosticReport:
         """
         Run all analyzers over `batch` and return a DiagnosticReport.
@@ -87,7 +88,15 @@ class Pipeline:
         batch         : normalized dataset from the ingestion layer.
         policy_family : optional target policy for conditioned hints
                         (e.g. "diffusion", "act", "transformer").
+        cache         : optional AuditCache instance. On hit, returns cached
+                        result instantly. On miss, runs pipeline and stores result.
         """
+        if cache is not None:
+            fingerprint = cache.fingerprint(batch, policy_family)
+            cached = cache.get(fingerprint)
+            if cached is not None:
+                return cached
+
         analyzers = list(self.analyzers)
         pf_lower = policy_family.lower() if policy_family else ""
         if pf_lower and "gr00t" in pf_lower:
@@ -106,7 +115,7 @@ class Pipeline:
             results.append(analyzer.analyze(batch, policy_family=policy_family))
             timing[analyzer.name] = round(time.perf_counter() - t0, 4)
 
-        return DiagnosticReport(
+        report = DiagnosticReport(
             dataset_name=batch.dataset_name,
             source_path=batch.source_path,
             format=batch.format,
@@ -118,11 +127,17 @@ class Pipeline:
             timing=timing,
         )
 
+        if cache is not None:
+            cache.put(fingerprint, report)
+
+        return report
+
     def analyze_path(
         self,
         path: str,
         policy_family: Optional[str] = None,
         reader=None,
+        cache=None,
     ) -> DiagnosticReport:
         """
         Load a dataset from `path` (auto-detecting format) and run the pipeline.
@@ -132,8 +147,11 @@ class Pipeline:
         path          : filesystem path to the dataset directory or file.
         policy_family : optional target policy for conditioned hints.
         reader        : optional DatasetReader instance to bypass auto-detection.
+        cache         : optional AuditCache. The loaded batch is stored in
+                        ``self._last_batch`` for callers that need episode hashes.
         """
         from calibra.ingestion.registry import load
 
         batch = load(path, reader=reader)
-        return self.run(batch, policy_family=policy_family)
+        self._last_batch = batch
+        return self.run(batch, policy_family=policy_family, cache=cache)

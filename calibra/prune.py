@@ -178,10 +178,29 @@ def run_prune(argv: list[str]) -> None:
         ),
     )
     p.add_argument(
+        "--report",
+        metavar="PATH",
+        help=(
+            "Write a schema-versioned CalibraReport JSON with episode verdicts to PATH "
+            "(e.g. results/lerobot/pusht/latest.json). "
+            "This is the stable machine-readable contract for downstream systems."
+        ),
+    )
+    p.add_argument(
         "--json",
         "-j",
         action="store_true",
         help="Print full JSON result to stdout in addition to writing --out",
+    )
+    p.add_argument(
+        "--cache-dir",
+        metavar="DIR",
+        default=None,
+        help=(
+            "Cache directory for incremental analysis (e.g. .calibra/cache). "
+            "On unchanged data, returns the cached diagnostic report instantly and "
+            "proceeds directly to coreset selection."
+        ),
     )
     args = p.parse_args(argv)
 
@@ -202,6 +221,11 @@ def run_prune(argv: list[str]) -> None:
     def log(msg: str) -> None:
         print(msg, file=sys.stderr, flush=True)
 
+    cache = None
+    if args.cache_dir:
+        from calibra.cache import AuditCache
+        cache = AuditCache(args.cache_dir)
+
     log(f"Loading {dataset_path!r} ...")
 
     try:
@@ -216,7 +240,7 @@ def run_prune(argv: list[str]) -> None:
     log("Running diagnostic pipeline ...")
 
     try:
-        report = Pipeline().run(batch)
+        report = Pipeline().run(batch, cache=cache)
     except Exception as exc:
         print(f"error running pipeline: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -358,6 +382,21 @@ def run_prune(argv: list[str]) -> None:
         with open(curr_path, "w") as f:
             json.dump(curriculum_data, f, indent=2)
         log(f"Curriculum index written to {curr_path}")
+
+    if args.report:
+        from calibra.report_json import assemble_public_report, dataset_info_from_report
+        from calibra.cache import batch_episode_hashes
+
+        dataset_info = dataset_info_from_report(report)
+        ep_hashes = batch_episode_hashes(batch)
+        public = assemble_public_report(
+            report,
+            dataset_info=dataset_info,
+            pruning_result=result,
+            episode_hashes=ep_hashes,
+        )
+        public.write(args.report)
+        log(f"CalibraReport written → {args.report}")
 
     # Human-readable summary to stdout
     print(result.summary())
