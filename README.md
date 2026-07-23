@@ -1060,6 +1060,33 @@ python experiments/multigoal_obstacle_benchmark.py
 
 ---
 
+### Real-data benchmark — LeRobot PushT (`lerobot/pusht`)
+
+**206 demonstrations · 165 training episodes · Calibra quality score 76.7/100**
+
+| Metric | Result |
+|---|---:|
+| Dataset reduction | **75%** |
+| Performance vs. full dataset | **Within 0.5% MSE** |
+| Training compute | **~75% lower** |
+| Tail episode retention | **56% vs. 23.6% (Random)** |
+
+At 25% retention, Calibra matched full-dataset performance (422.89 vs. 420.93 action-prediction MSE, 10 seeds) while preserving substantially more action-space low-density trajectories than random sampling.
+
+> **Extreme compression (5%):** 95% fewer demonstrations · 4× more tail episodes than random (16% vs. 4%) · significantly lower MSE than random sampling
+
+**Why not just random selection?**
+
+| | Tail episode retention | Quality filtering | Compute reduction |
+|---|:---:|:---:|:---:|
+| Random | ❌ | ❌ | ✅ |
+| K-Center | ✅ | ❌ | ✅ |
+| **Calibra** | ✅ | ✅ | ✅ |
+
+[Full statistical tables, all methods, ablation, and limitations → `docs/benchmarks.md`](docs/benchmarks.md)
+
+---
+
 ### Dataset regime space
 
 Calibra's diagnostic metrics predict which selection regime applies before any training:

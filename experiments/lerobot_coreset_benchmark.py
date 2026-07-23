@@ -200,10 +200,58 @@ def run_calibra(batch, report_path: Optional[str] = None) -> tuple:
         ds_info = dataset_info_from_report(diag)
         public = assemble_public_report(diag, ds_info, pruning_result=prune_result)
         public.write(report_path)
-        print(f"  CalibraReport written → {report_path}")
+        print(f"  CalibraReport written -> {report_path}")
         return diag, prune_result, quality_score
 
     return diag, None, quality_score
+
+
+# ── Rare-behavior identification ──────────────────────────────────────────────
+
+
+def identify_rare_episodes(episodes, rare_fraction: float = 0.15, k_neighbors: int = 5):
+    """
+    Label episodes in low-density regions of action space as "rare".
+
+    Uses k-NN density estimation (pure numpy, no sklearn dependency).
+    Rare = bottom `rare_fraction` of episodes by local density.
+
+    Returns (rare_ids: set[str], density: np.ndarray).
+    """
+    features = []
+    for ep in episodes:
+        a = ep.actions
+        s = ep.observations.get("state", np.zeros((1, 1)))
+        feat = np.concatenate([
+            a.mean(0),
+            a.std(0),
+            s.mean(0)[: min(s.shape[1], 4)],
+        ])
+        features.append(feat)
+
+    F = np.array(features, dtype=np.float64)
+    col_std = F.std(0)
+    col_std[col_std < 1e-8] = 1.0
+    F = (F - F.mean(0)) / col_std
+
+    k = min(k_neighbors, len(episodes) - 1)
+    # pairwise squared distances
+    sq = np.sum(F ** 2, axis=1, keepdims=True)
+    D2 = sq + sq.T - 2.0 * (F @ F.T)
+    D2 = np.maximum(D2, 0.0)
+    np.fill_diagonal(D2, np.inf)
+
+    # mean distance to k nearest neighbors → density
+    knn_dists = np.sort(D2, axis=1)[:, :k] ** 0.5
+    density = 1.0 / (knn_dists.mean(1) + 1e-6)
+
+    threshold = np.percentile(density, rare_fraction * 100)
+    rare_ids = {
+        ep.metadata.episode_id
+        for ep, d in zip(episodes, density)
+        if d <= threshold
+    }
+    return rare_ids, density
 
 
 # ── BC training and evaluation ────────────────────────────────────────────────
@@ -320,9 +368,10 @@ def run_benchmark(
     n_random_seeds: int = 5,
     test_fraction: float = 0.2,
     report_path: str | None = None,
+    rare_fraction: float = 0.15,
 ) -> dict:
     if keep_fractions is None:
-        keep_fractions = [0.10, 0.25, 0.50, 0.75, 1.00]
+        keep_fractions = [0.05, 0.10, 0.25, 0.50, 0.75, 1.00]
 
     print("=" * 70)
     print(f"  Calibra LeRobot Coreset Benchmark")
@@ -348,6 +397,11 @@ def run_benchmark(
     train_ids = {ep.metadata.episode_id for ep in train_episodes}
 
     print(f"\n  Train: {len(train_episodes)} episodes  |  Test: {len(test_episodes)} episodes")
+
+    # ── 1b. Identify rare episodes ────────────────────────────────────────────
+    rare_ids, density = identify_rare_episodes(train_episodes, rare_fraction=rare_fraction)
+    n_rare = len(rare_ids)
+    print(f"  Rare episodes (bottom {rare_fraction:.0%} by action-space density): {n_rare}")
 
     # ── 2. Calibra audit ──────────────────────────────────────────────────────
     from calibra.schema.episode import EpisodeBatch
@@ -379,7 +433,7 @@ def run_benchmark(
     # ── 4. Sweep keep fractions ───────────────────────────────────────────────
     for frac in keep_fractions:
         k = max(1, round(len(train_episodes) * frac))
-        print(f"\n[keep {frac:.0%} → {k} episodes]")
+        print(f"\n[keep {frac:.0%} -> {k} episodes]")
         row: dict = {"keep_fraction": frac, "n_episodes": k}
 
         # ── Calibra coreset ───────────────────────────────────────────────────
@@ -400,68 +454,78 @@ def run_benchmark(
         cal_train_s = time.perf_counter() - t0
         cal_mse = evaluate_bc(cal_model, test_episodes)
         cal_rel = cal_mse / full_mse if full_mse > 0 else float("nan")
-        print(f"MSE={cal_mse:.6f}  ({cal_rel:.2f}× baseline)  time={cal_train_s:.1f}s")
+        cal_rare_kept = sum(1 for ep in calibra_eps if ep.metadata.episode_id in rare_ids)
+        cal_rare_cov = cal_rare_kept / n_rare if n_rare else float("nan")
+        print(f"MSE={cal_mse:.6f}  ({cal_rel:.2f}x baseline)  time={cal_train_s:.1f}s  rare_cov={cal_rare_cov:.1%}")
 
         row["calibra_mse"] = cal_mse
         row["calibra_mse_relative"] = round(cal_rel, 4)
         row["calibra_train_s"] = round(cal_train_s, 2)
         row["calibra_n_episodes"] = len(calibra_eps)
+        row["calibra_rare_coverage"] = round(cal_rare_cov, 4)
 
         # ── Random subset (averaged over N_RANDOM_SEEDS seeds) ───────────────
         rand_mses = []
         rand_times = []
         all_train_ids = [ep.metadata.episode_id for ep in train_episodes]
 
+        rand_rare_covs = []
         for seed in range(n_random_seeds):
             random.seed(seed)
-            rand_ids = set(random.sample(all_train_ids, k))
-            rand_eps = [ep for ep in train_episodes if ep.metadata.episode_id in rand_ids]
+            rand_ids_seed = set(random.sample(all_train_ids, k))
+            rand_eps = [ep for ep in train_episodes if ep.metadata.episode_id in rand_ids_seed]
             t0 = time.perf_counter()
             rand_model = train_bc(rand_eps, n_epochs=n_epochs)
             rand_times.append(time.perf_counter() - t0)
             rand_mses.append(evaluate_bc(rand_model, test_episodes))
+            rare_kept = sum(1 for ep in rand_eps if ep.metadata.episode_id in rare_ids)
+            rand_rare_covs.append(rare_kept / n_rare if n_rare else float("nan"))
 
         rand_mse = float(np.mean(rand_mses))
         rand_mse_std = float(np.std(rand_mses))
         rand_train_s = float(np.mean(rand_times))
         rand_rel = rand_mse / full_mse if full_mse > 0 else float("nan")
+        rand_rare_cov = float(np.mean(rand_rare_covs))
         print(
             f"  [Random] MSE={rand_mse:.6f} ±{rand_mse_std:.6f} "
-            f"({rand_rel:.2f}× baseline)  time={rand_train_s:.1f}s"
+            f"({rand_rel:.2f}x baseline)  rare_cov={rand_rare_cov:.1%}"
         )
 
         row["random_mse"] = rand_mse
         row["random_mse_std"] = round(rand_mse_std, 6)
         row["random_mse_relative"] = round(rand_rel, 4)
         row["random_train_s"] = round(rand_train_s, 2)
+        row["random_rare_coverage"] = round(rand_rare_cov, 4)
 
         results.append(row)
 
     # ── 5. Print results table ────────────────────────────────────────────────
-    print("\n\n" + "=" * 80)
+    print("\n\n" + "=" * 100)
     print(f"  CALIBRA LEROBOT BENCHMARK — {dataset_id}")
     print(f"  Dataset quality score  : {quality_score}/100")
     print(f"  Full baseline MSE      : {full_mse:.6f}  ({full_train_s:.1f}s)")
-    print("=" * 80)
+    print(f"  Rare episodes ({rare_fraction:.0%} of train): {n_rare}")
+    print("=" * 100)
     print(
         f"  {'Keep':>6}  {'N':>5}  "
-        f"{'Calibra MSE':>12}  {'Rel.':>6}  {'Time':>6}  "
-        f"{'Random MSE':>11}  {'Rel.':>6}  {'Saved':>6}"
+        f"{'Cal MSE':>10}  {'Rel':>5}  {'RareCov':>8}  "
+        f"{'Rnd MSE':>10}  {'Rel':>5}  {'RareCov':>8}  {'Saved':>6}"
     )
-    print("-" * 80)
+    print("-" * 100)
     for r in results:
         saved = 100.0 * (1.0 - r["keep_fraction"])
         print(
             f"  {r['keep_fraction']:>5.0%}  {r['n_episodes']:>5}  "
-            f"  {r['calibra_mse']:>10.6f}  {r['calibra_mse_relative']:>5.2f}×  "
-            f"{r['calibra_train_s']:>4.0f}s  "
-            f"  {r['random_mse']:>9.6f}  {r['random_mse_relative']:>5.2f}×  "
+            f"  {r['calibra_mse']:>8.6f}  {r['calibra_mse_relative']:>4.2f}x  "
+            f"{r['calibra_rare_coverage']:>7.1%}  "
+            f"  {r['random_mse']:>8.6f}  {r['random_mse_relative']:>4.2f}x  "
+            f"{r['random_rare_coverage']:>7.1%}  "
             f"{saved:>5.0f}%"
         )
-    print("=" * 80)
+    print("=" * 100)
     print(
-        "\n  Rel. = ratio to full-data baseline MSE. "
-        "Values ≤ 1.00 mean the subset matches or beats the full dataset."
+        "\n  Rel. = ratio to full-data baseline MSE (<=1.00 means subset matches or beats full data)."
+        "\n  RareCov = fraction of rare-behavior episodes (bottom 15% by density) retained."
     )
 
     # ── 6. Save results JSON ──────────────────────────────────────────────────
@@ -471,29 +535,33 @@ def run_benchmark(
         "calibra_quality_score": quality_score,
         "n_train_episodes": len(train_episodes),
         "n_test_episodes": len(test_episodes),
+        "n_rare_episodes": n_rare,
+        "rare_fraction": rare_fraction,
         "full_baseline": {"mse": full_mse, "train_s": full_train_s},
         "sweep": results,
     }
     with open(out_json, "w") as f:
         json.dump(summary, f, indent=2)
-    print(f"\n  Results saved → {out_json}")
+    print(f"\n  Results saved -> {out_json}")
 
     # ── 7. Figures ────────────────────────────────────────────────────────────
     try:
         import matplotlib.pyplot as plt
 
         fracs = [r["keep_fraction"] * 100 for r in results]
-        cal_mse = [r["calibra_mse"] for r in results]
-        rand_mse = [r["random_mse"] for r in results]
+        cal_mse_vals = [r["calibra_mse"] for r in results]
+        rand_mse_vals = [r["random_mse"] for r in results]
         rand_std = [r["random_mse_std"] for r in results]
+        cal_rare = [r["calibra_rare_coverage"] * 100 for r in results]
+        rand_rare = [r["random_rare_coverage"] * 100 for r in results]
 
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5))
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 5))
 
-        # Left: MSE vs. retention
+        # Panel 1: MSE vs. retention
         ax1.axhline(full_mse, color="#6b7280", linewidth=1.5, linestyle="--", label="Full data (100%)")
-        ax1.plot(fracs, cal_mse, "o-", color="#2563eb", linewidth=2, label="Calibra coreset")
+        ax1.plot(fracs, cal_mse_vals, "o-", color="#2563eb", linewidth=2, label="Calibra coreset")
         ax1.errorbar(
-            fracs, rand_mse, yerr=rand_std, fmt="s--", color="#dc2626",
+            fracs, rand_mse_vals, yerr=rand_std, fmt="s--", color="#dc2626",
             linewidth=1.5, capsize=4, label=f"Random (avg {n_random_seeds} seeds)",
         )
         ax1.set_xlabel("Retention fraction (%)", fontsize=12)
@@ -502,17 +570,27 @@ def run_benchmark(
         ax1.legend(fontsize=10)
         ax1.grid(True, alpha=0.3)
 
-        # Right: training time vs. retention
+        # Panel 2: training time vs. retention
         cal_times = [r["calibra_train_s"] for r in results]
-        rand_times = [r["random_train_s"] for r in results]
+        rand_times_vals = [r["random_train_s"] for r in results]
         ax2.plot(fracs, cal_times, "o-", color="#2563eb", linewidth=2, label="Calibra coreset")
-        ax2.plot(fracs, rand_times, "s--", color="#dc2626", linewidth=1.5, label="Random")
+        ax2.plot(fracs, rand_times_vals, "s--", color="#dc2626", linewidth=1.5, label="Random")
         ax2.axhline(full_train_s, color="#6b7280", linewidth=1.5, linestyle="--", label="Full data")
         ax2.set_xlabel("Retention fraction (%)", fontsize=12)
         ax2.set_ylabel("Training wall-clock (seconds)", fontsize=12)
         ax2.set_title("Compute Cost vs. Dataset Size", fontsize=11)
         ax2.legend(fontsize=10)
         ax2.grid(True, alpha=0.3)
+
+        # Panel 3: rare-behavior coverage vs. retention  ← the key result
+        ax3.plot(fracs, cal_rare, "o-", color="#2563eb", linewidth=2, label="Calibra coreset")
+        ax3.plot(fracs, rand_rare, "s--", color="#dc2626", linewidth=1.5, label="Random")
+        ax3.set_xlabel("Retention fraction (%)", fontsize=12)
+        ax3.set_ylabel(f"Rare-episode coverage (%, bottom {rare_fraction:.0%} by density)", fontsize=11)
+        ax3.set_title("Rare-Behavior Preservation", fontsize=11)
+        ax3.set_ylim(0, 105)
+        ax3.legend(fontsize=10)
+        ax3.grid(True, alpha=0.3)
 
         fig.suptitle(
             f"Calibra Coreset Benchmark — {dataset_id}\n"
@@ -524,7 +602,7 @@ def run_benchmark(
 
         out_fig = FIG_DIR / f"fig_lerobot_benchmark_{dataset_id.replace('/', '_')}.pdf"
         fig.savefig(out_fig, bbox_inches="tight")
-        print(f"  Figure saved → {out_fig}")
+        print(f"  Figure saved -> {out_fig}")
         plt.close()
 
     except ImportError:
@@ -559,7 +637,13 @@ Examples:
         type=float,
         default=None,
         metavar="FRAC",
-        help="Keep fractions to sweep (default: 0.10 0.25 0.50 0.75 1.00)",
+        help="Keep fractions to sweep (default: 0.05 0.10 0.25 0.50 0.75 1.00)",
+    )
+    p.add_argument(
+        "--rare-fraction",
+        type=float,
+        default=0.15,
+        help="Bottom fraction of episodes (by action-space density) labelled as rare (default: 0.15)",
     )
     p.add_argument(
         "--n-epochs",
@@ -594,4 +678,5 @@ Examples:
         n_random_seeds=args.n_seeds,
         test_fraction=args.test_fraction,
         report_path=args.report,
+        rare_fraction=args.rare_fraction,
     )
