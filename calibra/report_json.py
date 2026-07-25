@@ -23,7 +23,6 @@ from typing import Optional
 
 from calibra import __version__
 from calibra.certify import _grade
-from calibra.schema.report import CompatibilityHint, DiagnosticReport, RiskFlag, RiskLevel
 from calibra.schema.public_report import (
     AuditConfig,
     AuditResults,
@@ -38,9 +37,9 @@ from calibra.schema.public_report import (
     PolicyRecommendation,
     Recommendations,
     ReportMeta,
-    RobotInfo,
     SamplingConfig,
 )
+from calibra.schema.report import CompatibilityHint, DiagnosticReport, RiskFlag, RiskLevel
 from calibra.schema.scoring import (
     CURRENT_RUBRIC,
     DIMENSION_WEIGHTS,
@@ -52,8 +51,8 @@ from calibra.schema.scoring import (
     score_to_grade,
 )
 
-
 # ── helpers ───────────────────────────────────────────────────────────────────
+
 
 def _pruning_to_verdicts(pruning_result) -> EpisodeVerdicts:
     """Convert an internal PruningResult to the public EpisodeVerdicts contract."""
@@ -99,9 +98,13 @@ def _hints_to_recommendations(hints: list[CompatibilityHint]) -> Recommendations
         recs[family] = _map(hint.compatible, hint.explanation)
 
     return Recommendations(
-        behavior_cloning=recs.get("behavior_cloning", recs.get("bc", PolicyRecommendation(status="review"))),
+        behavior_cloning=recs.get(
+            "behavior_cloning", recs.get("bc", PolicyRecommendation(status="review"))
+        ),
         act=recs.get("act", PolicyRecommendation(status="review")),
-        diffusion_policy=recs.get("diffusion_policy", recs.get("diffusion", PolicyRecommendation(status="review"))),
+        diffusion_policy=recs.get(
+            "diffusion_policy", recs.get("diffusion", PolicyRecommendation(status="review"))
+        ),
         gr00t=recs.get("gr00t", PolicyRecommendation(status="review")),
     )
 
@@ -149,11 +152,7 @@ def _compute_confidence(flags: list[RiskFlag]) -> float:
     ratios: list[float] = []
     for flag in flags:
         obs = flag.observed
-        if (
-            obs.value is not None
-            and obs.ci_lower is not None
-            and obs.ci_upper is not None
-        ):
+        if obs.value is not None and obs.ci_lower is not None and obs.ci_upper is not None:
             denom = abs(obs.value) + 1e-9
             relative_width = (obs.ci_upper - obs.ci_lower) / denom
             ratios.append(max(0.0, 1.0 - relative_width))
@@ -171,6 +170,7 @@ def _config_hash(
 
 
 # ── public API ────────────────────────────────────────────────────────────────
+
 
 def assemble_public_report(
     diag: DiagnosticReport,

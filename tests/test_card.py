@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-from calibra.card import generate_card, generate_yaml_frontmatter, _metric_row
+from calibra.card import _metric_row, generate_card, generate_yaml_frontmatter
 from calibra.schema.report import (
     AnalyzerResult,
     DiagnosticReport,
@@ -15,7 +15,6 @@ from calibra.schema.report import (
     RiskFlag,
     RiskLevel,
 )
-
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -325,8 +324,8 @@ class TestRunCardCLI:
         assert exc.value.code == 0
 
     def test_run_card_exit_1_critical(self, monkeypatch):
-        from calibra.card import run_card
         import calibra.ingestion.registry as registry
+        from calibra.card import run_card
         from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 
         rng = np.random.default_rng(1)

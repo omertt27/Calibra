@@ -20,10 +20,10 @@ import warnings
 from dataclasses import dataclass
 from typing import Optional
 
+from calibra.comparison.comparator import _extract_ep_data
+from calibra.schema.comparison import CurationReport, EpisodeFlag
 from calibra.schema.episode import Episode, EpisodeBatch
 from calibra.schema.report import DiagnosticReport
-from calibra.schema.comparison import CurationReport, EpisodeFlag
-from calibra.comparison.comparator import _extract_ep_data
 
 
 @dataclass

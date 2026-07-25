@@ -1,20 +1,22 @@
-import sys
 import os
+import random
+import sys
+
 import numpy as np
 import torch
-import random
 
 sys.path.append(os.getcwd())
 
 from experiments.failure_prevention_benchmark import (
-    collect_base_data,
-    select_calibra_coreset,
-    build_condition_batch,
-    train_bc,
-    evaluate_bc,
-    SEED,
     KEEP_FRACTION,
+    SEED,
+    build_condition_batch,
+    collect_base_data,
+    evaluate_bc,
+    select_calibra_coreset,
+    train_bc,
 )
+
 
 def main():
     print("Collecting base data...")
@@ -22,7 +24,7 @@ def main():
     print("Selecting Calibra coreset...")
     calibra_idx = select_calibra_coreset(base_batch, KEEP_FRACTION)
 
-    seeds = list(range(42, 52)) # 10 seeds
+    seeds = list(range(42, 52))  # 10 seeds
     clean_srs = []
     spike_srs = []
 
@@ -35,7 +37,7 @@ def main():
         # so the only variance is the training seed.
         rng_corr = np.random.default_rng(42)
         clean_batch = build_condition_batch(base_batch, calibra_idx, "none", 0.0, rng_corr)
-        
+
         rng_corr = np.random.default_rng(42)
         spike_batch = build_condition_batch(base_batch, calibra_idx, "spike", 0.02, rng_corr)
 
@@ -61,6 +63,7 @@ def main():
     print("-" * 35)
     print(f"Clean Mean: {np.mean(clean_srs):.1%} +/- {np.std(clean_srs):.1%}")
     print(f"Spike Mean: {np.mean(spike_srs):.1%} +/- {np.std(spike_srs):.1%}")
+
 
 if __name__ == "__main__":
     main()

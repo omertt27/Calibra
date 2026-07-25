@@ -1,15 +1,17 @@
 import argparse
 import json
 import pathlib
-import pandas as pd
-import numpy as np
-import scipy.stats as stats
-import matplotlib.pyplot as plt
+
 import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import scipy.stats as stats
+
+from calibra.predict import predict_outcome
 
 # Import the schemas and prediction outcome function directly
-from calibra.schema.report import DiagnosticReport, AnalyzerResult
-from calibra.predict import predict_outcome
+from calibra.schema.report import AnalyzerResult, DiagnosticReport
 
 # Define the paths
 REPO_ROOT = pathlib.Path(__file__).parent.parent
@@ -27,28 +29,24 @@ FIG_DIR.mkdir(parents=True, exist_ok=True)
 SUCCESS_RATES = {
     # [VERIFIED] Zhao et al. 2023, "Learning Fine-Grained Bimanual Manipulation with
     # Low-Cost Hardware", RSS 2023, Table 1 — ACT policy, 50 sim demos, 50 eval rollouts
-    "aloha_sim_transfer_cube_human":    0.84,
+    "aloha_sim_transfer_cube_human": 0.84,
     "aloha_sim_transfer_cube_scripted": 0.94,
-    "aloha_sim_insertion_human":        0.72,
-    "aloha_sim_insertion_scripted":     0.88,
-
+    "aloha_sim_insertion_human": 0.72,
+    "aloha_sim_insertion_scripted": 0.88,
     # [VERIFIED] Chi et al. 2023, "Diffusion Policy: Visuomotor Policy Learning via
     # Action Diffusion", RSS 2023, Table 1 — CNN Diffusion Policy, image obs, 100-step eval
     "pusht_image": 0.89,
-
     # [VERIFIED] Fu et al. 2024, "Mobile ALOHA: Learning Bimanual Mobile Manipulation
     # with Low-Cost Whole-Body Teleoperation", Table 2 — ACT, real hardware, 10 trials/task
     "aloha_mobile_cabinet": 0.65,
-    "aloha_mobile_shrimp":  0.48,
-
+    "aloha_mobile_shrimp": 0.48,
     # [ESTIMATE] Zhao et al. RSS 2023, Table 2 — ACT policy, real ALOHA hardware,
     # 50 demonstrations each, averaged over evaluation trials.
     # ⚠ Verify exact row values against paper Table 2 before publication.
-    "aloha_static_battery":   0.74,
-    "aloha_static_candy":     0.80,
-    "aloha_static_coffee":    0.76,
+    "aloha_static_battery": 0.74,
+    "aloha_static_candy": 0.80,
+    "aloha_static_coffee": 0.76,
     "aloha_static_cups_open": 0.67,
-
     # TODO: source the following — excluded until verifiable.
     # "pusht_velocity_command": 0.91,   # needs citation (Chi et al. velocity variant?)
     # "bridgedata_v2":          0.54,   # needs citation (Octo paper, velocity-cmd mode)
@@ -58,38 +56,40 @@ SUCCESS_RATES = {
 }
 
 CITATIONS = {
-    "aloha_sim_transfer_cube_human":    "Zhao et al. RSS 2023, Table 1 [VERIFIED]",
+    "aloha_sim_transfer_cube_human": "Zhao et al. RSS 2023, Table 1 [VERIFIED]",
     "aloha_sim_transfer_cube_scripted": "Zhao et al. RSS 2023, Table 1 [VERIFIED]",
-    "aloha_sim_insertion_human":        "Zhao et al. RSS 2023, Table 1 [VERIFIED]",
-    "aloha_sim_insertion_scripted":     "Zhao et al. RSS 2023, Table 1 [VERIFIED]",
-    "pusht_image":         "Chi et al. RSS 2023, Table 1 (CNN Diffusion, image obs) [VERIFIED]",
+    "aloha_sim_insertion_human": "Zhao et al. RSS 2023, Table 1 [VERIFIED]",
+    "aloha_sim_insertion_scripted": "Zhao et al. RSS 2023, Table 1 [VERIFIED]",
+    "pusht_image": "Chi et al. RSS 2023, Table 1 (CNN Diffusion, image obs) [VERIFIED]",
     "aloha_mobile_cabinet": "Fu et al. 2024 Mobile ALOHA, Table 2 [VERIFIED]",
-    "aloha_mobile_shrimp":  "Fu et al. 2024 Mobile ALOHA, Table 2 [VERIFIED]",
-    "aloha_static_battery":   "Zhao et al. RSS 2023, Table 2 (real hardware ACT) [ESTIMATE]",
-    "aloha_static_candy":     "Zhao et al. RSS 2023, Table 2 (real hardware ACT) [ESTIMATE]",
-    "aloha_static_coffee":    "Zhao et al. RSS 2023, Table 2 (real hardware ACT) [ESTIMATE]",
+    "aloha_mobile_shrimp": "Fu et al. 2024 Mobile ALOHA, Table 2 [VERIFIED]",
+    "aloha_static_battery": "Zhao et al. RSS 2023, Table 2 (real hardware ACT) [ESTIMATE]",
+    "aloha_static_candy": "Zhao et al. RSS 2023, Table 2 (real hardware ACT) [ESTIMATE]",
+    "aloha_static_coffee": "Zhao et al. RSS 2023, Table 2 (real hardware ACT) [ESTIMATE]",
     "aloha_static_cups_open": "Zhao et al. RSS 2023, Table 2 (real hardware ACT) [ESTIMATE]",
 }
 
 # Policy family must match the policy used in the cited result above.
 POLICY_FAMILY_MAP = {
-    "aloha_sim_transfer_cube_human":    "act",
+    "aloha_sim_transfer_cube_human": "act",
     "aloha_sim_transfer_cube_scripted": "act",
-    "aloha_sim_insertion_human":        "act",
-    "aloha_sim_insertion_scripted":     "act",
-    "pusht_image":                      "diffusion",
-    "aloha_mobile_cabinet":             "act",
-    "aloha_mobile_shrimp":              "act",
-    "aloha_static_battery":             "act",
-    "aloha_static_candy":               "act",
-    "aloha_static_coffee":              "act",
-    "aloha_static_cups_open":           "act",
+    "aloha_sim_insertion_human": "act",
+    "aloha_sim_insertion_scripted": "act",
+    "pusht_image": "diffusion",
+    "aloha_mobile_cabinet": "act",
+    "aloha_mobile_shrimp": "act",
+    "aloha_static_battery": "act",
+    "aloha_static_candy": "act",
+    "aloha_static_coffee": "act",
+    "aloha_static_cups_open": "act",
 }
 
 # Mark estimate datasets for visual differentiation in plot
 _ESTIMATE_DATASETS = {
-    "aloha_static_battery", "aloha_static_candy",
-    "aloha_static_coffee",  "aloha_static_cups_open",
+    "aloha_static_battery",
+    "aloha_static_candy",
+    "aloha_static_coffee",
+    "aloha_static_cups_open",
 }
 
 
@@ -137,7 +137,7 @@ def load_report_from_json(json_path: pathlib.Path) -> DiagnosticReport:
     # Mock flags for task structure
     task_flags = []
     if "scripted" in json_path.stem:
-        from calibra.schema.report import RiskFlag, RiskLevel, ObservedValue
+        from calibra.schema.report import ObservedValue, RiskFlag, RiskLevel
 
         task_flags.append(
             RiskFlag(
@@ -200,10 +200,14 @@ def load_report_from_json(json_path: pathlib.Path) -> DiagnosticReport:
 
 def main():
     parser = argparse.ArgumentParser(description="Calibra L6 predictor correlation study")
-    parser.add_argument("--no-estimates", action="store_true",
-                        help="Exclude [ESTIMATE] datasets (verified-only mode)")
-    parser.add_argument("--save-fig", action="store_true",
-                        help="Save figures to experiments/figures/")
+    parser.add_argument(
+        "--no-estimates",
+        action="store_true",
+        help="Exclude [ESTIMATE] datasets (verified-only mode)",
+    )
+    parser.add_argument(
+        "--save-fig", action="store_true", help="Save figures to experiments/figures/"
+    )
     args = parser.parse_args()
 
     rows = []
@@ -239,7 +243,9 @@ def main():
     if args.no_estimates:
         print("  Mode: verified-only (--no-estimates)")
     print("=" * 90)
-    print(f"  {'Dataset':<30}  {'Policy':<10}  {'CalScore':>8}  {'CalSR':>6}  {'ActualSR':>8}  Cite")
+    print(
+        f"  {'Dataset':<30}  {'Policy':<10}  {'CalScore':>8}  {'CalSR':>6}  {'ActualSR':>8}  Cite"
+    )
     print("  " + "─" * 86)
     for _, r in df.iterrows():
         est_mark = " *" if r["is_estimate"] else "  "
@@ -258,8 +264,10 @@ def main():
     )
     pearson_corr, pearson_p = stats.pearsonr(df["calibra_success_rate"], df["actual_success_rate"])
 
-    print(f"\n  Spearman ρ : {spearman_corr:.4f}  (p = {spearman_p:.4g})"
-          f"  {'✅ > 0.65' if spearman_corr > 0.65 else '⚠️  target > 0.65'}")
+    print(
+        f"\n  Spearman ρ : {spearman_corr:.4f}  (p = {spearman_p:.4g})"
+        f"  {'✅ > 0.65' if spearman_corr > 0.65 else '⚠️  target > 0.65'}"
+    )
     print(f"  Pearson  r : {pearson_corr:.4f}  (p = {pearson_p:.4g})")
     print(f"  N datasets : {len(df)}")
 
@@ -274,6 +282,7 @@ def main():
 
     # ── plot ──────────────────────────────────────────────────────────────────
     import matplotlib
+
     matplotlib.use("Agg")
 
     fig, ax = plt.subplots(figsize=(9, 6.5))
@@ -287,44 +296,67 @@ def main():
 
     color_map = {
         "diffusion": "#2196F3",
-        "act":       "#9C27B0",
-        "octo":      "#FF5722",
-        "openvla":   "#4CAF50",
-        "pi0":       "#FFC107",
+        "act": "#9C27B0",
+        "octo": "#FF5722",
+        "openvla": "#4CAF50",
+        "pi0": "#FFC107",
     }
 
     # Verified points — filled; estimate points — open (white fill, colored edge)
     for _, r in df.iterrows():
         c = color_map.get(r["policy"], "#607D8B")
         if r["is_estimate"]:
-            ax.scatter(r["calibra_success_rate"] * 100, r["actual_success_rate"] * 100,
-                       s=130, facecolors="white", edgecolors=c, linewidths=2.0,
-                       marker="D", zorder=4)
+            ax.scatter(
+                r["calibra_success_rate"] * 100,
+                r["actual_success_rate"] * 100,
+                s=130,
+                facecolors="white",
+                edgecolors=c,
+                linewidths=2.0,
+                marker="D",
+                zorder=4,
+            )
         else:
-            ax.scatter(r["calibra_success_rate"] * 100, r["actual_success_rate"] * 100,
-                       s=130, c=c, edgecolors="black", linewidths=0.7, alpha=0.9, zorder=4)
+            ax.scatter(
+                r["calibra_success_rate"] * 100,
+                r["actual_success_rate"] * 100,
+                s=130,
+                c=c,
+                edgecolors="black",
+                linewidths=0.7,
+                alpha=0.9,
+                zorder=4,
+            )
 
     # Regression line
     m, b = np.polyfit(df["calibra_success_rate"] * 100, df["actual_success_rate"] * 100, 1)
     x_range = np.linspace(
         df["calibra_success_rate"].min() * 100 - 5,
-        df["calibra_success_rate"].max() * 100 + 5, 100,
+        df["calibra_success_rate"].max() * 100 + 5,
+        100,
     )
-    ax.plot(x_range, m * x_range + b, color="#FF5722", linestyle="--",
-            linewidth=1.5, zorder=2)
+    ax.plot(x_range, m * x_range + b, color="#FF5722", linestyle="--", linewidth=1.5, zorder=2)
 
     # Labels
     for _, r in df.iterrows():
-        short = (r["dataset"]
-                 .replace("aloha_sim_", "")
-                 .replace("aloha_mobile_", "mob_")
-                 .replace("aloha_static_", "sta_")
-                 .replace("_human", "_h")
-                 .replace("_scripted", "_s"))
-        ax.annotate(short,
-                    (r["calibra_success_rate"] * 100, r["actual_success_rate"] * 100),
-                    textcoords="offset points", xytext=(0, 8),
-                    ha="center", fontsize=7.5, fontweight="semibold", color="#333333")
+        short = (
+            r["dataset"]
+            .replace("aloha_sim_", "")
+            .replace("aloha_mobile_", "mob_")
+            .replace("aloha_static_", "sta_")
+            .replace("_human", "_h")
+            .replace("_scripted", "_s")
+        )
+        ax.annotate(
+            short,
+            (r["calibra_success_rate"] * 100, r["actual_success_rate"] * 100),
+            textcoords="offset points",
+            xytext=(0, 8),
+            ha="center",
+            fontsize=7.5,
+            fontweight="semibold",
+            color="#333333",
+        )
 
     ax.set_xlabel("Calibra Predicted Success Rate (%)", fontsize=11, fontweight="bold", labelpad=10)
     ax.set_ylabel("Actual Policy Success Rate (%)", fontsize=11, fontweight="bold", labelpad=10)
@@ -334,20 +366,43 @@ def main():
         f"Calibra L6 — Predictor Correlation Study  (N={n_total}, "
         f"{n_verified} verified)\n"
         f"Spearman $\\rho$ = {spearman_corr:.3f}  |  Pearson $r$ = {pearson_corr:.3f}",
-        fontsize=12, fontweight="bold", pad=14,
+        fontsize=12,
+        fontweight="bold",
+        pad=14,
     )
 
     legend_handles = [
         mpatches.Patch(color=color_map["diffusion"], label="Diffusion Policy"),
-        mpatches.Patch(color=color_map["act"],       label="ACT"),
+        mpatches.Patch(color=color_map["act"], label="ACT"),
         plt.Line2D([0], [0], color="#FF5722", linestyle="--", label=f"Fit (slope={m:.2f})"),
-        plt.Line2D([0], [0], marker="D", color="w", markerfacecolor="white",
-                   markeredgecolor="#555555", markersize=9, label="[ESTIMATE] — unverified SR"),
-        plt.Line2D([0], [0], marker="o", color="w", markerfacecolor="#555555",
-                   markersize=9, label="[VERIFIED] — from paper"),
+        plt.Line2D(
+            [0],
+            [0],
+            marker="D",
+            color="w",
+            markerfacecolor="white",
+            markeredgecolor="#555555",
+            markersize=9,
+            label="[ESTIMATE] — unverified SR",
+        ),
+        plt.Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="w",
+            markerfacecolor="#555555",
+            markersize=9,
+            label="[VERIFIED] — from paper",
+        ),
     ]
-    ax.legend(handles=legend_handles, loc="upper left", frameon=True,
-              facecolor="#ffffff", edgecolor="#e0e0e0", fontsize=8.5)
+    ax.legend(
+        handles=legend_handles,
+        loc="upper left",
+        frameon=True,
+        facecolor="#ffffff",
+        edgecolor="#e0e0e0",
+        fontsize=8.5,
+    )
 
     plt.xlim(40, 105)
     plt.ylim(35, 105)

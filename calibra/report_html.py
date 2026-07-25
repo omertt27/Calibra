@@ -40,7 +40,9 @@ def _compute_health_score(report: DiagnosticReport) -> dict[str, int]:
     def _cat(flags: list) -> int:
         score = 100
         for f in flags:
-            score -= 20 if f.level == RiskLevel.CRITICAL else 8 if f.level == RiskLevel.WARNING else 0
+            score -= (
+                20 if f.level == RiskLevel.CRITICAL else 8 if f.level == RiskLevel.WARNING else 0
+            )
         return max(0, score)
 
     overall = 100
@@ -66,7 +68,7 @@ def _score_color_class(score: int) -> str:
 
 
 def generate_html_report(
-    report: DiagnosticReport, output_path: str, outliers: Optional[dict] = None
+    report: DiagnosticReport, output_path: str, outliers: Optional[list] = None
 ) -> None:
     """
     Generate a standalone HTML dashboard report and write it to `output_path`.
@@ -107,14 +109,12 @@ def generate_html_report(
     # Build outliers list
     outlier_list = []
     if outliers:
-        for ep_idx, reasons in outliers.items():
+        for anomaly in outliers:
             outlier_list.append(
                 {
-                    "index": ep_idx,
-                    "episode_id": report.episode_ids[ep_idx]
-                    if ep_idx < len(report.episode_ids)
-                    else f"Ep {ep_idx}",
-                    "reasons": reasons,
+                    "index": anomaly.episode_idx,
+                    "episode_id": anomaly.episode_id,
+                    "reasons": anomaly.metrics,
                 }
             )
 
@@ -123,7 +123,7 @@ def generate_html_report(
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mergen Report — __DATASET_NAME__</title>
+    <title>Calibra Report — __DATASET_NAME__</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
@@ -204,7 +204,7 @@ def generate_html_report(
     <!-- Header banner -->
     <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur px-6 py-4 flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-3">
-            <div class="bg-indigo-600 text-white font-bold p-2.5 rounded-lg tracking-wider text-sm shadow-lg shadow-indigo-600/20">MERGEN</div>
+            <div class="bg-indigo-600 text-white font-bold p-2.5 rounded-lg tracking-wider text-sm shadow-lg shadow-indigo-600/20">CALIBRA</div>
             <div>
                 <h1 class="text-xl font-bold tracking-tight text-white">__DATASET_NAME__</h1>
                 <p class="text-xs text-slate-400">Format: <span class="font-mono text-slate-300">__FORMAT__</span> &middot; Source: <span class="font-mono text-slate-300">__SOURCE_PATH__</span></p>

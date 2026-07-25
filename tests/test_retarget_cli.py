@@ -25,6 +25,7 @@ scipy = pytest.importorskip("scipy", reason="scipy required for kinematics")
 def _make_eef_batch(n_episodes: int = 3, n_steps: int = 20):
     """Return a synthetic EpisodeBatch with eef_pos + eef_quat observations."""
     from scipy.spatial.transform import Rotation
+
     from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 
     rng = np.random.default_rng(42)
@@ -185,6 +186,7 @@ class TestRetargetExplicitKeys:
     def test_custom_obs_keys(self):
         """--obs-key-pos and --obs-key-quat override auto-detection."""
         from scipy.spatial.transform import Rotation
+
         from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 
         rng = np.random.default_rng(7)

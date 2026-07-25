@@ -335,6 +335,7 @@ class OutcomeDatabase:
         # Prefer authenticated sync when a token is available
         try:
             from calibra.cloud.auth import get_token
+
             token = get_token()
         except Exception:
             token = None
@@ -345,9 +346,10 @@ class OutcomeDatabase:
             self._sync_anonymous(record, _version)
 
     def _sync_authenticated(self, record: OutcomeRecord, token: str, version: str) -> None:
-        endpoint = os.environ.get(
-            "CALIBRA_CLOUD_URL", "https://app.calibra.io"
-        ) + "/api/outcomes/authenticated"
+        endpoint = (
+            os.environ.get("CALIBRA_CLOUD_URL", "https://app.calibra.io")
+            + "/api/outcomes/authenticated"
+        )
         try:
             payload = json.dumps(
                 {
@@ -378,9 +380,7 @@ class OutcomeDatabase:
 
     def _sync_anonymous(self, record: OutcomeRecord, version: str) -> None:
         self._print_telemetry_notice_once()
-        endpoint = os.environ.get(
-            "CALIBRA_CLOUD_ENDPOINT", "https://outcomes.calibra.ai/v1/record"
-        )
+        endpoint = os.environ.get("CALIBRA_CLOUD_ENDPOINT", "https://outcomes.calibra.ai/v1/record")
         try:
             payload = json.dumps(
                 {
@@ -548,7 +548,9 @@ class OutcomeDatabase:
         if n_robotics >= 10:
             lines.append("  Enough robotics data for weight calibration — run `calibra calibrate`.")
         else:
-            lines.append(f"  Need {10 - n_robotics} more robotics record(s) for weight calibration.")
+            lines.append(
+                f"  Need {10 - n_robotics} more robotics record(s) for weight calibration."
+            )
         return "\n".join(lines)
 
     def list_records(self) -> list[dict]:
@@ -591,7 +593,7 @@ def download_global_weights(db: OutcomeDatabase) -> Optional[dict[str, float]]:
     n_records = "?"
     if version.startswith("global-v"):
         try:
-            n_records = int(version[len("global-v"):])
+            n_records = int(version[len("global-v") :])
         except ValueError:
             pass
 

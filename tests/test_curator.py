@@ -6,14 +6,12 @@ All fixtures are synthetic — no real dataset files required.
 
 from __future__ import annotations
 
-
 import numpy as np
 import pytest
 
-from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
-from calibra.pipeline import Pipeline
 from calibra.comparison.curator import EpisodeCurator
-
+from calibra.pipeline import Pipeline
+from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 

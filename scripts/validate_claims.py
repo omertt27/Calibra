@@ -23,7 +23,6 @@ sys.path.insert(0, str(_REPO))
 
 from calibra.claims import _derive_confidence  # noqa: E402
 
-
 _CONF_RANK = {
     "STRONG": 5,
     "HIGH": 4,

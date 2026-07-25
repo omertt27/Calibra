@@ -102,14 +102,22 @@ def main() -> None:
     n_high_repetition = int((fp.repetition_rate > 0.4).sum())
 
     print("\nFingerprint summary:")
-    print(f"  coherence         mean={fp.coherence.mean():.3f}  std={fp.coherence.std():.3f}  "
-          f"low (<0.10): {n_low_coherence}")
-    print(f"  repetition_rate   mean={fp.repetition_rate.mean():.3f}  "
-          f"std={fp.repetition_rate.std():.3f}  high (>0.40): {n_high_repetition}")
-    print(f"  template_ratio    mean={fp.template_ratio.mean():.4f}  "
-          f"n_with_boilerplate={n_boilerplate}")
-    print(f"  response_length   mean={fp.response_length_words.mean():.1f} words  "
-          f"median={int(np.median(fp.response_length_words))}  short (<5): {n_short}")
+    print(
+        f"  coherence         mean={fp.coherence.mean():.3f}  std={fp.coherence.std():.3f}  "
+        f"low (<0.10): {n_low_coherence}"
+    )
+    print(
+        f"  repetition_rate   mean={fp.repetition_rate.mean():.3f}  "
+        f"std={fp.repetition_rate.std():.3f}  high (>0.40): {n_high_repetition}"
+    )
+    print(
+        f"  template_ratio    mean={fp.template_ratio.mean():.4f}  "
+        f"n_with_boilerplate={n_boilerplate}"
+    )
+    print(
+        f"  response_length   mean={fp.response_length_words.mean():.1f} words  "
+        f"median={int(np.median(fp.response_length_words))}  short (<5): {n_short}"
+    )
 
 
 if __name__ == "__main__":

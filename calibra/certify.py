@@ -32,7 +32,6 @@ from typing import Optional
 from calibra.pipeline import Pipeline
 from calibra.schema.report import DiagnosticReport, RiskLevel
 
-
 _WIDTH = 60
 _THICK = "━" * _WIDTH
 _THIN = "─" * _WIDTH
@@ -246,7 +245,7 @@ def run_certify(argv: list[str]) -> None:
         "--report",
         metavar="PATH",
         help="Write a schema-versioned CalibraReport JSON to PATH "
-             "(e.g. results/lerobot/pusht/latest.json)",
+        "(e.g. results/lerobot/pusht/latest.json)",
     )
     args = p.parse_args(argv)
 
@@ -285,7 +284,7 @@ def run_certify(argv: list[str]) -> None:
     extra_steps: list[str] = []
     if args.reference:
         try:
-            from calibra.compare import load_reference, metrics_from_report, metrics_from_reference
+            from calibra.compare import load_reference, metrics_from_reference, metrics_from_report
 
             ref_data = load_reference(args.reference)
             your_m = metrics_from_report(report)

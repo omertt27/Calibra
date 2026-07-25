@@ -36,7 +36,9 @@ def _make_batch(n=20, novel_ids=(2, 9, 15), n_steps=40):
                 actions=actions,
             )
         )
-    return EpisodeBatch(episodes=episodes, dataset_name="wm_test", format="hdf5", source_path="/tmp/wm")
+    return EpisodeBatch(
+        episodes=episodes, dataset_name="wm_test", format="hdf5", source_path="/tmp/wm"
+    )
 
 
 # ── encoder / predictor ────────────────────────────────────────────────────────
@@ -108,9 +110,7 @@ def test_curate_keeps_high_surprise_prunes_rest():
 
     assert result.n_quality_fail == 0
     assert set(result.keep_episode_ids) == {f"ep_{i}" for i in novel_ids}
-    assert set(result.redundant_ids) == {
-        f"ep_{i}" for i in range(20) if i not in novel_ids
-    }
+    assert set(result.redundant_ids) == {f"ep_{i}" for i in range(20) if i not in novel_ids}
 
 
 def test_curate_quality_fail_takes_priority_over_surprise():

@@ -149,11 +149,11 @@ _REGIME_LABELS = {
 # (MODERATE_NOISE). Marked for revision as BridgeData and other datasets
 # are added to the ablation matrix.
 
-_NOISE_SPIKE_LOW = 0.025       # spike_fraction below this → LOW_NOISE
-_NOISE_SPIKE_HIGH = 0.090      # spike_fraction above this → HIGH_NOISE
-_NOISE_DISC_LOW = 0.040        # vel_disc_rate below this → LOW_NOISE
-_NOISE_DISC_HIGH = 0.130       # vel_disc_rate above this → HIGH_NOISE
-_DROPOUT_HIGH = 0.05           # dropout above this raises noise score
+_NOISE_SPIKE_LOW = 0.025  # spike_fraction below this → LOW_NOISE
+_NOISE_SPIKE_HIGH = 0.090  # spike_fraction above this → HIGH_NOISE
+_NOISE_DISC_LOW = 0.040  # vel_disc_rate below this → LOW_NOISE
+_NOISE_DISC_HIGH = 0.130  # vel_disc_rate above this → HIGH_NOISE
+_DROPOUT_HIGH = 0.05  # dropout above this raises noise score
 
 
 # ── metric extraction ─────────────────────────────────────────────────────────
@@ -186,9 +186,7 @@ def _extract_metrics(report: DiagnosticReport) -> dict:
             m["dropout_fraction"] = float(dr.get("mean_dropout_fraction", 0.0))
 
         elif name == "latent_dynamics":
-            m["outlier_transition_fraction"] = float(
-                raw.get("outlier_transition_fraction", 0.0)
-            )
+            m["outlier_transition_fraction"] = float(raw.get("outlier_transition_fraction", 0.0))
             m["state_redundancy"] = raw.get("state_redundancy")
             m["state_entropy"] = raw.get("state_space_entropy_2d")
 
@@ -241,7 +239,7 @@ class RegimeDiagnosis:
     recommended_config: dict
     evidence: dict
     explanation: str
-    n_datasets_calibrated: int = 3   # ALOHA, DROID-100, PushT (update as matrix grows)
+    n_datasets_calibrated: int = 3  # ALOHA, DROID-100, PushT (update as matrix grows)
 
     def summary(self) -> str:
         label = _REGIME_LABELS[self.regime]

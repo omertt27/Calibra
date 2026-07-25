@@ -38,6 +38,7 @@ from typing import Optional
 import numpy as np
 
 from calibra.analyzers.base import Analyzer
+from calibra.analyzers.temporal import _bootstrap_ci  # reuse bootstrap helper
 from calibra.schema.episode import Episode, EpisodeBatch
 from calibra.schema.report import (
     AnalyzerResult,
@@ -46,7 +47,6 @@ from calibra.schema.report import (
     RiskFlag,
     RiskLevel,
 )
-from calibra.analyzers.temporal import _bootstrap_ci  # reuse bootstrap helper
 
 # ── thresholds ───────────────────────────────────────────────────────────────
 

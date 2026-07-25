@@ -36,7 +36,7 @@ import pathlib
 import random as _random
 import sys
 import time
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 
@@ -50,19 +50,19 @@ FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── environment constants ──────────────────────────────────────────────────────
 
-WALL_X    = 0.0
-WALL_GAP  = 0.62   # |y| > WALL_GAP = open passage
+WALL_X = 0.0
+WALL_GAP = 0.62  # |y| > WALL_GAP = open passage
 
 GOALS = [
-    np.array([ 0.8,  0.75], dtype=np.float32),   # A: upper-right
-    np.array([ 0.8, -0.75], dtype=np.float32),   # B: lower-right
+    np.array([0.8, 0.75], dtype=np.float32),  # A: upper-right
+    np.array([0.8, -0.75], dtype=np.float32),  # B: lower-right
 ]
 GOAL_NAMES = ["A:upper", "B:lower"]
 
 # Waypoints are placed PAST the wall (x=0.10) inside the gap region.
 # This guarantees the crossing happens at y > WALL_GAP and avoids
 # the agent oscillating on the left side after overshooting.
-_UPPER_WP = np.array([0.10,  0.88], dtype=np.float32)
+_UPPER_WP = np.array([0.10, 0.88], dtype=np.float32)
 _LOWER_WP = np.array([0.10, -0.88], dtype=np.float32)
 
 
@@ -70,14 +70,14 @@ _LOWER_WP = np.array([0.10, -0.88], dtype=np.float32)
 
 
 class MultiGoalObstacleEnv:
-    DT             = 0.05
-    MAX_VEL        = 2.0
-    DAMPING        = 0.85
+    DT = 0.05
+    MAX_VEL = 2.0
+    DAMPING = 0.85
     SUCCESS_RADIUS = 0.15
 
     def __init__(self, goal: np.ndarray, seed: int = 0):
-        self.goal  = goal.copy()
-        self.rng   = np.random.default_rng(seed)
+        self.goal = goal.copy()
+        self.rng = np.random.default_rng(seed)
         self.state = np.zeros(4, dtype=np.float32)
 
     def reset(self, start: Optional[np.ndarray] = None) -> np.ndarray:
@@ -85,7 +85,7 @@ class MultiGoalObstacleEnv:
             self.state = np.array([start[0], start[1], 0.0, 0.0], dtype=np.float32)
         else:
             x = self.rng.uniform(-0.9, -0.2)
-            y = self.rng.uniform(-0.85,  0.85)
+            y = self.rng.uniform(-0.85, 0.85)
             self.state = np.array([x, y, 0.0, 0.0], dtype=np.float32)
         return self.state.copy()
 
@@ -101,18 +101,18 @@ class MultiGoalObstacleEnv:
         ny = float(np.clip(oy + vy * self.DT, -1.0, 1.0))
 
         if self._wall_collision(ox, oy, nx, ny):
-            nx = ox          # block x-crossing
+            nx = ox  # block x-crossing
             vx = -vx * 0.3  # soft bounce
 
         self.state = np.array([nx, ny, vx, vy], dtype=np.float32)
-        dist  = float(np.linalg.norm(self.state[:2] - self.goal))
-        done  = dist < self.SUCCESS_RADIUS
+        dist = float(np.linalg.norm(self.state[:2] - self.goal))
+        done = dist < self.SUCCESS_RADIUS
         return self.state.copy(), -dist, done
 
     def _wall_collision(self, ox: float, oy: float, nx: float, ny: float) -> bool:
         if ox * nx >= 0:
             return False
-        t       = -ox / (nx - ox + 1e-12)
+        t = -ox / (nx - ox + 1e-12)
         y_cross = oy + t * (ny - oy)
         return abs(y_cross) <= WALL_GAP
 
@@ -129,7 +129,7 @@ def _route_waypoint(goal: np.ndarray) -> np.ndarray:
 
 
 def _scripted(state: np.ndarray, target: np.ndarray) -> np.ndarray:
-    error  = target - state[:2]
+    error = target - state[:2]
     action = 5.5 * error - 1.5 * state[2:]
     return np.clip(action, -3.0, 3.0).astype(np.float32)
 
@@ -141,26 +141,26 @@ def generate_episode(
     seed: int,
     goal: np.ndarray,
     *,
-    n_steps:          int   = 140,
-    dropout_rate:     float = 0.0,
-    spike_rate:       float = 0.0,
-    truncate_fraction:float = 1.0,
-    obs_lag_steps:    int   = 0,
-    perturbation:     bool  = False,
+    n_steps: int = 140,
+    dropout_rate: float = 0.0,
+    spike_rate: float = 0.0,
+    truncate_fraction: float = 1.0,
+    obs_lag_steps: int = 0,
+    perturbation: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Returns (states, actions, timestamps, goals_tiled)."""
     rng = np.random.default_rng(seed)
     env = MultiGoalObstacleEnv(goal=goal, seed=seed)
-    x   = rng.uniform(-0.9, -0.2)
-    y   = rng.uniform(-0.85, 0.85)
+    x = rng.uniform(-0.9, -0.2)
+    y = rng.uniform(-0.85, 0.85)
     env.reset(start=np.array([x, y], dtype=np.float32))
 
-    wp           = _route_waypoint(goal)
+    wp = _route_waypoint(goal)
     perturb_step = int(n_steps * rng.uniform(0.25, 0.45)) if perturbation else -1
-    wp_reached   = False   # latch: commit to goal once waypoint is first passed
+    wp_reached = False  # latch: commit to goal once waypoint is first passed
 
     raw_states: list[np.ndarray] = []
-    actions:    list[np.ndarray] = []
+    actions: list[np.ndarray] = []
 
     for t in range(n_steps):
         s = env.state.copy()
@@ -195,17 +195,15 @@ def generate_episode(
 
     actual = max(15, int(len(raw_states) * truncate_fraction))
     raw_states = raw_states[:actual]
-    actions    = actions[:actual]
+    actions = actions[:actual]
 
-    states_arr  = np.array(raw_states, dtype=np.float32)
+    states_arr = np.array(raw_states, dtype=np.float32)
     actions_arr = np.array(actions, dtype=np.float32)
-    ts          = np.arange(len(states_arr), dtype=np.float32) * env.DT
+    ts = np.arange(len(states_arr), dtype=np.float32) * env.DT
 
     # Observation lag: shift observed state by lag_steps
     if obs_lag_steps > 0 and len(states_arr) > obs_lag_steps:
-        observed = np.concatenate(
-            [states_arr[:obs_lag_steps], states_arr[:-obs_lag_steps]], axis=0
-        )
+        observed = np.concatenate([states_arr[:obs_lag_steps], states_arr[:-obs_lag_steps]], axis=0)
     else:
         observed = states_arr
 
@@ -214,30 +212,31 @@ def generate_episode(
 
 
 def build_dataset(
-    n_per_goal: int   = 80,
+    n_per_goal: int = 80,
     *,
-    dropout_rate:      float = 0.0,
-    spike_rate:        float = 0.0,
+    dropout_rate: float = 0.0,
+    spike_rate: float = 0.0,
     truncate_fraction: float = 1.0,
-    obs_lag_steps:     int   = 0,
+    obs_lag_steps: int = 0,
     perturbation_rate: float = 0.0,
-    duplicate_fraction:float = 0.0,
-    mode_delete:       Optional[int] = None,   # delete goal index
-    seed_offset:       int   = 0,
-    dataset_name:      str   = "multigoal",
+    duplicate_fraction: float = 0.0,
+    mode_delete: Optional[int] = None,  # delete goal index
+    seed_offset: int = 0,
+    dataset_name: str = "multigoal",
 ) -> "EpisodeBatch":
     from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 
     episodes = []
-    ep_idx   = 0
+    ep_idx = 0
 
     goals_to_use = [
-        (g, gn) for i, (g, gn) in enumerate(zip(GOALS, GOAL_NAMES))
+        (g, gn)
+        for i, (g, gn) in enumerate(zip(GOALS, GOAL_NAMES))
         if mode_delete is None or i != mode_delete
     ]
 
     for goal, gname in goals_to_use:
-        n_regular  = max(1, int(n_per_goal * (1.0 - perturbation_rate)))
+        n_regular = max(1, int(n_per_goal * (1.0 - perturbation_rate)))
         n_recovery = n_per_goal - n_regular
 
         for i in range(n_regular):
@@ -250,12 +249,14 @@ def build_dataset(
                 obs_lag_steps=obs_lag_steps,
             )
             obs = np.concatenate([s, g], axis=1)  # 6-D: (x,y,vx,vy,gx,gy)
-            episodes.append(Episode(
-                metadata=EpisodeMetadata(episode_id=f"{gname}_ep{ep_idx:04d}"),
-                timestamps=ts,
-                observations={"proprio": obs},
-                actions=a,
-            ))
+            episodes.append(
+                Episode(
+                    metadata=EpisodeMetadata(episode_id=f"{gname}_ep{ep_idx:04d}"),
+                    timestamps=ts,
+                    observations={"proprio": obs},
+                    actions=a,
+                )
+            )
             ep_idx += 1
 
         for i in range(n_recovery):
@@ -269,29 +270,37 @@ def build_dataset(
                 perturbation=True,
             )
             obs = np.concatenate([s, g], axis=1)
-            episodes.append(Episode(
-                metadata=EpisodeMetadata(episode_id=f"{gname}_recovery{ep_idx:04d}"),
-                timestamps=ts,
-                observations={"proprio": obs},
-                actions=a,
-            ))
+            episodes.append(
+                Episode(
+                    metadata=EpisodeMetadata(episode_id=f"{gname}_recovery{ep_idx:04d}"),
+                    timestamps=ts,
+                    observations={"proprio": obs},
+                    actions=a,
+                )
+            )
             ep_idx += 1
 
     # Duplicate injection: replace a fraction of episodes with near-copies
     if duplicate_fraction > 0.0 and len(episodes) > 2:
         n_dups = int(len(episodes) * duplicate_fraction)
-        rng    = np.random.default_rng(seed_offset + 99999)
+        rng = np.random.default_rng(seed_offset + 99999)
         src_eps = list(episodes)
         for i in range(n_dups):
-            src   = src_eps[int(rng.integers(len(src_eps)))]
-            obs_n = src.observations["proprio"] + rng.normal(0, 0.01, src.observations["proprio"].shape).astype(np.float32)
-            a_n   = np.clip(src.actions + rng.normal(0, 0.02, src.actions.shape).astype(np.float32), -3.0, 3.0)
-            episodes.append(Episode(
-                metadata=EpisodeMetadata(episode_id=f"dup_{ep_idx:04d}"),
-                timestamps=src.timestamps.copy(),
-                observations={"proprio": obs_n},
-                actions=a_n,
-            ))
+            src = src_eps[int(rng.integers(len(src_eps)))]
+            obs_n = src.observations["proprio"] + rng.normal(
+                0, 0.01, src.observations["proprio"].shape
+            ).astype(np.float32)
+            a_n = np.clip(
+                src.actions + rng.normal(0, 0.02, src.actions.shape).astype(np.float32), -3.0, 3.0
+            )
+            episodes.append(
+                Episode(
+                    metadata=EpisodeMetadata(episode_id=f"dup_{ep_idx:04d}"),
+                    timestamps=src.timestamps.copy(),
+                    observations={"proprio": obs_n},
+                    actions=a_n,
+                )
+            )
             ep_idx += 1
 
     return EpisodeBatch(
@@ -310,8 +319,10 @@ def train_bc(batch: "EpisodeBatch", n_epochs: int = 150, lr: float = 1e-3):
     import torch.nn as nn
 
     device = (
-        torch.device("cuda") if torch.cuda.is_available()
-        else torch.device("mps") if torch.backends.mps.is_available()
+        torch.device("cuda")
+        if torch.cuda.is_available()
+        else torch.device("mps")
+        if torch.backends.mps.is_available()
         else torch.device("cpu")
     )
 
@@ -333,22 +344,30 @@ def train_bc(batch: "EpisodeBatch", n_epochs: int = 150, lr: float = 1e-3):
     S_n = (S - s_mean) / s_std
 
     net = nn.Sequential(
-        nn.Linear(S.shape[1], 256), nn.LayerNorm(256), nn.ReLU(),
-        nn.Linear(256, 256),        nn.LayerNorm(256), nn.ReLU(),
-        nn.Linear(256, 128),        nn.LayerNorm(128), nn.ReLU(),
+        nn.Linear(S.shape[1], 256),
+        nn.LayerNorm(256),
+        nn.ReLU(),
+        nn.Linear(256, 256),
+        nn.LayerNorm(256),
+        nn.ReLU(),
+        nn.Linear(256, 128),
+        nn.LayerNorm(128),
+        nn.ReLU(),
         nn.Linear(128, A.shape[1]),
     ).to(device)
 
     opt = torch.optim.Adam(net.parameters(), lr=lr)
-    N   = len(S_n)
+    N = len(S_n)
 
     for _ in range(n_epochs):
         perm = torch.randperm(N, device=device)
         for i in range(0, N, 256):
-            idx  = perm[i: i + 256]
+            idx = perm[i : i + 256]
             pred = net(S_n[idx])
             loss = ((pred - (A[idx] - a_mean) / a_std) ** 2).mean()
-            opt.zero_grad(); loss.backward(); opt.step()
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
 
     return net, s_mean, s_std, a_mean, a_std, device
 
@@ -357,22 +376,23 @@ def evaluate_bc_per_goal(
     artifacts,
     *,
     n_trials: int = 150,
-    n_steps:  int = 200,
+    n_steps: int = 200,
 ) -> dict[str, float]:
     """Returns per-goal success rate and overall rate."""
     if artifacts is None:
         return {gn: 0.0 for gn in GOAL_NAMES} | {"overall": 0.0}
 
     import torch
+
     net, s_mean, s_std, a_mean, a_std, device = artifacts
-    rng     = np.random.default_rng(777)
+    rng = np.random.default_rng(777)
     results = {gn: 0 for gn in GOAL_NAMES}
 
     for trial in range(n_trials):
         goal_idx = trial % len(GOALS)
-        goal     = GOALS[goal_idx]
-        gname    = GOAL_NAMES[goal_idx]
-        env      = MultiGoalObstacleEnv(goal=goal, seed=int(rng.integers(1_000_000)))
+        goal = GOALS[goal_idx]
+        gname = GOAL_NAMES[goal_idx]
+        env = MultiGoalObstacleEnv(goal=goal, seed=int(rng.integers(1_000_000)))
 
         x = rng.uniform(-0.9, -0.2)
         y = rng.uniform(-0.85, 0.85)
@@ -383,8 +403,8 @@ def evaluate_bc_per_goal(
                 obs = np.concatenate([s, goal])
                 obs_t = torch.from_numpy(obs).unsqueeze(0).to(device)
                 obs_n = (obs_t - s_mean) / s_std
-                a_n   = net(obs_n).squeeze(0)
-                a     = (a_n * a_std + a_mean).cpu().numpy()
+                a_n = net(obs_n).squeeze(0)
+                a = (a_n * a_std + a_mean).cpu().numpy()
                 s, _, done = env.step(a)
                 if done:
                     results[gname] += 1
@@ -405,17 +425,17 @@ def run_diagnostic_validity():
     monotonically to its target corruption?
     """
     from calibra.pipeline import Pipeline
-    from calibra.score import compute_score, _raw
+    from calibra.score import compute_score
 
     print("\n" + "=" * 70)
     print("  DIAGNOSTIC VALIDITY SWEEP")
     print("=" * 70)
 
     families = {
-        "dropout":    {"dropout_rate":      [0.0, 0.05, 0.10, 0.20, 0.40, 0.60, 0.80]},
-        "spikes":     {"spike_rate":         [0.0, 0.01, 0.02, 0.05, 0.10, 0.20]},
-        "truncation": {"truncate_fraction":  [1.0, 0.80, 0.60, 0.40, 0.25, 0.10]},
-        "obs_lag":    {"obs_lag_steps":      [0, 1, 2, 4, 8, 16]},
+        "dropout": {"dropout_rate": [0.0, 0.05, 0.10, 0.20, 0.40, 0.60, 0.80]},
+        "spikes": {"spike_rate": [0.0, 0.01, 0.02, 0.05, 0.10, 0.20]},
+        "truncation": {"truncate_fraction": [1.0, 0.80, 0.60, 0.40, 0.25, 0.10]},
+        "obs_lag": {"obs_lag_steps": [0, 1, 2, 4, 8, 16]},
         "duplicates": {"duplicate_fraction": [0.0, 0.10, 0.30, 0.60, 0.90]},
     }
 
@@ -426,26 +446,39 @@ def run_diagnostic_validity():
         severities = list(param_dict.values())[0]
 
         print(f"\n  [{family_name.upper()} SWEEP]")
-        print(f"  {'Severity':>10}  {'Temporal':>9}  {'Smooth':>9}  {'Coverage':>9}  {'Structure':>10}  {'Gate':>6}  {'Total':>7}")
+        print(
+            f"  {'Severity':>10}  {'Temporal':>9}  {'Smooth':>9}  {'Coverage':>9}  {'Structure':>10}  {'Gate':>6}  {'Total':>7}"
+        )
         print("  " + "-" * 70)
 
         rows = []
         for sev in severities:
             kwargs: dict = {param_key: sev}
-            batch  = build_dataset(n_per_goal=60, dataset_name=f"{family_name}_{sev}", **kwargs)
+            batch = build_dataset(n_per_goal=60, dataset_name=f"{family_name}_{sev}", **kwargs)
             report = Pipeline().run(batch)
             result = compute_score(report)
 
-            t  = result["dimensions"]["temporal_stability"]["score"]
-            s  = result["dimensions"]["control_smoothness"]["score"]
-            c  = result["dimensions"]["coverage_diversity"]["score"]
+            t = result["dimensions"]["temporal_stability"]["score"]
+            s = result["dimensions"]["control_smoothness"]["score"]
+            c = result["dimensions"]["coverage_diversity"]["score"]
             st = result["dimensions"]["task_structure"]["score"]
-            gate  = result["integrity_gate"]
+            gate = result["integrity_gate"]
             total = result["total_score"]
 
-            print(f"  {sev:>10.3g}  {t:>9.2f}  {s:>9.2f}  {c:>9.2f}  {st:>10.2f}  {gate:>6.3f}  {total:>7.1f}")
-            rows.append({"severity": sev, "temporal": t, "smoothness": s,
-                         "coverage": c, "structure": st, "gate": gate, "total": total})
+            print(
+                f"  {sev:>10.3g}  {t:>9.2f}  {s:>9.2f}  {c:>9.2f}  {st:>10.2f}  {gate:>6.3f}  {total:>7.1f}"
+            )
+            rows.append(
+                {
+                    "severity": sev,
+                    "temporal": t,
+                    "smoothness": s,
+                    "coverage": c,
+                    "structure": st,
+                    "gate": gate,
+                    "total": total,
+                }
+            )
 
         all_results[family_name] = rows
 
@@ -477,9 +510,9 @@ def run_coreset_benchmark_multigoal(n_seeds: int = 5):
     print("  CORESET BENCHMARK (MULTIGOAL — IMBALANCED 7:1)")
     print("=" * 70)
 
-    N_EPOCHS     = 150
-    N_EVAL       = 150
-    KEEP_FRACS   = [0.05, 0.10, 0.20, 0.30, 0.50, 1.00]
+    N_EPOCHS = 150
+    N_EVAL = 150
+    KEEP_FRACS = [0.05, 0.10, 0.20, 0.30, 0.50, 1.00]
 
     N_A, N_B = 140, 20  # 7:1 imbalance
     print(f"\nBuilding imbalanced dataset ({N_A} Goal-A, {N_B} Goal-B) ...")
@@ -489,24 +522,34 @@ def run_coreset_benchmark_multigoal(n_seeds: int = 5):
     )
 
     # Build manually with the imbalanced split
-    from calibra.schema.episode import Episode, EpisodeBatch as _EB, EpisodeMetadata
+    from calibra.schema.episode import Episode, EpisodeMetadata
+    from calibra.schema.episode import EpisodeBatch as _EB
+
     all_eps = []
     for i in range(N_A):
-        s, a, ts, g = generate_episode(seed=i,        goal=GOALS[0])
+        s, a, ts, g = generate_episode(seed=i, goal=GOALS[0])
         obs = np.concatenate([s, g], axis=1)
-        all_eps.append(Episode(
-            metadata=EpisodeMetadata(episode_id=f"A:upper_ep{i:04d}"),
-            timestamps=ts, observations={"proprio": obs}, actions=a,
-        ))
+        all_eps.append(
+            Episode(
+                metadata=EpisodeMetadata(episode_id=f"A:upper_ep{i:04d}"),
+                timestamps=ts,
+                observations={"proprio": obs},
+                actions=a,
+            )
+        )
     for i in range(N_B):
         s, a, ts, g = generate_episode(seed=1000 + i, goal=GOALS[1])
         obs = np.concatenate([s, g], axis=1)
-        all_eps.append(Episode(
-            metadata=EpisodeMetadata(episode_id=f"B:lower_ep{i:04d}"),
-            timestamps=ts, observations={"proprio": obs}, actions=a,
-        ))
+        all_eps.append(
+            Episode(
+                metadata=EpisodeMetadata(episode_id=f"B:lower_ep{i:04d}"),
+                timestamps=ts,
+                observations={"proprio": obs},
+                actions=a,
+            )
+        )
     full_batch = _EB(all_eps, "multigoal_imbalanced", "synthetic", "synthetic")
-    n_total    = full_batch.n_episodes
+    n_total = full_batch.n_episodes
 
     print("Running Calibra diagnostics ...")
     report = Pipeline().run(full_batch)
@@ -515,8 +558,10 @@ def run_coreset_benchmark_multigoal(n_seeds: int = 5):
     t0 = time.perf_counter()
     full_arts = train_bc(full_batch, n_epochs=N_EPOCHS)
     full_time = time.perf_counter() - t0
-    full_res  = evaluate_bc_per_goal(full_arts, n_trials=N_EVAL)
-    print(f"  overall={full_res['overall']:.1%}  A={full_res['A:upper']:.1%}  B={full_res['B:lower']:.1%}  time={full_time:.1f}s")
+    full_res = evaluate_bc_per_goal(full_arts, n_trials=N_EVAL)
+    print(
+        f"  overall={full_res['overall']:.1%}  A={full_res['A:upper']:.1%}  B={full_res['B:lower']:.1%}  time={full_time:.1f}s"
+    )
 
     sweep_results = []
 
@@ -528,29 +573,35 @@ def run_coreset_benchmark_multigoal(n_seeds: int = 5):
         # ── Calibra coreset ──────────────────────────────────────────────────
         selector = CoresetSelector(
             keep_fraction=frac,
-            max_spike_rate=1.0, max_vel_disc_rate=1.0,
-            max_dropout_fraction=1.0, min_ldlj=-1e6,
+            max_spike_rate=1.0,
+            max_vel_disc_rate=1.0,
+            max_dropout_fraction=1.0,
+            min_ldlj=-1e6,
         )
-        prune  = selector.select(full_batch, report)
-        keep   = set(prune.keep_episode_ids)
+        prune = selector.select(full_batch, report)
+        keep = set(prune.keep_episode_ids)
         cal_ep = [ep for ep in full_batch.episodes if ep.metadata.episode_id in keep]
         cal_batch = EpisodeBatch(cal_ep, f"calibra_{frac:.0%}", "synthetic", "synthetic")
 
         t0 = time.perf_counter()
         cal_arts = train_bc(cal_batch, n_epochs=N_EPOCHS)
         cal_time = time.perf_counter() - t0
-        cal_res  = evaluate_bc_per_goal(cal_arts, n_trials=N_EVAL)
+        cal_res = evaluate_bc_per_goal(cal_arts, n_trials=N_EVAL)
 
         # Count goal coverage
-        cal_goals = {gn: sum(1 for ep in cal_ep if gn.split(":")[0] in ep.metadata.episode_id)
-                     for gn in GOAL_NAMES}
+        cal_goals = {
+            gn: sum(1 for ep in cal_ep if gn.split(":")[0] in ep.metadata.episode_id)
+            for gn in GOAL_NAMES
+        }
 
-        print(f"  [Calibra] overall={cal_res['overall']:.1%}  A={cal_res['A:upper']:.1%}  B={cal_res['B:lower']:.1%}  time={cal_time:.1f}s  goals={cal_goals}")
-        row["cal_overall"]     = cal_res["overall"]
-        row["cal_A"]           = cal_res["A:upper"]
-        row["cal_B"]           = cal_res["B:lower"]
-        row["cal_worst"]       = min(cal_res["A:upper"], cal_res["B:lower"])
-        row["cal_time"]        = round(cal_time, 2)
+        print(
+            f"  [Calibra] overall={cal_res['overall']:.1%}  A={cal_res['A:upper']:.1%}  B={cal_res['B:lower']:.1%}  time={cal_time:.1f}s  goals={cal_goals}"
+        )
+        row["cal_overall"] = cal_res["overall"]
+        row["cal_A"] = cal_res["A:upper"]
+        row["cal_B"] = cal_res["B:lower"]
+        row["cal_worst"] = min(cal_res["A:upper"], cal_res["B:lower"])
+        row["cal_time"] = round(cal_time, 2)
 
         # ── Random baseline (averaged over n_seeds) ───────────────────────────
         rand_overalls, rand_As, rand_Bs, rand_times = [], [], [], []
@@ -563,35 +614,43 @@ def run_coreset_benchmark_multigoal(n_seeds: int = 5):
             t0 = time.perf_counter()
             r_arts = train_bc(r_batch, n_epochs=N_EPOCHS)
             rand_times.append(time.perf_counter() - t0)
-            r_res  = evaluate_bc_per_goal(r_arts, n_trials=N_EVAL)
+            r_res = evaluate_bc_per_goal(r_arts, n_trials=N_EVAL)
             rand_overalls.append(r_res["overall"])
             rand_As.append(r_res["A:upper"])
             rand_Bs.append(r_res["B:lower"])
 
-        row["rand_overall"]    = float(np.mean(rand_overalls))
-        row["rand_overall_std"]= float(np.std(rand_overalls))
-        row["rand_A"]          = float(np.mean(rand_As))
-        row["rand_B"]          = float(np.mean(rand_Bs))
-        row["rand_worst"]      = float(np.mean([min(a, b) for a, b in zip(rand_As, rand_Bs)]))
-        row["rand_time"]       = float(np.mean(rand_times))
+        row["rand_overall"] = float(np.mean(rand_overalls))
+        row["rand_overall_std"] = float(np.std(rand_overalls))
+        row["rand_A"] = float(np.mean(rand_As))
+        row["rand_B"] = float(np.mean(rand_Bs))
+        row["rand_worst"] = float(np.mean([min(a, b) for a, b in zip(rand_As, rand_Bs)]))
+        row["rand_time"] = float(np.mean(rand_times))
 
-        print(f"  [Random]  overall={row['rand_overall']:.1%}+/-{row['rand_overall_std']:.1%}  A={row['rand_A']:.1%}  B={row['rand_B']:.1%}  time={row['rand_time']:.1f}s")
+        print(
+            f"  [Random]  overall={row['rand_overall']:.1%}+/-{row['rand_overall_std']:.1%}  A={row['rand_A']:.1%}  B={row['rand_B']:.1%}  time={row['rand_time']:.1f}s"
+        )
         sweep_results.append(row)
 
     # ── print summary table ───────────────────────────────────────────────────
     print("\n")
     print("=" * 85)
     print("  CORESET BENCHMARK SUMMARY")
-    print(f"  Full baseline: overall={full_res['overall']:.1%}  A={full_res['A:upper']:.1%}  B={full_res['B:lower']:.1%}")
+    print(
+        f"  Full baseline: overall={full_res['overall']:.1%}  A={full_res['A:upper']:.1%}  B={full_res['B:lower']:.1%}"
+    )
     print("=" * 85)
-    print(f"  {'Keep':>5}  {'N':>4}  {'Cal Overall':>12}  {'Cal Worst':>10}  {'Rand Overall':>13}  {'Rand Worst':>11}  {'Saved':>6}")
+    print(
+        f"  {'Keep':>5}  {'N':>4}  {'Cal Overall':>12}  {'Cal Worst':>10}  {'Rand Overall':>13}  {'Rand Worst':>11}  {'Saved':>6}"
+    )
     print("-" * 85)
     for r in sweep_results:
         saved = 100 * (1 - r["frac"])
-        print(f"  {r['frac']:>4.0%}  {r['k']:>4}  "
-              f"  {r['cal_overall']:>9.1%}  {r['cal_worst']:>9.1%}  "
-              f"  {r['rand_overall']:>10.1%}  {r['rand_worst']:>10.1%}  "
-              f"  {saved:>5.0f}%")
+        print(
+            f"  {r['frac']:>4.0%}  {r['k']:>4}  "
+            f"  {r['cal_overall']:>9.1%}  {r['cal_worst']:>9.1%}  "
+            f"  {r['rand_overall']:>10.1%}  {r['rand_worst']:>10.1%}  "
+            f"  {saved:>5.0f}%"
+        )
     print("=" * 85)
 
     _save_coreset_figure(full_res, sweep_results)
@@ -607,15 +666,17 @@ def _save_coreset_figure(full_res: dict, sweep_results: list[dict]) -> None:
 
         metrics = [
             ("cal_overall", "rand_overall", "Overall Success Rate (%)", "Overall"),
-            ("cal_worst",   "rand_worst",   "Worst-Group Success Rate (%)", "Worst-Group (min goal)"),
+            ("cal_worst", "rand_worst", "Worst-Group Success Rate (%)", "Worst-Group (min goal)"),
         ]
 
         for ax, (cal_key, rand_key, ylabel, title) in zip(axes[:2], metrics):
-            cal_vals  = [r[cal_key] * 100 for r in sweep_results]
+            cal_vals = [r[cal_key] * 100 for r in sweep_results]
             rand_vals = [r[rand_key] * 100 for r in sweep_results]
 
-            ax.axhline(full_res["overall"] * 100, color="#6b7280", lw=1.5, ls="--", label="Full data")
-            ax.plot(fracs, cal_vals,  "o-", color="#2563eb", lw=2, label="Calibra coreset")
+            ax.axhline(
+                full_res["overall"] * 100, color="#6b7280", lw=1.5, ls="--", label="Full data"
+            )
+            ax.plot(fracs, cal_vals, "o-", color="#2563eb", lw=2, label="Calibra coreset")
             ax.plot(fracs, rand_vals, "s--", color="#dc2626", lw=1.5, label="Random (avg)")
             ax.set_xlabel("Retention fraction (%)", fontsize=11)
             ax.set_ylabel(ylabel, fontsize=11)
@@ -629,11 +690,11 @@ def _save_coreset_figure(full_res: dict, sweep_results: list[dict]) -> None:
         r20 = next((r for r in sweep_results if abs(r["frac"] - 0.20) < 0.05), sweep_results[0])
         goals_x = np.arange(len(GOAL_NAMES))
         w = 0.3
-        cal_per  = [r20["cal_A"] * 100, r20["cal_B"] * 100]
+        cal_per = [r20["cal_A"] * 100, r20["cal_B"] * 100]
         rand_per = [r20["rand_A"] * 100, r20["rand_B"] * 100]
         full_per = [full_res["A:upper"] * 100, full_res["B:lower"] * 100]
-        ax.bar(goals_x - w, cal_per,  width=w, color="#2563eb", label="Calibra 20%")
-        ax.bar(goals_x,     rand_per, width=w, color="#dc2626", label="Random 20%")
+        ax.bar(goals_x - w, cal_per, width=w, color="#2563eb", label="Calibra 20%")
+        ax.bar(goals_x, rand_per, width=w, color="#dc2626", label="Random 20%")
         ax.bar(goals_x + w, full_per, width=w, color="#6b7280", label="Full data")
         ax.set_xticks(goals_x)
         ax.set_xticklabels(GOAL_NAMES, fontsize=10)

@@ -10,12 +10,11 @@ from calibra.analyzers.latent_dynamics import (
     LatentDynamicsAnalyzer,
     _compute_entropy_2d,
     _compute_knn_density,
-    _pca_project_kd,
     _compute_normalized_hsic,
+    _pca_project_kd,
 )
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 from calibra.schema.report import RiskLevel
-
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 

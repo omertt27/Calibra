@@ -35,9 +35,7 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
-import tempfile
 import time
 from pathlib import Path
 from typing import Optional
@@ -50,10 +48,10 @@ FIGURES_DIR = Path(__file__).parent / "figures"
 
 # ── synthetic data generation ─────────────────────────────────────────────────
 
-DOF = 7           # 7-DOF arm (Franka Emika / similar)
-OBS_DIM = 14      # joint positions + joint velocities
-ACTION_DIM = 7    # joint position targets
-DT = 0.02         # 50 Hz control
+DOF = 7  # 7-DOF arm (Franka Emika / similar)
+OBS_DIM = 14  # joint positions + joint velocities
+ACTION_DIM = 7  # joint position targets
+DT = 0.02  # 50 Hz control
 
 
 def _smooth_trajectory(n_steps: int, dof: int, rng: np.random.Generator) -> np.ndarray:
@@ -101,7 +99,7 @@ def generate_demos(
     for i in range(n_demos):
         quality = rng.random()
         if quality < 0.08:
-            n_steps = rng.integers(5, 15)     # too short
+            n_steps = rng.integers(5, 15)  # too short
             problem = "short"
         elif quality < 0.15:
             n_steps = rng.integers(60, 150)
@@ -140,12 +138,14 @@ def generate_demos(
         vel = np.gradient(actions, DT, axis=0)
         obs = np.concatenate([actions, vel], axis=-1)
 
-        demos.append({
-            "episode_id": str(i),
-            "obs": obs,
-            "actions": actions,
-            "timestamps": np.nan_to_num(timestamps),
-        })
+        demos.append(
+            {
+                "episode_id": str(i),
+                "obs": obs,
+                "actions": actions,
+                "timestamps": np.nan_to_num(timestamps),
+            }
+        )
 
     if hdf5_path is not None:
         _write_hdf5(demos, hdf5_path)
@@ -180,7 +180,7 @@ def _write_hdf5(demos: list[dict], path: Path) -> None:
 
 def demos_to_episode_batch(demos: list[dict], dataset_name: str):
     """Convert generated demos to a Calibra EpisodeBatch."""
-    from calibra.schema.episode import EpisodeBatch, Episode, EpisodeMetadata
+    from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 
     episodes = []
     for demo in demos:
@@ -219,9 +219,9 @@ def run_calibra(
 
     Returns (pruning_result, keep_episode_ids).
     """
+    from calibra.cache import batch_episode_hashes
     from calibra.pipeline import Pipeline
     from calibra.pruning import CoresetSelector
-    from calibra.cache import batch_episode_hashes
 
     diag = Pipeline().run(batch, policy_family="gr00t", cache=cache)
 
@@ -266,12 +266,10 @@ def random_subset(demos: list[dict], keep_fraction: float, seed: int) -> list[st
 def _build_model(hidden: int = 256):
     """Build a simple BC MLP: obs → action prediction."""
     try:
-        import torch
         import torch.nn as nn
     except ImportError:
         raise ImportError(
-            "PyTorch is required for BC training.\n"
-            "Install it with: pip install torch"
+            "PyTorch is required for BC training.\nInstall it with: pip install torch"
         )
     return nn.Sequential(
         nn.Linear(OBS_DIM, hidden),
@@ -393,7 +391,7 @@ def run_benchmark(
         keep_fractions = [0.10, 0.20, 0.30, 0.50, 0.70, 1.00]
 
     print(f"\n{'━' * 60}")
-    print(f"  Isaac Lab → GR00T Coreset Benchmark")
+    print("  Isaac Lab → GR00T Coreset Benchmark")
     print(f"{'━' * 60}")
     print(f"  Demos       : {n_demos}")
     print(f"  Keep %      : {[f'{k:.0%}' for k in keep_fractions]}")
@@ -446,7 +444,7 @@ def run_benchmark(
         else:
             # ── Calibra coreset ───────────────────────────────────────────────
             t0 = time.perf_counter()
-            report_path = report_dir / f"isaac_lab_report_keep{int(keep*100):03d}.json"
+            report_path = report_dir / f"isaac_lab_report_keep{int(keep * 100):03d}.json"
             report_dir.mkdir(parents=True, exist_ok=True)
             result, calibra_ids = run_calibra(
                 train_batch,
@@ -491,18 +489,22 @@ def run_benchmark(
                 )
                 print(f"    GR00T manifest → {manifest_path}")
 
-        results["calibra"].append({
-            "keep": keep,
-            "mean": float(np.mean(calibra_mse_list)),
-            "std": float(np.std(calibra_mse_list)),
-            "n_demos": len(calibra_ids) if keep < 1.0 else len(train_demos),
-        })
-        results["random"].append({
-            "keep": keep,
-            "mean": float(np.mean(random_mse_list)),
-            "std": float(np.std(random_mse_list)),
-            "n_demos": max(1, int(len(train_demos) * keep)),
-        })
+        results["calibra"].append(
+            {
+                "keep": keep,
+                "mean": float(np.mean(calibra_mse_list)),
+                "std": float(np.std(calibra_mse_list)),
+                "n_demos": len(calibra_ids) if keep < 1.0 else len(train_demos),
+            }
+        )
+        results["random"].append(
+            {
+                "keep": keep,
+                "mean": float(np.mean(random_mse_list)),
+                "std": float(np.std(random_mse_list)),
+                "n_demos": max(1, int(len(train_demos) * keep)),
+            }
+        )
 
     # ── summary ───────────────────────────────────────────────────────────────
     print(f"\n{'━' * 60}")
@@ -536,8 +538,9 @@ def run_benchmark(
 
 def _plot_results(results: dict, out_dir: Path) -> None:
     try:
-        import matplotlib.pyplot as plt
         import matplotlib
+        import matplotlib.pyplot as plt
+
         matplotlib.use("Agg")
     except ImportError:
         print("[info] matplotlib not installed — skipping plots")
@@ -558,17 +561,24 @@ def _plot_results(results: dict, out_dir: Path) -> None:
         xs,
         [m - s for m, s in zip(c_means, c_stds)],
         [m + s for m, s in zip(c_means, c_stds)],
-        alpha=0.2, color="#2563EB",
+        alpha=0.2,
+        color="#2563EB",
     )
     ax.plot(xs, r_means, "s--", color="#DC2626", label="Random subset", linewidth=2)
     ax.fill_between(
         xs,
         [m - s for m, s in zip(r_means, r_stds)],
         [m + s for m, s in zip(r_means, r_stds)],
-        alpha=0.2, color="#DC2626",
+        alpha=0.2,
+        color="#DC2626",
     )
-    ax.axhline(full_mean, color="#16A34A", linestyle=":", linewidth=1.5,
-               label=f"Full dataset  MSE={full_mean:.4f}")
+    ax.axhline(
+        full_mean,
+        color="#16A34A",
+        linestyle=":",
+        linewidth=1.5,
+        label=f"Full dataset  MSE={full_mean:.4f}",
+    )
 
     ax.set_xlabel("Keep fraction (%)", fontsize=12)
     ax.set_ylabel("Trajectory MSE (lower is better)", fontsize=12)
@@ -597,32 +607,45 @@ def _parse_args(argv=None):
         description="Isaac Lab → GR00T benchmark: Calibra coreset vs. random subsampling",
     )
     p.add_argument(
-        "--n-demos", type=int, default=200,
+        "--n-demos",
+        type=int,
+        default=200,
         help="Number of synthetic demos to generate (default: 200)",
     )
     p.add_argument(
-        "--keep", type=float, nargs="+",
+        "--keep",
+        type=float,
+        nargs="+",
         default=[0.10, 0.20, 0.30, 0.50, 0.70, 1.00],
         help="Keep fractions to sweep (default: 0.10 0.20 0.30 0.50 0.70 1.00)",
     )
     p.add_argument(
-        "--n-epochs", type=int, default=30,
+        "--n-epochs",
+        type=int,
+        default=30,
         help="BC training epochs per run (default: 30)",
     )
     p.add_argument(
-        "--n-seeds", type=int, default=3,
+        "--n-seeds",
+        type=int,
+        default=3,
         help="Random seeds for averaging (default: 3)",
     )
     p.add_argument(
-        "--test-fraction", type=float, default=0.2,
+        "--test-fraction",
+        type=float,
+        default=0.2,
         help="Fraction of demos to hold out for evaluation (default: 0.2)",
     )
     p.add_argument(
-        "--no-plots", action="store_true",
+        "--no-plots",
+        action="store_true",
         help="Skip matplotlib figure generation",
     )
     p.add_argument(
-        "--out-dir", type=Path, default=FIGURES_DIR,
+        "--out-dir",
+        type=Path,
+        default=FIGURES_DIR,
         help=f"Directory for results and figures (default: {FIGURES_DIR})",
     )
     return p.parse_args(argv)
@@ -635,8 +658,7 @@ if __name__ == "__main__":
         import torch  # noqa: F401
     except ImportError:
         print(
-            "error: PyTorch is required.\n"
-            "Install: pip install torch",
+            "error: PyTorch is required.\nInstall: pip install torch",
             file=sys.stderr,
         )
         sys.exit(1)

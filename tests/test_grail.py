@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-import pickle
 import gzip
+import pickle
+
 import numpy as np
 
+from calibra.core.normalizer import SchemaNormalizer
 from calibra.ingestion.adapters.grail import GRAILReader
 from calibra.schema.episode import EpisodeBatch
-from calibra.core.normalizer import SchemaNormalizer
 
 
 def _write_mock_grail_file(

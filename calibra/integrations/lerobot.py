@@ -67,7 +67,6 @@ import json
 from pathlib import Path
 from typing import Union
 
-
 # ── reading verdicts from a CalibraReport ────────────────────────────────────
 
 
@@ -194,8 +193,7 @@ def load_dataset(
         from datasets import load_dataset as _hf_load
     except ImportError:
         raise ImportError(
-            "The 'datasets' package is required.\n"
-            "Install it with: pip install datasets"
+            "The 'datasets' package is required.\nInstall it with: pip install datasets"
         ) from None
 
     keep_ids = recommended_episode_ids(report_path)

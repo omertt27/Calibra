@@ -495,8 +495,8 @@ def _save_comparison_figure(
     surprise_scores: list[float],
 ):
     try:
-        import matplotlib.pyplot as plt
         import matplotlib.gridspec as gridspec
+        import matplotlib.pyplot as plt
 
         fig = plt.figure(figsize=(12, 5))
         gs = gridspec.GridSpec(1, 2, width_ratios=[3, 2], wspace=0.35)

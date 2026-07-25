@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 from calibra.pipeline import Pipeline
+from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 
 
 def _make_batch(

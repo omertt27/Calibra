@@ -127,7 +127,9 @@ def _score_temporal(report: DiagnosticReport) -> tuple[float, dict]:
         if action_dropout >= _ACTION_DROPOUT_CRITICAL:
             deduction += 8.0
         elif action_dropout >= _ACTION_DROPOUT_WARNING:
-            frac = (action_dropout - _ACTION_DROPOUT_WARNING) / (_ACTION_DROPOUT_CRITICAL - _ACTION_DROPOUT_WARNING)
+            frac = (action_dropout - _ACTION_DROPOUT_WARNING) / (
+                _ACTION_DROPOUT_CRITICAL - _ACTION_DROPOUT_WARNING
+            )
             deduction += 8.0 * _clamp(frac)
 
     score = max(0.0, _MAX_TEMPORAL - deduction)

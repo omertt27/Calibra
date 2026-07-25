@@ -25,21 +25,21 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel
 
-
 # ── dataset ───────────────────────────────────────────────────────────────────
 
+
 class RobotInfo(BaseModel):
-    platform: Optional[str] = None          # "pusht", "aloha", "so100"
-    embodiment: Optional[str] = None        # "planar-manipulator", "bimanual-arm"
+    platform: Optional[str] = None  # "pusht", "aloha", "so100"
+    embodiment: Optional[str] = None  # "planar-manipulator", "bimanual-arm"
     action_dimensions: Optional[int] = None
     dof: Optional[int] = None
 
 
 class DatasetInfo(BaseModel):
-    provider: str                           # "huggingface", "local"
-    repository_id: str                      # "lerobot/pusht" or absolute path
-    revision: Optional[str] = None          # HF dataset revision / git SHA
-    dataset_format: str                     # "lerobot-v2", "hdf5", "rlds", "mcap"
+    provider: str  # "huggingface", "local"
+    repository_id: str  # "lerobot/pusht" or absolute path
+    revision: Optional[str] = None  # HF dataset revision / git SHA
+    dataset_format: str  # "lerobot-v2", "hdf5", "rlds", "mcap"
     license: Optional[str] = None
     homepage: Optional[str] = None
     episodes_total: int
@@ -50,6 +50,7 @@ class DatasetInfo(BaseModel):
 
 # ── audit configuration ───────────────────────────────────────────────────────
 
+
 class SamplingConfig(BaseModel):
     mode: Literal["full", "random", "stratified"] = "full"
     seed: Optional[int] = None
@@ -57,22 +58,23 @@ class SamplingConfig(BaseModel):
 
 
 class EnvironmentInfo(BaseModel):
-    python: str     # "3.12.4"
-    platform: str   # "linux-x86_64"
+    python: str  # "3.12.4"
+    platform: str  # "linux-x86_64"
 
 
 class AuditConfig(BaseModel):
-    profile: Optional[str] = None          # named profile, e.g. "pusht"
-    configuration_hash: str                # sha256[:16] of profile+rubric+sampling
-    scoring_rubric: str                    # "robot-dataset-quality-v1.0"
+    profile: Optional[str] = None  # named profile, e.g. "pusht"
+    configuration_hash: str  # sha256[:16] of profile+rubric+sampling
+    scoring_rubric: str  # "robot-dataset-quality-v1.0"
     sampling: SamplingConfig
     environment: EnvironmentInfo
 
 
 # ── report identity ───────────────────────────────────────────────────────────
 
+
 class ReportMeta(BaseModel):
-    id: str                                 # "sha256:<hex>" — hash of canonical body
+    id: str  # "sha256:<hex>" — hash of canonical body
     generated_at: datetime
     calibra_version: str
     status: Literal["complete", "partial", "failed"]
@@ -80,34 +82,37 @@ class ReportMeta(BaseModel):
 
 # ── metric values ─────────────────────────────────────────────────────────────
 
+
 class MetricValue(BaseModel):
-    value: Optional[float] = None   # raw physical value (e.g. 0.003 fraction)
-    unit: str = ""                  # physical unit ("fraction", "ms", "bits/dim")
-    score: Optional[float] = None   # normalized 0-100; null if not applicable
+    value: Optional[float] = None  # raw physical value (e.g. 0.003 fraction)
+    unit: str = ""  # physical unit ("fraction", "ms", "bits/dim")
+    score: Optional[float] = None  # normalized 0-100; null if not applicable
     ci_lower: Optional[float] = None
     ci_upper: Optional[float] = None
     ci_level: float = 0.95
     ci_method: str = "bootstrap"
-    methodology: str = ""           # "temporal.dropout_rate.v1"
+    methodology: str = ""  # "temporal.dropout_rate.v1"
 
 
 class DimensionResult(BaseModel):
-    score: float            # 0-100, weighted aggregate of metric scores
-    weight: float           # this dimension's fraction of the overall score
+    score: float  # 0-100, weighted aggregate of metric scores
+    weight: float  # this dimension's fraction of the overall score
     metrics: dict[str, MetricValue] = {}
 
 
 # ── overall result ────────────────────────────────────────────────────────────
 
+
 class OverallResult(BaseModel):
-    score: float                                        # 0-100
-    grade: str                                          # "A"–"F"
-    confidence: float                                   # 0-1, CI-derived
+    score: float  # 0-100
+    grade: str  # "A"–"F"
+    confidence: float  # 0-1, CI-derived
     certification: Literal["pass", "provisional", "fail"]
-    critical_failures: list[str] = []                  # metric names of CRITICAL flags
+    critical_failures: list[str] = []  # metric names of CRITICAL flags
 
 
 # ── policy recommendations ────────────────────────────────────────────────────
+
 
 class PolicyRecommendation(BaseModel):
     status: Literal["recommended", "review", "not_recommended"]
@@ -123,12 +128,13 @@ class Recommendations(BaseModel):
 
 # ── findings ──────────────────────────────────────────────────────────────────
 
+
 class Finding(BaseModel):
     severity: Literal["critical", "warning", "info", "ok"]
-    code: str                               # "TEMPORAL_JITTER_HIGH"
-    metric: str                             # raw metric name from analyzer
-    message: str                            # human-readable interpretation
-    implication: str = ""                   # downstream training risk
+    code: str  # "TEMPORAL_JITTER_HIGH"
+    metric: str  # raw metric name from analyzer
+    message: str  # human-readable interpretation
+    implication: str = ""  # downstream training risk
     affected_fraction: Optional[float] = None
     observed_value: Optional[float] = None
     observed_unit: str = ""
@@ -136,6 +142,7 @@ class Finding(BaseModel):
 
 
 # ── results container ─────────────────────────────────────────────────────────
+
 
 class AuditResults(BaseModel):
     overall: OverallResult
@@ -145,6 +152,7 @@ class AuditResults(BaseModel):
 
 
 # ── episode verdicts ──────────────────────────────────────────────────────────
+
 
 class EpisodeVerdicts(BaseModel):
     """
@@ -175,8 +183,8 @@ class EpisodeVerdicts(BaseModel):
 
     keep_episode_ids: list[str] = []
     reject_episode_ids: list[str] = []
-    reason_codes: dict[str, list[str]] = {}    # episode_id → [reason, ...]
-    quality_scores: dict[str, float] = {}       # episode_id → composite quality score
+    reason_codes: dict[str, list[str]] = {}  # episode_id → [reason, ...]
+    quality_scores: dict[str, float] = {}  # episode_id → composite quality score
     n_original: int = 0
     n_kept: int = 0
     keep_fraction_actual: float = 0.0
@@ -184,6 +192,7 @@ class EpisodeVerdicts(BaseModel):
 
 
 # ── top-level contract ────────────────────────────────────────────────────────
+
 
 class CalibraReport(BaseModel):
     schema_version: str = "1.0.0"
@@ -201,6 +210,7 @@ class CalibraReport(BaseModel):
 
     def write(self, path: str) -> None:
         from pathlib import Path
+
         p = Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(self.to_json(), encoding="utf-8")
@@ -208,6 +218,7 @@ class CalibraReport(BaseModel):
     @staticmethod
     def load(path: str) -> "CalibraReport":
         from pathlib import Path
+
         return CalibraReport.model_validate_json(Path(path).read_text(encoding="utf-8"))
 
     @staticmethod

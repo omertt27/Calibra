@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from calibra.analyzers.pi0 import Pi0CompatibilityAnalyzer
-from calibra.analyzers.openvla import OpenVLACompatibilityAnalyzer
 from calibra.analyzers.octo import OctoCompatibilityAnalyzer
+from calibra.analyzers.openvla import OpenVLACompatibilityAnalyzer
+from calibra.analyzers.pi0 import Pi0CompatibilityAnalyzer
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 from calibra.schema.report import RiskLevel
 

@@ -7,14 +7,12 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-
 from calibra.watch import (
     WatchSession,
     _remediation_advice,
     _stream_watch,
     _verdict_icon,
 )
-
 
 # ── _remediation_advice ───────────────────────────────────────────────────────
 
@@ -62,7 +60,7 @@ class TestRemediationAdvice:
 
 def _make_mock_report(verdict: str):
     """Build a minimal mock DiagnosticReport."""
-    from calibra.schema.report import RiskLevel, RiskFlag, ObservedValue
+    from calibra.schema.report import ObservedValue, RiskFlag, RiskLevel
 
     mock_flag = MagicMock(spec=RiskFlag)
     mock_flag.metric = "jerk_spike_rate"

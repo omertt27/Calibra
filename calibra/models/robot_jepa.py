@@ -501,6 +501,7 @@ def score_by_jepa_surprise(
         jepa = RobotJEPA(config or RobotJEPAConfig())
         if verbose:
             import sys
+
             print(
                 f"  [world-model] Training JEPA on {batch.n_episodes} episodes...",
                 file=sys.stderr,

@@ -23,16 +23,19 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
-
 
 # ── score / grade / cert helpers ─────────────────────────────────────────────
 
+
 def _score_hex(score: float) -> str:
-    if score >= 90: return "#22c55e"
-    if score >= 80: return "#10b981"
-    if score >= 70: return "#f59e0b"
-    if score >= 60: return "#f97316"
+    if score >= 90:
+        return "#22c55e"
+    if score >= 80:
+        return "#10b981"
+    if score >= 70:
+        return "#f59e0b"
+    if score >= 60:
+        return "#f97316"
     return "#ef4444"
 
 
@@ -41,19 +44,29 @@ def _cert_hex(cert: str) -> str:
 
 
 def _cert_label(cert: str) -> str:
-    return {"pass": "Certified", "provisional": "Provisional", "fail": "Not Certified"}.get(cert, cert)
+    return {"pass": "Certified", "provisional": "Provisional", "fail": "Not Certified"}.get(
+        cert, cert
+    )
 
 
 def _severity_hex(sev: str) -> str:
-    return {"critical": "#ef4444", "warning": "#f59e0b", "info": "#6366f1", "ok": "#22c55e"}.get(sev, "#64748b")
+    return {"critical": "#ef4444", "warning": "#f59e0b", "info": "#6366f1", "ok": "#22c55e"}.get(
+        sev, "#64748b"
+    )
 
 
 def _policy_hex(status: str) -> str:
-    return {"recommended": "#22c55e", "review": "#f59e0b", "not_recommended": "#ef4444"}.get(status, "#64748b")
+    return {"recommended": "#22c55e", "review": "#f59e0b", "not_recommended": "#ef4444"}.get(
+        status, "#64748b"
+    )
 
 
 def _policy_label(status: str) -> str:
-    return {"recommended": "Recommended", "review": "Review", "not_recommended": "Not Recommended"}.get(status, status)
+    return {
+        "recommended": "Recommended",
+        "review": "Review",
+        "not_recommended": "Not Recommended",
+    }.get(status, status)
 
 
 def _dim_label(key: str) -> str:
@@ -67,6 +80,7 @@ def _dim_label(key: str) -> str:
 
 # ── data loading ─────────────────────────────────────────────────────────────
 
+
 def _scan_results(results_dir: Path) -> list[dict]:
     """Load all latest.json files, return sorted by score descending."""
     reports = []
@@ -78,7 +92,9 @@ def _scan_results(results_dir: Path) -> list[dict]:
             reports.append(data)
         except Exception:
             continue
-    reports.sort(key=lambda r: r.get("results", {}).get("overall", {}).get("score", 0), reverse=True)
+    reports.sort(
+        key=lambda r: r.get("results", {}).get("overall", {}).get("score", 0), reverse=True
+    )
     return reports
 
 
@@ -95,19 +111,22 @@ def _collect_history(results_dir: Path, repo_id: str) -> list[dict]:
             try:
                 data = json.loads(json_file.read_text(encoding="utf-8"))
                 overall = data.get("results", {}).get("overall", {})
-                history.append({
-                    "revision": rev_dir.name,
-                    "timestamp": data.get("report", {}).get("generated_at", ""),
-                    "score": overall.get("score"),
-                    "grade": overall.get("grade"),
-                    "calibra_version": data.get("report", {}).get("calibra_version", ""),
-                })
+                history.append(
+                    {
+                        "revision": rev_dir.name,
+                        "timestamp": data.get("report", {}).get("generated_at", ""),
+                        "score": overall.get("score"),
+                        "grade": overall.get("grade"),
+                        "calibra_version": data.get("report", {}).get("calibra_version", ""),
+                    }
+                )
             except Exception:
                 continue
     return sorted(history, key=lambda h: h["timestamp"])
 
 
 # ── badge SVG ─────────────────────────────────────────────────────────────────
+
 
 def _badge_svg(score: float, grade: str, cert: str) -> str:
     score_text = f"{score:.0f} {grade}"
@@ -121,24 +140,24 @@ def _badge_svg(score: float, grade: str, cert: str) -> str:
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{total_w}" height="20" role="img" '
         f'aria-label="Calibra: {score_text}">'
-        f'<title>Calibra: {score_text}</title>'
+        f"<title>Calibra: {score_text}</title>"
         f'<linearGradient id="s" x2="0" y2="100%">'
         f'<stop offset="0" stop-color="#bbb" stop-opacity=".1"/>'
         f'<stop offset="1" stop-opacity=".1"/>'
-        f'</linearGradient>'
+        f"</linearGradient>"
         f'<clipPath id="r"><rect width="{total_w}" height="20" rx="3"/></clipPath>'
         f'<g clip-path="url(#r)">'
         f'<rect width="{label_w}" height="20" fill="#555"/>'
         f'<rect x="{label_w}" width="{value_w}" height="20" fill="{score_color}"/>'
         f'<rect width="{total_w}" height="20" fill="url(#s)"/>'
-        f'</g>'
+        f"</g>"
         f'<g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">'
         f'<text x="{lx}" y="15" fill="#010101" fill-opacity=".3">Calibra</text>'
         f'<text x="{lx}" y="14">Calibra</text>'
         f'<text x="{rx}" y="15" fill="#010101" fill-opacity=".3">{score_text}</text>'
         f'<text x="{rx}" y="14">{score_text}</text>'
-        f'</g>'
-        f'</svg>'
+        f"</g>"
+        f"</svg>"
     )
 
 
@@ -185,6 +204,7 @@ _FOOT = """\
 
 # ── leaderboard page ──────────────────────────────────────────────────────────
 
+
 def _leaderboard_row_data(reports: list[dict]) -> list[dict]:
     rows = []
     for r in reports:
@@ -195,21 +215,23 @@ def _leaderboard_row_data(reports: list[dict]) -> list[dict]:
         repo_id = ds.get("repository_id", "")
         slug = repo_id.replace("/", "__")
         score = overall.get("score")
-        rows.append({
-            "repo_id": repo_id,
-            "slug": slug,
-            "score": score,
-            "grade": overall.get("grade", "?"),
-            "certification": overall.get("certification", ""),
-            "temporal": dims.get("temporal_integrity", {}).get("score"),
-            "motion": dims.get("motion_quality", {}).get("score"),
-            "coverage": dims.get("behavioral_coverage", {}).get("score"),
-            "task": dims.get("task_integrity", {}).get("score"),
-            "episodes": ds.get("episodes_total"),
-            "frames": ds.get("frames_total"),
-            "format": ds.get("dataset_format", ""),
-            "updated": meta.get("generated_at", "")[:10],
-        })
+        rows.append(
+            {
+                "repo_id": repo_id,
+                "slug": slug,
+                "score": score,
+                "grade": overall.get("grade", "?"),
+                "certification": overall.get("certification", ""),
+                "temporal": dims.get("temporal_integrity", {}).get("score"),
+                "motion": dims.get("motion_quality", {}).get("score"),
+                "coverage": dims.get("behavioral_coverage", {}).get("score"),
+                "task": dims.get("task_integrity", {}).get("score"),
+                "episodes": ds.get("episodes_total"),
+                "frames": ds.get("frames_total"),
+                "format": ds.get("dataset_format", ""),
+                "updated": meta.get("generated_at", "")[:10],
+            }
+        )
     return rows
 
 
@@ -224,8 +246,8 @@ def _render_leaderboard(reports: list[dict], out_dir: Path, title: str) -> None:
     # Stats bar
     certs = [r["certification"] for r in rows]
     n_pass = certs.count("pass")
-    n_prov = certs.count("provisional")
-    n_fail = certs.count("fail")
+    certs.count("provisional")
+    certs.count("fail")
 
     data_json = json.dumps(rows, ensure_ascii=False)
 
@@ -405,6 +427,7 @@ applyFilters();
 
 # ── dataset detail page ───────────────────────────────────────────────────────
 
+
 def _render_dataset_page(report: dict, history: list[dict], out_dir: Path) -> None:
     ds = report.get("dataset", {})
     overall = report.get("results", {}).get("overall", {})
@@ -427,7 +450,9 @@ def _render_dataset_page(report: dict, history: list[dict], out_dir: Path) -> No
     calibra_ver = meta.get("calibra_version", "")
     generated_at = meta.get("generated_at", "")[:10]
 
-    hf_url = f"https://huggingface.co/datasets/{repo_id}" if ds.get("provider") == "huggingface" else ""
+    hf_url = (
+        f"https://huggingface.co/datasets/{repo_id}" if ds.get("provider") == "huggingface" else ""
+    )
 
     # ── dimension cards ──────────────────────────────────────────────────────
     dim_cards_html = ""
@@ -455,11 +480,12 @@ def _render_dataset_page(report: dict, history: list[dict], out_dir: Path) -> No
                 f'<td class="py-1.5 text-slate-300">{mname}</td>'
                 f'<td class="py-1.5 text-slate-500 text-right">{raw_str}</td>'
                 f'<td class="py-1.5 text-right font-semibold" style="color:{mc}">{score_str}</td>'
-                f'</tr>'
+                f"</tr>"
             )
         metric_table = (
             f'<table class="w-full mt-3"><tbody>{metric_rows}</tbody></table>'
-            if metric_rows else ""
+            if metric_rows
+            else ""
         )
         dim_cards_html += f"""
     <div class="card">
@@ -478,10 +504,17 @@ def _render_dataset_page(report: dict, history: list[dict], out_dir: Path) -> No
     # ── findings ─────────────────────────────────────────────────────────────
     findings_html = ""
     if findings:
-        for f in sorted(findings, key=lambda x: ["critical","warning","info","ok"].index(x.get("severity","ok"))):
+        for f in sorted(
+            findings,
+            key=lambda x: ["critical", "warning", "info", "ok"].index(x.get("severity", "ok")),
+        ):
             sev = f.get("severity", "ok")
             sc = _severity_hex(sev)
-            obs = f"{f.get('observed_value', ''):.4g} {f.get('observed_unit','')}" if f.get("observed_value") is not None else ""
+            obs = (
+                f"{f.get('observed_value', ''):.4g} {f.get('observed_unit', '')}"
+                if f.get("observed_value") is not None
+                else ""
+            )
             thr = f" (threshold {f.get('threshold'):.4g})" if f.get("threshold") is not None else ""
             findings_html += f"""
       <div class="finding-row py-3">
@@ -489,17 +522,19 @@ def _render_dataset_page(report: dict, history: list[dict], out_dir: Path) -> No
           <span class="badge-pill mt-0.5 text-white" style="background:{sc};min-width:64px;text-align:center">{sev.upper()}</span>
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
-              <span class="font-semibold text-slate-200 text-sm">{f.get('code','')}</span>
-              <span class="text-slate-500 text-xs">{f.get('metric','')}</span>
-              {f'<span class="text-slate-400 text-xs">{obs}{thr}</span>' if obs else ''}
+              <span class="font-semibold text-slate-200 text-sm">{f.get("code", "")}</span>
+              <span class="text-slate-500 text-xs">{f.get("metric", "")}</span>
+              {f'<span class="text-slate-400 text-xs">{obs}{thr}</span>' if obs else ""}
             </div>
-            <p class="text-slate-400 text-xs mt-0.5">{f.get('message','')}</p>
-            {f'<p class="text-slate-500 text-xs mt-0.5 italic">{f.get("implication","")}</p>' if f.get('implication') else ''}
+            <p class="text-slate-400 text-xs mt-0.5">{f.get("message", "")}</p>
+            {f'<p class="text-slate-500 text-xs mt-0.5 italic">{f.get("implication", "")}</p>' if f.get("implication") else ""}
           </div>
         </div>
       </div>"""
     else:
-        findings_html = '<p class="text-slate-500 text-sm py-4">No findings — dataset passed all checks.</p>'
+        findings_html = (
+            '<p class="text-slate-500 text-sm py-4">No findings — dataset passed all checks.</p>'
+        )
 
     # ── policy recommendations ────────────────────────────────────────────────
     policy_rows_html = ""
@@ -523,7 +558,7 @@ def _render_dataset_page(report: dict, history: list[dict], out_dir: Path) -> No
             f'<td class="py-2.5 text-slate-300 text-sm">{label}</td>'
             f'<td class="py-2.5"><span class="badge-pill" style="color:{pc};border:1px solid {pc}">{pl}</span></td>'
             f'<td class="py-2.5 text-slate-500 text-xs">{reason}</td>'
-            f'</tr>'
+            f"</tr>"
         )
 
     # ── history table ─────────────────────────────────────────────────────────
@@ -539,7 +574,7 @@ def _render_dataset_page(report: dict, history: list[dict], out_dir: Path) -> No
                 f'<td class="py-2.5 font-bold" style="color:{hc}">{h["score"]}</td>'
                 f'<td class="py-2.5"><span class="badge-pill text-white" style="background:{hc}">{h["grade"]}</span></td>'
                 f'<td class="py-2.5 text-slate-500 text-xs">{h["calibra_version"]}</td>'
-                f'</tr>'
+                f"</tr>"
             )
         history_html = f"""
   <div class="card mt-6">
@@ -556,14 +591,13 @@ def _render_dataset_page(report: dict, history: list[dict], out_dir: Path) -> No
     # ── badge snippet ─────────────────────────────────────────────────────────
     badge_url = "badge.svg"
     md_snippet = f"![Calibra {score:.0f} {grade}]({badge_url})"
-    report_url = "index.html"
 
     # ── critical failures note ────────────────────────────────────────────────
     crit_note = ""
     if critical_failures:
         crit_note = (
             f'<div class="mt-3 p-3 rounded-lg border border-red-900/50 bg-red-950/30 text-xs text-red-300">'
-            f'Critical failures: {", ".join(critical_failures)}</div>'
+            f"Critical failures: {', '.join(critical_failures)}</div>"
         )
 
     title = f"{repo_id} — Calibra"
@@ -586,7 +620,7 @@ def _render_dataset_page(report: dict, history: list[dict], out_dir: Path) -> No
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-3 flex-wrap mb-2">
           <h1 class="text-xl font-bold text-white">{repo_id}</h1>
-          {f'<a href="{hf_url}" target="_blank" class="text-indigo-400 hover:text-indigo-300 text-xs">↗ HF Hub</a>' if hf_url else ''}
+          {f'<a href="{hf_url}" target="_blank" class="text-indigo-400 hover:text-indigo-300 text-xs">↗ HF Hub</a>' if hf_url else ""}
         </div>
         <div class="flex items-center gap-2 flex-wrap">
           <span class="badge-pill text-white" style="background:{score_color}">{grade}</span>
@@ -595,14 +629,14 @@ def _render_dataset_page(report: dict, history: list[dict], out_dir: Path) -> No
         </div>
         {crit_note}
         <div class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1 text-xs text-slate-400">
-          <span>Episodes: <b class="text-slate-200">{ds.get('episodes_total', '—')}</b></span>
-          <span>Frames: <b class="text-slate-200">{f"{ds.get('frames_total',0):,}" if ds.get('frames_total') else '—'}</b></span>
-          <span>Format: <b class="text-slate-200">{ds.get('dataset_format','—')}</b></span>
-          <span>Revision: <b class="text-slate-200 font-mono">{(ds.get('revision') or '—')[:8]}</b></span>
-          <span>Rubric: <b class="text-slate-200">{audit.get('scoring_rubric','—')}</b></span>
+          <span>Episodes: <b class="text-slate-200">{ds.get("episodes_total", "—")}</b></span>
+          <span>Frames: <b class="text-slate-200">{f"{ds.get('frames_total', 0):,}" if ds.get("frames_total") else "—"}</b></span>
+          <span>Format: <b class="text-slate-200">{ds.get("dataset_format", "—")}</b></span>
+          <span>Revision: <b class="text-slate-200 font-mono">{(ds.get("revision") or "—")[:8]}</b></span>
+          <span>Rubric: <b class="text-slate-200">{audit.get("scoring_rubric", "—")}</b></span>
           <span>Calibra: <b class="text-slate-200">{calibra_ver}</b></span>
           <span>Audited: <b class="text-slate-200">{generated_at}</b></span>
-          <span>Report ID: <b class="text-slate-200 font-mono text-xs">{(meta.get('id') or '—')[:20]}…</b></span>
+          <span>Report ID: <b class="text-slate-200 font-mono text-xs">{(meta.get("id") or "—")[:20]}…</b></span>
         </div>
       </div>
     </div>
@@ -650,7 +684,9 @@ def _render_dataset_page(report: dict, history: list[dict], out_dir: Path) -> No
 
 </div>
 """
-    page += _FOOT.replace("__CALIBRA_VER__", calibra_ver or "–").replace("__GENERATED_AT__", generated_at)
+    page += _FOOT.replace("__CALIBRA_VER__", calibra_ver or "–").replace(
+        "__GENERATED_AT__", generated_at
+    )
 
     # Write
     parts = repo_id.split("/")
@@ -663,6 +699,7 @@ def _render_dataset_page(report: dict, history: list[dict], out_dir: Path) -> No
 
 
 # ── orchestrator ──────────────────────────────────────────────────────────────
+
 
 def build_site(
     results_dir: Path,
@@ -708,9 +745,7 @@ def build_site(
 
         # History JSON (for external consumers)
         if history:
-            (badge_dir / "history.json").write_text(
-                json.dumps(history, indent=2), encoding="utf-8"
-            )
+            (badge_dir / "history.json").write_text(json.dumps(history, indent=2), encoding="utf-8")
 
     n = len(reports)
     print(f"\nDone. {n} dataset(s) → {out_dir}/index.html", file=sys.stderr)
@@ -718,17 +753,30 @@ def build_site(
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
+
 def run_site(argv: list[str]) -> None:
     p = argparse.ArgumentParser(
         prog="calibra site",
         description="Generate a static leaderboard website from audit results.",
     )
-    p.add_argument("--results", metavar="DIR", default="results",
-                   help="Directory containing audit JSON reports (default: ./results)")
-    p.add_argument("--out", metavar="DIR", default="site",
-                   help="Output directory for the generated site (default: ./site)")
-    p.add_argument("--title", metavar="TITLE", default="Calibra Leaderboard",
-                   help='Leaderboard page title (default: "Calibra Leaderboard")')
+    p.add_argument(
+        "--results",
+        metavar="DIR",
+        default="results",
+        help="Directory containing audit JSON reports (default: ./results)",
+    )
+    p.add_argument(
+        "--out",
+        metavar="DIR",
+        default="site",
+        help="Output directory for the generated site (default: ./site)",
+    )
+    p.add_argument(
+        "--title",
+        metavar="TITLE",
+        default="Calibra Leaderboard",
+        help='Leaderboard page title (default: "Calibra Leaderboard")',
+    )
     args = p.parse_args(argv)
 
     build_site(

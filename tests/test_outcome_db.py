@@ -7,8 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-from calibra.outcome_db import OutcomeDatabase, _normalize, _FINGERPRINT_KEYS
-
+from calibra.outcome_db import _FINGERPRINT_KEYS, OutcomeDatabase, _normalize
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -331,11 +330,17 @@ def test_record_llm_sft_domain_persists(tmp_path):
 def test_find_similar_is_scoped_to_domain(tmp_path):
     db = _db(tmp_path)
     db.record(
-        _make_fp(), predicted_score=70.0, actual_success_rate=0.7, dataset_name="robo_ds",
+        _make_fp(),
+        predicted_score=70.0,
+        actual_success_rate=0.7,
+        dataset_name="robo_ds",
         domain="robotics",
     )
     db.record(
-        _make_sft_fp(), predicted_score=65.0, actual_success_rate=0.7, dataset_name="sft_ds",
+        _make_sft_fp(),
+        predicted_score=65.0,
+        actual_success_rate=0.7,
+        dataset_name="sft_ds",
         domain="llm_sft",
     )
 
@@ -352,9 +357,7 @@ def test_calibrate_weights_ignores_non_robotics_records(tmp_path):
     db = _db(tmp_path)
     # 12 llm_sft records — should never count toward the robotics-only calibration.
     for _ in range(12):
-        db.record(
-            _make_sft_fp(), predicted_score=65.0, actual_success_rate=0.7, domain="llm_sft"
-        )
+        db.record(_make_sft_fp(), predicted_score=65.0, actual_success_rate=0.7, domain="llm_sft")
     assert db.calibrate_weights() is None
 
 

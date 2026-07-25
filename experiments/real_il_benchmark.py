@@ -53,8 +53,8 @@ FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── optional gym environment ───────────────────────────────────────────────────
 try:
-    import gymnasium as gym
     import gym_pusht  # noqa: F401 — registers the env
+    import gymnasium as gym
 
     HAS_GYM_PUSHT = True
 except ImportError:
@@ -98,9 +98,7 @@ def train_test_split(
     )
 
 
-def random_subset(
-    batch: "EpisodeBatch", keep_fraction: float, seed: int = 42
-) -> "EpisodeBatch":
+def random_subset(batch: "EpisodeBatch", keep_fraction: float, seed: int = 42) -> "EpisodeBatch":
     from calibra.schema.episode import EpisodeBatch
 
     eps = list(batch.episodes)
@@ -110,9 +108,7 @@ def random_subset(
     return EpisodeBatch(chosen, batch.dataset_name + "_random", batch.format, batch.source_path)
 
 
-def calibra_subset(
-    batch: "EpisodeBatch", keep_fraction: float
-) -> tuple["EpisodeBatch", dict]:
+def calibra_subset(batch: "EpisodeBatch", keep_fraction: float) -> tuple["EpisodeBatch", dict]:
     """Run Calibra pipeline + coreset selection. Returns (subset_batch, stats)."""
     from calibra.pipeline import Pipeline
     from calibra.pruning import CoresetSelector
@@ -129,9 +125,7 @@ def calibra_subset(
 
     keep_set = set(result.keep_episode_ids)
     chosen = [ep for ep in batch.episodes if ep.metadata.episode_id in keep_set]
-    subset = EpisodeBatch(
-        chosen, batch.dataset_name + "_calibra", batch.format, batch.source_path
-    )
+    subset = EpisodeBatch(chosen, batch.dataset_name + "_calibra", batch.format, batch.source_path)
     stats = {
         "n_original": result.n_original,
         "n_kept": result.n_kept,
@@ -227,7 +221,7 @@ def train_bc(
         if (epoch + 1) % 50 == 0:
             with torch.no_grad():
                 val_loss = ((net(S_n) - A_n) ** 2).mean().item()
-            print(f"    epoch {epoch+1:>4}/{n_epochs}  train_mse={val_loss:.5f}", flush=True)
+            print(f"    epoch {epoch + 1:>4}/{n_epochs}  train_mse={val_loss:.5f}", flush=True)
 
     return dict(net=net, s_mean=s_mean, s_std=s_std, a_mean=a_mean, a_std=a_std, device=device)
 
@@ -339,8 +333,11 @@ def print_results(dataset_name: str, keep: float, rows: list[dict]) -> None:
     print(f"  CALIBRA REAL IL BENCHMARK - {dataset_name.upper()}")
     print(_THICK)
     print(f"  Keep fraction : {keep:.0%}")
-    print("  Evaluation    : held-out test MSE + gym rollout success" if HAS_GYM_PUSHT else
-          "  Evaluation    : held-out test MSE (install gym-pusht for rollout success)")
+    print(
+        "  Evaluation    : held-out test MSE + gym rollout success"
+        if HAS_GYM_PUSHT
+        else "  Evaluation    : held-out test MSE (install gym-pusht for rollout success)"
+    )
     print(_THIN)
     hdr = f"  {'Strategy':<22} {'Episodes':>8}  {'Test MSE':>10}"
     if HAS_GYM_PUSHT:
@@ -362,7 +359,9 @@ def print_results(dataset_name: str, keep: float, rows: list[dict]) -> None:
     mse_delta = mean_random_mse - calibra["test_mse"]
     mse_vs_full = calibra["test_mse"] - full["test_mse"]
 
-    print(f"  MSE delta  (Calibra vs. Random):    {mse_delta:+.5f}  ({'lower=better' if mse_delta > 0 else 'Calibra worse'})")
+    print(
+        f"  MSE delta  (Calibra vs. Random):    {mse_delta:+.5f}  ({'lower=better' if mse_delta > 0 else 'Calibra worse'})"
+    )
     print(f"  MSE delta  (Calibra vs. Full  ):    {mse_vs_full:+.5f}")
     print(f"  Compute savings (vs. Full)     :    {keep:.0%} of data used")
 
@@ -404,13 +403,21 @@ def save_figure(rows: list[dict], dataset_name: str) -> None:
     ax.set_xticks(range(len(labels)))
     ax.set_xticklabels(labels, rotation=18, ha="right", fontsize=9)
     ax.set_ylabel("Test MSE (action prediction, lower=better)", fontsize=10)
-    ax.set_title(f"Calibra vs. Baselines — {dataset_name}\nHeld-out Test MSE", fontsize=11, fontweight="bold")
+    ax.set_title(
+        f"Calibra vs. Baselines — {dataset_name}\nHeld-out Test MSE", fontsize=11, fontweight="bold"
+    )
     ax.grid(axis="y", alpha=0.3, zorder=0)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     for bar, mse in zip(bars, mses):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.0003,
-                f"{mse:.4f}", ha="center", va="bottom", fontsize=8)
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + 0.0003,
+            f"{mse:.4f}",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
 
     if HAS_GYM_PUSHT:
         ax2 = axes[1]
@@ -419,23 +426,35 @@ def save_figure(rows: list[dict], dataset_name: str) -> None:
         ax2.set_xticks(range(len(labels)))
         ax2.set_xticklabels(labels, rotation=18, ha="right", fontsize=9)
         ax2.set_ylabel("Rollout success rate (%)", fontsize=10)
-        ax2.set_title(f"Calibra vs. Baselines — {dataset_name}\nPushT Rollout Success", fontsize=11, fontweight="bold")
+        ax2.set_title(
+            f"Calibra vs. Baselines — {dataset_name}\nPushT Rollout Success",
+            fontsize=11,
+            fontweight="bold",
+        )
         ax2.grid(axis="y", alpha=0.3, zorder=0)
         ax2.spines["top"].set_visible(False)
         ax2.spines["right"].set_visible(False)
         for bar, sr in zip(bars2, success_rates):
-            ax2.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.5,
-                     f"{sr:.1f}%", ha="center", va="bottom", fontsize=8)
+            ax2.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + 0.5,
+                f"{sr:.1f}%",
+                ha="center",
+                va="bottom",
+                fontsize=8,
+            )
 
     # Legend patch
     import matplotlib.patches as mpatches
+
     legend_patches = [
         mpatches.Patch(color="#6B7280", label="Full dataset"),
         mpatches.Patch(color="#EF4444", label="Random pruned"),
         mpatches.Patch(color="#2563EB", label="Calibra coreset"),
     ]
-    fig.legend(handles=legend_patches, loc="lower center", ncol=3, fontsize=9,
-               bbox_to_anchor=(0.5, -0.02))
+    fig.legend(
+        handles=legend_patches, loc="lower center", ncol=3, fontsize=9, bbox_to_anchor=(0.5, -0.02)
+    )
 
     fig.tight_layout(rect=[0, 0.05, 1, 1])
     out_pdf = FIG_DIR / "fig_real_il_benchmark.pdf"
@@ -460,31 +479,44 @@ def main(argv: list[str] | None = None) -> None:
         help="LeRobot Hub ID or local path (default: lerobot/pusht)",
     )
     p.add_argument(
-        "--keep", "-k", type=float, default=0.30,
+        "--keep",
+        "-k",
+        type=float,
+        default=0.30,
         help="Fraction of training episodes to retain in pruned coresets (default: 0.30)",
     )
     p.add_argument(
-        "--test-fraction", type=float, default=0.20,
+        "--test-fraction",
+        type=float,
+        default=0.20,
         help="Fraction of dataset held out for evaluation (default: 0.20)",
     )
     p.add_argument(
-        "--n-epochs", type=int, default=150,
+        "--n-epochs",
+        type=int,
+        default=150,
         help="BC training epochs per policy (default: 150)",
     )
     p.add_argument(
-        "--n-rollouts", type=int, default=50,
+        "--n-rollouts",
+        type=int,
+        default=50,
         help="Gym rollout episodes per strategy when gym_pusht is available (default: 50)",
     )
     p.add_argument(
-        "--random-seeds", type=int, default=3,
+        "--random-seeds",
+        type=int,
+        default=3,
         help="Number of random pruning seeds to average (default: 3)",
     )
     p.add_argument(
-        "--save-fig", action="store_true",
+        "--save-fig",
+        action="store_true",
         help="Save comparison bar charts to experiments/figures/",
     )
     p.add_argument(
-        "--json", metavar="PATH",
+        "--json",
+        metavar="PATH",
         help="Write raw results dict to a JSON file",
     )
     args = p.parse_args(argv)
@@ -502,7 +534,9 @@ def main(argv: list[str] | None = None) -> None:
     print(f"[1/6] Loading dataset '{args.dataset}' ...")
     t0 = time.perf_counter()
     batch = load_dataset(args.dataset)
-    print(f"      {batch.n_episodes} episodes, {batch.n_samples} steps  ({time.perf_counter()-t0:.1f}s)")
+    print(
+        f"      {batch.n_episodes} episodes, {batch.n_samples} steps  ({time.perf_counter() - t0:.1f}s)"
+    )
 
     if batch.n_episodes < 10:
         sys.exit(f"Error: dataset has only {batch.n_episodes} episodes -- need >= 10.")
@@ -520,7 +554,9 @@ def main(argv: list[str] | None = None) -> None:
     print(f"      obs_key={obs_key!r}  state_dim={state_dim}  action_dim={action_dim}")
 
     # 2. Train/test split
-    print(f"\n[2/6] Splitting dataset (train {1-args.test_fraction:.0%} / test {args.test_fraction:.0%}) ...")
+    print(
+        f"\n[2/6] Splitting dataset (train {1 - args.test_fraction:.0%} / test {args.test_fraction:.0%}) ..."
+    )
     train_batch, test_batch = train_test_split(batch, test_fraction=args.test_fraction)
     print(f"      train={train_batch.n_episodes} eps  test={test_batch.n_episodes} eps")
 
@@ -528,10 +564,12 @@ def main(argv: list[str] | None = None) -> None:
     print(f"\n[3/6] Building Calibra coreset (keep={args.keep:.0%}) ...")
     t0 = time.perf_counter()
     calibra_batch, calibra_stats = calibra_subset(train_batch, keep_fraction=args.keep)
-    print(f"      Coreset: {calibra_batch.n_episodes} eps  "
-          f"(quality fails={calibra_stats['n_quality_failures']}, "
-          f"diversity pruned={calibra_stats['n_diversity_pruned']})  "
-          f"[{time.perf_counter()-t0:.1f}s total]")
+    print(
+        f"      Coreset: {calibra_batch.n_episodes} eps  "
+        f"(quality fails={calibra_stats['n_quality_failures']}, "
+        f"diversity pruned={calibra_stats['n_diversity_pruned']})  "
+        f"[{time.perf_counter() - t0:.1f}s total]"
+    )
 
     # 4. Train BC policies
     rows: list[dict] = []
@@ -541,15 +579,19 @@ def main(argv: list[str] | None = None) -> None:
     full_artifacts = train_bc(train_batch, n_epochs=args.n_epochs)
     full_mse = eval_test_mse(full_artifacts, test_batch)
     full_success = eval_rollout_success(full_artifacts, n_rollouts=args.n_rollouts, seed_offset=0)
-    rows.append({
-        "label": "Full dataset",
-        "n_episodes": train_batch.n_episodes,
-        "test_mse": full_mse,
-        "success_rate": full_success,
-        "train_seconds": round(time.perf_counter() - t0, 1),
-    })
-    print(f"      test_mse={full_mse:.5f}" +
-          (f"  success={full_success:.1%}" if HAS_GYM_PUSHT else ""))
+    rows.append(
+        {
+            "label": "Full dataset",
+            "n_episodes": train_batch.n_episodes,
+            "test_mse": full_mse,
+            "success_rate": full_success,
+            "train_seconds": round(time.perf_counter() - t0, 1),
+        }
+    )
+    print(
+        f"      test_mse={full_mse:.5f}"
+        + (f"  success={full_success:.1%}" if HAS_GYM_PUSHT else "")
+    )
 
     print(f"\n[5/6] Training BC on RANDOM subsets ({args.random_seeds} seeds) ...")
     random_seed_rows = []
@@ -558,18 +600,22 @@ def main(argv: list[str] | None = None) -> None:
         t0 = time.perf_counter()
         rnd_artifacts = train_bc(rnd_batch, n_epochs=args.n_epochs)
         rnd_mse = eval_test_mse(rnd_artifacts, test_batch)
-        rnd_success = eval_rollout_success(rnd_artifacts, n_rollouts=args.n_rollouts,
-                                           seed_offset=100 + seed * 50)
-        random_seed_rows.append({
-            "label": f"Random (seed={seed})",
-            "n_episodes": rnd_batch.n_episodes,
-            "test_mse": rnd_mse,
-            "success_rate": rnd_success,
-            "train_seconds": round(time.perf_counter() - t0, 1),
-        })
-        print(f"      seed={seed}  n={rnd_batch.n_episodes}  "
-              f"test_mse={rnd_mse:.5f}" +
-              (f"  success={rnd_success:.1%}" if HAS_GYM_PUSHT else ""))
+        rnd_success = eval_rollout_success(
+            rnd_artifacts, n_rollouts=args.n_rollouts, seed_offset=100 + seed * 50
+        )
+        random_seed_rows.append(
+            {
+                "label": f"Random (seed={seed})",
+                "n_episodes": rnd_batch.n_episodes,
+                "test_mse": rnd_mse,
+                "success_rate": rnd_success,
+                "train_seconds": round(time.perf_counter() - t0, 1),
+            }
+        )
+        print(
+            f"      seed={seed}  n={rnd_batch.n_episodes}  "
+            f"test_mse={rnd_mse:.5f}" + (f"  success={rnd_success:.1%}" if HAS_GYM_PUSHT else "")
+        )
 
     rows.extend(random_seed_rows)
 
@@ -577,18 +623,23 @@ def main(argv: list[str] | None = None) -> None:
     t0 = time.perf_counter()
     calibra_artifacts = train_bc(calibra_batch, n_epochs=args.n_epochs)
     calibra_mse = eval_test_mse(calibra_artifacts, test_batch)
-    calibra_success = eval_rollout_success(calibra_artifacts, n_rollouts=args.n_rollouts,
-                                           seed_offset=200)
-    rows.append({
-        "label": "Calibra coreset",
-        "n_episodes": calibra_batch.n_episodes,
-        "test_mse": calibra_mse,
-        "success_rate": calibra_success,
-        "train_seconds": round(time.perf_counter() - t0, 1),
-        "calibra_stats": calibra_stats,
-    })
-    print(f"      n={calibra_batch.n_episodes}  test_mse={calibra_mse:.5f}" +
-          (f"  success={calibra_success:.1%}" if HAS_GYM_PUSHT else ""))
+    calibra_success = eval_rollout_success(
+        calibra_artifacts, n_rollouts=args.n_rollouts, seed_offset=200
+    )
+    rows.append(
+        {
+            "label": "Calibra coreset",
+            "n_episodes": calibra_batch.n_episodes,
+            "test_mse": calibra_mse,
+            "success_rate": calibra_success,
+            "train_seconds": round(time.perf_counter() - t0, 1),
+            "calibra_stats": calibra_stats,
+        }
+    )
+    print(
+        f"      n={calibra_batch.n_episodes}  test_mse={calibra_mse:.5f}"
+        + (f"  success={calibra_success:.1%}" if HAS_GYM_PUSHT else "")
+    )
 
     # 5. Summary
     print_results(
@@ -601,11 +652,15 @@ def main(argv: list[str] | None = None) -> None:
     #    (across the 3 strategies — full, random, calibra — ranked by n_episodes and mse)
     all_mses = [full_mse] + [r["test_mse"] for r in random_seed_rows] + [calibra_mse]
     if len(all_mses) >= 3:
-        data_fracs = [1.0] + [args.keep] * len(random_seed_rows) + [calibra_stats["keep_fraction_actual"]]
+        data_fracs = (
+            [1.0] + [args.keep] * len(random_seed_rows) + [calibra_stats["keep_fraction_actual"]]
+        )
         x = np.argsort(np.argsort(data_fracs))
         y = np.argsort(np.argsort(all_mses))
         rho = float(np.corrcoef(x, y)[0, 1])
-        print(f"\n  Spearman rho (data fraction vs. test MSE, higher fraction -> lower MSE): {rho:+.3f}")
+        print(
+            f"\n  Spearman rho (data fraction vs. test MSE, higher fraction -> lower MSE): {rho:+.3f}"
+        )
         print("  (rho close to 1 means more data = lower error; Calibra ideally breaks this by")
         print("   achieving low MSE with a small fraction -- shown in the table above.)")
 
@@ -618,10 +673,7 @@ def main(argv: list[str] | None = None) -> None:
         "gym_pusht_available": HAS_GYM_PUSHT,
         "train_episodes": train_batch.n_episodes,
         "test_episodes": test_batch.n_episodes,
-        "results": [
-            {k: v for k, v in r.items() if k not in ("calibra_stats",)}
-            for r in rows
-        ],
+        "results": [{k: v for k, v in r.items() if k not in ("calibra_stats",)} for r in rows],
         "calibra_diagnostics": calibra_stats,
     }
 

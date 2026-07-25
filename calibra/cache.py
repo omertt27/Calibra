@@ -60,10 +60,12 @@ def episode_content_hash(episode) -> str:
     is re-recorded, re-processed, or corrupted. Observations are excluded for
     speed; they correlate strongly with the action trajectory for kinematic data.
     """
-    data = np.concatenate([
-        episode.timestamps.astype(np.float32).flatten(),
-        episode.actions.astype(np.float32).flatten(),
-    ])
+    data = np.concatenate(
+        [
+            episode.timestamps.astype(np.float32).flatten(),
+            episode.actions.astype(np.float32).flatten(),
+        ]
+    )
     return hashlib.sha256(data.tobytes()).hexdigest()[:16]
 
 
@@ -79,10 +81,7 @@ def batch_fingerprint(batch, policy_family: Optional[str] = None) -> str:
     Changes when any episode is added, removed, or modified, or when the target
     policy family changes (which affects which analyzers run).
     """
-    pairs = sorted(
-        (ep.metadata.episode_id, episode_content_hash(ep))
-        for ep in batch.episodes
-    )
+    pairs = sorted((ep.metadata.episode_id, episode_content_hash(ep)) for ep in batch.episodes)
     payload = json.dumps({"episodes": pairs, "policy": policy_family or ""})
     return hashlib.sha256(payload.encode()).hexdigest()[:24]
 
@@ -134,6 +133,7 @@ class AuditCache:
             return None
         try:
             from calibra.schema.report import DiagnosticReport
+
             return DiagnosticReport.model_validate_json(path.read_text(encoding="utf-8"))
         except Exception:
             return None
@@ -170,7 +170,8 @@ class AuditCache:
         index = self._load_index()
         n = len(index)
         size_bytes = sum(
-            f.stat().st_size for f in self._reports_dir.glob("*.json")
+            f.stat().st_size
+            for f in self._reports_dir.glob("*.json")
             if not f.name.endswith(".tmp")
         )
         lines = [

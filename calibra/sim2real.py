@@ -210,7 +210,9 @@ def _compute_world_model_transfer_gap(sim_batch, real_batch) -> Optional[dict]:
         real_surprise = jepa.mean_surprise(real_batch)
         transfer_gap = max(0.0, real_surprise - sim_surprise)
 
-        risk = _risk_level(transfer_gap, _WM_TRANSFER_MEDIUM, _WM_TRANSFER_HIGH, _WM_TRANSFER_CRITICAL)
+        risk = _risk_level(
+            transfer_gap, _WM_TRANSFER_MEDIUM, _WM_TRANSFER_HIGH, _WM_TRANSFER_CRITICAL
+        )
 
         return {
             "value": round(transfer_gap, 4),

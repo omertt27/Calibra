@@ -19,13 +19,15 @@ def run_cloud(argv: list[str]) -> None:
     )
     push_p.add_argument("path", help="Dataset path or HuggingFace Hub ID")
     push_p.add_argument(
-        "--policy", "-p",
+        "--policy",
+        "-p",
         metavar="FAMILY",
         default="generic",
         help="Target policy family (e.g. 'diffusion', 'act', 'gr00t')",
     )
     push_p.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         metavar="FORMAT",
         choices=["hdf5", "isaac_lab", "lerobot", "rlds", "mcap"],
         help="Force a format adapter (default: auto-detect)",
@@ -50,6 +52,7 @@ def _push(args: argparse.Namespace) -> None:
     reader = None
     if args.format:
         from calibra.__main__ import _get_reader
+
         reader = _get_reader(args.format)
 
     print(f"Analyzing {args.path!r} ...", file=sys.stderr)

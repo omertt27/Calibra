@@ -10,16 +10,15 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
-from calibra.analyzers.temporal import TemporalAnalyzer
 from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
-from calibra.pipeline import Pipeline
+from calibra.analyzers.temporal import TemporalAnalyzer
 from calibra.comparison.comparator import (
     DatasetComparator,
-    _permutation_test,
     _infer_flag_direction,
+    _permutation_test,
 )
-
+from calibra.pipeline import Pipeline
+from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 
 # ── fixtures ─────────────────────────────────────────────────────────────────
 

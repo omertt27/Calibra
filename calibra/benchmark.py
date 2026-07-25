@@ -10,12 +10,10 @@ import random
 import sys
 from typing import List
 
-
 from calibra.pipeline import Pipeline
-from calibra.pruning import CoresetSelector
 from calibra.predict import predict_outcome
+from calibra.pruning import CoresetSelector
 from calibra.schema.episode import EpisodeBatch
-
 
 _WIDTH = 60
 _THICK = "━" * _WIDTH

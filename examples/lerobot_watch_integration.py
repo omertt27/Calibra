@@ -39,7 +39,6 @@ from typing import Optional
 
 import numpy as np
 
-
 # ── metric computation (pure numpy, no Calibra pipeline dependency) ───────────
 
 

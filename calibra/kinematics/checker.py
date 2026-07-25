@@ -5,7 +5,7 @@ calibra.kinematics.checker — URDF joint limit and velocity verification.
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from typing import Optional, Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 

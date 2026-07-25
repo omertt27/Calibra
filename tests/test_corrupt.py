@@ -8,17 +8,16 @@ import numpy as np
 
 from calibra.corrupt import (
     CorruptionConfig,
+    _add_jitter,
+    _copy_episode,
+    _delay_episode,
+    _drop_frames,
+    _inject_spikes,
+    _truncate_episode,
     apply_corruptions,
     render_corruption_report,
-    _drop_frames,
-    _add_jitter,
-    _inject_spikes,
-    _delay_episode,
-    _truncate_episode,
-    _copy_episode,
 )
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
-
 
 # ── fixtures ──────────────────────────────────────────────────────────────────
 

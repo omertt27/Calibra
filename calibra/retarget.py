@@ -38,7 +38,6 @@ from pathlib import Path
 
 import numpy as np
 
-
 # Candidate observation key names for EEF position and quaternion.
 # Searched in order — first match wins.
 _POS_CANDIDATES = [

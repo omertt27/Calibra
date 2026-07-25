@@ -14,8 +14,8 @@ Dependency: pip install 'calibra[rlds]'  (tensorflow, tensorflow-datasets)
 
 from __future__ import annotations
 
-from pathlib import Path
 from collections.abc import Iterator
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import numpy as np

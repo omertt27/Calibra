@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
+
 import numpy as np
 
+from calibra.anomalies import EpisodeAnomaly, EpisodeFlag
 from calibra.pipeline import Pipeline
-from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 from calibra.report_html import generate_html_report
+from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 
 
 def _make_batch(n_eps: int = 3, n_steps: int = 20) -> EpisodeBatch:
@@ -46,8 +48,20 @@ class TestReportHTML:
         with tempfile.TemporaryDirectory() as tmpdir:
             out_file = Path(tmpdir) / "report.html"
 
+            # Build a fake anomaly using the new EpisodeAnomaly interface
+            flag = EpisodeFlag(
+                episode_idx=0,
+                episode_id="ep_0",
+                metric="ldlj",
+                observed=-15.0,
+                median=-5.0,
+                deviation_mads=4.5,
+                higher_is_worse=False,
+            )
+            anomaly = EpisodeAnomaly(episode_idx=0, episode_id="ep_0", flags=[flag])
+
             # Run generator
-            generate_html_report(report, str(out_file), outliers={0: ["ldlj outlier"]})
+            generate_html_report(report, str(out_file), outliers=[anomaly])
 
             # Check file exists and has content
             assert out_file.exists()
@@ -58,6 +72,6 @@ class TestReportHTML:
             assert "tailwindcss" in content
             assert "Chart.js" in content
             assert "html_test_ds" in content
-            assert "ldlj outlier" in content
+            assert "ep_0" in content
             assert "ssl_trajectory_outliers" in content
             assert "contact_dropout" in content

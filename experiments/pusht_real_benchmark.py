@@ -21,15 +21,15 @@ Usage:
 """
 
 import argparse
+import pathlib
 import random
 import time
-import pathlib
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import DataLoader, TensorDataset
 
 REPO_ROOT = pathlib.Path(__file__).parent.parent
 FIG_DIR = REPO_ROOT / "experiments" / "figures"
@@ -106,8 +106,8 @@ def collect_gym_data(n_episodes=N_COLLECT_EPISODES, seed=SEED):
 
     Uses obs_type='state' (5D) so training and evaluation observations match.
     """
-    import gymnasium as gym
     import gym_pusht  # noqa: F401
+    import gymnasium as gym
 
     from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 
@@ -291,9 +291,9 @@ def run_single_seed(seed: int, keep_fraction: float = KEEP_FRACTION) -> list[dic
     print(f"  Calibra coreset: {len(calibra_indices)} / {n_total} episodes")
 
     conditions = [
-        ("Full dataset (100%)",                        *get_tensors(batch, full_indices)),
-        (f"Calibra {int(keep_fraction*100)}% coreset", *get_tensors(batch, calibra_indices)),
-        (f"Random  {int(keep_fraction*100)}% baseline", *get_tensors(batch, random_indices)),
+        ("Full dataset (100%)", *get_tensors(batch, full_indices)),
+        (f"Calibra {int(keep_fraction * 100)}% coreset", *get_tensors(batch, calibra_indices)),
+        (f"Random  {int(keep_fraction * 100)}% baseline", *get_tensors(batch, random_indices)),
     ]
 
     results = []
@@ -307,18 +307,22 @@ def run_single_seed(seed: int, keep_fraction: float = KEEP_FRACTION) -> list[dic
             full_time = elapsed
         compute_savings = 1.0 - (elapsed / full_time) if full_time else 0.0
 
-        results.append({
-            "seed": seed,
-            "label": label,
-            "n_steps": len(states),
-            "train_time_s": elapsed,
-            "compute_savings": compute_savings,
-            "avg_coverage": avg_cov,
-            "success_rate_50": sr50,
-        })
-        cov_str = f"{avg_cov*100:.1f}%" if avg_cov is not None else "N/A"
-        sr_str  = f"{sr50*100:.1f}%"    if sr50  is not None else "N/A"
-        print(f"    Avg cov: {cov_str}  SR≥50%: {sr_str}  compute saved: {compute_savings*100:.1f}%")
+        results.append(
+            {
+                "seed": seed,
+                "label": label,
+                "n_steps": len(states),
+                "train_time_s": elapsed,
+                "compute_savings": compute_savings,
+                "avg_coverage": avg_cov,
+                "success_rate_50": sr50,
+            }
+        )
+        cov_str = f"{avg_cov * 100:.1f}%" if avg_cov is not None else "N/A"
+        sr_str = f"{sr50 * 100:.1f}%" if sr50 is not None else "N/A"
+        print(
+            f"    Avg cov: {cov_str}  SR≥50%: {sr_str}  compute saved: {compute_savings * 100:.1f}%"
+        )
 
     return results
 
@@ -326,18 +330,22 @@ def run_single_seed(seed: int, keep_fraction: float = KEEP_FRACTION) -> list[dic
 def main():
     parser = argparse.ArgumentParser(description="Calibra PushT coreset benchmark")
     parser.add_argument(
-        "--seeds", type=int, nargs="+", default=[SEED],
-        help="Random seeds to evaluate (default: 42). "
-             "Multiple seeds compute mean ± std.",
+        "--seeds",
+        type=int,
+        nargs="+",
+        default=[SEED],
+        help="Random seeds to evaluate (default: 42). Multiple seeds compute mean ± std.",
     )
     parser.add_argument(
-        "--keep-fraction", type=float, default=KEEP_FRACTION,
+        "--keep-fraction",
+        type=float,
+        default=KEEP_FRACTION,
         help=f"Coreset keep fraction (default: {KEEP_FRACTION})",
     )
     args = parser.parse_args()
 
     print("=== Calibra PushT Coreset Benchmark ===")
-    print(f"  Seeds: {args.seeds}  |  Keep fraction: {args.keep_fraction*100:.0f}%%")
+    print(f"  Seeds: {args.seeds}  |  Keep fraction: {args.keep_fraction * 100:.0f}%%")
 
     all_results: list[dict] = []
     for seed in args.seeds:
@@ -351,12 +359,13 @@ def main():
         print(f"  {'Seed':>5}  {'Condition':<35} {'Steps':>7} {'Avg Cov':>9} {'SR>=50%':>8}")
         print("  " + "-" * 68)
         for r in all_results:
-            cov = f"{r['avg_coverage']*100:.1f}%" if r["avg_coverage"] is not None else "N/A"
-            sr  = f"{r['success_rate_50']*100:.1f}%" if r["success_rate_50"] is not None else "N/A"
+            cov = f"{r['avg_coverage'] * 100:.1f}%" if r["avg_coverage"] is not None else "N/A"
+            sr = f"{r['success_rate_50'] * 100:.1f}%" if r["success_rate_50"] is not None else "N/A"
             print(f"  {r['seed']:>5}  {r['label']:<35} {r['n_steps']:>7,} {cov:>9} {sr:>8}")
 
     # ── Aggregate table (mean ± std) ──────────────────────────────────────────
     import collections
+
     by_label: dict[str, list[dict]] = collections.defaultdict(list)
     for r in all_results:
         by_label[r["label"]].append(r)
@@ -370,12 +379,12 @@ def main():
     for label, runs in by_label.items():
         steps = runs[0]["n_steps"]
         covs = [r["avg_coverage"] for r in runs if r["avg_coverage"] is not None]
-        srs  = [r["success_rate_50"] for r in runs if r["success_rate_50"] is not None]
+        srs = [r["success_rate_50"] for r in runs if r["success_rate_50"] is not None]
         saves = [r["compute_savings"] for r in runs]
 
-        cov_str  = (f"{np.mean(covs)*100:.1f}±{np.std(covs)*100:.1f}%"  if covs  else "N/A")
-        sr_str   = (f"{np.mean(srs)*100:.1f}±{np.std(srs)*100:.1f}%"   if srs   else "N/A")
-        save_str = f"{np.mean(saves)*100:.1f}%"
+        cov_str = f"{np.mean(covs) * 100:.1f}±{np.std(covs) * 100:.1f}%" if covs else "N/A"
+        sr_str = f"{np.mean(srs) * 100:.1f}±{np.std(srs) * 100:.1f}%" if srs else "N/A"
+        save_str = f"{np.mean(saves) * 100:.1f}%"
         print(f"  {label:<35} {steps:>7,} {cov_str:>14} {sr_str:>14} {save_str:>14}")
     print("=" * 90)
     print()

@@ -24,8 +24,10 @@ Deploy:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import secrets
 import sqlite3
 import time
 import uuid
@@ -33,13 +35,10 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
-import hashlib
-import secrets
-
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 
 DB_PATH = Path(os.environ.get("CALIBRA_DB_PATH", "/data/outcomes.db"))
@@ -88,6 +87,7 @@ def _migrate_schema(conn: sqlite3.Connection) -> None:
         if col_name not in existing:
             conn.execute(f"ALTER TABLE outcomes ADD COLUMN {col_name} {col_def}")
 
+
 CREATE_BADGES = """
 CREATE TABLE IF NOT EXISTS badges (
     dataset_id   TEXT PRIMARY KEY,
@@ -129,11 +129,18 @@ CREATE TABLE IF NOT EXISTS reports (
 """
 
 _FINGERPRINT_KEYS = [
-    "ldlj", "spike_rate", "vel_disc_rate", "dropout_rate",
-    "jitter_cv", "action_entropy", "contact_phase_fraction", "jepa_surprise",
+    "ldlj",
+    "spike_rate",
+    "vel_disc_rate",
+    "dropout_rate",
+    "jitter_cv",
+    "action_entropy",
+    "contact_phase_fraction",
+    "jepa_surprise",
 ]
 
 # ── DB helpers ─────────────────────────────────────────────────────────────────
+
 
 def _get_conn() -> sqlite3.Connection:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -180,6 +187,7 @@ def _auth_required(
 
 # ── request / response models ──────────────────────────────────────────────────
 
+
 class SignupRequest(BaseModel):
     email: str
     password: str
@@ -202,7 +210,7 @@ class OutcomeRecord(BaseModel):
 
 class BadgeRegistration(BaseModel):
     dataset_id: str
-    status: str                         # CERTIFIED | PROVISIONALLY_CERTIFIED | NOT_CERTIFIED
+    status: str  # CERTIFIED | PROVISIONALLY_CERTIFIED | NOT_CERTIFIED
     calibra_version: str = "unknown"
 
 
@@ -212,6 +220,7 @@ class WeightSubmission(BaseModel):
 
 
 # ── app ────────────────────────────────────────────────────────────────────────
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -236,6 +245,7 @@ app.add_middleware(
 
 # ── POST /api/users/signup ─────────────────────────────────────────────────────
 
+
 @app.post("/api/users/signup", status_code=201)
 async def signup(body: SignupRequest):
     """Create a new account and return an API token."""
@@ -255,6 +265,7 @@ async def signup(body: SignupRequest):
 
 # ── GET /api/me ────────────────────────────────────────────────────────────────
 
+
 @app.get("/api/me")
 async def get_me(user: sqlite3.Row = Depends(_auth_required)):
     """Return the authenticated user's profile."""
@@ -266,6 +277,7 @@ async def get_me(user: sqlite3.Row = Depends(_auth_required)):
 
 
 # ── POST /api/reports ──────────────────────────────────────────────────────────
+
 
 @app.post("/api/reports", status_code=201)
 async def push_report(
@@ -295,6 +307,7 @@ async def push_report(
 
 # ── GET /api/reports ───────────────────────────────────────────────────────────
 
+
 @app.get("/api/reports")
 async def list_reports(user: sqlite3.Row = Depends(_auth_required)):
     """List the authenticated user's stored diagnostic reports."""
@@ -310,6 +323,7 @@ async def list_reports(user: sqlite3.Row = Depends(_auth_required)):
 
 
 # ── GET /api/reports/{id} ──────────────────────────────────────────────────────
+
 
 @app.get("/api/reports/{report_id}")
 async def get_report(report_id: str, user: sqlite3.Row = Depends(_auth_required)):
@@ -331,6 +345,7 @@ async def get_report(report_id: str, user: sqlite3.Row = Depends(_auth_required)
 
 # ── POST /api/outcomes/authenticated ──────────────────────────────────────────
 
+
 @app.post("/api/outcomes/authenticated", status_code=201)
 async def record_outcome_authenticated(
     body: OutcomeRecord,
@@ -350,13 +365,23 @@ async def record_outcome_authenticated(
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """,
             (
-                record_id, time.time(), user["email"],
-                body.policy_family, body.calibra_version,
-                body.predicted_score, body.actual_success_rate,
-                body.domain, json.dumps(fp),
-                fp.get("ldlj"), fp.get("spike_rate"), fp.get("vel_disc_rate"),
-                fp.get("dropout_rate"), fp.get("jitter_cv"), fp.get("action_entropy"),
-                fp.get("contact_phase_fraction"), fp.get("jepa_surprise"),
+                record_id,
+                time.time(),
+                user["email"],
+                body.policy_family,
+                body.calibra_version,
+                body.predicted_score,
+                body.actual_success_rate,
+                body.domain,
+                json.dumps(fp),
+                fp.get("ldlj"),
+                fp.get("spike_rate"),
+                fp.get("vel_disc_rate"),
+                fp.get("dropout_rate"),
+                fp.get("jitter_cv"),
+                fp.get("action_entropy"),
+                fp.get("contact_phase_fraction"),
+                fp.get("jepa_surprise"),
             ),
         )
         conn.commit()
@@ -365,6 +390,7 @@ async def record_outcome_authenticated(
 
 
 # ── POST /v1/record ────────────────────────────────────────────────────────────
+
 
 @app.post("/v1/record", status_code=201)
 async def record_outcome(body: OutcomeRecord):
@@ -410,6 +436,7 @@ async def record_outcome(body: OutcomeRecord):
 
 # ── POST /v1/badge ─────────────────────────────────────────────────────────────
 
+
 @app.post("/v1/badge", status_code=201)
 async def register_badge(body: BadgeRegistration):
     """Register a dataset certification result so the badge endpoint can serve it."""
@@ -435,6 +462,7 @@ async def register_badge(body: BadgeRegistration):
 
 
 # ── GET /v1/stats ──────────────────────────────────────────────────────────────
+
 
 @app.get("/v1/stats")
 async def get_stats():
@@ -473,6 +501,7 @@ async def get_stats():
 
 # ── GET /v1/weights/latest ─────────────────────────────────────────────────────
 
+
 @app.get("/v1/weights/latest")
 async def get_weights():
     """
@@ -498,6 +527,7 @@ async def get_weights():
 
 # ── GET /v1/percentiles ────────────────────────────────────────────────────────
 
+
 @app.get("/v1/percentiles")
 async def get_community_percentiles(policy_family: Optional[str] = None):
     """
@@ -510,14 +540,16 @@ async def get_community_percentiles(policy_family: Optional[str] = None):
     populated for other domains (e.g. llm_sft, which stores its fingerprint in
     fingerprint_json instead — see /api/community/similar for that path).
     """
-    where = " WHERE domain = 'robotics' AND policy_family = ?" if policy_family else " WHERE domain = 'robotics'"
+    where = (
+        " WHERE domain = 'robotics' AND policy_family = ?"
+        if policy_family
+        else " WHERE domain = 'robotics'"
+    )
     params = (policy_family,) if policy_family else ()
     col_list = ", ".join(_FINGERPRINT_KEYS)
 
     with _get_conn() as conn:
-        rows = conn.execute(
-            f"SELECT {col_list} FROM outcomes{where}", params
-        ).fetchall()
+        rows = conn.execute(f"SELECT {col_list} FROM outcomes{where}", params).fetchall()
 
     n = len(rows)
     if n < 5:
@@ -567,9 +599,7 @@ async def dataset_badge(dataset_id: str):
     clean_id = dataset_id.removesuffix(".svg")
 
     with _get_conn() as conn:
-        row = conn.execute(
-            "SELECT status FROM badges WHERE dataset_id=?", (clean_id,)
-        ).fetchone()
+        row = conn.execute("SELECT status FROM badges WHERE dataset_id=?", (clean_id,)).fetchone()
 
     if not row:
         url = "https://img.shields.io/badge/Calibra-unverified-lightgrey?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PC9zdmc+"
@@ -583,6 +613,7 @@ async def dataset_badge(dataset_id: str):
 
 
 # ── POST /api/community/similar ───────────────────────────────────────────────
+
 
 class SimilarRequest(BaseModel):
     fingerprint: dict[str, Optional[float]]
@@ -690,7 +721,14 @@ async def community_similar(
         if body.policy_family != "generic" and row["policy_family"] == body.policy_family:
             dist *= 0.7
         if dist <= 0.4:
-            scored.append({"id": row["id"], "policy_family": row["policy_family"], "actual_rate": row["actual_rate"], "distance": round(dist, 3)})
+            scored.append(
+                {
+                    "id": row["id"],
+                    "policy_family": row["policy_family"],
+                    "actual_rate": row["actual_rate"],
+                    "distance": round(dist, 3),
+                }
+            )
 
     scored.sort(key=lambda x: x["distance"])
     top_k = scored[: body.k]
@@ -699,7 +737,9 @@ async def community_similar(
     if top_k:
         weights = np.array([1.0 / (s["distance"] + 1e-6) for s in top_k])
         weights /= weights.sum()
-        blended_score = round(float(sum(w * s["actual_rate"] * 100.0 for w, s in zip(weights, top_k))), 1)
+        blended_score = round(
+            float(sum(w * s["actual_rate"] * 100.0 for w, s in zip(weights, top_k))), 1
+        )
 
     return {
         "similar": top_k,
@@ -709,6 +749,7 @@ async def community_similar(
 
 
 # ── GET /api/registry/public ───────────────────────────────────────────────────
+
 
 @app.get("/api/registry/public")
 async def public_registry():
@@ -733,6 +774,7 @@ async def public_registry():
 
 
 # ── weight recalibration ───────────────────────────────────────────────────────
+
 
 def _maybe_recalibrate() -> None:
     """Re-fit global weights when we cross a new 50-record milestone."""
@@ -791,8 +833,7 @@ def _recalibrate(n: int) -> None:
     coeffs, _, _, _ = lstsq(X_arr, y_arr, rcond=None)
 
     weights = {
-        key: round(float(max(0.0, c * 100.0)), 3)
-        for key, c in zip(_FINGERPRINT_KEYS, coeffs)
+        key: round(float(max(0.0, c * 100.0)), 3) for key, c in zip(_FINGERPRINT_KEYS, coeffs)
     }
     version = f"global-v{n}"
 

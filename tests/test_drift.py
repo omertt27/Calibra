@@ -11,7 +11,6 @@ from calibra.temporal.drift import (
     estimate_visual_physics_lag,
 )
 
-
 # ── compute_visual_activity ───────────────────────────────────────────────────
 
 
@@ -131,6 +130,7 @@ class TestEstimateVisualPhysicsLag:
 class TestGR00TDriftCheck:
     def _make_batch_with_drift(self, lag_frames: int):
         import numpy as np
+
         from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 
         T = 80

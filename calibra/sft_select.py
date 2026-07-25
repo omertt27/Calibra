@@ -66,15 +66,23 @@ def run_sft_select(argv: list[str]) -> None:
     )
     p.add_argument("--output-key", default="output", help="Field name for the response")
     p.add_argument(
-        "--keep", "-k", type=float, default=0.5, metavar="FRACTION",
+        "--keep",
+        "-k",
+        type=float,
+        default=0.5,
+        metavar="FRACTION",
         help="Target fraction of examples to keep (default: 0.5)",
     )
     p.add_argument(
-        "--out", "-o", metavar="PATH", default="coreset_index.json",
+        "--out",
+        "-o",
+        metavar="PATH",
+        default="coreset_index.json",
         help="Output JSON file path (default: coreset_index.json)",
     )
     p.add_argument(
-        "--quality-only", action="store_true",
+        "--quality-only",
+        action="store_true",
         help="Stage 1 only — filter quality failures but skip diversity selection",
     )
     p.add_argument("--min-coherence", type=float, default=0.10)
@@ -82,15 +90,20 @@ def run_sft_select(argv: list[str]) -> None:
     p.add_argument("--max-template-ratio", type=float, default=0.50)
     p.add_argument("--min-length-words", type=int, default=5)
     p.add_argument(
-        "--approximate", action="store_true",
+        "--approximate",
+        action="store_true",
         help="Use approximate MiniBatch diversity selection for 100k+ examples",
     )
     p.add_argument(
-        "--export-dataset", metavar="PATH", default=None,
+        "--export-dataset",
+        metavar="PATH",
+        default=None,
         help="Write the selected examples as JSONL to PATH",
     )
     p.add_argument(
-        "--json", "-j", action="store_true",
+        "--json",
+        "-j",
+        action="store_true",
         help="Print full JSON result to stdout in addition to writing --out",
     )
     args = p.parse_args(argv)

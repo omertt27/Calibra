@@ -58,7 +58,9 @@ _DEFAULT_MAX_NEW_TOKENS = 1024
 
 def _load_mt_bench_questions() -> list[dict]:
     if _MT_BENCH_CACHE.exists():
-        questions = [json.loads(line) for line in _MT_BENCH_CACHE.read_text().splitlines() if line.strip()]
+        questions = [
+            json.loads(line) for line in _MT_BENCH_CACHE.read_text().splitlines() if line.strip()
+        ]
         print(f"  Loaded {len(questions)} MT-Bench questions from cache")
         return questions
 
@@ -81,7 +83,9 @@ def _load_mt_bench_questions() -> list[dict]:
         sys.exit(1)
 
 
-def _generate(model, tokenizer, messages: list[dict], temperature: float, max_new_tokens: int) -> str:
+def _generate(
+    model, tokenizer, messages: list[dict], temperature: float, max_new_tokens: int
+) -> str:
     import torch
 
     input_ids = tokenizer.apply_chat_template(
@@ -101,7 +105,7 @@ def _generate(model, tokenizer, messages: list[dict], temperature: float, max_ne
         )
 
     # Decode only the newly generated tokens
-    new_ids = output_ids[0, input_ids.shape[1]:]
+    new_ids = output_ids[0, input_ids.shape[1] :]
     return tokenizer.decode(new_ids, skip_special_tokens=True).strip()
 
 
@@ -112,8 +116,13 @@ def main() -> None:
     p.add_argument("--out-dir", default="results/mtbench")
     p.add_argument("--temperature", type=float, default=_DEFAULT_TEMPERATURE)
     p.add_argument("--max-new-tokens", type=int, default=_DEFAULT_MAX_NEW_TOKENS)
-    p.add_argument("--question-ids", type=int, nargs="+", default=None,
-                   help="Subset of question IDs to run (default: all 80)")
+    p.add_argument(
+        "--question-ids",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Subset of question IDs to run (default: all 80)",
+    )
     args = p.parse_args()
 
     out_dir = REPO_ROOT / args.out_dir
@@ -147,7 +156,9 @@ def main() -> None:
         for line in out_path.read_text().splitlines():
             if line.strip():
                 done_ids.add(json.loads(line)["question_id"])
-        print(f"  Resuming: {len(done_ids)} questions already done, {len(questions) - len(done_ids)} remaining")
+        print(
+            f"  Resuming: {len(done_ids)} questions already done, {len(questions) - len(done_ids)} remaining"
+        )
 
     # ── Generate ───────────────────────────────────────────────────────────────
     with open(out_path, "a") as f_out:
@@ -161,7 +172,9 @@ def main() -> None:
 
             # Turn 1
             t1_messages = [{"role": "user", "content": turns[0]}]
-            t1_answer = _generate(model, tokenizer, t1_messages, args.temperature, args.max_new_tokens)
+            t1_answer = _generate(
+                model, tokenizer, t1_messages, args.temperature, args.max_new_tokens
+            )
 
             # Turn 2 — model sees turn 1 Q+A in context
             t2_messages = [
@@ -169,7 +182,9 @@ def main() -> None:
                 {"role": "assistant", "content": t1_answer},
                 {"role": "user", "content": turns[1]},
             ]
-            t2_answer = _generate(model, tokenizer, t2_messages, args.temperature, args.max_new_tokens)
+            t2_answer = _generate(
+                model, tokenizer, t2_messages, args.temperature, args.max_new_tokens
+            )
 
             record = {
                 "question_id": qid,
@@ -183,8 +198,11 @@ def main() -> None:
             f_out.write(json.dumps(record, ensure_ascii=False) + "\n")
             f_out.flush()
 
-            print(f"  [{i + 1 - len(done_ids):>2}/{len(questions) - len(done_ids)}] "
-                  f"Q{qid} ({category}) done", flush=True)
+            print(
+                f"  [{i + 1 - len(done_ids):>2}/{len(questions) - len(done_ids)}] "
+                f"Q{qid} ({category}) done",
+                flush=True,
+            )
 
     total = sum(1 for line in out_path.read_text().splitlines() if line.strip())
     print(f"\nAnswers written: {total} questions → {out_path}")

@@ -27,8 +27,8 @@ import numpy as np
 _REPO = Path(__file__).parent.parent
 sys.path.insert(0, str(_REPO))
 
-from calibra.pruning import ApproximateCoresetSelector, CoresetSelector  # noqa: E402
 from calibra.pipeline import Pipeline  # noqa: E402
+from calibra.pruning import ApproximateCoresetSelector, CoresetSelector  # noqa: E402
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata  # noqa: E402
 
 

@@ -48,10 +48,9 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from calibra.comparison.comparator import _extract_ep_data
 from calibra.schema.episode import Episode, EpisodeBatch
 from calibra.schema.report import DiagnosticReport
-from calibra.comparison.comparator import _extract_ep_data
-
 
 # ── quality thresholds (conservative defaults) ────────────────────────────────
 
@@ -197,7 +196,9 @@ class CoresetSelector:
         # ── Stage 1: quality filtering ────────────────────────────────────────
         quality_scores = _compute_quality_scores(episodes, ep_data)
         effective_max_vel_disc = _contact_aware_vel_disc(ep_data, self)
-        quality_fail_indices, quality_fail_reasons = _quality_filter(episodes, ep_data, self, effective_max_vel_disc)
+        quality_fail_indices, quality_fail_reasons = _quality_filter(
+            episodes, ep_data, self, effective_max_vel_disc
+        )
         quality_fail_set = set(quality_fail_indices)
         quality_pass_indices = [i for i in range(n) if i not in quality_fail_set]
 
@@ -576,7 +577,7 @@ def _contact_aware_vel_disc(ep_data: dict, cfg: "CoresetSelector") -> float:
     # Avoid division by zero; if spikes are absent treat ratio as large
     ratio = mean_disc / max(mean_spike, 0.001)
 
-    _RATIO_LOW = 3.0    # below this: no scaling
+    _RATIO_LOW = 3.0  # below this: no scaling
     _RATIO_HIGH = 20.0  # above this: full 3x scale
     _SCALE_MAX = 3.0
 
@@ -614,7 +615,9 @@ def _quality_filter(
     dropouts = ep_data.get("per_episode_dropout_fraction", [])
     ldlj_values = ep_data.get("per_episode_ldlj", [])
 
-    max_disc = effective_max_vel_disc if effective_max_vel_disc is not None else cfg.max_vel_disc_rate
+    max_disc = (
+        effective_max_vel_disc if effective_max_vel_disc is not None else cfg.max_vel_disc_rate
+    )
 
     fail: list[int] = []
     reasons: dict[str, list[str]] = {}
@@ -884,7 +887,9 @@ class ApproximateCoresetSelector(CoresetSelector):
         # Stage 1 is identical to the exact selector
         quality_scores = _compute_quality_scores(episodes, ep_data)
         effective_max_vel_disc = _contact_aware_vel_disc(ep_data, self)
-        quality_fail_indices, quality_fail_reasons = _quality_filter(episodes, ep_data, self, effective_max_vel_disc)
+        quality_fail_indices, quality_fail_reasons = _quality_filter(
+            episodes, ep_data, self, effective_max_vel_disc
+        )
         quality_fail_set = set(quality_fail_indices)
         quality_pass_indices = [i for i in range(n) if i not in quality_fail_set]
 

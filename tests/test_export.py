@@ -9,7 +9,6 @@ import pytest
 
 from calibra.pruning import PruningResult
 
-
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 
@@ -121,6 +120,7 @@ class TestExportLeRobotV2:
     def test_row_count_matches_kept_episodes(self, tmp_path):
         pytest.importorskip("pyarrow")
         import pyarrow.parquet as pq
+
         from calibra.curation.export import export_dataset
 
         src = _make_lerobot_v2_dir(tmp_path, n_episodes=5, steps_per_ep=10)
@@ -137,6 +137,7 @@ class TestExportLeRobotV2:
     def test_episode_index_remapped_to_zero_based(self, tmp_path):
         pytest.importorskip("pyarrow")
         import pyarrow.parquet as pq
+
         from calibra.curation.export import export_dataset
 
         src = _make_lerobot_v2_dir(tmp_path, n_episodes=5)

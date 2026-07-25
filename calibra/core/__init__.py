@@ -6,7 +6,7 @@ Exposes:
   SchemaNormalizer   : YAML-configurable column name normalization.
 """
 
-from calibra.core.reader import LazyDatasetReader
 from calibra.core.normalizer import SchemaNormalizer
+from calibra.core.reader import LazyDatasetReader
 
 __all__ = ["LazyDatasetReader", "SchemaNormalizer"]

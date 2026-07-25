@@ -35,7 +35,6 @@ import json
 import sys
 from dataclasses import dataclass
 
-
 from calibra.pipeline import Pipeline
 from calibra.schema.episode import EpisodeBatch
 from calibra.schema.report import DiagnosticReport
@@ -45,18 +44,19 @@ _THICK = "━" * _WIDTH
 _THIN = "─" * _WIDTH
 
 # Thresholds for episode classification
-_SURPRISE_HIGH = 0.60     # above this → model is surprised
-_JERK_HIGH = 0.04         # above this → episode is kinematically suspicious
+_SURPRISE_HIGH = 0.60  # above this → model is surprised
+_JERK_HIGH = 0.04  # above this → episode is kinematically suspicious
 
 
 # ── result schema ──────────────────────────────────────────────────────────────
 
+
 @dataclass
 class EpisodeSurpriseScore:
     episode_id: str
-    surprise: float          # 0–1, normalised within batch
-    jerk_rate: float         # fraction of steps with jerk spikes
-    verdict: str             # NOVEL | CORRUPTED | REDUNDANT
+    surprise: float  # 0–1, normalised within batch
+    jerk_rate: float  # fraction of steps with jerk spikes
+    verdict: str  # NOVEL | CORRUPTED | REDUNDANT
 
 
 @dataclass
@@ -188,6 +188,7 @@ class SurpriseResult:
 
 # ── core analysis ──────────────────────────────────────────────────────────────
 
+
 def score_surprise(
     batch: EpisodeBatch,
     report: DiagnosticReport,
@@ -208,8 +209,11 @@ def score_surprise(
         return SurpriseResult(
             dataset_name=report.dataset_name,
             n_episodes=batch.n_episodes,
-            n_novel=0, n_corrupted=0, n_redundant=0,
-            scores=[], training_epochs=epochs,
+            n_novel=0,
+            n_corrupted=0,
+            n_redundant=0,
+            scores=[],
+            training_epochs=epochs,
             torch_available=False,
         )
 
@@ -220,7 +224,8 @@ def score_surprise(
 
     print(
         f"  Training RobotJEPA ({epochs} epochs)...",
-        file=sys.stderr, flush=True,
+        file=sys.stderr,
+        flush=True,
     )
 
     cfg = RobotJEPAConfig(n_epochs=epochs)
@@ -241,12 +246,14 @@ def score_surprise(
         else:
             verdict = "REDUNDANT"
 
-        scores.append(EpisodeSurpriseScore(
-            episode_id=eid,
-            surprise=round(surprise, 4),
-            jerk_rate=round(jerk, 4),
-            verdict=verdict,
-        ))
+        scores.append(
+            EpisodeSurpriseScore(
+                episode_id=eid,
+                surprise=round(surprise, 4),
+                jerk_rate=round(jerk, 4),
+                verdict=verdict,
+            )
+        )
 
     # Sort: novel first (by surprise desc), then corrupted, then redundant
     _ORDER = {"NOVEL": 0, "CORRUPTED": 1, "REDUNDANT": 2}
@@ -269,6 +276,7 @@ def score_surprise(
 
 
 # ── helpers ────────────────────────────────────────────────────────────────────
+
 
 def _extract_jerk_rates(
     report: DiagnosticReport,
@@ -296,6 +304,7 @@ def _extract_jerk_rates(
 
 # ── CLI ────────────────────────────────────────────────────────────────────────
 
+
 def run_surprise(argv: list[str]) -> None:
     p = argparse.ArgumentParser(
         prog="calibra surprise",
@@ -307,15 +316,24 @@ def run_surprise(argv: list[str]) -> None:
     )
     p.add_argument("path", help="Dataset path or HuggingFace Hub ID")
     p.add_argument(
-        "--top", "-n", type=int, default=10, metavar="N",
+        "--top",
+        "-n",
+        type=int,
+        default=10,
+        metavar="N",
         help="Show top N episodes per category (default: 10)",
     )
     p.add_argument(
-        "--epochs", "-e", type=int, default=60, metavar="N",
+        "--epochs",
+        "-e",
+        type=int,
+        default=60,
+        metavar="N",
         help="JEPA training epochs (default: 60; use 20–30 for quick runs)",
     )
     p.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         choices=["hdf5", "isaac_lab", "lerobot", "rlds", "mcap"],
         help="Force format adapter",
     )
@@ -330,10 +348,12 @@ def run_surprise(argv: list[str]) -> None:
     reader = None
     if args.format:
         from calibra.__main__ import _get_reader
+
         reader = _get_reader(args.format)
 
     try:
         from calibra.ingestion.registry import load
+
         batch = load(args.path, reader=reader)
         report = Pipeline().run(batch)
     except Exception as exc:

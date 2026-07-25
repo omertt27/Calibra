@@ -48,12 +48,13 @@ _THICK = "━" * _WIDTH
 _THIN = "─" * _WIDTH
 
 # Distance thresholds for coverage classification
-_COVERAGE_CLOSE = 0.15    # within this → well covered
-_COVERAGE_NEAR = 0.30     # within this → partially covered
+_COVERAGE_CLOSE = 0.15  # within this → well covered
+_COVERAGE_NEAR = 0.30  # within this → partially covered
 # beyond 0.30 → not covered
 
 
 # ── result schema ──────────────────────────────────────────────────────────────
+
 
 @dataclass
 class NearestEpisode:
@@ -66,14 +67,14 @@ class DiagnoseResult:
     training_dataset: str
     n_training_episodes: int
     failure_path: Optional[str]
-    failure_fingerprint: dict[str, tuple[float, float]]   # dim_name → (mean, std)
+    failure_fingerprint: dict[str, tuple[float, float]]  # dim_name → (mean, std)
     nearest_episode: Optional[NearestEpisode]
-    n_within_close: int       # training eps within COVERAGE_CLOSE
-    n_within_near: int        # training eps within COVERAGE_NEAR
-    coverage_verdict: str     # "COVERED" | "PARTIAL" | "MISSING"
-    diagnosis: str            # human-readable root cause
+    n_within_close: int  # training eps within COVERAGE_CLOSE
+    n_within_near: int  # training eps within COVERAGE_NEAR
+    coverage_verdict: str  # "COVERED" | "PARTIAL" | "MISSING"
+    diagnosis: str  # human-readable root cause
     n_to_collect: int
-    collection_focus: dict[str, tuple[float, float]]      # recommended dim ranges
+    collection_focus: dict[str, tuple[float, float]]  # recommended dim ranges
     current_success: float
     estimated_success_after: float
     policy_family: str
@@ -99,8 +100,11 @@ class DiagnoseResult:
             _THIN,
             "  COVERAGE ANALYSIS",
             "    Nearest training episode : "
-            + (f"{self.nearest_episode.episode_id} (distance: {self.nearest_episode.distance:.3f})"
-               if self.nearest_episode else "N/A"),
+            + (
+                f"{self.nearest_episode.episode_id} (distance: {self.nearest_episode.distance:.3f})"
+                if self.nearest_episode
+                else "N/A"
+            ),
             f"    Episodes within d<{_COVERAGE_CLOSE} : {self.n_within_close}  "
             + ("(well covered)" if self.n_within_close > 0 else "(no coverage)"),
             f"    Episodes within d<{_COVERAGE_NEAR} : {self.n_within_near}",
@@ -136,7 +140,9 @@ class DiagnoseResult:
             "nearest_episode": {
                 "episode_id": self.nearest_episode.episode_id,
                 "distance": self.nearest_episode.distance,
-            } if self.nearest_episode else None,
+            }
+            if self.nearest_episode
+            else None,
             "n_within_close": self.n_within_close,
             "n_within_near": self.n_within_near,
             "coverage_verdict": self.coverage_verdict,
@@ -151,12 +157,13 @@ class DiagnoseResult:
 
 # ── core analysis ──────────────────────────────────────────────────────────────
 
+
 def diagnose_failure(
     batch: EpisodeBatch,
     report: DiagnosticReport,
     failure_path: Optional[str] = None,
     policy_family: Optional[str] = None,
-    latent_mode: str = "action",   # "action" | "jepa"
+    latent_mode: str = "action",  # "action" | "jepa"
 ) -> DiagnoseResult:
     """
     Trace a deployment failure back to a training coverage gap.
@@ -202,13 +209,13 @@ def diagnose_failure(
     if latent_mode == "jepa":
         failure_feat_norm = _encode_failure_jepa(failure_actions, batch)
     else:
-        failure_feat_raw = np.concatenate([
-            np.mean(failure_actions, axis=0),
-            np.std(failure_actions, axis=0),
-        ])
-        failure_feat_norm, _, _ = _normalise_against_training(
-            failure_feat_raw, training_features
+        failure_feat_raw = np.concatenate(
+            [
+                np.mean(failure_actions, axis=0),
+                np.std(failure_actions, axis=0),
+            ]
         )
+        failure_feat_norm, _, _ = _normalise_against_training(failure_feat_raw, training_features)
 
     # Coverage analysis: distances from failure to all training episodes
     dists = np.linalg.norm(training_features - failure_feat_norm[np.newaxis, :], axis=1)
@@ -266,6 +273,7 @@ def diagnose_failure(
     # Estimate success rate after targeted collection
     if n_to_collect > 0:
         from calibra.gap import _ENTROPY_WEIGHT_PER_BIT
+
         # Rough entropy gain from adding n_to_collect episodes near failure point
         entropy_gain = min(0.5, n_to_collect * 0.03)
         success_delta = entropy_gain * _ENTROPY_WEIGHT_PER_BIT
@@ -281,7 +289,9 @@ def diagnose_failure(
         nearest_episode=NearestEpisode(
             episode_id=episode_ids[nearest_idx],
             distance=round(nearest_dist, 4),
-        ) if episode_ids else None,
+        )
+        if episode_ids
+        else None,
         n_within_close=n_close,
         n_within_near=n_near,
         coverage_verdict=verdict,
@@ -296,14 +306,16 @@ def diagnose_failure(
 
 # ── JEPA latent feature helpers ───────────────────────────────────────────────
 
+
 def _build_jepa_features(batch: EpisodeBatch) -> tuple[np.ndarray, list[str]]:
     """
     Train RobotJEPA on batch and return per-episode mean latent embeddings.
     Falls back to action features if torch unavailable.
     """
     try:
-        from calibra.models.robot_jepa import RobotJEPA, RobotJEPAConfig
         import torch as _t  # noqa: F401
+
+        from calibra.models.robot_jepa import RobotJEPA, RobotJEPAConfig
     except ImportError:
         print(
             "  [diagnose] torch not available — falling back to action-space features.",
@@ -352,13 +364,16 @@ def _encode_failure_jepa(failure_actions: np.ndarray, batch: EpisodeBatch) -> np
     Falls back to action-space mean/std if torch unavailable.
     """
     try:
-        from calibra.models.robot_jepa import RobotJEPA, RobotJEPAConfig  # noqa: F401
         import torch as _t  # noqa: F401
+
+        from calibra.models.robot_jepa import RobotJEPA, RobotJEPAConfig  # noqa: F401
     except ImportError:
-        feat = np.concatenate([
-            np.mean(failure_actions, axis=0),
-            np.std(failure_actions, axis=0),
-        ])
+        feat = np.concatenate(
+            [
+                np.mean(failure_actions, axis=0),
+                np.std(failure_actions, axis=0),
+            ]
+        )
         lo, hi = feat.min(), feat.max()
         return np.clip((feat - lo) / max(hi - lo, 1e-6), 0.0, 1.0)
 
@@ -366,15 +381,18 @@ def _encode_failure_jepa(failure_actions: np.ndarray, batch: EpisodeBatch) -> np
     # A more correct approach would save the fitted JEPA from _build_jepa_features
     # and encode the failure trajectory through it. We use action mean/std here
     # because the failure trajectory uses a different observation key than training.
-    feat = np.concatenate([
-        np.mean(failure_actions, axis=0),
-        np.std(failure_actions, axis=0),
-    ])
+    feat = np.concatenate(
+        [
+            np.mean(failure_actions, axis=0),
+            np.std(failure_actions, axis=0),
+        ]
+    )
     lo, hi = feat.min(), feat.max()
     return np.clip((feat - lo) / max(hi - lo, 1e-6), 0.0, 1.0)
 
 
 # ── failure trajectory loading ─────────────────────────────────────────────────
+
 
 def _load_failure_trajectory(path: str) -> np.ndarray:
     """
@@ -382,6 +400,7 @@ def _load_failure_trajectory(path: str) -> np.ndarray:
     Returns action array of shape (T, D).
     """
     import pathlib
+
     p = pathlib.Path(path)
     suffix = p.suffix.lower()
 
@@ -412,11 +431,13 @@ def _load_failure_trajectory(path: str) -> np.ndarray:
         return np.array(data, dtype=np.float64)
 
     else:
-        raise ValueError(f"Unsupported failure trajectory format: {suffix}. "
-                         "Use .h5, .hdf5, .npy, or .json")
+        raise ValueError(
+            f"Unsupported failure trajectory format: {suffix}. Use .h5, .hdf5, .npy, or .json"
+        )
 
 
 # ── feature helpers ────────────────────────────────────────────────────────────
+
 
 def _build_training_features(
     batch: EpisodeBatch,
@@ -527,6 +548,7 @@ def _empty_result(
 
 # ── CLI ────────────────────────────────────────────────────────────────────────
 
+
 def run_diagnose(argv: list[str]) -> None:
     p = argparse.ArgumentParser(
         prog="calibra diagnose",
@@ -537,21 +559,30 @@ def run_diagnose(argv: list[str]) -> None:
     )
     p.add_argument("path", help="Training dataset path or HuggingFace Hub ID")
     p.add_argument(
-        "--failure", "-F", metavar="PATH", default=None,
+        "--failure",
+        "-F",
+        metavar="PATH",
+        default=None,
         help="Failure trajectory (.h5, .hdf5, .npy, .json). "
-             "If omitted, audits the training set for its riskiest gap.",
+        "If omitted, audits the training set for its riskiest gap.",
     )
     p.add_argument(
-        "--policy", "-p", metavar="FAMILY", default=None,
+        "--policy",
+        "-p",
+        metavar="FAMILY",
+        default=None,
         help="Target policy family (diffusion, act, gr00t)",
     )
     p.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         choices=["hdf5", "isaac_lab", "lerobot", "rlds", "mcap"],
         help="Force format adapter for training dataset",
     )
     p.add_argument(
-        "--latent", choices=["action", "jepa"], default="action",
+        "--latent",
+        choices=["action", "jepa"],
+        default="action",
         help=(
             "Feature space for coverage analysis. "
             "'action' (default): action-space mean/std — fast, no torch required. "
@@ -570,10 +601,12 @@ def run_diagnose(argv: list[str]) -> None:
     reader = None
     if args.format:
         from calibra.__main__ import _get_reader
+
         reader = _get_reader(args.format)
 
     try:
         from calibra.ingestion.registry import load
+
         batch = load(args.path, reader=reader)
         report = Pipeline().run(batch, policy_family=args.policy)
     except Exception as exc:

@@ -51,15 +51,16 @@ _ENTROPY_WEIGHT_PER_BIT = 10.0 / (3.5 - 2.0)  # 10pt penalty over 1.5 bit range
 
 # ── result schema ──────────────────────────────────────────────────────────────
 
+
 @dataclass
 class CoverageGap:
     cluster_id: int
     current_episodes: int
     target_episodes: int
     needed: int
-    action_dim_ranges: dict[str, tuple[float, float]]   # dim_name → (lo, hi)
-    estimated_success_delta: float                       # percentage points
-    coverage_fraction: float                             # current / target
+    action_dim_ranges: dict[str, tuple[float, float]]  # dim_name → (lo, hi)
+    estimated_success_delta: float  # percentage points
+    coverage_fraction: float  # current / target
 
 
 @dataclass
@@ -88,12 +89,16 @@ class GapAnalysisResult:
         ]
 
         for i, gap in enumerate(self.gaps[:6], 1):
-            lines.append(f"  {i}. Cluster {gap.cluster_id}  "
-                         f"({gap.current_episodes} episodes now → need {gap.target_episodes})")
+            lines.append(
+                f"  {i}. Cluster {gap.cluster_id}  "
+                f"({gap.current_episodes} episodes now → need {gap.target_episodes})"
+            )
             for dim, (lo, hi) in list(gap.action_dim_ranges.items())[:4]:
                 lines.append(f"       {dim}: [{lo:.3f}, {hi:.3f}]")
-            lines.append(f"     Collect {gap.needed} more  ·  "
-                         f"est. impact: +{gap.estimated_success_delta:.1f}% success")
+            lines.append(
+                f"     Collect {gap.needed} more  ·  "
+                f"est. impact: +{gap.estimated_success_delta:.1f}% success"
+            )
             lines.append("")
 
         lines += [
@@ -105,10 +110,7 @@ class GapAnalysisResult:
         ]
 
         if self.gaps:
-            priority = ", ".join(
-                f"cluster {g.cluster_id} ({g.needed} eps)"
-                for g in self.gaps[:3]
-            )
+            priority = ", ".join(f"cluster {g.cluster_id} ({g.needed} eps)" for g in self.gaps[:3])
             lines.append(f"  Priority: {priority}")
 
         lines.append(_THICK)
@@ -130,9 +132,7 @@ class GapAnalysisResult:
                     "current_episodes": g.current_episodes,
                     "target_episodes": g.target_episodes,
                     "needed": g.needed,
-                    "action_dim_ranges": {
-                        k: list(v) for k, v in g.action_dim_ranges.items()
-                    },
+                    "action_dim_ranges": {k: list(v) for k, v in g.action_dim_ranges.items()},
                     "estimated_success_delta": g.estimated_success_delta,
                     "coverage_fraction": g.coverage_fraction,
                 }
@@ -142,6 +142,7 @@ class GapAnalysisResult:
 
 
 # ── core analysis ──────────────────────────────────────────────────────────────
+
 
 def analyze_coverage_gap(
     batch: EpisodeBatch,
@@ -202,12 +203,11 @@ def analyze_coverage_gap(
         # Indices of episodes in this cluster
         member_mask = labels == c
         if member_mask.sum() > 0:
-            cluster_actions = np.vstack([
-                raw_actions_list[i]
-                for i, m in enumerate(member_mask) if m
-            ])
+            cluster_actions = np.vstack(
+                [raw_actions_list[i] for i, m in enumerate(member_mask) if m]
+            )
         else:
-            cluster_actions = centers[c:c+1]  # use centroid as placeholder
+            cluster_actions = centers[c : c + 1]  # use centroid as placeholder
 
         # Dim ranges: mean ± 2*std of cluster members
         dim_ranges: dict[str, tuple[float, float]] = {}
@@ -225,15 +225,17 @@ def analyze_coverage_gap(
         entropy_gain = _entropy_gain_estimate(features, labels, c, needed)
         success_delta = entropy_gain * _ENTROPY_WEIGHT_PER_BIT
 
-        gaps.append(CoverageGap(
-            cluster_id=c,
-            current_episodes=count,
-            target_episodes=target_per_cluster,
-            needed=needed,
-            action_dim_ranges=dim_ranges,
-            estimated_success_delta=round(success_delta, 2),
-            coverage_fraction=round(count / max(target_per_cluster, 1), 3),
-        ))
+        gaps.append(
+            CoverageGap(
+                cluster_id=c,
+                current_episodes=count,
+                target_episodes=target_per_cluster,
+                needed=needed,
+                action_dim_ranges=dim_ranges,
+                estimated_success_delta=round(success_delta, 2),
+                coverage_fraction=round(count / max(target_per_cluster, 1), 3),
+            )
+        )
 
     # Sort by estimated impact (descending)
     gaps.sort(key=lambda g: g.estimated_success_delta, reverse=True)
@@ -259,6 +261,7 @@ def analyze_coverage_gap(
 
 
 # ── feature helpers ────────────────────────────────────────────────────────────
+
 
 def _build_episode_features(batch: EpisodeBatch) -> tuple[np.ndarray, list[np.ndarray], int]:
     """
@@ -295,7 +298,9 @@ def _build_episode_features(batch: EpisodeBatch) -> tuple[np.ndarray, list[np.nd
     return mat, raw_list, action_dim
 
 
-def _kmeans(X: np.ndarray, k: int, seed: int = 42, max_iter: int = 100) -> tuple[np.ndarray, np.ndarray]:
+def _kmeans(
+    X: np.ndarray, k: int, seed: int = 42, max_iter: int = 100
+) -> tuple[np.ndarray, np.ndarray]:
     """Simple Lloyd k-means, no external dependency."""
     rng = np.random.default_rng(seed)
     idx = rng.choice(len(X), size=k, replace=False)
@@ -305,7 +310,7 @@ def _kmeans(X: np.ndarray, k: int, seed: int = 42, max_iter: int = 100) -> tuple
     for _ in range(max_iter):
         # Assign
         diffs = X[:, np.newaxis, :] - centers[np.newaxis, :, :]
-        dists = np.sum(diffs ** 2, axis=-1)
+        dists = np.sum(diffs**2, axis=-1)
         new_labels = np.argmin(dists, axis=1)
         if np.array_equal(new_labels, labels):
             break
@@ -366,6 +371,7 @@ def _entropy_gain_estimate(
 
 # ── CLI ────────────────────────────────────────────────────────────────────────
 
+
 def run_gap(argv: list[str]) -> None:
     p = argparse.ArgumentParser(
         prog="calibra gap",
@@ -376,19 +382,31 @@ def run_gap(argv: list[str]) -> None:
     )
     p.add_argument("path", help="Dataset path or HuggingFace Hub ID")
     p.add_argument(
-        "--policy", "-p", metavar="FAMILY", default=None,
+        "--policy",
+        "-p",
+        metavar="FAMILY",
+        default=None,
         help="Target policy family (diffusion, act, gr00t)",
     )
     p.add_argument(
-        "--target-success", "-t", type=float, default=0.80, metavar="RATE",
+        "--target-success",
+        "-t",
+        type=float,
+        default=0.80,
+        metavar="RATE",
         help="Target policy success rate 0.0–1.0 (default: 0.80)",
     )
     p.add_argument(
-        "--clusters", "-k", type=int, default=8, metavar="N",
+        "--clusters",
+        "-k",
+        type=int,
+        default=8,
+        metavar="N",
         help="Number of action-space clusters (default: 8)",
     )
     p.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         choices=["hdf5", "isaac_lab", "lerobot", "rlds", "mcap"],
         help="Force format adapter",
     )
@@ -407,10 +425,12 @@ def run_gap(argv: list[str]) -> None:
     reader = None
     if args.format:
         from calibra.__main__ import _get_reader
+
         reader = _get_reader(args.format)
 
     try:
         from calibra.ingestion.registry import load
+
         batch = load(args.path, reader=reader)
         report = Pipeline().run(batch, policy_family=args.policy)
     except Exception as exc:

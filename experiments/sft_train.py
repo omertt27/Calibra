@@ -45,26 +45,42 @@ sys.path.insert(0, str(REPO_ROOT))
 
 def main() -> None:
     p = argparse.ArgumentParser(description="SFT training for Calibra-LLM benchmark.")
-    p.add_argument("--condition", required=True,
-                   choices=["random_9k", "calibra_sft_9k", "alpagasus_9k", "lima_1k", "full_52k"],
-                   help="Which training condition to run")
-    p.add_argument("--model", default="Qwen/Qwen2.5-1.5B-Instruct",
-                   help="HuggingFace model ID")
-    p.add_argument("--data-dir", default="results/datasets",
-                   help="Directory containing {condition}/train.jsonl")
-    p.add_argument("--out-dir", default="results/checkpoints",
-                   help="Output directory for checkpoints")
+    p.add_argument(
+        "--condition",
+        required=True,
+        choices=["random_9k", "calibra_sft_9k", "alpagasus_9k", "lima_1k", "full_52k"],
+        help="Which training condition to run",
+    )
+    p.add_argument("--model", default="Qwen/Qwen2.5-1.5B-Instruct", help="HuggingFace model ID")
+    p.add_argument(
+        "--data-dir",
+        default="results/datasets",
+        help="Directory containing {condition}/train.jsonl",
+    )
+    p.add_argument(
+        "--out-dir", default="results/checkpoints", help="Output directory for checkpoints"
+    )
     p.add_argument("--epochs", type=int, default=3)
     p.add_argument("--lr", type=float, default=2e-5)
     p.add_argument("--max-seq-len", type=int, default=512)
     p.add_argument("--per-device-batch", type=int, default=4)
-    p.add_argument("--grad-accum", type=int, default=8,
-                   help="Effective batch size = per_device_batch × grad_accum")
-    p.add_argument("--lora", action="store_true",
-                   help="Use LoRA (rank=64) instead of full fine-tune (needed for 7B+ models)")
+    p.add_argument(
+        "--grad-accum",
+        type=int,
+        default=8,
+        help="Effective batch size = per_device_batch × grad_accum",
+    )
+    p.add_argument(
+        "--lora",
+        action="store_true",
+        help="Use LoRA (rank=64) instead of full fine-tune (needed for 7B+ models)",
+    )
     p.add_argument("--lora-rank", type=int, default=64)
-    p.add_argument("--smoke-test", action="store_true",
-                   help="Run 100 steps with batch_size=1 to verify setup (MPS-safe)")
+    p.add_argument(
+        "--smoke-test",
+        action="store_true",
+        help="Run 100 steps with batch_size=1 to verify setup (MPS-safe)",
+    )
     args = p.parse_args()
 
     import torch
@@ -102,13 +118,20 @@ def main() -> None:
 
     # ── LoRA (optional) ───────────────────────────────────────────────────────
     if args.lora:
-        from peft import LoraConfig, get_peft_model, TaskType
+        from peft import LoraConfig, TaskType, get_peft_model
 
         lora_cfg = LoraConfig(
             r=args.lora_rank,
             lora_alpha=args.lora_rank * 2,
-            target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
-                            "gate_proj", "up_proj", "down_proj"],
+            target_modules=[
+                "q_proj",
+                "k_proj",
+                "v_proj",
+                "o_proj",
+                "gate_proj",
+                "up_proj",
+                "down_proj",
+            ],
             lora_dropout=0.05,
             task_type=TaskType.CAUSAL_LM,
         )
@@ -148,7 +171,9 @@ def main() -> None:
 
     # ── Training config ────────────────────────────────────────────────────────
     if args.smoke_test:
-        train_kwargs = dict(max_steps=100, per_device_train_batch_size=1, gradient_accumulation_steps=1)
+        train_kwargs = dict(
+            max_steps=100, per_device_train_batch_size=1, gradient_accumulation_steps=1
+        )
         print("SMOKE TEST: 100 steps, batch_size=1")
     else:
         train_kwargs = dict(
@@ -206,12 +231,15 @@ def main() -> None:
     (out_path / "train_config.json").write_text(json.dumps(config_out, indent=2))
 
     print(f"\nDone. Checkpoint → {final_path}")
-    print(f"Next: python experiments/sft_gen_answers.py --model {final_path} --condition {args.condition}")
+    print(
+        f"Next: python experiments/sft_gen_answers.py --model {final_path} --condition {args.condition}"
+    )
 
 
 def _flash_available() -> bool:
     try:
         import flash_attn  # noqa: F401
+
         return True
     except ImportError:
         return False

@@ -56,9 +56,9 @@ _CAMERA_PREFIXES = ("camera", "cam", "rgb", "depth", "wrist", "overhead")
 # Action-dropout thresholds: fraction of steps with near-zero action magnitude.
 # Zero actions indicate dropped commands — distinct from timestamp dropout and
 # invisible to the spike detector (silence looks smooth).
-_ACTION_DROPOUT_WARNING = 0.05   # 5 % of steps
+_ACTION_DROPOUT_WARNING = 0.05  # 5 % of steps
 _ACTION_DROPOUT_CRITICAL = 0.15  # 15 %
-_ACTION_ZERO_THRESHOLD = 0.05    # |a| < threshold * action_std counts as zero
+_ACTION_ZERO_THRESHOLD = 0.05  # |a| < threshold * action_std counts as zero
 
 # ── camera-physics drift thresholds (frames) ─────────────────────────────────
 # Conservative defaults derived from GR00T N1 documentation: 2 frames at 50 Hz
@@ -66,7 +66,7 @@ _ACTION_ZERO_THRESHOLD = 0.05    # |a| < threshold * action_std counts as zero
 # Run calibrate_drift_thresholds() on your own dataset to tune these for your
 # robot and frame rate before relying on them in production.
 
-_DRIFT_WARNING_FRAMES: int = 2   # 40 ms at 50 Hz
+_DRIFT_WARNING_FRAMES: int = 2  # 40 ms at 50 Hz
 _DRIFT_CRITICAL_FRAMES: int = 5  # 100 ms at 50 Hz
 
 # Observation key fragments used to detect joint-velocity arrays.
@@ -656,10 +656,12 @@ class TemporalAnalyzer(Analyzer):
             return None, {"skipped": "no action data"}
 
         all_a = np.concatenate(all_actions, axis=0)
-        action_std = float(np.mean(np.std(all_a, axis=0))) if all_a.ndim > 1 else float(np.std(all_a))
+        action_std = (
+            float(np.mean(np.std(all_a, axis=0))) if all_a.ndim > 1 else float(np.std(all_a))
+        )
         action_std = action_std or 1.0
         dim = all_a.shape[1] if all_a.ndim > 1 else 1
-        zero_thresh = _ACTION_ZERO_THRESHOLD * action_std * (dim ** 0.5)
+        zero_thresh = _ACTION_ZERO_THRESHOLD * action_std * (dim**0.5)
 
         ep_fracs = []
         has_state = False
@@ -691,7 +693,9 @@ class TemporalAnalyzer(Analyzer):
                 # State change magnitude for each transition (aligned to action indices)
                 state_delta = np.linalg.norm(np.diff(state_arr, axis=0), axis=1)
                 state_std = float(np.mean(np.std(state_arr, axis=0))) or 1.0
-                state_moving_thresh = _ACTION_ZERO_THRESHOLD * state_std * (state_arr.shape[1] ** 0.5)
+                state_moving_thresh = (
+                    _ACTION_ZERO_THRESHOLD * state_std * (state_arr.shape[1] ** 0.5)
+                )
                 # Compare action[t] to state delta between t and t+1
                 n = min(len(action_near_zero), len(state_delta))
                 inconsistent = action_near_zero[:n] & (state_delta[:n] > state_moving_thresh)
@@ -719,8 +723,14 @@ class TemporalAnalyzer(Analyzer):
             return RiskFlag(
                 level=RiskLevel.OK,
                 metric="action_dropout_rate",
-                observed=ObservedValue(value=stat, unit="fraction", ci_lower=lo, ci_upper=hi,
-                                       ci_level=self.ci_level, ci_method="bootstrap"),
+                observed=ObservedValue(
+                    value=stat,
+                    unit="fraction",
+                    ci_lower=lo,
+                    ci_upper=hi,
+                    ci_level=self.ci_level,
+                    ci_method="bootstrap",
+                ),
                 threshold=_ACTION_DROPOUT_WARNING,
                 interpretation="Action-dropout rate is within acceptable range.",
                 implication="No silent command-dropout detected.",
@@ -730,8 +740,14 @@ class TemporalAnalyzer(Analyzer):
         return RiskFlag(
             level=level,
             metric="action_dropout_rate",
-            observed=ObservedValue(value=stat, unit="fraction", ci_lower=lo, ci_upper=hi,
-                                   ci_level=self.ci_level, ci_method="bootstrap"),
+            observed=ObservedValue(
+                value=stat,
+                unit="fraction",
+                ci_lower=lo,
+                ci_upper=hi,
+                ci_level=self.ci_level,
+                ci_method="bootstrap",
+            ),
             threshold=_ACTION_DROPOUT_WARNING,
             interpretation=(
                 f"{stat:.1%} of steps have near-zero actions while the state continues "
@@ -904,7 +920,9 @@ def calibrate_drift_thresholds(
 
     return {
         "warning_frames": warning_frames if warning_frames is not None else _DRIFT_WARNING_FRAMES,
-        "critical_frames": critical_frames if critical_frames is not None else _DRIFT_CRITICAL_FRAMES,
+        "critical_frames": critical_frames
+        if critical_frames is not None
+        else _DRIFT_CRITICAL_FRAMES,
     }
 
 

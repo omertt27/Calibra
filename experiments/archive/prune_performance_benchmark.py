@@ -1,16 +1,18 @@
-import time
 import pathlib
+import time
+
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import matplotlib.pyplot as plt
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import DataLoader, TensorDataset
+
+from calibra.pipeline import Pipeline
+from calibra.pruning import CoresetSelector
 
 # Import Calibra components
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
-from calibra.pipeline import Pipeline
-from calibra.pruning import CoresetSelector
 
 REPO_ROOT = pathlib.Path(__file__).parent.parent
 FIG_DIR = REPO_ROOT / "experiments" / "figures"

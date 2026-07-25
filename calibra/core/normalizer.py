@@ -24,7 +24,6 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-
 _DEFAULT_MAPPINGS: dict[str, list[str]] = {
     "action_joints": ["action", "joint_cmd", "joint_command", "motors/target"],
     "observation_joints": ["observation.state", "joint_state", "joint_states", "motors/position"],

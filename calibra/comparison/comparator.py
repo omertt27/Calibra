@@ -17,8 +17,8 @@ from typing import Optional
 
 import numpy as np
 
-from calibra.schema.report import DiagnosticReport, RiskFlag, RiskLevel
 from calibra.schema.comparison import ComparisonReport, DriftFlag
+from calibra.schema.report import DiagnosticReport, RiskFlag, RiskLevel
 
 # ── metric direction registry ─────────────────────────────────────────────────
 # (pattern, rule): rule is "up_better" (higher = better) or "down_better"

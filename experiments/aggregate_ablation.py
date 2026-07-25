@@ -21,6 +21,7 @@ Usage
     python experiments/aggregate_ablation.py results/ablation_*.json
     python experiments/aggregate_ablation.py            # defaults to results/ablation_*.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -33,6 +34,7 @@ import numpy as np
 
 try:
     from scipy import stats as _stats
+
     _HAVE_SCIPY = True
 except Exception:  # pragma: no cover
     _HAVE_SCIPY = False
@@ -90,6 +92,7 @@ def _paired_p(a: list[float], b: list[float]) -> float | None:
     t = d.mean() / (d.std(ddof=1) / np.sqrt(len(d)) + 1e-12)
     # crude normal-approx two-sided p (no t-table dependency)
     from math import erf, sqrt
+
     return float(2 * (1 - 0.5 * (1 + erf(abs(t) / sqrt(2)))))
 
 
@@ -111,7 +114,9 @@ def main(argv=None):
     print("  AGGREGATE CORESET COMPARISON")
     print("=" * _W)
     print(f"  Datasets ({len(datasets)}): {', '.join(datasets)}")
-    print(f"  Seeds per cell: {max((len(data[d].get(_FOCUS,{}).get('seeds') or []) for d in datasets), default=0)}")
+    print(
+        f"  Seeds per cell: {max((len(data[d].get(_FOCUS, {}).get('seeds') or []) for d in datasets), default=0)}"
+    )
     print()
 
     # ── per-dataset ranks (lower MSE = better rank 1) ──────────────────────────
@@ -128,7 +133,7 @@ def main(argv=None):
                 vs_random[m].append((rnd - mse) / rnd * 100)
 
     print(f"  {'Method':<22}{'Mean rank':>10}{'Mean vs-random':>16}{'Rank / dataset':>22}")
-    print(f"  {'-'*70}")
+    print(f"  {'-' * 70}")
     for m in sorted(methods, key=lambda x: np.mean(ranks[x]) if ranks[x] else 99):
         mr = np.mean(ranks[m]) if ranks[m] else float("nan")
         vr = np.mean(vs_random[m]) if vs_random[m] else float("nan")
@@ -147,21 +152,23 @@ def main(argv=None):
         rnd = data[d].get("Random", {}).get("mean")
         if rnd:
             oracle_vr.append((rnd - best[1]) / rnd * 100)
-    print(f"  Oracle (best method per dataset): mean vs-random = {np.mean(oracle_vr):+.1f}% "
-          f"(mean rank 1.00)")
+    print(
+        f"  Oracle (best method per dataset): mean vs-random = {np.mean(oracle_vr):+.1f}% "
+        f"(mean rank 1.00)"
+    )
     for d, m in oracle_pick:
         print(f"      {d:<34} -> {m}")
-    print(f"  Headroom for an adaptive selector = gap between Oracle and best fixed method above.")
+    print("  Headroom for an adaptive selector = gap between Oracle and best fixed method above.")
     print()
 
     # ── Calibra full: W/T/L + paired significance vs each method ────────────────
     print(f"  {_FOCUS} vs. each method  (paired per-seed t-test, alpha={args.alpha})")
-    print(f"  {'-'*70}")
+    print(f"  {'-' * 70}")
     print(f"  {'Opponent':<22}{'W-T-L':>8}{'  per-dataset (Δ%, p)':<40}")
     for m in methods:
         if m == _FOCUS:
             continue
-        w = t = l = 0
+        w = t = losses = 0
         cells = []
         for d in datasets:
             if m not in data[d] or _FOCUS not in data[d]:
@@ -171,18 +178,20 @@ def main(argv=None):
             # improvement of focus over opponent, % (positive = focus better)
             imp = (oa["mean"] - fa["mean"]) / oa["mean"] * 100
             p = _paired_p(fa.get("seeds"), oa.get("seeds"))
-            sig = (p is not None and p < args.alpha)
+            sig = p is not None and p < args.alpha
             if not sig:
                 t += 1
             elif imp > 0:
                 w += 1
             else:
-                l += 1
+                losses += 1
             ps = f"p={p:.3f}" if p is not None else "p=n/a"
             cells.append(f"{d.split('/')[-1][:10]}:{imp:+.0f}%,{ps}")
-        print(f"  {m:<22}{f'{w}-{t}-{l}':>8}  " + "  ".join(cells))
+        print(f"  {m:<22}{f'{w}-{t}-{losses}':>8}  " + "  ".join(cells))
     print()
-    print("  W/T/L: Win = Calibra full significantly better; Tie = not significant; Loss = sig. worse.")
+    print(
+        "  W/T/L: Win = Calibra full significantly better; Tie = not significant; Loss = sig. worse."
+    )
     print("=" * _W)
     return 0
 

@@ -8,11 +8,12 @@ global trajectory novelty and detect anomalous demonstration outliers.
 from __future__ import annotations
 
 from typing import Optional
+
 import numpy as np
 
 from calibra.analyzers.base import Analyzer
 from calibra.schema.episode import EpisodeBatch
-from calibra.schema.report import AnalyzerResult, RiskFlag, RiskLevel, ObservedValue
+from calibra.schema.report import AnalyzerResult, ObservedValue, RiskFlag, RiskLevel
 
 
 class SSLTrajectoryEmbedderAnalyzer(Analyzer):

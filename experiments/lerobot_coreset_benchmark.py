@@ -83,8 +83,7 @@ def load_lerobot_dataset(dataset_id: str) -> tuple:
         from datasets import load_dataset as hf_load
     except ImportError:
         print(
-            "error: 'datasets' package required.\n"
-            "       pip install datasets",
+            "error: 'datasets' package required.\n       pip install datasets",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -107,6 +106,7 @@ def hf_to_episode_batch(hf_dataset, obs_key: str, action_key: str, dataset_name:
     except Exception:
         # Fallback for very large datasets: iterate rows
         import pandas as pd
+
         df = pd.DataFrame(
             {
                 "episode_index": hf_dataset["episode_index"],
@@ -161,7 +161,6 @@ def run_calibra(batch, report_path: Optional[str] = None) -> tuple:
     Returns (diag_report, prune_result, overall_score).
     """
     from calibra.pipeline import Pipeline
-    from calibra.pruning import CoresetSelector
 
     print("Running Calibra diagnostic pipeline ...")
     t0 = time.perf_counter()
@@ -170,8 +169,14 @@ def run_calibra(batch, report_path: Optional[str] = None) -> tuple:
     print(f"  Done in {pipeline_s:.1f}s")
 
     # Read overall score from the scoring module
-    from calibra.schema.scoring import DIMENSION_WEIGHTS, dimension_score, overall_score, route_metric_to_dimension, flag_level_to_score
     from calibra.schema.report import RiskLevel
+    from calibra.schema.scoring import (
+        DIMENSION_WEIGHTS,
+        dimension_score,
+        flag_level_to_score,
+        overall_score,
+        route_metric_to_dimension,
+    )
 
     dim_scores_raw: dict[str, list[float]] = {d: [] for d in DIMENSION_WEIGHTS}
     for flag in diag.flags:
@@ -222,11 +227,13 @@ def identify_rare_episodes(episodes, rare_fraction: float = 0.15, k_neighbors: i
     for ep in episodes:
         a = ep.actions
         s = ep.observations.get("state", np.zeros((1, 1)))
-        feat = np.concatenate([
-            a.mean(0),
-            a.std(0),
-            s.mean(0)[: min(s.shape[1], 4)],
-        ])
+        feat = np.concatenate(
+            [
+                a.mean(0),
+                a.std(0),
+                s.mean(0)[: min(s.shape[1], 4)],
+            ]
+        )
         features.append(feat)
 
     F = np.array(features, dtype=np.float64)
@@ -236,7 +243,7 @@ def identify_rare_episodes(episodes, rare_fraction: float = 0.15, k_neighbors: i
 
     k = min(k_neighbors, len(episodes) - 1)
     # pairwise squared distances
-    sq = np.sum(F ** 2, axis=1, keepdims=True)
+    sq = np.sum(F**2, axis=1, keepdims=True)
     D2 = sq + sq.T - 2.0 * (F @ F.T)
     D2 = np.maximum(D2, 0.0)
     np.fill_diagonal(D2, np.inf)
@@ -246,11 +253,7 @@ def identify_rare_episodes(episodes, rare_fraction: float = 0.15, k_neighbors: i
     density = 1.0 / (knn_dists.mean(1) + 1e-6)
 
     threshold = np.percentile(density, rare_fraction * 100)
-    rare_ids = {
-        ep.metadata.episode_id
-        for ep, d in zip(episodes, density)
-        if d <= threshold
-    }
+    rare_ids = {ep.metadata.episode_id for ep, d in zip(episodes, density) if d <= threshold}
     return rare_ids, density
 
 
@@ -374,7 +377,7 @@ def run_benchmark(
         keep_fractions = [0.05, 0.10, 0.25, 0.50, 0.75, 1.00]
 
     print("=" * 70)
-    print(f"  Calibra LeRobot Coreset Benchmark")
+    print("  Calibra LeRobot Coreset Benchmark")
     print(f"  Dataset : {dataset_id}")
     print(f"  Fractions: {keep_fractions}")
     print("=" * 70)
@@ -456,7 +459,9 @@ def run_benchmark(
         cal_rel = cal_mse / full_mse if full_mse > 0 else float("nan")
         cal_rare_kept = sum(1 for ep in calibra_eps if ep.metadata.episode_id in rare_ids)
         cal_rare_cov = cal_rare_kept / n_rare if n_rare else float("nan")
-        print(f"MSE={cal_mse:.6f}  ({cal_rel:.2f}x baseline)  time={cal_train_s:.1f}s  rare_cov={cal_rare_cov:.1%}")
+        print(
+            f"MSE={cal_mse:.6f}  ({cal_rel:.2f}x baseline)  time={cal_train_s:.1f}s  rare_cov={cal_rare_cov:.1%}"
+        )
 
         row["calibra_mse"] = cal_mse
         row["calibra_mse_relative"] = round(cal_rel, 4)
@@ -558,11 +563,19 @@ def run_benchmark(
         fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 5))
 
         # Panel 1: MSE vs. retention
-        ax1.axhline(full_mse, color="#6b7280", linewidth=1.5, linestyle="--", label="Full data (100%)")
+        ax1.axhline(
+            full_mse, color="#6b7280", linewidth=1.5, linestyle="--", label="Full data (100%)"
+        )
         ax1.plot(fracs, cal_mse_vals, "o-", color="#2563eb", linewidth=2, label="Calibra coreset")
         ax1.errorbar(
-            fracs, rand_mse_vals, yerr=rand_std, fmt="s--", color="#dc2626",
-            linewidth=1.5, capsize=4, label=f"Random (avg {n_random_seeds} seeds)",
+            fracs,
+            rand_mse_vals,
+            yerr=rand_std,
+            fmt="s--",
+            color="#dc2626",
+            linewidth=1.5,
+            capsize=4,
+            label=f"Random (avg {n_random_seeds} seeds)",
         )
         ax1.set_xlabel("Retention fraction (%)", fontsize=12)
         ax1.set_ylabel("Test MSE (action prediction)", fontsize=12)
@@ -586,15 +599,16 @@ def run_benchmark(
         ax3.plot(fracs, cal_rare, "o-", color="#2563eb", linewidth=2, label="Calibra coreset")
         ax3.plot(fracs, rand_rare, "s--", color="#dc2626", linewidth=1.5, label="Random")
         ax3.set_xlabel("Retention fraction (%)", fontsize=12)
-        ax3.set_ylabel(f"Rare-episode coverage (%, bottom {rare_fraction:.0%} by density)", fontsize=11)
+        ax3.set_ylabel(
+            f"Rare-episode coverage (%, bottom {rare_fraction:.0%} by density)", fontsize=11
+        )
         ax3.set_title("Rare-Behavior Preservation", fontsize=11)
         ax3.set_ylim(0, 105)
         ax3.legend(fontsize=10)
         ax3.grid(True, alpha=0.3)
 
         fig.suptitle(
-            f"Calibra Coreset Benchmark — {dataset_id}\n"
-            f"Dataset quality score: {quality_score}/100",
+            f"Calibra Coreset Benchmark — {dataset_id}\nDataset quality score: {quality_score}/100",
             fontsize=12,
             y=1.02,
         )

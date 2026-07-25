@@ -54,7 +54,7 @@ Calibra solves the data side.
 from calibra.ingestion.registry import load
 from calibra.pipeline import Pipeline
 
-batch  = load("lerobot/droid_100")
+batch = load("lerobot/droid_100")
 report = Pipeline().run(batch, policy_family="diffusion")
 print(report.summary())
 ```
@@ -89,7 +89,7 @@ samples.
 from calibra.pruning import CoresetSelector
 
 selector = CoresetSelector(keep_fraction=0.3, entropy_weight=0.4)
-result   = selector.select(batch, report)
+result = selector.select(batch, report)
 
 print(result.summary())
 # Original: 1000 episodes → Coreset: 300 episodes

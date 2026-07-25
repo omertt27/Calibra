@@ -462,6 +462,7 @@ def run_coreset_benchmark():
     baseline while using proportionally fewer compute seconds.
     """
     import random
+
     import torch  # noqa: F401 — guard early
 
     from calibra.pipeline import Pipeline
@@ -513,8 +514,7 @@ def run_coreset_benchmark():
         )
         prune_res = selector.select(full_batch, report)
         calibra_eps = [
-            ep for ep in full_batch.episodes
-            if ep.metadata.episode_id in prune_res.keep_episode_ids
+            ep for ep in full_batch.episodes if ep.metadata.episode_id in prune_res.keep_episode_ids
         ]
         calibra_batch = EpisodeBatch(
             episodes=calibra_eps,
@@ -549,9 +549,7 @@ def run_coreset_benchmark():
             t0 = time.perf_counter()
             rand_artifacts = train_bc(rand_batch, n_epochs=N_EPOCHS)
             rand_times.append(time.perf_counter() - t0)
-            rand_successes.append(
-                evaluate_bc(*rand_artifacts, goal=goal, n_trials=N_TRIALS_EVAL)
-            )
+            rand_successes.append(evaluate_bc(*rand_artifacts, goal=goal, n_trials=N_TRIALS_EVAL))
         rand_success = float(np.mean(rand_successes))
         rand_train_s = float(np.mean(rand_times))
         print(
@@ -596,16 +594,29 @@ def run_coreset_benchmark():
         cal_succ = [r["calibra_success"] * 100 for r in results]
         rand_succ = [r["random_success"] * 100 for r in results]
         rand_std = [r["random_success_std"] * 100 for r in results]
-        full_line = [full_success * 100] * len(fracs)
+        [full_success * 100] * len(fracs)
 
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
         # Left: success rate vs retention
-        ax1.axhline(full_success * 100, color="#6b7280", linewidth=1.5,
-                    linestyle="--", label="Full data (100%)")
+        ax1.axhline(
+            full_success * 100,
+            color="#6b7280",
+            linewidth=1.5,
+            linestyle="--",
+            label="Full data (100%)",
+        )
         ax1.plot(fracs, cal_succ, "o-", color="#2563eb", linewidth=2, label="Calibra coreset")
-        ax1.errorbar(fracs, rand_succ, yerr=rand_std, fmt="s--", color="#dc2626",
-                     linewidth=1.5, capsize=4, label=f"Random (avg {N_RANDOM_SEEDS} seeds)")
+        ax1.errorbar(
+            fracs,
+            rand_succ,
+            yerr=rand_std,
+            fmt="s--",
+            color="#dc2626",
+            linewidth=1.5,
+            capsize=4,
+            label=f"Random (avg {N_RANDOM_SEEDS} seeds)",
+        )
         ax1.set_xlabel("Retention fraction (%)", fontsize=12)
         ax1.set_ylabel("BC success rate (%)", fontsize=12)
         ax1.set_title("Policy Quality vs. Dataset Size", fontsize=12)
@@ -618,8 +629,9 @@ def run_coreset_benchmark():
         rand_times_plot = [r["random_train_s"] for r in results]
         ax2.plot(fracs, cal_times, "o-", color="#2563eb", linewidth=2, label="Calibra coreset")
         ax2.plot(fracs, rand_times_plot, "s--", color="#dc2626", linewidth=1.5, label="Random")
-        ax2.axhline(full_train_s, color="#6b7280", linewidth=1.5,
-                    linestyle="--", label="Full data (100%)")
+        ax2.axhline(
+            full_train_s, color="#6b7280", linewidth=1.5, linestyle="--", label="Full data (100%)"
+        )
         ax2.set_xlabel("Retention fraction (%)", fontsize=12)
         ax2.set_ylabel("Training wall-clock (seconds)", fontsize=12)
         ax2.set_title("Compute Cost vs. Dataset Size", fontsize=12)
@@ -628,7 +640,8 @@ def run_coreset_benchmark():
 
         fig.suptitle(
             "Calibra Coreset Benchmark — Policy Quality & Compute vs. Retention",
-            fontsize=13, y=1.02,
+            fontsize=13,
+            y=1.02,
         )
         fig.tight_layout()
         out = FIG_DIR / "fig_coreset_benchmark.pdf"
@@ -657,7 +670,7 @@ def compute_score_success_correlation(ceiling_results: list[dict]) -> None:
     def pearson(x: np.ndarray, y: np.ndarray) -> float:
         x_c = x - x.mean()
         y_c = y - y.mean()
-        denom = np.sqrt((x_c ** 2).sum() * (y_c ** 2).sum())
+        denom = np.sqrt((x_c**2).sum() * (y_c**2).sum())
         return float((x_c * y_c).sum() / denom) if denom > 1e-12 else 0.0
 
     def spearman(x: np.ndarray, y: np.ndarray) -> float:
@@ -692,7 +705,9 @@ def compute_score_success_correlation(ceiling_results: list[dict]) -> None:
             ax.plot(x_line, m * x_line + b, "--", color="#dc2626", linewidth=1.5)
             ax.set_xlabel("Calibra quality score", fontsize=11)
             ax.set_ylabel(f"BC success rate — {label} (%)", fontsize=11)
-            ax.set_title(f"{label}\nPearson r={r_val:+.3f}  Spearman rho={rho_val:+.3f}", fontsize=11)
+            ax.set_title(
+                f"{label}\nPearson r={r_val:+.3f}  Spearman rho={rho_val:+.3f}", fontsize=11
+            )
             ax.grid(True, alpha=0.3)
 
         fig.suptitle("Calibra Score vs. Policy Success Correlation", fontsize=13)

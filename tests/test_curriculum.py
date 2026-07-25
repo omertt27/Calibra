@@ -9,8 +9,8 @@ from unittest.mock import patch
 
 import numpy as np
 
-from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 from calibra.prune import run_prune
+from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 
 
 def _make_batch(n_episodes: int = 6, n_steps: int = 20):

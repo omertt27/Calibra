@@ -62,28 +62,26 @@ sys.path.insert(0, str(REPO_ROOT))
 # Reuse the *identical* selection + data harness from the BC benchmark so the
 # only variable across the two experiments is the policy architecture.
 from experiments.ablation_benchmark import (  # noqa: E402
+    _W,
     _load,
     _obs_key,
-    _split,
     _random_subset,
     _run_calibra_pipeline,
-    select_kcenter,
-    select_herding,
-    select_facility,
-    select_quality_only,
-    select_diversity_only,
-    select_calibra_full,
+    _split,
     print_ablation,
     save_ablation_figure,
-    FIG_DIR,
-    _W,
+    select_calibra_full,
+    select_diversity_only,
+    select_facility,
+    select_herding,
+    select_kcenter,
+    select_quality_only,
 )
 
 # ── ACT model ─────────────────────────────────────────────────────────────────
 
 
-def _build_act(state_dim, action_dim, chunk, d_model, nhead, enc_layers,
-               dec_layers, latent_dim):
+def _build_act(state_dim, action_dim, chunk, d_model, nhead, enc_layers, dec_layers, latent_dim):
     import torch
     import torch.nn as nn
 
@@ -103,8 +101,13 @@ def _build_act(state_dim, action_dim, chunk, d_model, nhead, enc_layers,
             self.cls_token = nn.Parameter(torch.zeros(1, 1, d_model))
             self.enc_pos = nn.Parameter(torch.zeros(1, chunk + 2, d_model))
             enc_layer = nn.TransformerEncoderLayer(
-                d_model, nhead, dim_feedforward=d_model * 4,
-                dropout=0.1, batch_first=True, activation="gelu")
+                d_model,
+                nhead,
+                dim_feedforward=d_model * 4,
+                dropout=0.1,
+                batch_first=True,
+                activation="gelu",
+            )
             self.cvae_encoder = nn.TransformerEncoder(enc_layer, enc_layers)
             self.latent_head = nn.Linear(d_model, latent_dim * 2)  # mu, logvar
 
@@ -113,8 +116,13 @@ def _build_act(state_dim, action_dim, chunk, d_model, nhead, enc_layers,
             self.dec_state_proj = nn.Linear(state_dim, d_model)
             self.query_embed = nn.Parameter(torch.zeros(1, chunk, d_model))
             dec_layer = nn.TransformerDecoderLayer(
-                d_model, nhead, dim_feedforward=d_model * 4,
-                dropout=0.1, batch_first=True, activation="gelu")
+                d_model,
+                nhead,
+                dim_feedforward=d_model * 4,
+                dropout=0.1,
+                batch_first=True,
+                activation="gelu",
+            )
             self.decoder = nn.TransformerDecoder(dec_layer, dec_layers)
             self.action_head = nn.Linear(d_model, action_dim)
 
@@ -210,12 +218,17 @@ def _train_act(batch, cfg, seed=None):
         torch.manual_seed(seed)
         np.random.seed(seed)
         random.seed(seed)
-    device = (torch.device("cuda") if torch.cuda.is_available()
-              else torch.device("mps") if torch.backends.mps.is_available()
-              else torch.device("cpu"))
+    device = (
+        torch.device("cuda")
+        if torch.cuda.is_available()
+        else torch.device("mps")
+        if torch.backends.mps.is_available()
+        else torch.device("cpu")
+    )
 
-    OBS, CH, MASK = _act_windows(batch, cfg["chunk"], cfg["stride"],
-                                 cfg["max_windows"], seed=(seed or 0))
+    OBS, CH, MASK = _act_windows(
+        batch, cfg["chunk"], cfg["stride"], cfg["max_windows"], seed=(seed or 0)
+    )
     state_dim, action_dim = OBS.shape[1], CH.shape[2]
 
     S = torch.from_numpy(OBS).to(device)
@@ -229,9 +242,16 @@ def _train_act(batch, cfg, seed=None):
     S_n = (S - s_mean) / s_std
     A_n = (A - a_mean) / a_std
 
-    net = _build_act(state_dim, action_dim, cfg["chunk"], cfg["d_model"],
-                     cfg["nhead"], cfg["enc_layers"], cfg["dec_layers"],
-                     cfg["latent_dim"]).to(device)
+    net = _build_act(
+        state_dim,
+        action_dim,
+        cfg["chunk"],
+        cfg["d_model"],
+        cfg["nhead"],
+        cfg["enc_layers"],
+        cfg["dec_layers"],
+        cfg["latent_dim"],
+    ).to(device)
     opt = torch.optim.AdamW(net.parameters(), lr=cfg["lr"], weight_decay=1e-4)
     beta = cfg["kl_weight"]
     N, bs = len(S_n), cfg["batch_size"]
@@ -239,7 +259,7 @@ def _train_act(batch, cfg, seed=None):
     for _ in range(cfg["n_epochs"]):
         perm = torch.randperm(N, device=device)
         for i in range(0, N, bs):
-            idx = perm[i:i + bs]
+            idx = perm[i : i + bs]
             pred, mu, logvar = net(S_n[idx], A_n[idx])
             m = M[idx].unsqueeze(-1)
             l1 = (torch.abs(pred - A_n[idx]) * m).sum() / m.sum().clamp(min=1)
@@ -249,8 +269,9 @@ def _train_act(batch, cfg, seed=None):
             loss.backward()
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
             opt.step()
-    return dict(net=net, s_mean=s_mean, s_std=s_std, a_mean=a_mean, a_std=a_std,
-                device=device, cfg=cfg)
+    return dict(
+        net=net, s_mean=s_mean, s_std=s_std, a_mean=a_mean, a_std=a_std, device=device, cfg=cfg
+    )
 
 
 def _eval_act(art, test_batch):
@@ -258,9 +279,11 @@ def _eval_act(art, test_batch):
     import torch
 
     net, s_mean, s_std, a_mean, a_std, device, cfg = (
-        art[k] for k in ("net", "s_mean", "s_std", "a_mean", "a_std", "device", "cfg"))
-    OBS, CH, MASK = _act_windows(test_batch, cfg["chunk"], cfg["stride"],
-                                 cfg["max_windows"], seed=0)
+        art[k] for k in ("net", "s_mean", "s_std", "a_mean", "a_std", "device", "cfg")
+    )
+    OBS, CH, MASK = _act_windows(
+        test_batch, cfg["chunk"], cfg["stride"], cfg["max_windows"], seed=0
+    )
     S = torch.from_numpy(OBS).to(device)
     A = torch.from_numpy(CH).to(device)
     S_n = (S - s_mean) / s_std
@@ -273,9 +296,9 @@ def _eval_act(art, test_batch):
         M = torch.from_numpy(MASK).to(device)
         bs = 2048
         for i in range(0, len(S_n), bs):
-            pred = net(S_n[i:i + bs])
-            tgt = A_n[i:i + bs]
-            mm = M[i:i + bs].unsqueeze(-1)
+            pred = net(S_n[i : i + bs])
+            tgt = A_n[i : i + bs]
+            mm = M[i : i + bs].unsqueeze(-1)
             first_mse_parts.append(((pred[:, 0] - tgt[:, 0]) ** 2).mean(dim=1))
             cm = (((pred - tgt) ** 2) * mm).sum() / mm.sum().clamp(min=1)
             chunk_mse_parts.append(cm.expand(pred.shape[0]))
@@ -287,23 +310,22 @@ def _eval_act(art, test_batch):
 # ── ablation run (mirrors ablation_benchmark.run_ablation, ACT learner) ─────────
 
 
-def run_act_ablation(train_batch, test_batch, cfg, keep_fraction=0.30,
-                     n_random_seeds=5):
+def run_act_ablation(train_batch, test_batch, cfg, keep_fraction=0.30, n_random_seeds=5):
     k = max(1, round(len(train_batch.episodes) * keep_fraction))
 
     print("  Running Calibra pipeline ...", flush=True)
     t0 = time.perf_counter()
     report = _run_calibra_pipeline(train_batch)
-    print(f"  Pipeline done in {time.perf_counter()-t0:.1f}s", flush=True)
+    print(f"  Pipeline done in {time.perf_counter() - t0:.1f}s", flush=True)
 
     conditions = [
-        ("Full dataset",        lambda: train_batch),
-        ("K-Center greedy",     lambda: select_kcenter(train_batch, k, seed=0)),
-        ("Herding",             lambda: select_herding(train_batch, k)),
-        ("Facility Location",   lambda: select_facility(train_batch, k)),
+        ("Full dataset", lambda: train_batch),
+        ("K-Center greedy", lambda: select_kcenter(train_batch, k, seed=0)),
+        ("Herding", lambda: select_herding(train_batch, k)),
+        ("Facility Location", lambda: select_facility(train_batch, k)),
         ("Quality-filter only", lambda: select_quality_only(train_batch, report, k)),
-        ("Diversity-only",      lambda: select_diversity_only(train_batch, report, k)),
-        ("Calibra full",        lambda: select_calibra_full(train_batch, report, k)),
+        ("Diversity-only", lambda: select_diversity_only(train_batch, report, k)),
+        ("Calibra full", lambda: select_calibra_full(train_batch, report, k)),
     ]
 
     seeds = list(range(n_random_seeds))
@@ -315,26 +337,42 @@ def run_act_ablation(train_batch, test_batch, cfg, keep_fraction=0.30,
     random_mses = [_mse(_random_subset(train_batch, k, seed=s * 17 + 42), s) for s in seeds]
     random_mean, random_std = float(np.mean(random_mses)), float(np.std(random_mses))
 
-    rows = [{
-        "condition": "Random", "n_episodes": k,
-        "test_mse": random_mean, "test_mse_std": random_std,
-        "per_seed_mse": random_mses, "vs_random": 0.0,
-    }]
-    print(f"  Random (k={k}, {n_random_seeds} seeds): mse={random_mean:.5f} +/- {random_std:.5f}", flush=True)
+    rows = [
+        {
+            "condition": "Random",
+            "n_episodes": k,
+            "test_mse": random_mean,
+            "test_mse_std": random_std,
+            "per_seed_mse": random_mses,
+            "vs_random": 0.0,
+        }
+    ]
+    print(
+        f"  Random (k={k}, {n_random_seeds} seeds): mse={random_mean:.5f} +/- {random_std:.5f}",
+        flush=True,
+    )
 
     for label, make_subset in conditions:
         sub = make_subset()
         per_seed = [_mse(sub, s) for s in seeds]
         mse, sd = float(np.mean(per_seed)), float(np.std(per_seed))
         delta = (random_mean - mse) / random_mean * 100
-        rows.append({
-            "condition": label, "n_episodes": len(sub.episodes),
-            "test_mse": mse, "test_mse_std": sd,
-            "per_seed_mse": per_seed, "vs_random": delta,
-        })
+        rows.append(
+            {
+                "condition": label,
+                "n_episodes": len(sub.episodes),
+                "test_mse": mse,
+                "test_mse_std": sd,
+                "per_seed_mse": per_seed,
+                "vs_random": delta,
+            }
+        )
         marker = "+++ " if label == "Calibra full" else "    "
-        print(f"  {marker}{label:<26} k={len(sub.episodes):>3}  "
-              f"mse={mse:.5f}+/-{sd:.5f}  vs_random={delta:+.1f}%", flush=True)
+        print(
+            f"  {marker}{label:<26} k={len(sub.episodes):>3}  "
+            f"mse={mse:.5f}+/-{sd:.5f}  vs_random={delta:+.1f}%",
+            flush=True,
+        )
 
     return rows
 
@@ -350,8 +388,12 @@ def main(argv=None):
     p.add_argument("--n-epochs", type=int, default=60)
     p.add_argument("--chunk", type=int, default=16, help="ACT action-chunk length H")
     p.add_argument("--stride", type=int, default=4, help="window stride (dedup overlap)")
-    p.add_argument("--max-windows", type=int, default=40000,
-                   help="cap windows per training run to bound compute")
+    p.add_argument(
+        "--max-windows",
+        type=int,
+        default=40000,
+        help="cap windows per training run to bound compute",
+    )
     p.add_argument("--d-model", type=int, default=128)
     p.add_argument("--nhead", type=int, default=4)
     p.add_argument("--enc-layers", type=int, default=2)
@@ -365,10 +407,17 @@ def main(argv=None):
     args = p.parse_args(argv)
 
     cfg = dict(
-        chunk=args.chunk, stride=args.stride, max_windows=args.max_windows,
-        d_model=args.d_model, nhead=args.nhead, enc_layers=args.enc_layers,
-        dec_layers=args.dec_layers, latent_dim=args.latent_dim,
-        kl_weight=args.kl_weight, lr=args.lr, batch_size=args.batch_size,
+        chunk=args.chunk,
+        stride=args.stride,
+        max_windows=args.max_windows,
+        d_model=args.d_model,
+        nhead=args.nhead,
+        enc_layers=args.enc_layers,
+        dec_layers=args.dec_layers,
+        latent_dim=args.latent_dim,
+        kl_weight=args.kl_weight,
+        lr=args.lr,
+        batch_size=args.batch_size,
         n_epochs=args.n_epochs,
     )
 
@@ -377,9 +426,11 @@ def main(argv=None):
     print("=" * _W)
     print(f"  Dataset : {args.dataset}")
     print(f"  Keep    : {args.keep:.0%}   Seeds: {args.seeds}   Epochs: {args.n_epochs}")
-    print(f"  ACT     : chunk={args.chunk} d_model={args.d_model} "
-          f"enc/dec={args.enc_layers}/{args.dec_layers} latent={args.latent_dim} "
-          f"kl={args.kl_weight}")
+    print(
+        f"  ACT     : chunk={args.chunk} d_model={args.d_model} "
+        f"enc/dec={args.enc_layers}/{args.dec_layers} latent={args.latent_dim} "
+        f"kl={args.kl_weight}"
+    )
     print()
 
     print("[1/3] Loading dataset ...")
@@ -387,15 +438,18 @@ def main(argv=None):
     ep0 = batch.episodes[0]
     sk = _obs_key(ep0)
     state_dim = ep0.observations[sk].shape[1] if sk else 0
-    print(f"  {batch.n_episodes} episodes  state_dim={state_dim}  action_dim={ep0.actions.shape[1]}")
+    print(
+        f"  {batch.n_episodes} episodes  state_dim={state_dim}  action_dim={ep0.actions.shape[1]}"
+    )
 
     print("[2/3] Train/test split (80/20) ...")
     train_batch, test_batch = _split(batch)
     print(f"  train={train_batch.n_episodes}  test={test_batch.n_episodes}")
 
     print(f"\n[3/3] Running ACT ablation (keep={args.keep:.0%}, {args.seeds} seeds) ...")
-    rows = run_act_ablation(train_batch, test_batch, cfg,
-                            keep_fraction=args.keep, n_random_seeds=args.seeds)
+    rows = run_act_ablation(
+        train_batch, test_batch, cfg, keep_fraction=args.keep, n_random_seeds=args.seeds
+    )
     print_ablation(batch.dataset_name + " [ACT]", args.keep, rows)
 
     output = {

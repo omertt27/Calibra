@@ -60,6 +60,7 @@ _THRESHOLDS = {
 
 # ── mock scoring (no dataset loading required) ─────────────────────────────────
 
+
 def _extract_profile_metrics(profile: dict) -> dict:
     """Extract flat metric dict from a reference profile JSON."""
     agg = profile.get("aggregate_metrics", {})
@@ -81,11 +82,14 @@ def _estimate_quality_fail_rate(profile: dict) -> float:
     m = _extract_profile_metrics(profile)
     # Episodes with spike_rate > 0.05 or vel_disc > 0.10 are quality failures
     # These are dataset-level averages; assume episode-level variance ~= 2×
-    fail_prob = min(1.0, (
-        (m["spike_rate"] / 0.05) * 0.10 +
-        (m["vel_disc_rate"] / 0.10) * 0.08 +
-        max(0, (-m["ldlj"] - 10) / 20) * 0.07
-    ))
+    fail_prob = min(
+        1.0,
+        (
+            (m["spike_rate"] / 0.05) * 0.10
+            + (m["vel_disc_rate"] / 0.10) * 0.08
+            + max(0, (-m["ldlj"] - 10) / 20) * 0.07
+        ),
+    )
     return min(0.40, fail_prob)
 
 
@@ -139,14 +143,16 @@ def _score_from_profile(profile: dict, frac: float, use_calibra: bool = True) ->
         effective_jitter = raw_jitter
         effective_entropy = raw_entropy * (0.65 + 0.35 * frac)
 
-    return _predict_score({
-        "spike_rate": effective_spike,
-        "vel_disc_rate": effective_vel,
-        "ldlj": effective_ldlj,
-        "dropout_rate": effective_dropout,
-        "jitter_cv": effective_jitter,
-        "action_entropy": effective_entropy,
-    })
+    return _predict_score(
+        {
+            "spike_rate": effective_spike,
+            "vel_disc_rate": effective_vel,
+            "ldlj": effective_ldlj,
+            "dropout_rate": effective_dropout,
+            "jitter_cv": effective_jitter,
+            "action_entropy": effective_entropy,
+        }
+    )
 
 
 def _predict_score(metrics: dict) -> float:
@@ -187,6 +193,7 @@ def _find_knee(fracs: list[float], scores: list[float], delta: float = 1.0) -> f
 
 # ── main study ─────────────────────────────────────────────────────────────────
 
+
 def run_study(plot: bool = False, json_out: bool = False) -> None:
     fractions = [0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50, 0.70, 1.00]
 
@@ -215,18 +222,20 @@ def run_study(plot: bool = False, json_out: bool = False) -> None:
         score_at_full = calibra_scores[-1]
         compute_saved = round((1.0 - calibra_knee) * 100, 1)
 
-        results.append({
-            "dataset": name,
-            "n_episodes": n_episodes,
-            "calibra_knee_pct": round(calibra_knee * 100, 0),
-            "calibra_knee_episodes": calibra_knee_eps,
-            "score_at_knee": round(score_at_knee, 1),
-            "score_at_full": round(score_at_full, 1),
-            "compute_saved_pct": compute_saved,
-            "fractions": fractions,
-            "calibra_scores": [round(s, 1) for s in calibra_scores],
-            "random_scores": [round(s, 1) for s in random_scores],
-        })
+        results.append(
+            {
+                "dataset": name,
+                "n_episodes": n_episodes,
+                "calibra_knee_pct": round(calibra_knee * 100, 0),
+                "calibra_knee_episodes": calibra_knee_eps,
+                "score_at_knee": round(score_at_knee, 1),
+                "score_at_full": round(score_at_full, 1),
+                "compute_saved_pct": compute_saved,
+                "fractions": fractions,
+                "calibra_scores": [round(s, 1) for s in calibra_scores],
+                "random_scores": [round(s, 1) for s in random_scores],
+            }
+        )
 
     if not results:
         print("No datasets with n_episodes >= 5 found.", file=sys.stderr)
@@ -298,8 +307,8 @@ def _print_summary(results: list[dict]) -> None:
 
 def _plot_curves(results: list[dict], fractions: list[float]) -> None:
     try:
-        import matplotlib.pyplot as plt
         import matplotlib.cm as cm
+        import matplotlib.pyplot as plt
     except ImportError:
         print("matplotlib not installed: pip install matplotlib", file=sys.stderr)
         return
@@ -313,7 +322,9 @@ def _plot_curves(results: list[dict], fractions: list[float]) -> None:
         ax.plot(
             [f * 100 for f in fractions],
             r["calibra_scores"],
-            color=c, linewidth=1.5, label=r["dataset"][:20],
+            color=c,
+            linewidth=1.5,
+            label=r["dataset"][:20],
         )
         knee_pct = r["calibra_knee_pct"]
         ax.axvline(x=knee_pct, color=c, linestyle="--", alpha=0.3, linewidth=0.8)
@@ -346,7 +357,8 @@ def _plot_curves(results: list[dict], fractions: list[float]) -> None:
 
     plt.suptitle(
         'The "1000-Episode Myth" — Calibra Data Sufficiency Study',
-        fontsize=13, fontweight="bold",
+        fontsize=13,
+        fontweight="bold",
     )
     plt.tight_layout()
     out_path = Path(__file__).parent / "figures" / "data_sufficiency.png"
@@ -359,9 +371,7 @@ def _plot_curves(results: list[dict], fractions: list[float]) -> None:
 # ── CLI ────────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    p = argparse.ArgumentParser(
-        description='Run the "1000-Episode Myth" data sufficiency study.'
-    )
+    p = argparse.ArgumentParser(description='Run the "1000-Episode Myth" data sufficiency study.')
     p.add_argument("--plot", action="store_true", help="Generate matplotlib figure")
     p.add_argument("--json", action="store_true", dest="json_out", help="Output as JSON")
     args = p.parse_args()

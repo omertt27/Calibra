@@ -6,9 +6,9 @@ No format-specific logic belongs here.
 from __future__ import annotations
 
 from collections import OrderedDict
-from dataclasses import dataclass, field
-from typing import Optional, Union, Callable, Iterable
 from collections.abc import Sequence
+from dataclasses import dataclass, field
+from typing import Callable, Iterable, Optional, Union
 
 import numpy as np
 

@@ -5,6 +5,7 @@ calibra.curation.latent_embed — Latent state embedding extraction.
 from __future__ import annotations
 
 import numpy as np
+
 from calibra.schema.episode import EpisodeBatch
 
 

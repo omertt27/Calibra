@@ -42,19 +42,43 @@ def main() -> None:
     )
     p.add_argument("--fingerprints", default="results/alpaca_fingerprints.parquet")
     p.add_argument("--embeddings", default="results/alpaca_embeddings.npy")
-    p.add_argument("--keep", type=int, default=9000, metavar="N",
-                   help="Number of examples to keep (default: 9000)")
+    p.add_argument(
+        "--keep",
+        type=int,
+        default=9000,
+        metavar="N",
+        help="Number of examples to keep (default: 9000)",
+    )
     p.add_argument("--out", default="results/calibra_sft_9k.json")
-    p.add_argument("--min-coherence", type=float, default=0.1,
-                   help="Remove examples with coherence below this (default: 0.10)")
-    p.add_argument("--max-rep", type=float, default=0.4,
-                   help="Remove examples with repetition_rate above this (default: 0.40)")
-    p.add_argument("--min-length", type=int, default=5,
-                   help="Remove examples with response_length_words below this (default: 5)")
-    p.add_argument("--batch-size", type=int, default=1000,
-                   help="MiniBatch size for approximate selection (default: 1000)")
-    p.add_argument("--exact", action="store_true",
-                   help="Use exact greedy k-center — fast on MPS/CUDA, slow on CPU for large K")
+    p.add_argument(
+        "--min-coherence",
+        type=float,
+        default=0.1,
+        help="Remove examples with coherence below this (default: 0.10)",
+    )
+    p.add_argument(
+        "--max-rep",
+        type=float,
+        default=0.4,
+        help="Remove examples with repetition_rate above this (default: 0.40)",
+    )
+    p.add_argument(
+        "--min-length",
+        type=int,
+        default=5,
+        help="Remove examples with response_length_words below this (default: 5)",
+    )
+    p.add_argument(
+        "--batch-size",
+        type=int,
+        default=1000,
+        help="MiniBatch size for approximate selection (default: 1000)",
+    )
+    p.add_argument(
+        "--exact",
+        action="store_true",
+        help="Use exact greedy k-center — fast on MPS/CUDA, slow on CPU for large K",
+    )
     args = p.parse_args()
 
     fp_path = REPO_ROOT / args.fingerprints
@@ -95,15 +119,21 @@ def main() -> None:
         use_approximate=not args.exact,
         batch_size=args.batch_size,
     )
-    print(f"  Stage 1 + Stage 2: keep_fraction={keep_fraction:.4f} "
-          f"({'approximate' if not args.exact else 'exact'}) ...", flush=True)
+    print(
+        f"  Stage 1 + Stage 2: keep_fraction={keep_fraction:.4f} "
+        f"({'approximate' if not args.exact else 'exact'}) ...",
+        flush=True,
+    )
     result = selector.select(fp)
 
     selected_local = np.array(result.keep_indices, dtype=np.int32)
     keep_orig = orig_indices[selected_local].tolist()
 
-    print(f"  Stage 1: {n:,} total  →  {result.n_quality_failures:,} quality failures  →  "
-          f"{n - result.n_quality_failures:,} quality-passing", flush=True)
+    print(
+        f"  Stage 1: {n:,} total  →  {result.n_quality_failures:,} quality failures  →  "
+        f"{n - result.n_quality_failures:,} quality-passing",
+        flush=True,
+    )
 
     # ── Sanity check: selected vs random ──────────────────────────────────────
     rng = np.random.default_rng(42)
@@ -165,13 +195,15 @@ def main() -> None:
     print(f"  Original examples    : {n:,}")
     print(f"  Quality failures     : {result.n_quality_failures:,}   (Stage 1)")
     print(f"  Diversity pruned     : {result.n_diversity_pruned:,}  (Stage 2)")
-    print(f"  Coreset size         : {len(keep_orig):,}   ({out_result['keep_fraction_actual']:.1%} of original)")
+    print(
+        f"  Coreset size         : {len(keep_orig):,}   ({out_result['keep_fraction_actual']:.1%} of original)"
+    )
     print(f"  Method               : {out_result['method']}")
     print("─" * W)
-    coh_arrow  = "↑" if sel_coh  > rnd_coh  else ("↓" if sel_coh  < rnd_coh  else "=")
-    rep_arrow  = "↓" if sel_rep  < rnd_rep  else ("↑" if sel_rep  > rnd_rep  else "=")
-    len_arrow  = "↑" if sel_len  > rnd_len  else ("↓" if sel_len  < rnd_len  else "=")
-    cov_arrow  = "↑" if sel_cov  > rnd_cov  else ("↓" if sel_cov  < rnd_cov  else "=")
+    coh_arrow = "↑" if sel_coh > rnd_coh else ("↓" if sel_coh < rnd_coh else "=")
+    rep_arrow = "↓" if sel_rep < rnd_rep else ("↑" if sel_rep > rnd_rep else "=")
+    len_arrow = "↑" if sel_len > rnd_len else ("↓" if sel_len < rnd_len else "=")
+    cov_arrow = "↑" if sel_cov > rnd_cov else ("↓" if sel_cov < rnd_cov else "=")
     print(f"  {'Metric':<30} {'Selected':>10}  {'Random 9K':>10}  {'':>2}")
     print("─" * W)
     print(f"  {'Mean coherence':<30} {sel_coh:>10.4f}  {rnd_coh:>10.4f}  {coh_arrow}")

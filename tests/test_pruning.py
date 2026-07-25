@@ -9,7 +9,6 @@ from calibra.pipeline import Pipeline
 from calibra.pruning import CoresetSelector, _greedy_max_coverage
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 
-
 # ── fixtures ──────────────────────────────────────────────────────────────────
 
 

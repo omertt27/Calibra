@@ -240,9 +240,7 @@ def main() -> None:
                 print(
                     "Run `calibra predict <dataset> --record-outcome <rate>` after each training run."
                 )
-                print(
-                    "Or use `calibra calibrate --global` to download community weights now."
-                )
+                print("Or use `calibra calibrate --global` to download community weights now.")
         return
 
     parser = argparse.ArgumentParser(
@@ -305,6 +303,7 @@ def main() -> None:
     cache = None
     if args.cache_dir:
         from calibra.cache import AuditCache
+
         cache = AuditCache(args.cache_dir)
 
     pipeline = Pipeline()
@@ -354,12 +353,12 @@ def _exit_code(report, strict: bool = False) -> int:
 
 
 def _get_reader(format_name: str):
-    from calibra.ingestion import isaac_lab, hdf5, lerobot, rlds, mcap  # noqa: F401
-    from calibra.ingestion.adapters.isaac_lab import IsaacLabReader
+    from calibra.ingestion import hdf5, isaac_lab, lerobot, mcap, rlds  # noqa: F401
     from calibra.ingestion.adapters.hdf5 import HDF5Reader
+    from calibra.ingestion.adapters.isaac_lab import IsaacLabReader
     from calibra.ingestion.adapters.lerobot import LeRobotReader
-    from calibra.ingestion.adapters.rlds import RLDSReader
     from calibra.ingestion.adapters.mcap import MCAPReader
+    from calibra.ingestion.adapters.rlds import RLDSReader
 
     mapping = {
         "isaac_lab": IsaacLabReader,

@@ -15,7 +15,7 @@ import numpy as np
 from calibra.analyzers.base import Analyzer
 from calibra.curation.entropy import compute_trajectory_entropy
 from calibra.schema.episode import EpisodeBatch
-from calibra.schema.report import AnalyzerResult, RiskFlag, RiskLevel, ObservedValue
+from calibra.schema.report import AnalyzerResult, ObservedValue, RiskFlag, RiskLevel
 
 
 @dataclass
@@ -77,7 +77,7 @@ class InfluenceAnalyzer(Analyzer):
 
         # 3. Contact fractions (from phase balance or task structure)
         from calibra.analyzers.phase_balance import _episode_phase_fractions
-        from calibra.analyzers.task_structure import _detect_gripper_dims, _collect_actions
+        from calibra.analyzers.task_structure import _collect_actions, _detect_gripper_dims
 
         actions_all = _collect_actions(batch)
         g_dims = _detect_gripper_dims(actions_all)

@@ -61,7 +61,6 @@ import numpy as np
 
 from calibra.schema.episode import Episode, EpisodeBatch
 
-
 # ── corruption transforms ─────────────────────────────────────────────────────
 
 
@@ -357,8 +356,9 @@ def render_corruption_report(
 
 def run_corrupt(argv: list[str]) -> None:
     import argparse
-    from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
+
     from calibra.analyzers.coverage import CoverageEntropyAnalyzer
+    from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
     from calibra.analyzers.task_structure import TaskStructureAnalyzer
     from calibra.analyzers.temporal import TemporalAnalyzer
     from calibra.ingestion.registry import load

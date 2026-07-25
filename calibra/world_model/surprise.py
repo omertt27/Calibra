@@ -369,7 +369,9 @@ def curate_for_world_model(
     quality_fail_set = set(quality_fail_ids)
 
     quality_pass_ids = [
-        ep.metadata.episode_id for ep in batch.episodes if ep.metadata.episode_id not in quality_fail_set
+        ep.metadata.episode_id
+        for ep in batch.episodes
+        if ep.metadata.episode_id not in quality_fail_set
     ]
 
     surprise_scores = compute_surprise_scores(batch, latent_dim=latent_dim)

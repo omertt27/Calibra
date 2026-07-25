@@ -33,11 +33,11 @@ from calibra.analyzers.latent_dynamics import LatentDynamicsAnalyzer  # noqa: E4
 from calibra.schema.episode import EpisodeBatch  # noqa: E402
 from scripts.validate_world_model_observability import (  # noqa: E402
     DynamicsWorldModel,
-    generate_ph_dataset,
-    generate_mh_dataset,
-    generate_mg_dataset,
-    get_test_set,
     evaluate_model,
+    generate_mg_dataset,
+    generate_mh_dataset,
+    generate_ph_dataset,
+    get_test_set,
 )
 
 # ── Helper to mix datasets ──────────────────────────────────────────────────

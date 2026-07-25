@@ -224,6 +224,7 @@ def run_prune(argv: list[str]) -> None:
     cache = None
     if args.cache_dir:
         from calibra.cache import AuditCache
+
         cache = AuditCache(args.cache_dir)
 
     log(f"Loading {dataset_path!r} ...")
@@ -384,8 +385,8 @@ def run_prune(argv: list[str]) -> None:
         log(f"Curriculum index written to {curr_path}")
 
     if args.report:
-        from calibra.report_json import assemble_public_report, dataset_info_from_report
         from calibra.cache import batch_episode_hashes
+        from calibra.report_json import assemble_public_report, dataset_info_from_report
 
         dataset_info = dataset_info_from_report(report)
         ep_hashes = batch_episode_hashes(batch)

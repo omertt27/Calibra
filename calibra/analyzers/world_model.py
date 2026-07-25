@@ -36,7 +36,7 @@ import numpy as np
 
 from calibra.analyzers.base import Analyzer
 from calibra.schema.episode import EpisodeBatch
-from calibra.schema.report import AnalyzerResult, RiskFlag, RiskLevel, ObservedValue
+from calibra.schema.report import AnalyzerResult, ObservedValue, RiskFlag, RiskLevel
 
 
 @dataclass

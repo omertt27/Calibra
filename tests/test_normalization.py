@@ -8,8 +8,7 @@ import warnings
 
 import numpy as np
 
-from calibra.schema.normalization import normalize_obs_keys, _resolve, _DEFAULT_MAPPING
-
+from calibra.schema.normalization import _DEFAULT_MAPPING, _resolve, normalize_obs_keys
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 

@@ -89,8 +89,7 @@ def _make_app():
         from pydantic import BaseModel
     except ImportError as exc:
         raise SystemExit(
-            "FastAPI/uvicorn not installed. Run:  pip install 'calibra-robotics[serve]'\n"
-            f"  {exc}"
+            f"FastAPI/uvicorn not installed. Run:  pip install 'calibra-robotics[serve]'\n  {exc}"
         ) from exc
 
     from calibra import __version__
@@ -183,12 +182,8 @@ def _make_app():
             action_entropy = c.get("action_entropy", {}).get("entropy_bits_per_dim")
 
             # Express rate metrics as percentages (matching the example schema)
-            jerk_spike_pct = (
-                round(jerk_spike_raw * 100, 2) if jerk_spike_raw is not None else None
-            )
-            vel_disc_pct = (
-                round(vel_disc_raw * 100, 2) if vel_disc_raw is not None else None
-            )
+            jerk_spike_pct = round(jerk_spike_raw * 100, 2) if jerk_spike_raw is not None else None
+            vel_disc_pct = round(vel_disc_raw * 100, 2) if vel_disc_raw is not None else None
             dropout_pct = round(dropout_raw * 100, 2) if dropout_raw is not None else None
 
             # Episode-level outlier detection
@@ -214,9 +209,9 @@ def _make_app():
             try:
                 from calibra.predict import predict_outcome
 
-                predicted_success_rate = predict_outcome(
-                    report, policy_family=req.policy
-                )["predicted_success_rate"]
+                predicted_success_rate = predict_outcome(report, policy_family=req.policy)[
+                    "predicted_success_rate"
+                ]
             except Exception:
                 pass
 
@@ -243,9 +238,7 @@ def _make_app():
         try:
             return await _in_thread(_run)
         except Exception as exc:
-            raise HTTPException(
-                status_code=422, detail={"error": str(exc), "detail": repr(exc)}
-            )
+            raise HTTPException(status_code=422, detail={"error": str(exc), "detail": repr(exc)})
 
     # ── POST /compare ─────────────────────────────────────────────────────────
 
@@ -257,11 +250,11 @@ def _make_app():
         """
 
         def _run():
-            from calibra.pipeline import Pipeline
             from calibra.analyzers.coverage import CoverageEntropyAnalyzer
             from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
             from calibra.analyzers.task_structure import TaskStructureAnalyzer
             from calibra.analyzers.temporal import TemporalAnalyzer
+            from calibra.anomalies import find_outliers
             from calibra.compare import (
                 _recommended_actions,
                 _ref_is_sim,
@@ -269,7 +262,7 @@ def _make_app():
                 metrics_from_reference,
                 metrics_from_report,
             )
-            from calibra.anomalies import find_outliers
+            from calibra.pipeline import Pipeline
 
             reader = None
             if req.format:
@@ -333,9 +326,7 @@ def _make_app():
         try:
             return await _in_thread(_run)
         except Exception as exc:
-            raise HTTPException(
-                status_code=422, detail={"error": str(exc), "detail": repr(exc)}
-            )
+            raise HTTPException(status_code=422, detail={"error": str(exc), "detail": repr(exc)})
 
     # ── POST /certify ─────────────────────────────────────────────────────────
 
@@ -347,8 +338,8 @@ def _make_app():
         """
 
         def _run():
-            from calibra.pipeline import Pipeline
             from calibra.certify import _grade, _is_scripted_report
+            from calibra.pipeline import Pipeline
             from calibra.schema.report import RiskLevel
 
             report = Pipeline().analyze_path(req.path, policy_family=req.policy)
@@ -384,9 +375,7 @@ def _make_app():
         try:
             return await _in_thread(_run)
         except Exception as exc:
-            raise HTTPException(
-                status_code=422, detail={"error": str(exc), "detail": repr(exc)}
-            )
+            raise HTTPException(status_code=422, detail={"error": str(exc), "detail": repr(exc)})
 
     # ── POST /predict ─────────────────────────────────────────────────────────
 
@@ -414,9 +403,7 @@ def _make_app():
         try:
             return await _in_thread(_run)
         except Exception as exc:
-            raise HTTPException(
-                status_code=422, detail={"error": str(exc), "detail": repr(exc)}
-            )
+            raise HTTPException(status_code=422, detail={"error": str(exc), "detail": repr(exc)})
 
     # ── POST /score ───────────────────────────────────────────────────────────
 
@@ -440,9 +427,7 @@ def _make_app():
         try:
             return await _in_thread(_run)
         except Exception as exc:
-            raise HTTPException(
-                status_code=422, detail={"error": str(exc), "detail": repr(exc)}
-            )
+            raise HTTPException(status_code=422, detail={"error": str(exc), "detail": repr(exc)})
 
     # ── GET /outcomes ─────────────────────────────────────────────────────────
 
@@ -456,9 +441,7 @@ def _make_app():
             records = db.list_records()
             return {"records": records, "count": len(records)}
         except Exception as exc:
-            raise HTTPException(
-                status_code=500, detail={"error": str(exc), "detail": repr(exc)}
-            )
+            raise HTTPException(status_code=500, detail={"error": str(exc), "detail": repr(exc)})
 
     # ── POST /outcomes ────────────────────────────────────────────────────────
 
@@ -475,9 +458,9 @@ def _make_app():
             )
 
         def _run():
+            from calibra.outcome_db import OutcomeDatabase
             from calibra.pipeline import Pipeline
             from calibra.predict import predict_outcome
-            from calibra.outcome_db import OutcomeDatabase
 
             report = Pipeline().analyze_path(req.path, policy_family=req.policy)
             pred = predict_outcome(report, policy_family=req.policy)
@@ -496,9 +479,7 @@ def _make_app():
         try:
             return await _in_thread(_run)
         except Exception as exc:
-            raise HTTPException(
-                status_code=422, detail={"error": str(exc), "detail": repr(exc)}
-            )
+            raise HTTPException(status_code=422, detail={"error": str(exc), "detail": repr(exc)})
 
     # ── static files (web dashboard SPA) ─────────────────────────────────────
 
@@ -575,9 +556,7 @@ def run_serve(argv: list[str]) -> None:
     try:
         import uvicorn
     except ImportError:
-        raise SystemExit(
-            "uvicorn not installed. Run:  pip install 'calibra-robotics[serve]'"
-        )
+        raise SystemExit("uvicorn not installed. Run:  pip install 'calibra-robotics[serve]'")
 
     _print_banner(args.host, args.port)
 

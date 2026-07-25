@@ -536,7 +536,11 @@ def _print_community_context(metrics: dict[str, float], policy_family: str) -> N
         file=sys.stderr,
     )
     for key, better_pct in highlights[:2]:
-        rank_str = f"better than {better_pct:.0f}%" if better_pct >= 50 else f"worse than {100 - better_pct:.0f}%"
+        rank_str = (
+            f"better than {better_pct:.0f}%"
+            if better_pct >= 50
+            else f"worse than {100 - better_pct:.0f}%"
+        )
         print(f"    {key}: {rank_str} of community", file=sys.stderr)
 
 

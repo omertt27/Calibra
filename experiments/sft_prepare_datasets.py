@@ -68,8 +68,11 @@ def main() -> None:
     p.add_argument("--out-dir", default="results/datasets")
     p.add_argument("--alpaca-dataset", default="tatsu-lab/alpaca")
     p.add_argument("--calibra-json", default="results/calibra_sft_9k.json")
-    p.add_argument("--alpagasus-file", default="results/datasets/alpagasus_scores.json",
-                   help="Local AlpaGasus scores file (skipped if missing)")
+    p.add_argument(
+        "--alpagasus-file",
+        default="results/datasets/alpagasus_scores.json",
+        help="Local AlpaGasus scores file (skipped if missing)",
+    )
     p.add_argument("--random-seed", type=int, default=42)
     p.add_argument("--random-n", type=int, default=9000)
     args = p.parse_args()
@@ -90,7 +93,9 @@ def main() -> None:
     rng = np.random.default_rng(args.random_seed)
     random_indices = rng.choice(n, size=args.random_n, replace=False).tolist()
     random_records = [
-        _to_messages(alpaca_list[i]["instruction"], alpaca_list[i]["input"], alpaca_list[i]["output"])
+        _to_messages(
+            alpaca_list[i]["instruction"], alpaca_list[i]["input"], alpaca_list[i]["output"]
+        )
         for i in random_indices
     ]
     _write_jsonl(out_dir / f"random_{args.random_n // 1000}k" / "train.jsonl", random_records)
@@ -126,7 +131,9 @@ def main() -> None:
             )
         )
     else:
-        print(f"\nWARNING: {calibra_path} not found — run sft_select_alpaca.py first", file=sys.stderr)
+        print(
+            f"\nWARNING: {calibra_path} not found — run sft_select_alpaca.py first", file=sys.stderr
+        )
 
     # ── AlpaGasus 9K ──────────────────────────────────────────────────────────
     alpagasus_path = REPO_ROOT / args.alpagasus_file
@@ -139,8 +146,7 @@ def main() -> None:
         else:
             filtered = raw  # assume already filtered
         alpagasus_records = [
-            _to_messages(ex["instruction"], ex.get("input", ""), ex["output"])
-            for ex in filtered
+            _to_messages(ex["instruction"], ex.get("input", ""), ex["output"]) for ex in filtered
         ]
         _write_jsonl(out_dir / "alpagasus_9k" / "train.jsonl", alpagasus_records)
     else:
@@ -159,9 +165,7 @@ def main() -> None:
         for ex in lima:
             conversations = ex["conversations"]
             if len(conversations) >= 2:
-                lima_records.append(
-                    _to_messages(conversations[0], "", conversations[1])
-                )
+                lima_records.append(_to_messages(conversations[0], "", conversations[1]))
         _write_jsonl(out_dir / "lima_1k" / "train.jsonl", lima_records)
     except Exception as e:
         print(

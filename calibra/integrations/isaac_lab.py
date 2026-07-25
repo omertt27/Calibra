@@ -75,7 +75,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Union
 
-
 # ── reading verdicts ──────────────────────────────────────────────────────────
 
 
@@ -262,8 +261,7 @@ def filter_hdf5(
         import h5py
     except ImportError:
         raise ImportError(
-            "The 'h5py' package is required for HDF5 filtering.\n"
-            "Install it with: pip install h5py"
+            "The 'h5py' package is required for HDF5 filtering.\nInstall it with: pip install h5py"
         ) from None
 
     keep_indices = recommended_demo_indices(report_path)

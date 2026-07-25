@@ -49,8 +49,8 @@ _SYSTEM_PROMPT = (
     "accuracy, depth, creativity, and level of detail of the response. Begin "
     "your evaluation by providing a short explanation. Be as objective as "
     "possible. After providing your explanation, you must rate the response on "
-    "a scale of 1 to 10 by strictly following this format: \"[[rating]]\", "
-    "for example: \"Rating: [[5]]\"."
+    'a scale of 1 to 10 by strictly following this format: "[[rating]]", '
+    'for example: "Rating: [[5]]".'
 )
 
 _TURN1_TEMPLATE = """\
@@ -106,7 +106,7 @@ def _judge_turn(
             return score, raw
         except Exception as e:
             if attempt < retries - 1:
-                wait = 2 ** attempt
+                wait = 2**attempt
                 print(f"  API error ({e}), retrying in {wait}s ...", file=sys.stderr)
                 time.sleep(wait)
             else:
@@ -155,8 +155,10 @@ def _score_file(
 
         # Turn 2
         t2_prompt = _TURN2_TEMPLATE.format(
-            q1=rec["turn_1_q"], a1=rec["turn_1_a"],
-            question=rec["turn_2_q"], answer=rec["turn_2_a"],
+            q1=rec["turn_1_q"],
+            a1=rec["turn_1_a"],
+            question=rec["turn_2_q"],
+            answer=rec["turn_2_a"],
         )
         t2_score, t2_raw = _judge_turn(client, t2_prompt, model=judge_model)
 
@@ -174,8 +176,10 @@ def _score_file(
 
         t1_str = f"{t1_score:.1f}" if t1_score is not None else "?"
         t2_str = f"{t2_score:.1f}" if t2_score is not None else "?"
-        print(f"  [{i + 1:>2}/{len(remaining)}] Q{qid} ({rec['category']}) "
-              f"T1={t1_str}  T2={t2_str}", flush=True)
+        print(
+            f"  [{i + 1:>2}/{len(remaining)}] Q{qid} ({rec['category']}) T1={t1_str}  T2={t2_str}",
+            flush=True,
+        )
 
     _save_scores(out_path, answers_path, scored, judge_model)
     result = json.loads(out_path.read_text())
@@ -218,8 +222,16 @@ def _save_scores(
 
 def _print_table(results: list[dict]) -> None:
     """Print a comparison table across all scored conditions."""
-    categories = ["writing", "roleplay", "reasoning", "math", "coding",
-                  "extraction", "stem", "humanities"]
+    categories = [
+        "writing",
+        "roleplay",
+        "reasoning",
+        "math",
+        "coding",
+        "extraction",
+        "stem",
+        "humanities",
+    ]
 
     col_w = 22
     header = f"{'Category':<16}" + "".join(f"{r['condition'][:col_w]:>{col_w}}" for r in results)
@@ -247,10 +259,16 @@ def main() -> None:
     p = argparse.ArgumentParser(description="Score MT-Bench answers with GPT-4.")
     p.add_argument("--answers", help="Path to answers JSONL (from sft_gen_answers.py)")
     p.add_argument("--out", help="Output JSON path (default: derived from --answers path)")
-    p.add_argument("--judge-model", default="gpt-4-turbo",
-                   help="OpenAI model for judging (default: gpt-4-turbo)")
-    p.add_argument("--compare", action="store_true",
-                   help="Print a comparison table of all scored conditions in results/mtbench/")
+    p.add_argument(
+        "--judge-model",
+        default="gpt-4-turbo",
+        help="OpenAI model for judging (default: gpt-4-turbo)",
+    )
+    p.add_argument(
+        "--compare",
+        action="store_true",
+        help="Print a comparison table of all scored conditions in results/mtbench/",
+    )
     args = p.parse_args()
 
     mtbench_dir = REPO_ROOT / "results" / "mtbench"
@@ -274,8 +292,10 @@ def main() -> None:
         print(f"ERROR: {answers_path} not found", file=sys.stderr)
         sys.exit(1)
 
-    out_path = Path(args.out) if args.out else (
-        mtbench_dir / answers_path.name.replace("_answers.jsonl", "_scores.json")
+    out_path = (
+        Path(args.out)
+        if args.out
+        else (mtbench_dir / answers_path.name.replace("_answers.jsonl", "_scores.json"))
     )
     if not out_path.is_absolute():
         out_path = REPO_ROOT / out_path

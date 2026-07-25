@@ -33,8 +33,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-
 # ── internal data classes ─────────────────────────────────────────────────────
+
 
 @dataclass
 class _Entry:
@@ -42,14 +42,14 @@ class _Entry:
     revision: Optional[str]
     index: int
     total: int
-    fmt: Optional[str]   # forced adapter name, or None = auto-detect
+    fmt: Optional[str]  # forced adapter name, or None = auto-detect
 
 
 @dataclass
 class _Result:
     repo_id: str
     revision: Optional[str]
-    status: str          # "ok" | "skipped" | "failed"
+    status: str  # "ok" | "skipped" | "failed"
     score: Optional[float] = None
     grade: Optional[str] = None
     certification: Optional[str] = None
@@ -59,6 +59,7 @@ class _Result:
 
 
 # ── discovery ─────────────────────────────────────────────────────────────────
+
 
 def _hf_api(token: Optional[str]):
     try:
@@ -106,6 +107,7 @@ def _discover(
 
 # ── file layout helpers ───────────────────────────────────────────────────────
 
+
 def _revision_dir(out_dir: Path, repo_id: str, revision: Optional[str]) -> Path:
     """results/<org>/<slug>/<revision[:8]>/"""
     rev = revision[:8] if revision else "unknown"
@@ -128,6 +130,7 @@ def _already_audited(out_dir: Path, repo_id: str, revision: Optional[str]) -> bo
 
 # ── single-dataset audit ──────────────────────────────────────────────────────
 
+
 def _audit_one(entry: _Entry, out_dir: Path, force: bool) -> _Result:
     repo_id = entry.repo_id
     revision = entry.revision
@@ -149,6 +152,7 @@ def _audit_one(entry: _Entry, out_dir: Path, force: bool) -> _Result:
         reader = None
         if entry.fmt:
             from calibra.__main__ import _get_reader
+
             reader = _get_reader(entry.fmt)
 
         diag = Pipeline().analyze_path(repo_id, reader=reader)
@@ -233,6 +237,7 @@ def _audit_one(entry: _Entry, out_dir: Path, force: bool) -> _Result:
 
 # ── manifest ──────────────────────────────────────────────────────────────────
 
+
 def _write_manifest(results: list[_Result], out_dir: Path, args_summary: dict) -> Path:
     n_ok = sum(1 for r in results if r.status == "ok")
     n_skipped = sum(1 for r in results if r.status == "skipped")
@@ -281,6 +286,7 @@ def _grade_dist(results: list[_Result]) -> dict[str, int]:
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
+
 def run_audit_all(argv: list[str]) -> None:
     p = argparse.ArgumentParser(
         prog="calibra audit-all",
@@ -299,27 +305,47 @@ def run_audit_all(argv: list[str]) -> None:
     src = p.add_mutually_exclusive_group(required=True)
     src.add_argument("--org", metavar="ORG", help="HuggingFace org name (e.g. 'lerobot')")
     src.add_argument(
-        "--dataset", nargs="+", metavar="REPO_ID",
+        "--dataset",
+        nargs="+",
+        metavar="REPO_ID",
         help="Explicit HF repo IDs (e.g. lerobot/pusht lerobot/aloha_sim_insertion_human)",
     )
 
-    p.add_argument("--out", metavar="DIR", default="results",
-                   help="Output directory for JSON reports (default: ./results)")
-    p.add_argument("--workers", type=int, default=4, metavar="N",
-                   help="Parallel audit workers (default: 4)")
-    p.add_argument("--force", action="store_true",
-                   help="Re-audit datasets even when a cached revision report exists")
-    p.add_argument("--limit", type=int, metavar="N",
-                   help="Cap number of datasets (useful for dry-runs and testing)")
-    p.add_argument("--dry-run", action="store_true",
-                   help="Discover and resolve revisions without running audits")
     p.add_argument(
-        "--format", "-f", metavar="FMT",
+        "--out",
+        metavar="DIR",
+        default="results",
+        help="Output directory for JSON reports (default: ./results)",
+    )
+    p.add_argument(
+        "--workers", type=int, default=4, metavar="N", help="Parallel audit workers (default: 4)"
+    )
+    p.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-audit datasets even when a cached revision report exists",
+    )
+    p.add_argument(
+        "--limit",
+        type=int,
+        metavar="N",
+        help="Cap number of datasets (useful for dry-runs and testing)",
+    )
+    p.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Discover and resolve revisions without running audits",
+    )
+    p.add_argument(
+        "--format",
+        "-f",
+        metavar="FMT",
         choices=["hdf5", "isaac_lab", "lerobot", "rlds", "mcap"],
         help="Force adapter for all datasets (default: auto-detect per dataset)",
     )
-    p.add_argument("--token", metavar="TOKEN",
-                   help="HuggingFace API token (or set HF_TOKEN env var)")
+    p.add_argument(
+        "--token", metavar="TOKEN", help="HuggingFace API token (or set HF_TOKEN env var)"
+    )
 
     args = p.parse_args(argv)
     out_dir = Path(args.out)
@@ -386,12 +412,9 @@ def run_audit_all(argv: list[str]) -> None:
     n_skipped = sum(1 for r in results if r.status == "skipped")
     n_failed = sum(1 for r in results if r.status == "failed")
     scores = [r.score for r in results if r.score is not None]
-    mean = f"{sum(scores)/len(scores):.1f}" if scores else "n/a"
+    mean = f"{sum(scores) / len(scores):.1f}" if scores else "n/a"
 
-    print(
-        f"\nDone.  audited={n_ok}  skipped={n_skipped}  failed={n_failed}  "
-        f"mean_score={mean}"
-    )
+    print(f"\nDone.  audited={n_ok}  skipped={n_skipped}  failed={n_failed}  mean_score={mean}")
     print(f"Manifest: {manifest_path}")
     if n_failed:
         print(f"Failed datasets: {[r.repo_id for r in results if r.status == 'failed']}")

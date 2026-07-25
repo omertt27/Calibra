@@ -25,9 +25,9 @@ import numpy as np
 REPO_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from calibra.pruning import CoresetSelector, ApproximateCoresetSelector  # noqa: E402
+from calibra.pruning import ApproximateCoresetSelector, CoresetSelector  # noqa: E402
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata  # noqa: E402
-from calibra.schema.report import DiagnosticReport, AnalyzerResult  # noqa: E402
+from calibra.schema.report import AnalyzerResult, DiagnosticReport  # noqa: E402
 
 FIG_DIR = REPO_ROOT / "experiments" / "figures"
 FIG_DIR.mkdir(parents=True, exist_ok=True)

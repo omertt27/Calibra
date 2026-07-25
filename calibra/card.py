@@ -36,10 +36,9 @@ from typing import Optional
 
 from calibra import __version__
 from calibra.pipeline import Pipeline
-from calibra.schema.report import DiagnosticReport, RiskLevel
 from calibra.predict import predict_outcome
+from calibra.schema.report import DiagnosticReport, RiskLevel
 from calibra.score import compute_score
-
 
 _WIDTH = 60
 _THICK = "━" * _WIDTH
@@ -83,16 +82,19 @@ def _register_badge_with_cloud(dataset_id: str, status: str) -> None:
     if no_sync.lower() in ("1", "true"):
         return
 
-    endpoint = os.environ.get(
-        "CALIBRA_CLOUD_ENDPOINT", "https://outcomes.calibra.ai"
-    ).rstrip("/") + "/v1/badge"
+    endpoint = (
+        os.environ.get("CALIBRA_CLOUD_ENDPOINT", "https://outcomes.calibra.ai").rstrip("/")
+        + "/v1/badge"
+    )
 
     try:
-        payload = json.dumps({
-            "dataset_id": dataset_id,
-            "status": status,
-            "calibra_version": __version__,
-        }).encode("utf-8")
+        payload = json.dumps(
+            {
+                "dataset_id": dataset_id,
+                "status": status,
+                "calibra_version": __version__,
+            }
+        ).encode("utf-8")
         req = urllib.request.Request(
             endpoint,
             data=payload,
@@ -194,10 +196,10 @@ def generate_card(
 
 | Dimension | Score | Max |
 |-----------|------:|----:|
-| Temporal Stability | {dims['temporal_stability']['score']:.1f} | {dims['temporal_stability']['max']} |
-| Control Smoothness | {dims['control_smoothness']['score']:.1f} | {dims['control_smoothness']['max']} |
-| Coverage Diversity | {dims['coverage_diversity']['score']:.1f} | {dims['coverage_diversity']['max']} |
-| Task Structure | {dims['task_structure']['score']:.1f} | {dims['task_structure']['max']} |
+| Temporal Stability | {dims["temporal_stability"]["score"]:.1f} | {dims["temporal_stability"]["max"]} |
+| Control Smoothness | {dims["control_smoothness"]["score"]:.1f} | {dims["control_smoothness"]["max"]} |
+| Coverage Diversity | {dims["coverage_diversity"]["score"]:.1f} | {dims["coverage_diversity"]["max"]} |
+| Task Structure | {dims["task_structure"]["score"]:.1f} | {dims["task_structure"]["max"]} |
 
 ### Metric Summary
 

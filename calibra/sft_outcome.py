@@ -49,30 +49,42 @@ def run_sft_outcome(argv: list[str]) -> None:
         description="Predict and record SFT training outcomes from a calibra sft-select coreset.",
     )
     p.add_argument(
-        "--coreset", required=True, metavar="PATH",
+        "--coreset",
+        required=True,
+        metavar="PATH",
         help="Path to a coreset_index.json written by `calibra sft-select`",
     )
     p.add_argument(
-        "--policy", "-p", metavar="FAMILY", default="generic",
+        "--policy",
+        "-p",
+        metavar="FAMILY",
+        default="generic",
         help="Model/training family for prediction context (e.g. 'llama3-8b-sft'). Default: generic",
     )
     p.add_argument(
-        "--record-outcome", metavar="RATE", type=float,
+        "--record-outcome",
+        metavar="RATE",
+        type=float,
         help="After training+eval, record the observed eval score (0.0-1.0) to improve "
         "future predictions on similar coresets. Example: --record-outcome 0.73",
     )
     p.add_argument(
-        "--model-family", metavar="FAMILY", default=None,
+        "--model-family",
+        metavar="FAMILY",
+        default=None,
         help="Model/training family to attach to the recorded outcome "
         "(defaults to --policy if not given)",
     )
     p.add_argument(
-        "--dataset-name", metavar="NAME", default=None,
+        "--dataset-name",
+        metavar="NAME",
+        default=None,
         help="Dataset name to attach to the recorded outcome (defaults to the coreset file name)",
     )
     p.add_argument("--notes", metavar="TEXT", default="", help="Optional annotation")
     p.add_argument(
-        "--no-empirical", action="store_true",
+        "--no-empirical",
+        action="store_true",
         help="Disable empirical blending from the outcome database (pure heuristic).",
     )
     p.add_argument("--json", "-j", action="store_true", help="Output full prediction as JSON")

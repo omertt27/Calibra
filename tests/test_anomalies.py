@@ -5,6 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
+from calibra.analyzers.temporal import TemporalAnalyzer
 from calibra.anomalies import (
     EpisodeAnomaly,
     EpisodeFlag,
@@ -13,12 +15,9 @@ from calibra.anomalies import (
     find_outliers,
     render,
 )
-from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
-from calibra.analyzers.temporal import TemporalAnalyzer
 from calibra.pipeline import Pipeline
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 from calibra.schema.report import DiagnosticReport
-
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 

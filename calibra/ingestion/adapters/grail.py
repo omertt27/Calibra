@@ -14,8 +14,8 @@ and packages them into an EpisodeBatch.
 
 from __future__ import annotations
 
-import pickle
 import gzip
+import pickle
 from pathlib import Path
 from typing import Any
 

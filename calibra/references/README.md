@@ -198,6 +198,7 @@ This is not identifiable from aggregate metrics.
 **To remove flagged episodes:**
 ```python
 from calibra.comparison.curator import EpisodeCurator
+
 curator = EpisodeCurator(strategy="remove")
 ```
 

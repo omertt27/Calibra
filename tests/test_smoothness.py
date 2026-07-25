@@ -13,7 +13,6 @@ from calibra.analyzers.smoothness import (
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 from calibra.schema.report import RiskLevel
 
-
 # ── helpers ──────────────────────────────────────────────────────────────────
 
 
@@ -682,8 +681,9 @@ class TestPruneScriptedAutoAdjust:
     def test_args_default_is_none(self):
         """--max-spike-rate default must be None (sentinel for auto-adjust)."""
         # parse help to get argument spec
-        import calibra.prune as prune_module
         import inspect
+
+        import calibra.prune as prune_module
 
         src = inspect.getsource(prune_module.run_prune)
         # Just verify the default in the code is None
@@ -691,8 +691,9 @@ class TestPruneScriptedAutoAdjust:
 
     def test_auto_adjust_message_mentions_scripted(self):
         """The auto-adjust log message must explain what happened."""
-        import calibra.prune as prune_module
         import inspect
+
+        import calibra.prune as prune_module
 
         src = inspect.getsource(prune_module.run_prune)
         assert "scripted" in src.lower()

@@ -85,7 +85,7 @@ class JEPAWatchScorer:
         return self._scores.get(episode.metadata.episode_id)
 
     def _retrain(self) -> None:
-        from calibra.models.robot_jepa import score_by_jepa_surprise, RobotJEPAConfig
+        from calibra.models.robot_jepa import RobotJEPAConfig, score_by_jepa_surprise
         from calibra.schema.episode import EpisodeBatch
 
         try:
@@ -225,9 +225,7 @@ class WatchSession:
         self.n_fail = 0
         self.episodes: list[dict] = []
         self._start = time.monotonic()
-        self._jepa_scorer: Optional[JEPAWatchScorer] = (
-            JEPAWatchScorer() if world_model else None
-        )
+        self._jepa_scorer: Optional[JEPAWatchScorer] = JEPAWatchScorer() if world_model else None
 
     @property
     def total(self) -> int:
@@ -254,8 +252,8 @@ class WatchSession:
 
         remediation = ""
         if report is not None:
-            from calibra.score import compute_score
             from calibra.schema.report import RiskLevel
+            from calibra.score import compute_score
 
             try:
                 sc = compute_score(report)
@@ -412,7 +410,11 @@ def _stream_watch(session: WatchSession, remediate: bool = False) -> None:
         python examples/lerobot_watch_integration.py | calibra watch --stream --remediate
         python collect.py | calibra watch --stream --world-model --remediate
     """
-    wm_note = "  Include 'actions' and 'states' arrays per line for world-model scoring." if session._jepa_scorer else ""
+    wm_note = (
+        "  Include 'actions' and 'states' arrays per line for world-model scoring."
+        if session._jepa_scorer
+        else ""
+    )
     print("  Stream mode: reading episode metrics from stdin (one JSON per line)")
     print("  Expected fields: file, ldlj, spike_rate, vel_disc_rate, dropout_rate, jitter_cv")
     if wm_note:
