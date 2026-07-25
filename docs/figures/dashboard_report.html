@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calibra Report — columbia_cairlab_pusht_real</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+        /* ── Health Score Dashboard ── */
+        .health-panel {
+            border-radius: 14px;
+            padding: 20px;
+            background: rgba(15,23,42,0.6);
+            border: 1px solid rgba(99,102,241,0.18);
+        }
+        .health-top { display: flex; align-items: center; gap: 18px; margin-bottom: 18px; }
+        .score-ring {
+            flex-shrink: 0;
+            width: 76px; height: 76px;
+            border-radius: 50%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            border: 4px solid;
+            transition: border-color 0.3s;
+        }
+        .score-green { border-color: #22c55e; }
+        .score-yellow { border-color: #f59e0b; }
+        .score-red { border-color: #ef4444; }
+        .score-ring .score-num {
+            font-size: 26px; font-weight: 800; line-height: 1;
+            color: #fff;
+        }
+        .score-ring .score-denom { font-size: 10px; color: #64748b; margin-top: 1px; }
+        .score-meta h3 { font-size: 13px; font-weight: 700; color: #e2e8f0; margin-bottom: 4px; }
+        .score-meta p { font-size: 11px; color: #64748b; line-height: 1.4; }
+        .score-bars { display: flex; flex-direction: column; gap: 10px; }
+        .score-bar-row {
+            display: grid;
+            grid-template-columns: 80px 1fr 30px;
+            align-items: center;
+            gap: 8px;
+        }
+        .score-bar-label { font-size: 11px; color: #94a3b8; }
+        .score-bar-track {
+            height: 6px; border-radius: 3px;
+            background: rgba(51,65,85,0.6);
+            overflow: hidden;
+        }
+        .score-bar-fill {
+            height: 100%; border-radius: 3px;
+            transition: width 0.6s ease;
+        }
+        .fill-green { background: #22c55e; }
+        .fill-yellow { background: #f59e0b; }
+        .fill-red { background: #ef4444; }
+        .score-bar-val { font-size: 11px; color: #64748b; text-align: right; font-variant-numeric: tabular-nums; }
+    </style>
+</head>
+<body class="h-full flex flex-col font-sans">
+    <!-- Header banner -->
+    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="bg-indigo-600 text-white font-bold p-2.5 rounded-lg tracking-wider text-sm shadow-lg shadow-indigo-600/20">CALIBRA</div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-white">columbia_cairlab_pusht_real</h1>
+                <p class="text-xs text-slate-400">Format: <span class="font-mono text-slate-300">lerobot</span> &middot; Source: <span class="font-mono text-slate-300">lerobot/columbia_cairlab_pusht_real</span></p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <div class="bg-slate-800 border border-slate-700/50 px-4 py-1.5 rounded-lg text-center">
+                <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Episodes</div>
+                <div class="text-lg font-bold text-white">136</div>
+            </div>
+            <div class="bg-slate-800 border border-slate-700/50 px-4 py-1.5 rounded-lg text-center">
+                <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Samples</div>
+                <div class="text-lg font-bold text-white">27,808</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        <!-- Sidebar Navigation & Status Summary -->
+        <section class="w-full lg:w-80 border-r border-slate-800 bg-slate-900/20 p-6 flex flex-col gap-6 overflow-y-auto">
+            <!-- Dataset Health Score -->
+            <div class="health-panel">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Dataset Health</div>
+                <div class="health-top">
+                    <div class="score-ring score-red">
+                        <span class="score-num">24</span>
+                        <span class="score-denom">/100</span>
+                    </div>
+                    <div class="score-meta">
+                        <h3>Critical</h3>
+                        <p>Based on 23 diagnostic flag(s) across all analyzers.</p>
+                    </div>
+                </div>
+                <div class="score-bars">
+                    <div class="score-bar-row">
+                        <span class="score-bar-label">Quality</span>
+                        <div class="score-bar-track"><div class="score-bar-fill fill-red" style="width:12%"></div></div>
+                        <span class="score-bar-val">12</span>
+                    </div>
+                    <div class="score-bar-row">
+                        <span class="score-bar-label">Synchrony</span>
+                        <div class="score-bar-track"><div class="score-bar-fill fill-green" style="width:100%"></div></div>
+                        <span class="score-bar-val">100</span>
+                    </div>
+                    <div class="score-bar-row">
+                        <span class="score-bar-label">Coverage</span>
+                        <div class="score-bar-track"><div class="score-bar-fill fill-green" style="width:84%"></div></div>
+                        <span class="score-bar-val">84</span>
+                    </div>
+                    <div class="score-bar-row">
+                        <span class="score-bar-label">Integrity</span>
+                        <div class="score-bar-track"><div class="score-bar-fill fill-yellow" style="width:72%"></div></div>
+                        <span class="score-bar-val">72</span>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Overall Diagnostics</h2>
+                <div class="rounded-xl border border-slate-800 p-4 bg-slate-900/50 flex flex-col gap-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-slate-400">Critical Risks</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-950/50 text-red-400 border border-red-800/30">5</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-slate-400">Warnings</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-950/50 text-amber-400 border border-amber-800/30">4</span>
+                    </div>
+                    <div class="h-px bg-slate-800"></div>
+                    <div class="flex flex-col gap-1">
+                        <span class="text-xs text-slate-400">Target Policy</span>
+                        <span class="text-sm font-semibold text-white">None (Unspecified)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <nav class="flex flex-col gap-1" id="nav-tabs">
+                <button onclick="switchTab('overview')" id="btn-overview" class="tab-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-indigo-600/10 border-l-2 border-indigo-500 text-left transition-all">
+                    <span>Overview & Risks</span>
+                </button>
+                <button onclick="switchTab('charts')" id="btn-charts" class="tab-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/50 text-left transition-all">
+                    <span>Metric Distributions</span>
+                </button>
+                <button onclick="switchTab('remediation')" id="btn-remediation" class="tab-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/50 text-left transition-all">
+                    <span>Remediation Checklist</span>
+                </button>
+                <button onclick="switchTab('outliers')" id="btn-outliers" class="tab-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/50 text-left transition-all">
+                    <span>Outliers & Episodes</span>
+                </button>
+            </nav>
+        </section>
+
+        <!-- Content Area -->
+        <section class="flex-1 p-6 overflow-y-auto custom-scrollbar bg-slate-950">
+            <!-- TAB 1: OVERVIEW & RISKS -->
+            <div id="tab-overview" class="tab-content flex flex-col gap-6">
+                <div>
+                    <h2 class="text-lg font-bold text-white">Diagnostic Risk Findings</h2>
+                    <p class="text-sm text-slate-400">Detailed list of issues identified across the temporal, smoothness, and dynamics analyzers.</p>
+                </div>
+
+                <div class="flex flex-col gap-3" id="risk-flags-container">
+                    <!-- Loaded dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- TAB 2: CHARTS -->
+            <div id="tab-charts" class="tab-content hidden flex flex-col gap-6">
+                <div>
+                    <h2 class="text-lg font-bold text-white">Per-Episode Metric Distributions</h2>
+                    <p class="text-sm text-slate-400">Interactive charts mapping values calculated for each individual demonstration.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl">
+                        <h3 class="text-sm font-semibold text-slate-300 mb-4">Log-Dimensionless Jerk (LDLJ) &middot; Higher is smoother</h3>
+                        <div class="h-64"><canvas id="ldljChart"></canvas></div>
+                    </div>
+                    <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl">
+                        <h3 class="text-sm font-semibold text-slate-300 mb-4">Velocity Discontinuity Rate &middot; Lower is better</h3>
+                        <div class="h-64"><canvas id="velChart"></canvas></div>
+                    </div>
+                    <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl">
+                        <h3 class="text-sm font-semibold text-slate-300 mb-4">SSL Trajectory Novelty (NN Distance)</h3>
+                        <div class="h-64"><canvas id="sslChart"></canvas></div>
+                    </div>
+                    <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl">
+                        <h3 class="text-sm font-semibold text-slate-300 mb-4">Timestamp Jitter CV</h3>
+                        <div class="h-64"><canvas id="jitterChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: REMEDIATION CHECKLIST -->
+            <div id="tab-remediation" class="tab-content hidden flex flex-col gap-6">
+                <div>
+                    <h2 class="text-lg font-bold text-white">Actionable Remediation Roadmap</h2>
+                    <p class="text-sm text-slate-400">Steps derived from analysis flags to resolve training dataset deficiencies.</p>
+                </div>
+
+                <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-6 flex flex-col gap-4" id="checklist-container">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- TAB 4: OUTLIERS & EPISODES -->
+            <div id="tab-outliers" class="tab-content hidden flex flex-col gap-6">
+                <div>
+                    <h2 class="text-lg font-bold text-white">Episode Outlier Analysis</h2>
+                    <p class="text-sm text-slate-400">Episodes flagged as anomalous via robust statistical outlier algorithms (MAD).</p>
+                </div>
+
+                <div class="border border-slate-800 rounded-xl bg-slate-900/20 overflow-hidden">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-slate-900/80 border-b border-slate-800 text-slate-400">
+                                <th class="px-6 py-3 font-semibold">Index</th>
+                                <th class="px-6 py-3 font-semibold">Episode ID</th>
+                                <th class="px-6 py-3 font-semibold">Anomalies Detected</th>
+                            </tr>
+                        </thead>
+                        <tbody id="outliers-table-body" class="divide-y divide-slate-800/50">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Embedded Data & JS -->
+    <script>
+        const flags = [{"level": "OK", "metric": "timestamp_jitter_cv", "observed": "4.494e-06 [4.339e-06, 4.652e-06] (95% CI via bootstrap)", "threshold": 0.15, "interpretation": "Step-to-step timing is consistent.", "implication": "No jitter risk detected."}, {"level": "OK", "metric": "timestamp_dropout_rate", "observed": "0 fraction [0, 0] (95% CI via bootstrap)", "threshold": 0.01, "interpretation": "Timestamp dropout rate is within acceptable range.", "implication": "No dropout risk detected."}, {"level": "OK", "metric": "action_dropout_rate", "observed": "0 fraction [0, 0] (95% CI via bootstrap)", "threshold": 0.05, "interpretation": "Action-dropout rate is within acceptable range.", "implication": "No silent command-dropout detected."}, {"level": "CRITICAL", "metric": "ldlj", "observed": "-18.64 [-18.81, -18.47] (95% CI via bootstrap)", "threshold": -10.0, "interpretation": "Mean LDLJ = -18.64 across 136 episodes (threshold: >-10). Action trajectories contain significant jerk.", "implication": "High jerk in demonstration data forces the policy to learn discontinuous action transitions. BC policies trained on jerky data produce jerky rollouts that stress hardware and reduce task success on contact-rich tasks. Consider applying action smoothing (e.g. Savitzky-Golay) before training."}, {"level": "OK", "metric": "jerk_spike_rate", "observed": "0.01191 fraction [0.009016, 0.01682] (95% CI via bootstrap)", "threshold": 0.02, "interpretation": "Jerk spike rate is within acceptable range.", "implication": "No jerk spike risk detected."}, {"level": "CRITICAL", "metric": "velocity_discontinuity_rate", "observed": "0.2903 fraction [0.2766, 0.3051] (95% CI via bootstrap)", "threshold": 0.02, "interpretation": "29.0% of steps show velocity change > 20% of peak velocity.", "implication": "Sudden velocity reversals are physically impossible under normal actuation constraints. These are either annotation errors or real but undesired operator behaviour. Policies trained on them will attempt to reproduce them, stressing hardware actuators."}, {"level": "CRITICAL", "metric": "action_entropy_bits_per_dim", "observed": "0.5579 bits/dim", "threshold": 3.5, "interpretation": "Low action diversity: 0.56 bits/dim (threshold: >3.5 bits/dim). The dataset's action distribution is narrow.", "implication": "Low action entropy indicates mode collapse in demonstrations \u2014 the operator followed similar trajectories each time. Policies trained on this data will likely fail on out-of-distribution starting configurations. Consider augmenting with recovery demonstrations or perturbation data."}, {"level": "CRITICAL", "metric": "pca_top2_variance_fraction", "observed": "1 fraction", "threshold": 0.9, "interpretation": "Top-2 principal components explain 100.0% of action variance. The action distribution is near-rank-2.", "implication": "A near-rank-2 action distribution means the dataset's demonstrated actions live in a 2D subspace of the full action space. The policy will likely fail in any task configuration that requires motion in the unexplored dimensions. This is a strong indicator of single-strategy demonstrations."}, {"level": "CRITICAL", "metric": "state_entropy_bits_per_dim[state]", "observed": "1.233 bits/dim", "threshold": 3.5, "interpretation": "Low state diversity on 'state': 1.23 bits/dim. The robot visited a narrow range of configurations.", "implication": "Low state entropy means demonstrations started and ended in similar configurations. The policy will overfit to a narrow operational envelope and fail on novel start states."}, {"level": "OK", "metric": "episode_length_distribution", "observed": "0.2505 CV", "threshold": null, "interpretation": "Episode lengths are consistent (mean=204, CV=0.25).", "implication": "No episode length irregularity detected."}, {"level": "INFO", "metric": "contact_density", "observed": "0.3366 fraction [0.3258, 0.3478] (95% CI via bootstrap)", "threshold": null, "interpretation": "33.7% of steps are in contact/slow phase (estimated via velocity envelope only (no gripper detected)).", "implication": "High contact density (> 60%) \u2192 dataset is contact-rich; policy must learn precise contact-phase behaviour. Low density (< 10%) \u2192 mostly free-space motion; consider adding contact-phase demonstrations for manipulation tasks."}, {"level": "INFO", "metric": "grasp_events_per_episode", "observed": "n/a", "threshold": null, "interpretation": "No gripper dimension detected \u2014 grasp count unavailable.", "implication": "Specify gripper_dims=[<dim_index>] on TaskStructureAnalyzer if the dataset has a gripper."}, {"level": "WARNING", "metric": "trajectory_diversity", "observed": "0.9523", "threshold": 0.6, "interpretation": "Trajectory diversity score 0.95 \u2265 0.60 \u2014 dataset appears to contain ~1 distinct trajectory modes.", "implication": "Multiple distinct demonstration strategies produce conflicting BC gradients: the policy receives contradictory action signals for similar observations. Standard BC loss will average the modes, resulting in poor performance on both. Consider: (1) clustering and training separate policies, (2) using a multimodal policy (Diffusion, GMM), or (3) filtering to one strategy."}, {"level": "OK", "metric": "short_episode_fraction", "observed": "0.007353 fraction", "threshold": 0.05, "interpretation": "No suspiciously short episodes detected.", "implication": "Episode length distribution appears consistent."}, {"level": "OK", "metric": "contact_phase_fraction", "observed": "0.8129 fraction [0.7832, 0.8372] (95% CI via bootstrap)", "threshold": 0.1, "interpretation": "Contact phase is 81.3% of total steps \u2014 adequate representation of the manipulation phase.", "implication": "Policy will see sufficient contact-phase examples for generalisation."}, {"level": "OK", "metric": "approach_phase_dominance", "observed": "0.185 fraction", "threshold": null, "interpretation": "Phase distribution is balanced: approach 18.5%.", "implication": "No approach-dominance bias detected."}, {"level": "INFO", "metric": "dataset_influence_score", "observed": "0.4863 influence", "threshold": null, "interpretation": "Computed offline learning influence. Top influential episode IDs: 13, 14, 114", "implication": "Exposing --strategy influence in calibra prune to target informative coreset selections."}, {"level": "OK", "metric": "latent_state_entropy", "observed": "6.618 bits", "threshold": 2.5, "interpretation": "Latent state coverage entropy is 6.62 bits.", "implication": "State space displays healthy distribution across workspaces."}, {"level": "WARNING", "metric": "transition_redundancy", "observed": "0.999 fraction", "threshold": 0.8, "interpretation": "Transition redundancy is 99.90%.", "implication": "Over 80% of demonstrations contain redundant dynamics. Consider pruning to save compute."}, {"level": "OK", "metric": "dynamics_predictability_r2", "observed": "0.8077 R^2", "threshold": 0.2, "interpretation": "Dynamics predictability R^2 is 0.8077.", "implication": "Transitions display high causal predictability, suitable for learning world models."}, {"level": "OK", "metric": "causal_action_effect_mi", "observed": "0.8919 dHSIC", "threshold": 0.1, "interpretation": "Causal action-effect dependency is 0.8919.", "implication": "OK"}, {"level": "WARNING", "metric": "outlier_transition_fraction", "observed": "0.3081 fraction", "threshold": 0.05, "interpretation": "2222 transition anomalies detected (30.81%).", "implication": "Large fraction of transitions violate physical dynamics constraints. Check for simulator/sensor glitching."}, {"level": "WARNING", "metric": "ssl_trajectory_outliers", "observed": "0.05882 fraction", "threshold": 0.05, "interpretation": "5.9% of episodes are trajectory-level outliers.", "implication": "A high fraction of outlier trajectories suggests inconsistent demonstration quality, hardware calibration drift, or operator errors. Review these outlier episodes before policy training."}];
+        const outliers = [{"index": 32, "episode_id": "32", "reasons": ["spike_rate"]}, {"index": 20, "episode_id": "20", "reasons": ["spike_rate"]}, {"index": 13, "episode_id": "13", "reasons": ["vel_disc_rate"]}, {"index": 93, "episode_id": "93", "reasons": ["spike_rate"]}, {"index": 95, "episode_id": "95", "reasons": ["spike_rate"]}, {"index": 49, "episode_id": "49", "reasons": ["jitter_cv"]}, {"index": 71, "episode_id": "71", "reasons": ["spike_rate"]}, {"index": 30, "episode_id": "30", "reasons": ["vel_disc_rate"]}, {"index": 106, "episode_id": "106", "reasons": ["vel_disc_rate"]}, {"index": 89, "episode_id": "89", "reasons": ["vel_disc_rate"]}, {"index": 33, "episode_id": "33", "reasons": ["spike_rate"]}, {"index": 88, "episode_id": "88", "reasons": ["spike_rate"]}, {"index": 28, "episode_id": "28", "reasons": ["spike_rate"]}, {"index": 12, "episode_id": "12", "reasons": ["vel_disc_rate"]}, {"index": 115, "episode_id": "115", "reasons": ["vel_disc_rate"]}, {"index": 53, "episode_id": "53", "reasons": ["spike_rate"]}];
+        const labels = ["Ep 0", "Ep 1", "Ep 2", "Ep 3", "Ep 4", "Ep 5", "Ep 6", "Ep 7", "Ep 8", "Ep 9", "Ep 10", "Ep 11", "Ep 12", "Ep 13", "Ep 14", "Ep 15", "Ep 16", "Ep 17", "Ep 18", "Ep 19", "Ep 20", "Ep 21", "Ep 22", "Ep 23", "Ep 24", "Ep 25", "Ep 26", "Ep 27", "Ep 28", "Ep 29", "Ep 30", "Ep 31", "Ep 32", "Ep 33", "Ep 34", "Ep 35", "Ep 36", "Ep 37", "Ep 38", "Ep 39", "Ep 40", "Ep 41", "Ep 42", "Ep 43", "Ep 44", "Ep 45", "Ep 46", "Ep 47", "Ep 48", "Ep 49", "Ep 50", "Ep 51", "Ep 52", "Ep 53", "Ep 54", "Ep 55", "Ep 56", "Ep 57", "Ep 58", "Ep 59", "Ep 60", "Ep 61", "Ep 62", "Ep 63", "Ep 64", "Ep 65", "Ep 66", "Ep 67", "Ep 68", "Ep 69", "Ep 70", "Ep 71", "Ep 72", "Ep 73", "Ep 74", "Ep 75", "Ep 76", "Ep 77", "Ep 78", "Ep 79", "Ep 80", "Ep 81", "Ep 82", "Ep 83", "Ep 84", "Ep 85", "Ep 86", "Ep 87", "Ep 88", "Ep 89", "Ep 90", "Ep 91", "Ep 92", "Ep 93", "Ep 94", "Ep 95", "Ep 96", "Ep 97", "Ep 98", "Ep 99", "Ep 100", "Ep 101", "Ep 102", "Ep 103", "Ep 104", "Ep 105", "Ep 106", "Ep 107", "Ep 108", "Ep 109", "Ep 110", "Ep 111", "Ep 112", "Ep 113", "Ep 114", "Ep 115", "Ep 116", "Ep 117", "Ep 118", "Ep 119", "Ep 120", "Ep 121", "Ep 122", "Ep 123", "Ep 124", "Ep 125", "Ep 126", "Ep 127", "Ep 128", "Ep 129", "Ep 130", "Ep 131", "Ep 132", "Ep 133", "Ep 134", "Ep 135"];
+        
+        const ldljVals = [-19.672514975135446, -20.40111124102623, -19.934971921352002, -18.961734954380365, -19.08441119364838, -18.59577673438974, -18.602089043431913, -16.236237453140166, -19.36924469069402, -17.49951915192192, -18.85365531446535, -19.772121640504547, -17.82456423550699, -20.84200370585459, -17.145351310285395, -18.222713175572522, -17.75192296828307, -17.59819388200107, -18.322252106277507, -17.828863313369315, -18.77489945885202, -18.166085189716807, -19.229231357816168, -18.015099927270082, -18.79160565449458, -20.05518496037184, -18.87574386869196, -18.89408250583524, -18.41039874372054, -19.449726169996634, -18.721673039807815, -19.675145349675436, -13.863038580208615, -16.71020408239755, -20.151353416350997, -18.876284351483346, -18.587615358037173, -18.404922340786495, -19.766657269352294, -19.146680942810814, -17.57071019659105, -19.149200893175752, -18.677033814547844, -17.28147723842404, -19.598937260768473, -19.2550624450061, -17.119019884035527, -19.592645472212112, -18.675370808447283, -20.857585440464575, -19.976897905902995, -18.806702366743433, -17.849193701063843, -18.398664921662828, -20.07706180192602, -19.487619874631072, -19.07315723130681, -19.226061209484534, -18.73368400183519, -18.519930840333917, -19.13666608390548, -19.705623601188275, -18.73261850937542, -17.470678653596828, -19.677446671964418, -20.567505456894768, -16.71318702664237, -17.666893572558863, -18.045962846507777, -18.991426698039447, -19.41090037394886, -19.767798805087402, -18.933729796114992, -18.1071083649212, -19.28181084863278, -19.68935246377832, -17.73294575056976, -20.12009375702545, -20.20692931081759, -18.84897633823433, -18.984823052237214, -18.57563351043399, -17.951270575640514, -19.882697199205676, -19.908257505632065, -16.171756150357176, -18.434139248912413, -17.79861693662317, -19.29569184282418, -17.791031740242456, -18.01422994272986, -18.06518008116456, -18.675840157504364, -17.516191858104072, -17.55335908955344, -18.80249443822717, -17.861428138232416, -17.899258135351037, -19.510621973711046, -17.054482531229493, -19.00941327973329, -17.51908849506622, -19.191028346750358, -18.75181199894314, -18.481427013653335, -18.554798801352785, -18.76630234739061, -19.03838159525115, -17.53564757688299, -19.040395128794703, -18.25063585633283, -19.084565141555952, -16.95044352739333, -18.549863861102153, -17.270948936891894, -18.180275941883234, -19.3596517305908, -16.45883283918972, -18.06391117420769, -20.201577202379422, -19.333006363117853, -18.640782445047726, -19.330757104028816, -17.751224973502936, -19.056869269135227, -17.816008720476866, -18.147681942800645, -19.154179531047976, -20.082230858427824, -17.38878323906491, -17.088176270470488, -19.331921527323342, -19.57511524502421, -18.228385460087768, -18.23792623221325, -19.43039704947007];
+        const velVals = [0.27037037037037037, 0.29310344827586204, 0.24199288256227758, 0.3229166666666667, 0.425, 0.3620689655172414, 0.245, 0.25688073394495414, 0.27848101265822783, 0.35074626865671643, 0.3838383838383838, 0.3185483870967742, 0.44755244755244755, 0.6580645161290323, 0.30708661417322836, 0.3089887640449438, 0.43478260869565216, 0.37142857142857144, 0.2918918918918919, 0.25, 0.21363636363636362, 0.18134715025906736, 0.34684684684684686, 0.39072847682119205, 0.2025862068965517, 0.2924187725631769, 0.18141592920353983, 0.25462962962962965, 0.2896174863387978, 0.1494661921708185, 0.5028248587570622, 0.3487394957983193, 0.26229508196721313, 0.17054263565891473, 0.36538461538461536, 0.2912621359223301, 0.22439024390243903, 0.3370165745856354, 0.24305555555555555, 0.11450381679389313, 0.27044025157232704, 0.22746781115879827, 0.3854748603351955, 0.27972027972027974, 0.35964912280701755, 0.2897196261682243, 0.352, 0.38222222222222224, 0.2669902912621359, 0.2922636103151863, 0.20512820512820512, 0.25925925925925924, 0.3630573248407643, 0.22395833333333334, 0.25, 0.3181818181818182, 0.3827751196172249, 0.3177570093457944, 0.33157894736842103, 0.06557377049180328, 0.37383177570093457, 0.23897058823529413, 0.2318181818181818, 0.41353383458646614, 0.3093220338983051, 0.21341463414634146, 0.2440944881889764, 0.2222222222222222, 0.23255813953488372, 0.13114754098360656, 0.32599118942731276, 0.24427480916030533, 0.3880597014925373, 0.313953488372093, 0.31718061674008813, 0.24060150375939848, 0.16847826086956522, 0.3357664233576642, 0.2508361204013378, 0.23605150214592274, 0.28, 0.18695652173913044, 0.33540372670807456, 0.2251655629139073, 0.40725806451612906, 0.3557692307692308, 0.24725274725274726, 0.296969696969697, 0.2765957446808511, 0.49242424242424243, 0.2857142857142857, 0.28402366863905326, 0.21395348837209302, 0.22666666666666666, 0.33793103448275863, 0.27722772277227725, 0.2830188679245283, 0.23295454545454544, 0.22058823529411764, 0.22556390977443608, 0.2955665024630542, 0.2876712328767123, 0.2511415525114155, 0.3005181347150259, 0.23857868020304568, 0.34408602150537637, 0.4970414201183432, 0.3605769230769231, 0.20121951219512196, 0.26540284360189575, 0.24571428571428572, 0.18253968253968253, 0.36585365853658536, 0.28426395939086296, 0.17307692307692307, 0.44375, 0.27350427350427353, 0.27350427350427353, 0.3227848101265823, 0.37174721189591076, 0.39069767441860465, 0.23902439024390243, 0.3212669683257919, 0.37681159420289856, 0.2782608695652174, 0.15083798882681565, 0.2303370786516854, 0.40487804878048783, 0.22950819672131148, 0.34532374100719426, 0.10759493670886076, 0.3244444444444444, 0.25461254612546125, 0.17326732673267325, 0.29651162790697677, 0.24892703862660945];
+        const sslVals = [0.0006308649042492398, 0.0007664048319954153, 0.001956682520913744, 0.0001834544899220747, 0.0016868366787494704, 0.00032672420831891813, 0.0005788541073512565, 0.0030777885979456077, 0.0007664048319954153, 0.001588822637078935, 0.00040238966331762605, 0.0011298434888379338, 0.0016868366787494704, 0.003658154292974003, 0.001221814191152082, 0.0001834544899220747, 0.0006813934788406639, 0.0001954135533753787, 0.00019996193843418997, 0.0013991850864426558, 0.00040529359174568125, 0.00019996193843418997, 0.00030197523088582034, 0.0024015139188642287, 0.0006657601978169447, 0.0004521738424987376, 0.0017249464480040277, 0.000914212222409394, 0.00010852192702648367, 0.0002523229994167986, 0.0008607496170256468, 0.0008257056428501164, 0.0451604970323517, 0.004853480412596034, 0.0022412473512670728, 0.001833595082345374, 0.0001927567377273398, 0.0008732558067308105, 0.0005039374357311832, 0.00040529359174568125, 0.00027112934870121563, 0.0008648728806215367, 0.00018879756066669806, 0.002582280215509658, 0.0011931355877115024, 0.00046095048966809937, 0.004000890163272763, 0.001055258234924028, 0.0005259801653944018, 0.00046095048966809937, 0.0006542121086029473, 0.0002664317057948784, 0.005812308563943547, 0.00027112934870121563, 0.0009148971857019239, 0.0004813354040169582, 0.00022388365959591372, 0.0005376680380401178, 0.0007138678861889902, 0.000743619282875474, 0.0006045590877419293, 0.00023811641631610314, 0.0005259801653944018, 0.0010539669161193643, 0.00042842466342940533, 0.00014230878810639336, 0.006418627818499334, 0.0003855827399555922, 0.00010852192702648367, 0.00023477778387304138, 0.0006813934788406639, 0.0005359634550911041, 0.001127684897647252, 0.0019254769062165833, 0.00037161681577890793, 0.0006013087779823678, 0.0011298434888379338, 6.970890320312506e-05, 0.0002523229994167986, 0.0009178179074611492, 0.004797840207203086, 0.0030733240002830398, 6.970890320312506e-05, 0.0005237233970719624, 0.0002196336185914527, 0.004000890163272763, 0.00351998691900135, 0.0014508251563247754, 0.0006013087779823678, 0.0026042703934595623, 0.0026042703934595623, 0.0006212896907340504, 0.00029872130593056045, 0.0006657601978169447, 0.00010013389259033723, 0.00015477095654248263, 0.0013219942161936116, 0.00037003415378178417, 0.00010013389259033723, 0.0034554835435424147, 0.0005237233970719624, 0.0010539669161193643, 0.00022388365959591372, 0.0012921654077368006, 0.00201116792059719, 0.0025763613762278537, 0.00015477095654248263, 0.0008236150060730862, 0.0015372867541368906, 0.0001954135533753787, 0.0013725750952975346, 0.00021707990439900904, 0.0008340133531696825, 0.0005579828778639051, 0.0016439520328480617, 0.0011657647918978942, 0.0007333298603594551, 0.0006303664647584473, 0.0002390109730440182, 0.0001955060065548242, 0.0022267234891995002, 0.000792310487969794, 0.00038332775415683695, 0.0013510638064562208, 0.00014230878810639336, 0.0018861987151491677, 0.00023477778387304138, 0.00029872130593056045, 0.0002196336185914527, 0.0003163688458273084, 0.002081321079683174, 0.00038332775415683695, 0.00021707990439900904, 0.00037161681577890793, 0.0027489739866781715, 0.00032672420831891813];
+        const jitterVals = [5.547211030937803e-06, 5.714648388224578e-06, 5.629067693201769e-06, 4.512281711083887e-06, 4.606147319311991e-06, 3.9963299877770865e-06, 4.606147319311991e-06, 2.7474877518654903e-06, 5.245652188765873e-06, 3.1926450257907356e-06, 4.613412271592329e-06, 5.357061462510389e-06, 3.312097404381568e-06, 3.4222767635344565e-06, 3.0867547916895245e-06, 4.142213240337787e-06, 3.2525976833317313e-06, 3.261249595624619e-06, 4.270059862786353e-06, 3.6620806561682256e-06, 4.956231492003833e-06, 4.509092068214952e-06, 5.045036153256553e-06, 3.3938223019268276e-06, 5.18249395439464e-06, 5.65092340216415e-06, 5.025965359409966e-06, 4.8725725406730275e-06, 4.274742610346358e-06, 5.629067693201769e-06, 4.14381362831982e-06, 5.240552250978978e-06, 1.2983882159029471e-06, 3.121776172164966e-06, 5.4516374044276155e-06, 4.698605232723268e-06, 4.7025996082256495e-06, 4.1368661438304995e-06, 5.7256006551659755e-06, 5.51673194099153e-06, 3.4656794303742876e-06, 5.177494896507239e-06, 4.140519723502554e-06, 3.312097404381568e-06, 5.110854289325537e-06, 4.881465075778548e-06, 3.0501238975997006e-06, 5.030761443610219e-06, 4.698605232723268e-06, 7.876248950726667e-06, 5.905173884169398e-06, 4.8725725406730275e-06, 3.4443428497521675e-06, 4.512281711083887e-06, 5.634530241437678e-06, 5.305505202498366e-06, 4.796890099663521e-06, 4.881465075778548e-06, 4.390884676187795e-06, 5.295126987320739e-06, 4.881465075778548e-06, 5.6081814469984144e-06, 4.956231492003833e-06, 3.1874194998282156e-06, 5.162417668912011e-06, 6.637348306719124e-06, 3.0867547916895245e-06, 3.8372343666425065e-06, 3.998138506848268e-06, 5.295126987320739e-06, 5.115733797890471e-06, 5.51673194099153e-06, 4.602448343968552e-06, 3.998138506848268e-06, 5.115733797890471e-06, 5.495125243738976e-06, 4.272438982592645e-06, 5.597281947941863e-06, 5.793911158605658e-06, 5.177494896507239e-06, 5.030761443610219e-06, 5.101045819094665e-06, 3.4698825596964592e-06, 5.839595368939785e-06, 5.357061462510389e-06, 2.620825787562179e-06, 4.276968005204252e-06, 3.662946902336545e-06, 5.167456036407043e-06, 3.1607692617587006e-06, 3.837828008864746e-06, 3.837758257562981e-06, 4.877031931848247e-06, 3.372980048910774e-06, 3.319497707225478e-06, 4.714354945867155e-06, 3.4656794303742876e-06, 3.994091024029104e-06, 5.6081814469984144e-06, 3.1874194998282156e-06, 4.710475959728346e-06, 3.341758419923402e-06, 4.960850862259213e-06, 4.509092068214952e-06, 4.616974817152132e-06, 4.267607897841952e-06, 3.837758257562981e-06, 4.8010720025890245e-06, 3.6620806561682256e-06, 4.788430134326532e-06, 3.995262430275472e-06, 5.416321316394925e-06, 3.0362124613791853e-06, 4.616974817152132e-06, 3.4418561314890034e-06, 3.467874628939284e-06, 5.172482014517508e-06, 2.9130185947926947e-06, 3.4632900352568216e-06, 5.552641055536688e-06, 4.877031931848247e-06, 4.7025996082256495e-06, 4.951590126220341e-06, 3.2525976833317313e-06, 5.101045819094665e-06, 4.140519723502554e-06, 4.142213240337787e-06, 4.7025996082256495e-06, 5.82320250814115e-06, 3.2570713942437235e-06, 3.4632900352568216e-06, 5.030761443610219e-06, 5.5417803102174655e-06, 4.714354945867155e-06, 3.998138506848268e-06, 5.177494896507239e-06];
+
+        // Tab switcher
+        function switchTab(tabId) {
+            // Hide all contents
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            // Remove active classes from buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600/10', 'border-l-2', 'border-indigo-500', 'text-white');
+                btn.classList.add('text-slate-400');
+            });
+
+            // Show active content
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            // Add active classes to target button
+            const activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.add('bg-indigo-600/10', 'border-l-2', 'border-indigo-500', 'text-white');
+            activeBtn.classList.remove('text-slate-400');
+        }
+
+        // Populate Risk Flags
+        function renderFlags() {
+            const container = document.getElementById('risk-flags-container');
+            if (flags.length === 0) {
+                container.innerHTML = `
+                    <div class="border border-slate-800 rounded-xl p-8 text-center bg-slate-900/10">
+                        <div class="text-3xl mb-2">🎉</div>
+                        <h4 class="text-base font-bold text-white">No Risks Identified</h4>
+                        <p class="text-xs text-slate-400 mt-1">This dataset complies with all diagnostic thresholds.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = flags.map(f => {
+                let colorClass = "border-blue-500/20 bg-blue-950/10 text-blue-400";
+                let badgeClass = "bg-blue-950 border-blue-800 text-blue-400";
+                if (f.level === "CRITICAL") {
+                    colorClass = "border-red-500/20 bg-red-950/10 text-red-400";
+                    badgeClass = "bg-red-950 border-red-800 text-red-400";
+                } else if (f.level === "WARNING") {
+                    colorClass = "border-amber-500/20 bg-amber-950/10 text-amber-400";
+                    badgeClass = "bg-amber-950 border-amber-800 text-amber-400";
+                }
+
+                const thresholdSnippet = f.threshold ? `&middot; <span class="text-slate-400">Threshold:</span> <code class="font-mono text-white">${f.threshold}</code>` : '';
+
+                return `
+                    <div class="border rounded-xl p-5 flex flex-col gap-3 transition-all duration-300 hover:bg-slate-900/30 ${colorClass}">
+                        <div class="flex items-center justify-between gap-3">
+                            <h3 class="font-bold text-white text-base">${f.metric}</h3>
+                            <span class="px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${badgeClass}">${f.level}</span>
+                        </div>
+                        <div class="text-sm text-slate-300">
+                            <span class="text-slate-400">Observed Value:</span> <code class="font-mono text-white">${f.observed}</code>
+                            ${thresholdSnippet}
+                        </div>
+                        <p class="text-sm text-slate-300 bg-slate-950/40 p-3 rounded-lg border border-slate-900">${f.interpretation}</p>
+                        <p class="text-xs text-slate-400 border-l-2 border-slate-700 pl-3"><strong>Implication:</strong> ${f.implication}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Populate Outliers Table
+        function renderOutliers() {
+            const tbody = document.getElementById('outliers-table-body');
+            if (outliers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="px-6 py-8 text-center text-slate-500">
+                            No individual episode outliers flagged.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = outliers.map(o => `
+                <tr class="hover:bg-slate-900/20 transition-all">
+                    <td class="px-6 py-4 font-mono font-semibold text-slate-400">${o.index}</td>
+                    <td class="px-6 py-4 font-mono text-white">${o.episode_id}</td>
+                    <td class="px-6 py-4 text-xs text-amber-400 font-medium">${o.reasons.join(', ')}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Build Remediation Roadmap
+        function renderChecklist() {
+            const container = document.getElementById('checklist-container');
+            if (flags.length === 0) {
+                container.innerHTML = `
+                    <div class="text-slate-400 text-sm">
+                        No remediation actions required. The dataset is fully certified.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = flags.map((f, i) => {
+                let actionText = "";
+                if (f.metric === "ldlj") {
+                    actionText = "Apply trajectory smoothing (e.g. Savitzky-Golay filtering) to minimize action jerk before training.";
+                } else if (f.metric === "velocity_discontinuity_rate") {
+                    actionText = "Investigate packet drops, communication lag, or sudden joystick/teleop corrections in outlier episodes.";
+                } else if (f.metric === "timestamp_jitter_cv" || f.metric === "timestamp_dropout_rate") {
+                    actionText = "Verify dataset recording clocks. Interpolate missing timestamps or drop frames before feeding to policies.";
+                } else if (f.metric === "ssl_trajectory_outliers") {
+                    actionText = "Identify and prune the outlier episodes listed under the 'Outliers' tab using the `calibra prune` command.";
+                } else if (f.metric === "contact_dropout") {
+                    actionText = "Check contact sensor configuration mapping and calibration in the robot driver pipeline.";
+                } else {
+                    actionText = f.implication;
+                }
+
+                return `
+                    <div class="flex gap-4 items-start bg-slate-900/20 border border-slate-900/60 p-4 rounded-xl hover:border-slate-800 transition-all">
+                        <input type="checkbox" id="check-${i}" class="mt-1 h-4 w-4 rounded border-slate-800 text-indigo-600 focus:ring-indigo-600 bg-slate-950">
+                        <label for="check-${i}" class="flex-1">
+                            <span class="block text-sm font-semibold text-white">${f.metric} Fix</span>
+                            <span class="block text-xs text-slate-400 mt-1">${actionText}</span>
+                        </label>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Charts configuration
+        function initCharts() {
+            const chartDefaults = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9 } } },
+                    y: { grid: { color: 'rgba(51, 65, 85, 0.1)' }, ticks: { color: '#64748b', font: { size: 10 } } }
+                }
+            };
+
+            // LDLJ Chart
+            if (ldljVals.length > 0) {
+                new Chart(document.getElementById('ldljChart').getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: labels.slice(0, ldljVals.length),
+                        datasets: [{
+                            data: ldljVals,
+                            backgroundColor: '#6366f1',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: chartDefaults
+                });
+            }
+
+            // Velocity Chart
+            if (velVals.length > 0) {
+                new Chart(document.getElementById('velChart').getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: labels.slice(0, velVals.length),
+                        datasets: [{
+                            data: velVals,
+                            borderColor: '#fbbf24',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#fbbf24',
+                            tension: 0.15
+                        }]
+                    },
+                    options: chartDefaults
+                });
+            }
+
+            // SSL Chart
+            if (sslVals.length > 0) {
+                new Chart(document.getElementById('sslChart').getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: labels.slice(0, sslVals.length),
+                        datasets: [{
+                            data: sslVals,
+                            backgroundColor: '#10b981',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: chartDefaults
+                });
+            }
+
+            // Jitter Chart
+            if (jitterVals.length > 0) {
+                new Chart(document.getElementById('jitterChart').getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: labels.slice(0, jitterVals.length),
+                        datasets: [{
+                            data: jitterVals,
+                            borderColor: '#ec4899',
+                            borderWidth: 2,
+                            tension: 0.15
+                        }]
+                    },
+                    options: chartDefaults
+                });
+            }
+        }
+
+        // Initialize UI
+        window.addEventListener('DOMContentLoaded', () => {
+            renderFlags();
+            renderOutliers();
+            renderChecklist();
+            initCharts();
+        });
+    </script>
+</body>
+</html>

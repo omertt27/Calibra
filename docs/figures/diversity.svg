@@ -1,0 +1,112 @@
+<svg width="720" height="310" viewBox="0 0 720 310" xmlns="http://www.w3.org/2000/svg"
+     font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
+
+  <rect width="720" height="310" fill="white"/>
+
+  <!-- ─── PANEL 1: Full Dataset ─── -->
+  <rect x="10" y="42" width="210" height="210" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1.5"/>
+  <text x="115" y="28" text-anchor="middle" font-size="13" font-weight="600" fill="#374151">Full Dataset (100%)</text>
+
+  <!-- cluster TL -->
+  <circle cx="48"  cy="82"  r="5" fill="#9CA3AF"/>
+  <circle cx="62"  cy="92"  r="5" fill="#9CA3AF"/>
+  <circle cx="44"  cy="100" r="5" fill="#9CA3AF"/>
+  <circle cx="68"  cy="80"  r="5" fill="#9CA3AF"/>
+  <circle cx="55"  cy="112" r="5" fill="#9CA3AF"/>
+
+  <!-- cluster TR -->
+  <circle cx="172" cy="76"  r="5" fill="#9CA3AF"/>
+  <circle cx="186" cy="88"  r="5" fill="#9CA3AF"/>
+  <circle cx="168" cy="94"  r="5" fill="#9CA3AF"/>
+  <circle cx="192" cy="72"  r="5" fill="#9CA3AF"/>
+  <circle cx="180" cy="104" r="5" fill="#9CA3AF"/>
+
+  <!-- cluster BL -->
+  <circle cx="46"  cy="200" r="5" fill="#9CA3AF"/>
+  <circle cx="60"  cy="212" r="5" fill="#9CA3AF"/>
+  <circle cx="38"  cy="218" r="5" fill="#9CA3AF"/>
+  <circle cx="68"  cy="206" r="5" fill="#9CA3AF"/>
+  <circle cx="52"  cy="228" r="5" fill="#9CA3AF"/>
+
+  <!-- cluster BR -->
+  <circle cx="172" cy="200" r="5" fill="#9CA3AF"/>
+  <circle cx="184" cy="212" r="5" fill="#9CA3AF"/>
+  <circle cx="166" cy="218" r="5" fill="#9CA3AF"/>
+  <circle cx="192" cy="206" r="5" fill="#9CA3AF"/>
+  <circle cx="178" cy="228" r="5" fill="#9CA3AF"/>
+
+  <text x="115" y="270" text-anchor="middle" font-size="11" fill="#6B7280">20 demonstrations</text>
+
+  <!-- ─── PANEL 2: Random 25% ─── -->
+  <rect x="256" y="42" width="210" height="210" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1.5"/>
+  <text x="361" y="28" text-anchor="middle" font-size="13" font-weight="600" fill="#374151">Random 25%</text>
+
+  <!-- ghost dots -->
+  <circle cx="294" cy="82"  r="4" fill="#E5E7EB"/>
+  <circle cx="308" cy="92"  r="4" fill="#E5E7EB"/>
+  <circle cx="290" cy="100" r="4" fill="#E5E7EB"/>
+  <circle cx="314" cy="80"  r="4" fill="#E5E7EB"/>
+  <circle cx="301" cy="112" r="4" fill="#E5E7EB"/>
+  <circle cx="418" cy="76"  r="4" fill="#E5E7EB"/>
+  <circle cx="432" cy="88"  r="4" fill="#E5E7EB"/>
+  <circle cx="414" cy="94"  r="4" fill="#E5E7EB"/>
+  <circle cx="438" cy="72"  r="4" fill="#E5E7EB"/>
+  <circle cx="426" cy="104" r="4" fill="#E5E7EB"/>
+  <circle cx="292" cy="200" r="4" fill="#E5E7EB"/>
+  <circle cx="306" cy="212" r="4" fill="#E5E7EB"/>
+  <circle cx="284" cy="218" r="4" fill="#E5E7EB"/>
+  <circle cx="314" cy="206" r="4" fill="#E5E7EB"/>
+  <circle cx="298" cy="228" r="4" fill="#E5E7EB"/>
+  <circle cx="418" cy="200" r="4" fill="#E5E7EB"/>
+  <circle cx="430" cy="212" r="4" fill="#E5E7EB"/>
+  <circle cx="412" cy="218" r="4" fill="#E5E7EB"/>
+  <circle cx="438" cy="206" r="4" fill="#E5E7EB"/>
+  <circle cx="424" cy="228" r="4" fill="#E5E7EB"/>
+
+  <!-- selected: 5 from top-left cluster only -->
+  <circle cx="294" cy="82"  r="7" fill="#F97316" stroke="white" stroke-width="2"/>
+  <circle cx="308" cy="92"  r="7" fill="#F97316" stroke="white" stroke-width="2"/>
+  <circle cx="290" cy="100" r="7" fill="#F97316" stroke="white" stroke-width="2"/>
+  <circle cx="314" cy="80"  r="7" fill="#F97316" stroke="white" stroke-width="2"/>
+  <circle cx="301" cy="112" r="7" fill="#F97316" stroke="white" stroke-width="2"/>
+
+  <text x="361" y="270" text-anchor="middle" font-size="11" fill="#6B7280">5 demonstrations</text>
+  <text x="361" y="288" text-anchor="middle" font-size="11" fill="#DC2626">covers 1 of 4 behavioral regions</text>
+
+  <!-- ─── PANEL 3: Calibra 25% ─── -->
+  <rect x="502" y="42" width="210" height="210" rx="8" fill="#F9FAFB" stroke="#2563EB" stroke-width="1.5"/>
+  <text x="607" y="28" text-anchor="middle" font-size="13" font-weight="600" fill="#374151">Calibra 25%</text>
+
+  <!-- ghost dots -->
+  <circle cx="540" cy="82"  r="4" fill="#E5E7EB"/>
+  <circle cx="554" cy="92"  r="4" fill="#E5E7EB"/>
+  <circle cx="536" cy="100" r="4" fill="#E5E7EB"/>
+  <circle cx="560" cy="80"  r="4" fill="#E5E7EB"/>
+  <circle cx="547" cy="112" r="4" fill="#E5E7EB"/>
+  <circle cx="664" cy="76"  r="4" fill="#E5E7EB"/>
+  <circle cx="678" cy="88"  r="4" fill="#E5E7EB"/>
+  <circle cx="660" cy="94"  r="4" fill="#E5E7EB"/>
+  <circle cx="684" cy="72"  r="4" fill="#E5E7EB"/>
+  <circle cx="672" cy="104" r="4" fill="#E5E7EB"/>
+  <circle cx="538" cy="200" r="4" fill="#E5E7EB"/>
+  <circle cx="552" cy="212" r="4" fill="#E5E7EB"/>
+  <circle cx="530" cy="218" r="4" fill="#E5E7EB"/>
+  <circle cx="560" cy="206" r="4" fill="#E5E7EB"/>
+  <circle cx="544" cy="228" r="4" fill="#E5E7EB"/>
+  <circle cx="664" cy="200" r="4" fill="#E5E7EB"/>
+  <circle cx="676" cy="212" r="4" fill="#E5E7EB"/>
+  <circle cx="658" cy="218" r="4" fill="#E5E7EB"/>
+  <circle cx="684" cy="206" r="4" fill="#E5E7EB"/>
+  <circle cx="670" cy="228" r="4" fill="#E5E7EB"/>
+
+  <!-- selected: one from each cluster + center -->
+  <circle cx="551" cy="94"  r="7" fill="#2563EB" stroke="white" stroke-width="2"/>
+  <circle cx="672" cy="88"  r="7" fill="#2563EB" stroke="white" stroke-width="2"/>
+  <circle cx="544" cy="212" r="7" fill="#2563EB" stroke="white" stroke-width="2"/>
+  <circle cx="670" cy="210" r="7" fill="#2563EB" stroke="white" stroke-width="2"/>
+  <circle cx="607" cy="148" r="7" fill="#2563EB" stroke="white" stroke-width="2"/>
+
+  <text x="607" y="270" text-anchor="middle" font-size="11" fill="#6B7280">5 demonstrations</text>
+  <text x="607" y="288" text-anchor="middle" font-size="11" fill="#16A34A">covers all 4 behavioral regions</text>
+
+</svg>

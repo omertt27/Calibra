@@ -1,0 +1,50 @@
+<svg width="480" height="510" viewBox="0 0 480 510" xmlns="http://www.w3.org/2000/svg"
+     font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
+
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#9CA3AF"/>
+    </marker>
+  </defs>
+
+  <rect width="480" height="510" fill="white"/>
+
+  <!-- Raw Dataset -->
+  <rect x="140" y="20" width="200" height="58" rx="8" fill="#F9FAFB" stroke="#D1D5DB" stroke-width="1.5"/>
+  <text x="240" y="44" text-anchor="middle" font-size="14" font-weight="600" fill="#111827">Raw Dataset</text>
+  <text x="240" y="64" text-anchor="middle" font-size="12" fill="#6B7280">thousands of demonstrations</text>
+
+  <line x1="240" y1="78" x2="240" y2="102" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Calibra -->
+  <rect x="80" y="108" width="320" height="188" rx="10" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+  <text x="240" y="135" text-anchor="middle" font-size="15" font-weight="700" fill="#1D4ED8">Calibra</text>
+
+  <rect x="104" y="148" width="272" height="38" rx="6" fill="white" stroke="#BFDBFE" stroke-width="1.5"/>
+  <text x="128" y="172" font-size="13" font-weight="600" fill="#1D4ED8">① Audit</text>
+  <text x="200" y="172" font-size="12" fill="#64748B">detect jerk · dropout · sync errors</text>
+
+  <rect x="104" y="194" width="272" height="38" rx="6" fill="white" stroke="#BFDBFE" stroke-width="1.5"/>
+  <text x="128" y="218" font-size="13" font-weight="600" fill="#1D4ED8">② Score</text>
+  <text x="200" y="218" font-size="12" fill="#64748B">quality + diversity + coverage</text>
+
+  <rect x="104" y="240" width="272" height="38" rx="6" fill="white" stroke="#BFDBFE" stroke-width="1.5"/>
+  <text x="128" y="264" font-size="13" font-weight="600" fill="#1D4ED8">③ Select</text>
+  <text x="200" y="264" font-size="12" fill="#64748B">max-coverage behavioral coreset</text>
+
+  <line x1="240" y1="296" x2="240" y2="320" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Coreset -->
+  <rect x="120" y="326" width="240" height="60" rx="8" fill="#F0FDF4" stroke="#16A34A" stroke-width="1.5"/>
+  <text x="240" y="351" text-anchor="middle" font-size="14" font-weight="600" fill="#166534">Curated Coreset</text>
+  <text x="240" y="372" text-anchor="middle" font-size="12" fill="#15803D">25% of episodes · full behavioral spread</text>
+
+  <line x1="240" y1="386" x2="240" y2="410" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Results -->
+  <rect x="72" y="416" width="336" height="76" rx="8" fill="#FFFBEB" stroke="#D97706" stroke-width="1.5"/>
+  <text x="240" y="440" text-anchor="middle" font-size="13" fill="#92400E">✓  Same or better robot policy performance</text>
+  <text x="240" y="460" text-anchor="middle" font-size="13" fill="#92400E">✓  75% less training data</text>
+  <text x="240" y="480" text-anchor="middle" font-size="13" fill="#92400E">✓  75% less compute cost</text>
+
+</svg>
