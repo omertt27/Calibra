@@ -5,12 +5,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/omerTT/Calibra/actions/workflows/ci.yml"><img src="https://github.com/omerTT/Calibra/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
-  <a href="https://pypi.org/project/calibra-robotics/"><img src="https://img.shields.io/pypi/v/calibra-robotics.svg" alt="PyPI"/></a>
-  <a href="https://pypi.org/project/calibra-robotics/"><img src="https://img.shields.io/pypi/pyversions/calibra-robotics.svg" alt="Python Support"/></a>
-  <a href="https://omerTT.github.io/Calibra/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-blue" alt="Docs"/></a>
+  <a href="https://github.com/omertt27/Calibra/actions/workflows/ci.yml"><img src="https://github.com/omertt27/Calibra/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+  <a href="https://omertt27.github.io/Calibra/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-blue" alt="Docs"/></a>
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"/></a>
-  <a href="https://pepy.tech/project/calibra-robotics"><img src="https://pepy.tech/badge/calibra-robotics/month" alt="Downloads"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-BSL_1.1-blue.svg" alt="License"/></a>
 </p>
 
@@ -225,7 +222,7 @@ Calibra is not open to external pull requests or contributions at this time.
 ## Development
 
 ```bash
-git clone https://github.com/omerTT/Calibra
+git clone https://github.com/omertt27/Calibra
 pip install -e '.[all,dev]'
 pytest              # 596 tests
 ruff check .        # zero errors expected

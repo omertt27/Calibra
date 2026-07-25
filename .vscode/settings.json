@@ -1,4 +1,4 @@
 {
   "python.defaultInterpreterPath": "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3",
-  "mergen.serverPort": 3002
+  "mergen.serverPort": 3000
 }

@@ -11,14 +11,14 @@ submitting Calibra to the three most relevant awesome lists.
 
 **Entry text:**
 ```markdown
-- [Calibra](https://github.com/omerTT/Calibra) — Dataset observability and coreset selection for robot imitation learning. Detects jerk spikes, velocity discontinuities, and redundancy in demonstration datasets before policy training. Includes a cross-dataset analysis of 15 public LeRobot v2 datasets. `pip install calibra-robotics`
+- [Calibra](https://github.com/omertt27/Calibra) — Dataset observability and coreset selection for robot imitation learning. Detects jerk spikes, velocity discontinuities, and redundancy in demonstration datasets before policy training. Includes a cross-dataset analysis of 15 public LeRobot v2 datasets. `pip install calibra-robotics`
 ```
 
 **PR title:** `Add Calibra: dataset observability toolkit for imitation learning`
 
 **PR body template:**
 ```
-Hi! I'd like to add [Calibra](https://github.com/omerTT/Calibra) to the
+Hi! I'd like to add [Calibra](https://github.com/omertt27/Calibra) to the
 tooling/data section.
 
 Calibra is an open-source dataset observability toolkit for robot imitation
@@ -32,7 +32,7 @@ reports per-episode anomalies with bootstrap confidence intervals.
 - Available on PyPI: `pip install calibra-robotics`
 - MIT licence, CI/CD, fully documented
 
-Technical report available at: [docs/report/](https://github.com/omerTT/Calibra/tree/main/docs/report)
+Technical report available at: [docs/report/](https://github.com/omertt27/Calibra/tree/main/docs/report)
 ```
 
 ---
@@ -43,7 +43,7 @@ Technical report available at: [docs/report/](https://github.com/omerTT/Calibra/
 
 **Entry text:**
 ```markdown
-- [Calibra](https://github.com/omerTT/Calibra) - Open-source dataset quality auditing for imitation learning. Flags jerk spikes, velocity discontinuities, timing artifacts, and redundant episodes across any LeRobot v2 dataset. Includes a coreset pruner that reduces dataset size by up to 70% while preserving behavioural diversity.
+- [Calibra](https://github.com/omertt27/Calibra) - Open-source dataset quality auditing for imitation learning. Flags jerk spikes, velocity discontinuities, timing artifacts, and redundant episodes across any LeRobot v2 dataset. Includes a coreset pruner that reduces dataset size by up to 70% while preserving behavioural diversity.
 ```
 
 **PR title:** `Add Calibra dataset observability tool`
@@ -56,7 +56,7 @@ Technical report available at: [docs/report/](https://github.com/omerTT/Calibra/
 
 **Entry text:**
 ```markdown
-- [Calibra](https://github.com/omerTT/Calibra) — Dataset observability for LeRobot v2 datasets. Run `calibra compare hf://lerobot/my_dataset aloha` to compare your dataset against validated reference profiles and detect quality issues before training.
+- [Calibra](https://github.com/omertt27/Calibra) — Dataset observability for LeRobot v2 datasets. Run `calibra compare hf://lerobot/my_dataset aloha` to compare your dataset against validated reference profiles and detect quality issues before training.
 ```
 
 **PR title:** `Add Calibra: dataset quality auditing for LeRobot v2`
@@ -77,7 +77,7 @@ BridgeData V2, PushT, SVLA SO-100) so you can compare your dataset against
 known-good baselines.
 
 Install: `pip install calibra-robotics`
-Repo: https://github.com/omerTT/Calibra
+Repo: https://github.com/omertt27/Calibra
 ```
 
 ---

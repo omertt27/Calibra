@@ -5,7 +5,7 @@ Thank you for your interest in contributing to Calibra!
 ## Getting Started
 
 ```bash
-git clone https://github.com/omerTT/Calibra.git
+git clone https://github.com/omertt27/Calibra.git
 cd Calibra
 pip install -e ".[dev]"
 ```
@@ -34,4 +34,4 @@ ruff format .
 
 ## Reporting Issues
 
-Please open an issue on [GitHub](https://github.com/omerTT/Calibra/issues).
+Please open an issue on [GitHub](https://github.com/omertt27/Calibra/issues).

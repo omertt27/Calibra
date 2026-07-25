@@ -14,8 +14,8 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/omerTT/Calibra"
-"Bug Tracker" = "https://github.com/omerTT/Calibra/issues"
+Repository = "https://github.com/omertt27/Calibra"
+"Bug Tracker" = "https://github.com/omertt27/Calibra/issues"
 
 [project.scripts]
 calibra = "calibra.__main__:main"

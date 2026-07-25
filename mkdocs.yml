@@ -1,7 +1,7 @@
 site_name: Calibra
 site_description: Dataset observability and coreset selection for robotics imitation learning.
 site_url: https://omertt.github.io/Calibra/
-repo_url: https://github.com/omerTT/Calibra
+repo_url: https://github.com/omertt27/Calibra
 edit_uri: edit/main/docs/
 
 theme:

@@ -11,7 +11,7 @@ Robot learning labs spend weeks collecting demonstration data and days training
 policies — only to discover mid-evaluation that the dataset had jerk spikes,
 dropped frames, and missing language annotations the whole time.
 
-**[Calibra](https://github.com/omerTT/Calibra)** is an open-source dataset
+**[Calibra](https://github.com/omertt27/Calibra)** is an open-source dataset
 observability tool for robotics imitation learning. It runs deterministic
 mathematical estimators (no LLMs, no heuristics) over your episodes and tells
 you exactly what is wrong — and which episodes to remove — before training starts.
@@ -172,7 +172,7 @@ calibra compare /data/my_demos droid_100
 ```
 
 **Interactive walkthrough:** the
-[GR00T workflow notebook](https://colab.research.google.com/github/omerTT/Calibra/blob/main/notebooks/gr00t_workflow.ipynb)
+[GR00T workflow notebook](https://colab.research.google.com/github/omertt27/Calibra/blob/main/notebooks/gr00t_workflow.ipynb)
 shows the full pipeline from raw Isaac Lab demos to a retargeted GR00T coreset,
 running in ~10 seconds on CPU.
 
@@ -183,4 +183,4 @@ running in ~10 seconds on CPU.
 LeRobot v1/v2 (Parquet + DuckDB), HuggingFace Hub IDs, HDF5 (Isaac Lab,
 Robomimic), RLDS / TF Datasets, MCAP / ROS2 bags.
 
-**GitHub:** https://github.com/omerTT/Calibra
+**GitHub:** https://github.com/omertt27/Calibra
