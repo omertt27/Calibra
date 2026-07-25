@@ -1,10 +1,6 @@
 # Calibra
 
 <p align="center">
-  <img src="docs/logo.svg" alt="Calibra" width="420"/>
-</p>
-
-<p align="center">
   <a href="https://github.com/omertt27/Calibra/actions/workflows/ci.yml"><img src="https://github.com/omertt27/Calibra/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
   <a href="https://omertt27.github.io/Calibra/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-blue" alt="Docs"/></a>
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"/></a>
