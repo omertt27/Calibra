@@ -30,6 +30,7 @@ from calibra.schema.public_report import (
     DatasetInfo,
     DimensionResult,
     EnvironmentInfo,
+    EpisodeHash,
     EpisodeVerdicts,
     Finding,
     MetricValue,
@@ -232,21 +233,23 @@ def assemble_public_report(
     # Compute report ID from the body (excluding the id field itself)
     now = datetime.now(timezone.utc)
     verdicts = _pruning_to_verdicts(pruning_result) if pruning_result is not None else None
-    ep_hashes: dict = episode_hashes or {}
+    ep_hashes = [
+        EpisodeHash(episode_id=eid, hash=h) for eid, h in sorted((episode_hashes or {}).items())
+    ]
     id_body = {
-        "schema_version": "1.0.0",
+        "schema_version": "1.1.0",
         "generated_at": now.isoformat(),
         "calibra_version": __version__,
         "dataset": dataset_info.model_dump(),
         "audit": audit_cfg.model_dump(),
         "results": results.model_dump(),
         "episode_verdicts": verdicts.model_dump() if verdicts is not None else None,
-        "episode_hashes": ep_hashes,
+        "episode_hashes": [h.model_dump() for h in ep_hashes],
     }
     report_id = CalibraReport.compute_id(id_body)
 
     return CalibraReport(
-        schema_version="1.0.0",
+        schema_version="1.1.0",
         report=ReportMeta(
             id=report_id,
             generated_at=now,

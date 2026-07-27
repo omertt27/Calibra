@@ -62,7 +62,6 @@ COMMUNITY_DATASETS: list[str] = [
     "lerobot/xarm_lift_medium_replay",
     "lerobot/xarm_push_medium",
     "lerobot/xarm_push_medium_replay",
-    "lerobot/xarm_lift_medium_unlabeled",
     # Unitree H1 humanoid tasks
     "lerobot/unitreeh1_fold_clothes",
     "lerobot/unitreeh1_rearrange_objects",

@@ -1,8 +1,8 @@
 # Calibra Community Dataset Quality Benchmark
 
-*Generated 2026-07-27 19:07 UTC by [Calibra](https://github.com/omertt27/Calibra)*
+*Generated 2026-07-27 22:49 UTC by [Calibra](https://github.com/omertt27/Calibra)*
 
-Audited **30** public LeRobot datasets. **1 datasets failed to load.**
+Audited **30** public LeRobot datasets. 
 
 ## Leaderboard
 
@@ -38,12 +38,6 @@ Audited **30** public LeRobot datasets. **1 datasets failed to load.**
 | 28 | [pusht](https://huggingface.co/datasets/lerobot/pusht) | **76.7** | C | ✗ Not Certified | 206 | 25,650 | 4 |
 | 29 | [unitreeh1_warehouse](https://huggingface.co/datasets/lerobot/unitreeh1_warehouse) | **76.1** | C | ✗ Not Certified | 24 | 11,275 | 3 |
 | 30 | [unitreeh1_fold_clothes](https://huggingface.co/datasets/lerobot/unitreeh1_fold_clothes) | **75.0** | C | ✗ Not Certified | 38 | 19,000 | 3 |
-
-## Failed to Load
-
-| Dataset | Error |
-|---------|-------|
-| xarm_lift_medium_unlabeled | Dataset 'lerobot/xarm_lift_medium_unlabeled' doesn't exist on the Hub or cannot  |
 
 ## Score Interpretation
 

@@ -194,16 +194,26 @@ class EpisodeVerdicts(BaseModel):
 # ── top-level contract ────────────────────────────────────────────────────────
 
 
+class EpisodeHash(BaseModel):
+    episode_id: str
+    hash: str
+
+
 class CalibraReport(BaseModel):
-    schema_version: str = "1.0.0"
+    schema_version: str = "1.1.0"
     report: ReportMeta
     dataset: DatasetInfo
     audit: AuditConfig
     results: AuditResults
     episode_verdicts: Optional[EpisodeVerdicts] = None
     # Incremental analysis: per-episode SHA-256[:16] of timestamps+actions.
-    # Present when the report was produced with --cache-dir; absent otherwise.
-    episode_hashes: dict[str, str] = {}
+    # A list of records (not a dict keyed by episode_id) so the field has a
+    # stable Arrow/Parquet schema regardless of which episodes are hashed —
+    # a dict shape made every observed episode_id its own struct field, and
+    # collapsed to a zero-field struct when no report had any hashes at all,
+    # which PyArrow refuses to write to Parquet.
+    # Empty when the report was produced without --cache-dir.
+    episode_hashes: list[EpisodeHash] = []
 
     def to_json(self, indent: int = 2) -> str:
         return self.model_dump_json(indent=indent)
