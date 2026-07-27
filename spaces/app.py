@@ -431,16 +431,17 @@ def _score_header(dataset_id: str, score: float, grade: str, cert: str,
 </div>
 <div style="display:flex;align-items:flex-start;gap:24px;margin-bottom:18px">
   <div>
+    <div style="font-size:11px;color:#6c7086;text-transform:uppercase;
+                letter-spacing:.06em;margin-bottom:4px">Health Score</div>
     <div>
       <span style="font-size:68px;font-weight:800;color:{color};line-height:1">{score:.0f}</span>
-      <span style="font-size:18px;color:#6c7086">/100</span>
+      <span style="font-size:18px;color:#6c7086"> / 100</span>
     </div>
-    <div style="font-size:13px;color:#a6adc8;margin-top:4px;max-width:220px">{meaning}</div>
-  </div>
-  <div>
-    <div style="font-size:38px;font-weight:700;color:{color}">{grade}</div>
-    <div style="margin-top:4px">
-      <span style="padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;
+    <div style="font-size:13px;color:#a6adc8;margin-top:6px;max-width:260px">{meaning}</div>
+    <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
+      <span style="font-size:13px;color:#6c7086">Grade:</span>
+      <span style="font-size:14px;font-weight:600;color:{color}">{grade}</span>
+      <span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;
                    background:{cert_color}22;border:1px solid {cert_color};color:{cert_color}">
         {cert_label}
       </span>
