@@ -1,13 +1,13 @@
 ---
 title: Robot Dataset Health Check
 emoji: 🤖
-colorFrom: violet
+colorFrom: purple
 colorTo: blue
 sdk: gradio
 sdk_version: "4.44.0"
 app_file: app.py
 pinned: false
-license: bsl-1.1
+license: other
 short_description: Audit any LeRobot dataset for quality issues in 30 seconds
 tags:
   - robotics
