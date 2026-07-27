@@ -38,7 +38,7 @@ calibra audit lerobot/pusht
 
 ## Community benchmark
 
-See [calibra-robot-dataset-quality-benchmark](https://huggingface.co/datasets/omertt27/calibra-robot-dataset-quality-benchmark)
+See [calibra-robot-dataset-quality-benchmark](https://huggingface.co/datasets/omert27/calibra-robot-dataset-quality-benchmark)
 for audits of 30+ public LeRobot datasets with a sortable leaderboard.
 
 ## About
