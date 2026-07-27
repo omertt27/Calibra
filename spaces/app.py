@@ -260,13 +260,14 @@ def _similar_html(dataset_id: str, score: float) -> str:
         short = rid.split("/")[-1].replace("_", " ")
         delta = s - score
         sign  = "+" if delta >= 0 else "−"
+        delta_color = "#22c55e" if delta >= 0 else "#f97316"
         items += (
             f'<a href="https://huggingface.co/datasets/{rid}" target="_blank"'
             f'   style="display:flex;justify-content:space-between;align-items:center;'
             f'   padding:6px 0;border-bottom:1px solid #313244;text-decoration:none">'
             f'  <span style="font-size:13px;color:#cdd6f4">{short}</span>'
             f'  <span style="font-size:13px;color:{color};font-weight:600">'
-            f'    {s:.0f} <span style="color:#6c7086;font-size:11px;font-weight:400">'
+            f'    {s:.0f} <span style="color:{delta_color};font-size:11px;font-weight:400">'
             f'      ({sign}{abs(delta):.0f})</span>'
             f'  </span>'
             f'</a>'
@@ -334,8 +335,12 @@ def _percentile_section(score: float, dimensions: dict) -> str:
     return f"""
 <div style="border-top:1px solid #313244;margin:14px 0"></div>
 <div style="font-size:11px;color:#6c7086;text-transform:uppercase;letter-spacing:.06em;
-            margin-bottom:8px">Compared with community</div>
-<div style="font-size:20px;font-weight:700;color:{hcolor};margin-bottom:12px">{headline}</div>
+            margin-bottom:8px">Community Rank</div>
+<div style="font-size:30px;font-weight:800;color:{hcolor};margin-bottom:8px">{headline}</div>
+<div style="background:#313244;border-radius:4px;height:8px;width:100%;
+            margin-bottom:14px;overflow:hidden">
+  <div style="background:{hcolor};height:100%;width:{overall_pct}%"></div>
+</div>
 {dim_rows}
 <div style="font-size:11px;color:#45475a;margin-top:8px">
   Percentiles based on {n} audited public LeRobot datasets —
@@ -380,6 +385,14 @@ def _checklist_html(findings: list, n_ep: int) -> str:
 
 # ── recommendation ────────────────────────────────────────────────────────────
 
+_STRATEGY_RATIONALE = {
+    "light quality filter":       "Removes only the clearest outliers — coverage and diversity are preserved.",
+    "quality filter":             "Trims noisy or low-quality episodes while keeping most of the dataset's diversity.",
+    "hybrid (quality + diversity)": "Balances quality filtering with diversity preservation to avoid overfitting.",
+    "aggressive prune":           "Removes a large share of problematic episodes, prioritizing reliability over dataset size.",
+}
+
+
 def _recommend_html(score: float, findings: list, n_ep: int, n_total: int,
                     is_sample: bool, dataset_id: str) -> str:
     n_issues = sum(1 for f in findings if f.severity in ("critical", "warning"))
@@ -398,11 +411,13 @@ def _recommend_html(score: float, findings: list, n_ep: int, n_total: int,
     sample_note = (
         f' <span style="color:#6c7086;font-size:11px">— estimate from {n_ep}/{n_total} ep sample</span>'
     ) if is_sample else ""
+    rationale = _STRATEGY_RATIONALE.get(strategy, "")
 
     return (
         f'<div style="font-size:15px;color:#cdd6f4;font-weight:500">'
         f"Keep ~{keep_pct}% &nbsp;·&nbsp; {keep_n:,} episodes &nbsp;·&nbsp; {strategy}"
         f"{sample_note}</div>"
+        f'<div style="margin-top:4px;font-size:12px;color:#a6adc8">{rationale}</div>'
         f'<div style="margin-top:10px;font-size:12px;color:#6c7086">'
         f'<code style="background:#313244;padding:3px 8px;border-radius:4px">'
         f"calibra prune hf://{dataset_id} --keep {keep_pct/100:.2f}</code></div>"
@@ -479,7 +494,7 @@ def _footer(dataset_id: str) -> str:
 <div style="margin-top:16px;border-top:1px solid #313244;padding-top:10px;
             display:flex;justify-content:space-between;font-size:11px;color:#45475a">
   <span>Powered by <a href="https://github.com/omertt27/Calibra"
-    style="color:#6c7086;text-decoration:none">Calibra</a></span>
+    style="color:#6c7086;text-decoration:none">Calibra</a> — robotics dataset observability</span>
   <span><a href="https://huggingface.co/datasets/{BENCHMARK_DATASET_ID}"
     style="color:#6c7086;text-decoration:none">Community benchmark →</a></span>
 </div>
@@ -622,12 +637,12 @@ Pre-audited datasets return instantly from the benchmark cache.
 ---
 **What gets checked**
 
-| Dimension | Checks |
-|-----------|--------|
-| Temporal Consistency | Frame dropout rate, timestamp jitter, synchronization lag |
-| Motion Quality | Action jerk spikes, velocity discontinuities, smoothness (LDLJ) |
-| Behavioral Coverage | Trajectory diversity, redundancy fraction, entropy |
-| Task Integrity | Episode length distribution, phase balance, inactivity periods |
+| Dimension | Checks | Why it matters |
+|-----------|--------|-----------------|
+| Temporal Consistency | Frame dropout rate, timestamp jitter, synchronization lag | Prevents observation/action misalignment during policy learning |
+| Motion Quality | Action jerk spikes, velocity discontinuities, smoothness (LDLJ) | Reduces noisy demonstrations and unstable learned actions |
+| Behavioral Coverage | Trajectory diversity, redundancy fraction, entropy | Improves state-space diversity and reduces overfitting |
+| Task Integrity | Episode length distribution, phase balance, inactivity periods | Flags incomplete or abnormal demonstrations |
 
 **Full audit locally** (all episodes, per-episode verdicts, certifiable report):
 ```bash
@@ -635,8 +650,8 @@ pip install calibra-robotics
 calibra audit hf://lerobot/pusht
 ```
 
-*Powered by [Calibra](https://github.com/omertt27/Calibra) — open-source dataset quality
-tooling for robotics imitation learning*
+*Powered by [Calibra](https://github.com/omertt27/Calibra) — open-source robotics dataset
+observability*
 """)
 
     def _with_badge_visible(dataset_id):
