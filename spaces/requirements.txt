@@ -1,0 +1,3 @@
+calibra-robotics[lerobot]>=0.6.0
+gradio>=4.0
+huggingface-hub>=0.24
