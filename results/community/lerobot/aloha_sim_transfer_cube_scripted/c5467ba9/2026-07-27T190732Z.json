@@ -1,0 +1,620 @@
+{
+  "schema_version": "1.0.0",
+  "report": {
+    "id": "sha256:3668007f971a8b3cf47dc0ccdf2ba3a12140b292107e0dbaef6914d8459b8ff0",
+    "generated_at": "2026-07-27T19:07:32.087530Z",
+    "calibra_version": "0.6.0",
+    "status": "complete"
+  },
+  "dataset": {
+    "provider": "huggingface",
+    "repository_id": "lerobot/aloha_sim_transfer_cube_scripted",
+    "revision": "c5467ba9059e4c65f27775ced212076980a173fb",
+    "dataset_format": "lerobot",
+    "license": null,
+    "homepage": null,
+    "episodes_total": 50,
+    "episodes_audited": 50,
+    "frames_total": 20000,
+    "robot": null
+  },
+  "audit": {
+    "profile": null,
+    "configuration_hash": "sha256:8ae8b26565530b1c",
+    "scoring_rubric": "robot-dataset-quality-v1.0",
+    "sampling": {
+      "mode": "full",
+      "seed": null,
+      "fraction": 1.0
+    },
+    "environment": {
+      "python": "3.10.1",
+      "platform": "windows-amd64"
+    }
+  },
+  "results": {
+    "overall": {
+      "score": 83.4,
+      "grade": "B",
+      "confidence": 0.995,
+      "certification": "fail",
+      "critical_failures": [
+        "ldlj",
+        "jerk_spike_rate"
+      ]
+    },
+    "dimensions": {
+      "temporal_integrity": {
+        "score": 100.0,
+        "weight": 0.3,
+        "metrics": {
+          "timestamp_jitter_cv": {
+            "value": 3.781032236338855e-6,
+            "unit": "",
+            "score": 100.0,
+            "ci_lower": 3.781032236338855e-6,
+            "ci_upper": 3.781032236338855e-6,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.timestamp_jitter_cv.v1"
+          },
+          "timestamp_dropout_rate": {
+            "value": 0.0,
+            "unit": "fraction",
+            "score": 100.0,
+            "ci_lower": 0.0,
+            "ci_upper": 0.0,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.timestamp_dropout_rate.v1"
+          },
+          "action_dropout_rate": {
+            "value": 0.0,
+            "unit": "fraction",
+            "score": 100.0,
+            "ci_lower": 0.0,
+            "ci_upper": 0.0,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.action_dropout_rate.v1"
+          }
+        }
+      },
+      "motion_quality": {
+        "score": 56.2,
+        "weight": 0.3,
+        "metrics": {
+          "ldlj": {
+            "value": -17.232116193083485,
+            "unit": "",
+            "score": 30.0,
+            "ci_lower": -17.234355304685256,
+            "ci_upper": -17.22998375081032,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "motion.ldlj.v1"
+          },
+          "jerk_spike_rate": {
+            "value": 0.21874055415617125,
+            "unit": "fraction",
+            "score": 30.0,
+            "ci_lower": 0.2156171284634761,
+            "ci_upper": 0.22161209068010074,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.jerk_spike_rate.v1"
+          },
+          "velocity_discontinuity_rate": {
+            "value": 0.007537688442211053,
+            "unit": "fraction",
+            "score": 100.0,
+            "ci_lower": 0.007537688442211053,
+            "ci_upper": 0.007537688442211053,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.velocity_discontinuity_rate.v1"
+          },
+          "action_state_divergence": {
+            "value": 0.2224949476122856,
+            "unit": "",
+            "score": 65.0,
+            "ci_lower": 0.22082279734313487,
+            "ci_upper": 0.22512961998581887,
+            "ci_level": 0.95,
+            "ci_method": "percentile",
+            "methodology": "motion.action_state_divergence.v1"
+          }
+        }
+      },
+      "behavioral_coverage": {
+        "score": 91.0,
+        "weight": 0.2,
+        "metrics": {
+          "action_entropy_bits_per_dim": {
+            "value": 4.031853684599893,
+            "unit": "bits/dim",
+            "score": 100.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.action_entropy_bits_per_dim.v1"
+          },
+          "state_entropy_bits_per_dim[state]": {
+            "value": 4.060753710986679,
+            "unit": "bits/dim",
+            "score": 100.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.state_entropy_bits_per_dim[state].v1"
+          },
+          "trajectory_diversity": {
+            "value": 0.5063736199497155,
+            "unit": "",
+            "score": 90.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "coverage.trajectory_diversity.v1"
+          },
+          "latent_state_entropy": {
+            "value": 5.414120594697181,
+            "unit": "bits",
+            "score": 100.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.latent_state_entropy.v1"
+          },
+          "ssl_trajectory_outliers": {
+            "value": 0.08,
+            "unit": "fraction",
+            "score": 65.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.ssl_trajectory_outliers.v1"
+          }
+        }
+      },
+      "task_integrity": {
+        "score": 91.5,
+        "weight": 0.2,
+        "metrics": {
+          "motion_collection_signature": {
+            "value": 0.21874055415617125,
+            "unit": "spike_fraction",
+            "score": 90.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.motion_collection_signature.v1"
+          },
+          "pca_top2_variance_fraction": {
+            "value": 0.8061676905038032,
+            "unit": "fraction",
+            "score": 100.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.pca_top2_variance_fraction.v1"
+          },
+          "episode_length_distribution": {
+            "value": 0.0,
+            "unit": "CV",
+            "score": 100.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.episode_length_distribution.v1"
+          },
+          "contact_density": {
+            "value": 0.9724,
+            "unit": "fraction",
+            "score": 90.0,
+            "ci_lower": 0.96992375,
+            "ci_upper": 0.97472625,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "task.contact_density.v1"
+          },
+          "grasp_events_per_episode": {
+            "value": 1.0,
+            "unit": "",
+            "score": 90.0,
+            "ci_lower": 1.0,
+            "ci_upper": 1.0,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.grasp_events_per_episode.v1"
+          },
+          "short_episode_fraction": {
+            "value": 0.0,
+            "unit": "fraction",
+            "score": 100.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.short_episode_fraction.v1"
+          },
+          "contact_phase_fraction": {
+            "value": 1.0,
+            "unit": "fraction",
+            "score": 100.0,
+            "ci_lower": 1.0,
+            "ci_upper": 1.0,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.contact_phase_fraction.v1"
+          },
+          "approach_phase_dominance": {
+            "value": 0.0,
+            "unit": "fraction",
+            "score": 100.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.approach_phase_dominance.v1"
+          },
+          "dataset_influence_score": {
+            "value": 0.4852936987635863,
+            "unit": "influence",
+            "score": 90.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.dataset_influence_score.v1"
+          },
+          "transition_redundancy": {
+            "value": 0.9907219973009447,
+            "unit": "fraction",
+            "score": 65.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.transition_redundancy.v1"
+          },
+          "dynamics_predictability_r2": {
+            "value": 0.9691478764912631,
+            "unit": "R^2",
+            "score": 100.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.dynamics_predictability_r2.v1"
+          },
+          "causal_action_effect_mi": {
+            "value": 0.5932792369834661,
+            "unit": "dHSIC",
+            "score": 100.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.causal_action_effect_mi.v1"
+          },
+          "outlier_transition_fraction": {
+            "value": 0.12803643724696356,
+            "unit": "fraction",
+            "score": 65.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.outlier_transition_fraction.v1"
+          }
+        }
+      }
+    },
+    "findings": [
+      {
+        "severity": "ok",
+        "code": "TIMESTAMP_JITTER_CV",
+        "metric": "timestamp_jitter_cv",
+        "message": "Step-to-step timing is consistent.",
+        "implication": "No jitter risk detected.",
+        "affected_fraction": null,
+        "observed_value": 3.781032236338855e-6,
+        "observed_unit": "",
+        "threshold": 0.15
+      },
+      {
+        "severity": "ok",
+        "code": "TIMESTAMP_DROPOUT_RATE",
+        "metric": "timestamp_dropout_rate",
+        "message": "Timestamp dropout rate is within acceptable range.",
+        "implication": "No dropout risk detected.",
+        "affected_fraction": 0.0,
+        "observed_value": 0.0,
+        "observed_unit": "fraction",
+        "threshold": 0.01
+      },
+      {
+        "severity": "ok",
+        "code": "ACTION_DROPOUT_RATE",
+        "metric": "action_dropout_rate",
+        "message": "Action-dropout rate is within acceptable range.",
+        "implication": "No silent command-dropout detected.",
+        "affected_fraction": 0.0,
+        "observed_value": 0.0,
+        "observed_unit": "fraction",
+        "threshold": 0.05
+      },
+      {
+        "severity": "critical",
+        "code": "LDLJ",
+        "metric": "ldlj",
+        "message": "Mean LDLJ = -17.23 across 50 episodes (threshold: >-10). Action trajectories contain significant jerk.",
+        "implication": "High jerk in demonstration data forces the policy to learn discontinuous action transitions. BC policies trained on jerky data produce jerky rollouts that stress hardware and reduce task success on contact-rich tasks. Consider applying action smoothing (e.g. Savitzky-Golay) before training.",
+        "affected_fraction": null,
+        "observed_value": -17.232116193083485,
+        "observed_unit": "",
+        "threshold": -10.0
+      },
+      {
+        "severity": "critical",
+        "code": "JERK_SPIKE_RATE",
+        "metric": "jerk_spike_rate",
+        "message": "21.9% of steps have jerk > 5.0× median jerk — anomalous discontinuities in action sequence.",
+        "implication": "Jerk spikes are typically caused by dropped frames, bad episode boundaries, or incorrect time alignment. They create spurious high-gradient targets that BC policies overfit to, producing unstable rollouts.",
+        "affected_fraction": 0.21874055415617125,
+        "observed_value": 0.21874055415617125,
+        "observed_unit": "fraction",
+        "threshold": 0.02
+      },
+      {
+        "severity": "ok",
+        "code": "VELOCITY_DISCONTINUITY_RATE",
+        "metric": "velocity_discontinuity_rate",
+        "message": "Velocity profile is continuous — no sudden reversals.",
+        "implication": "No velocity discontinuity risk detected.",
+        "affected_fraction": 0.007537688442211053,
+        "observed_value": 0.007537688442211053,
+        "observed_unit": "fraction",
+        "threshold": 0.02
+      },
+      {
+        "severity": "warning",
+        "code": "ACTION_STATE_DIVERGENCE",
+        "metric": "action_state_divergence",
+        "message": "Action-state divergence is 0.2225 (threshold: 0.150). Higher than typical real-hardware position control (0.07–0.13). If this is a scripted/planner dataset, divergence above 0.15 is expected due to large waypoint targets. Otherwise, investigate communication lag or control mode mismatch.",
+        "implication": "Check whether dataset was collected with a scripted planner. For human teleoperation: inspect hardware interface for communication loop bottlenecks. Verify control mode matches observations (position vs velocity).",
+        "affected_fraction": 1.0,
+        "observed_value": 0.2224949476122856,
+        "observed_unit": "",
+        "threshold": 0.15
+      },
+      {
+        "severity": "info",
+        "code": "MOTION_COLLECTION_SIGNATURE",
+        "metric": "motion_collection_signature",
+        "message": "Scripted/planner-generated demonstration signature detected: spike_rate=21.9% (>10%) with vel_disc_rate=0.75% (<1.5%). Motion planners connect waypoints with abrupt starts and stops, producing jerk spikes at every transition — but never reverse direction, so velocity discontinuity stays near zero. Human teleoperation shows the opposite pattern.",
+        "implication": "This is NOT a data quality defect. The jerk spikes are waypoint transitions, not recording artifacts. Two consequences to act on:\n  1. Calibra's default quality filter will discard these episodes as low quality (default --max-spike-rate 0.10). Use --max-spike-rate 0.30 or higher when pruning scripted datasets, or use --quality-only=False to skip the spike filter.\n  2. Policies trained on scripted data learn sharp waypoint-to-waypoint transitions rather than smooth human-like motion. If your target deployment expects smooth trajectories, consider blending with human demonstrations or applying trajectory smoothing before training.",
+        "affected_fraction": null,
+        "observed_value": 0.21874055415617125,
+        "observed_unit": "spike_fraction",
+        "threshold": null
+      },
+      {
+        "severity": "ok",
+        "code": "ACTION_ENTROPY_BITS_PER_DIM",
+        "metric": "action_entropy_bits_per_dim",
+        "message": "Action-space coverage is healthy (4.03 bits/dim).",
+        "implication": "No mode collapse risk detected in action space.",
+        "affected_fraction": null,
+        "observed_value": 4.031853684599893,
+        "observed_unit": "bits/dim",
+        "threshold": 3.5
+      },
+      {
+        "severity": "ok",
+        "code": "PCA_TOP2_VARIANCE_FRACTION",
+        "metric": "pca_top2_variance_fraction",
+        "message": "Action variance is spread across many PCs (top-2 explain 80.6%).",
+        "implication": "No low-rank action collapse detected.",
+        "affected_fraction": null,
+        "observed_value": 0.8061676905038032,
+        "observed_unit": "fraction",
+        "threshold": 0.9
+      },
+      {
+        "severity": "ok",
+        "code": "STATE_ENTROPY_BITS_PER_DIM[STATE]",
+        "metric": "state_entropy_bits_per_dim[state]",
+        "message": "State-space coverage is healthy (4.06 bits/dim).",
+        "implication": "No mode collapse risk detected in state space.",
+        "affected_fraction": null,
+        "observed_value": 4.060753710986679,
+        "observed_unit": "bits/dim",
+        "threshold": 3.5
+      },
+      {
+        "severity": "ok",
+        "code": "EPISODE_LENGTH_DISTRIBUTION",
+        "metric": "episode_length_distribution",
+        "message": "Episode lengths are consistent (mean=400, CV=0.00).",
+        "implication": "No episode length irregularity detected.",
+        "affected_fraction": null,
+        "observed_value": 0.0,
+        "observed_unit": "CV",
+        "threshold": null
+      },
+      {
+        "severity": "info",
+        "code": "CONTACT_DENSITY",
+        "metric": "contact_density",
+        "message": "97.2% of steps are in contact/slow phase (estimated via gripper state + velocity envelope).",
+        "implication": "High contact density (> 60%) → dataset is contact-rich; policy must learn precise contact-phase behaviour. Low density (< 10%) → mostly free-space motion; consider adding contact-phase demonstrations for manipulation tasks.",
+        "affected_fraction": null,
+        "observed_value": 0.9724,
+        "observed_unit": "fraction",
+        "threshold": null
+      },
+      {
+        "severity": "info",
+        "code": "GRASP_EVENTS_PER_EPISODE",
+        "metric": "grasp_events_per_episode",
+        "message": "Mean 1.0 gripper close events per episode.",
+        "implication": "Use this to verify task structure matches expectations. Pick-and-place should have 1-2 grasps; insertion tasks typically 1.",
+        "affected_fraction": null,
+        "observed_value": 1.0,
+        "observed_unit": "",
+        "threshold": null
+      },
+      {
+        "severity": "info",
+        "code": "TRAJECTORY_DIVERSITY",
+        "metric": "trajectory_diversity",
+        "message": "Trajectory diversity score 0.51 — weak evidence of multiple strategies. May be within-task variation.",
+        "implication": "Consider visualising the episode PCA projection to determine whether the spread represents genuine strategy variation or normal trajectory noise.",
+        "affected_fraction": null,
+        "observed_value": 0.5063736199497155,
+        "observed_unit": "",
+        "threshold": 0.6
+      },
+      {
+        "severity": "ok",
+        "code": "SHORT_EPISODE_FRACTION",
+        "metric": "short_episode_fraction",
+        "message": "No suspiciously short episodes detected.",
+        "implication": "Episode length distribution appears consistent.",
+        "affected_fraction": null,
+        "observed_value": 0.0,
+        "observed_unit": "fraction",
+        "threshold": 0.05
+      },
+      {
+        "severity": "ok",
+        "code": "CONTACT_PHASE_FRACTION",
+        "metric": "contact_phase_fraction",
+        "message": "Contact phase is 100.0% of total steps — adequate representation of the manipulation phase.",
+        "implication": "Policy will see sufficient contact-phase examples for generalisation.",
+        "affected_fraction": null,
+        "observed_value": 1.0,
+        "observed_unit": "fraction",
+        "threshold": 0.1
+      },
+      {
+        "severity": "ok",
+        "code": "APPROACH_PHASE_DOMINANCE",
+        "metric": "approach_phase_dominance",
+        "message": "Phase distribution is balanced: approach 0.0%.",
+        "implication": "No approach-dominance bias detected.",
+        "affected_fraction": null,
+        "observed_value": 0.0,
+        "observed_unit": "fraction",
+        "threshold": null
+      },
+      {
+        "severity": "info",
+        "code": "DATASET_INFLUENCE_SCORE",
+        "metric": "dataset_influence_score",
+        "message": "Computed offline learning influence. Top influential episode IDs: 27, 44, 21",
+        "implication": "Exposing --strategy influence in calibra prune to target informative coreset selections.",
+        "affected_fraction": null,
+        "observed_value": 0.4852936987635863,
+        "observed_unit": "influence",
+        "threshold": null
+      },
+      {
+        "severity": "ok",
+        "code": "LATENT_STATE_ENTROPY",
+        "metric": "latent_state_entropy",
+        "message": "Latent state coverage entropy is 5.41 bits.",
+        "implication": "State space displays healthy distribution across workspaces.",
+        "affected_fraction": null,
+        "observed_value": 5.414120594697181,
+        "observed_unit": "bits",
+        "threshold": 2.5
+      },
+      {
+        "severity": "warning",
+        "code": "TRANSITION_REDUNDANCY",
+        "metric": "transition_redundancy",
+        "message": "Transition redundancy is 99.07%.",
+        "implication": "Over 80% of demonstrations contain redundant dynamics. Consider pruning to save compute.",
+        "affected_fraction": null,
+        "observed_value": 0.9907219973009447,
+        "observed_unit": "fraction",
+        "threshold": 0.8
+      },
+      {
+        "severity": "ok",
+        "code": "DYNAMICS_PREDICTABILITY_R2",
+        "metric": "dynamics_predictability_r2",
+        "message": "Dynamics predictability R^2 is 0.9691.",
+        "implication": "Transitions display high causal predictability, suitable for learning world models.",
+        "affected_fraction": null,
+        "observed_value": 0.9691478764912631,
+        "observed_unit": "R^2",
+        "threshold": 0.2
+      },
+      {
+        "severity": "ok",
+        "code": "CAUSAL_ACTION_EFFECT_MI",
+        "metric": "causal_action_effect_mi",
+        "message": "Causal action-effect dependency is 0.5933.",
+        "implication": "OK",
+        "affected_fraction": null,
+        "observed_value": 0.5932792369834661,
+        "observed_unit": "dHSIC",
+        "threshold": 0.1
+      },
+      {
+        "severity": "warning",
+        "code": "OUTLIER_TRANSITION_FRACTION",
+        "metric": "outlier_transition_fraction",
+        "message": "759 transition anomalies detected (12.80%).",
+        "implication": "Large fraction of transitions violate physical dynamics constraints. Check for simulator/sensor glitching.",
+        "affected_fraction": null,
+        "observed_value": 0.12803643724696356,
+        "observed_unit": "fraction",
+        "threshold": 0.05
+      },
+      {
+        "severity": "warning",
+        "code": "SSL_TRAJECTORY_OUTLIERS",
+        "metric": "ssl_trajectory_outliers",
+        "message": "8.0% of episodes are trajectory-level outliers.",
+        "implication": "A high fraction of outlier trajectories suggests inconsistent demonstration quality, hardware calibration drift, or operator errors. Review these outlier episodes before policy training.",
+        "affected_fraction": 0.08,
+        "observed_value": 0.08,
+        "observed_unit": "fraction",
+        "threshold": 0.05
+      }
+    ],
+    "recommendations": {
+      "behavior_cloning": {
+        "status": "review",
+        "reason": null
+      },
+      "act": {
+        "status": "review",
+        "reason": null
+      },
+      "diffusion_policy": {
+        "status": "review",
+        "reason": null
+      },
+      "gr00t": {
+        "status": "review",
+        "reason": null
+      }
+    }
+  },
+  "episode_verdicts": null,
+  "episode_hashes": {}
+}

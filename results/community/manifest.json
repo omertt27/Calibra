@@ -1,0 +1,958 @@
+{
+  "generated_at": "2026-07-27 19:07 UTC",
+  "calibra_version": "0.6.0",
+  "summary": {
+    "total": 31,
+    "audited": 30,
+    "skipped": 0,
+    "failed": 1,
+    "mean_score": 85.8,
+    "min_score": 75.0,
+    "max_score": 91.9
+  },
+  "datasets": [
+    {
+      "repository_id": "lerobot/pusht",
+      "status": "ok",
+      "score": 76.7,
+      "grade": "C",
+      "certification": "fail",
+      "n_episodes": 206,
+      "n_frames": 25650,
+      "n_critical": 4,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 30.0,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 97.5,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 90.8,
+          "weight": 0.2
+        }
+      },
+      "revision": "7628202a2180972f291ba1bc6723834921e72c19",
+      "duration_s": 11.4,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_sim_insertion_human",
+      "status": "ok",
+      "score": 87.3,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 50,
+      "n_frames": 25000,
+      "n_critical": 2,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 65.0,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 97.5,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 91.7,
+          "weight": 0.2
+        }
+      },
+      "revision": "cc571a3c661df81b566dbfde3d5c1e85fcdf7884",
+      "duration_s": 15.9,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_sim_insertion_scripted",
+      "status": "ok",
+      "score": 84.7,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 50,
+      "n_frames": 20000,
+      "n_critical": 2,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 56.2,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 97.5,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 91.5,
+          "weight": 0.2
+        }
+      },
+      "revision": "8ab660912970111cbb26738b11458e6fc4a4aed1",
+      "duration_s": 7.8,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_sim_transfer_cube_human",
+      "status": "ok",
+      "score": 86.0,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 50,
+      "n_frames": 20000,
+      "n_critical": 1,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 65.0,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 91.7,
+          "weight": 0.2
+        }
+      },
+      "revision": "6a43d500f101255823a9d2b9dc244eeb01a2cd31",
+      "duration_s": 6.4,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_sim_transfer_cube_scripted",
+      "status": "ok",
+      "score": 83.4,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 50,
+      "n_frames": 20000,
+      "n_critical": 2,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 56.2,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 91.5,
+          "weight": 0.2
+        }
+      },
+      "revision": "c5467ba9059e4c65f27775ced212076980a173fb",
+      "duration_s": 5.1,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_static_battery",
+      "status": "ok",
+      "score": 87.9,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 49,
+      "n_frames": 29400,
+      "n_critical": 2,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 65.0,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 97.5,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 94.6,
+          "weight": 0.2
+        }
+      },
+      "revision": "06dc3da83c4fd3d1889b00f1dfd3780da8421f64",
+      "duration_s": 5.0,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_static_candy",
+      "status": "ok",
+      "score": 89.3,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 50,
+      "n_frames": 35000,
+      "n_critical": 1,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 73.8,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 94.6,
+          "weight": 0.2
+        }
+      },
+      "revision": "6728831ef9674b74f3ce20bf517890e9ee20b0d9",
+      "duration_s": 5.2,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_static_coffee",
+      "status": "ok",
+      "score": 90.3,
+      "grade": "A",
+      "certification": "fail",
+      "n_episodes": 50,
+      "n_frames": 55000,
+      "n_critical": 1,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 82.5,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 86.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 91.7,
+          "weight": 0.2
+        }
+      },
+      "revision": "b144896feb1f37398a862927b22cd3abdf005a6b",
+      "duration_s": 5.9,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_static_cups_open",
+      "status": "ok",
+      "score": 86.2,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 50,
+      "n_frames": 20000,
+      "n_critical": 2,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 65.0,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 92.5,
+          "weight": 0.2
+        }
+      },
+      "revision": "d793c969cf716001dcca18a0842c3d7e9de9e41b",
+      "duration_s": 4.5,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_static_fork_pick_up",
+      "status": "ok",
+      "score": 87.3,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 100,
+      "n_frames": 60000,
+      "n_critical": 2,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 65.0,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 97.5,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 91.7,
+          "weight": 0.2
+        }
+      },
+      "revision": "6fa573d72f1a2d7c42fcbba4c9dd039b716c0161",
+      "duration_s": 6.2,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_static_pingpong_test",
+      "status": "ok",
+      "score": 88.3,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 10,
+      "n_frames": 6000,
+      "n_critical": 1,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 73.8,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 89.6,
+          "weight": 0.2
+        }
+      },
+      "revision": "fb29aadd5f0c3f78c439913984ef3bec7a297803",
+      "duration_s": 4.9,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_static_screw_driver",
+      "status": "ok",
+      "score": 88.9,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 50,
+      "n_frames": 20000,
+      "n_critical": 1,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 73.8,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.2,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 92.5,
+          "weight": 0.2
+        }
+      },
+      "revision": "21eead16760a8d94d449cadf4bc438b322ab528d",
+      "duration_s": 5.8,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_static_tape",
+      "status": "ok",
+      "score": 86.6,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 50,
+      "n_frames": 35000,
+      "n_critical": 2,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 65.0,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 94.6,
+          "weight": 0.2
+        }
+      },
+      "revision": "92955878beb0da15eee5d4d869841577f87e903e",
+      "duration_s": 6.0,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_static_thread_velcro",
+      "status": "ok",
+      "score": 86.6,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 49,
+      "n_frames": 34300,
+      "n_critical": 2,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 65.0,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 94.6,
+          "weight": 0.2
+        }
+      },
+      "revision": "0c821c87334087dc8d385f55f236e9f9e5565ebf",
+      "duration_s": 6.7,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_static_towel",
+      "status": "ok",
+      "score": 88.7,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 50,
+      "n_frames": 25000,
+      "n_critical": 1,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 73.8,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 91.7,
+          "weight": 0.2
+        }
+      },
+      "revision": "13ad96f5ed0e219e48c72471626a2e3d0eb5aeff",
+      "duration_s": 6.1,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_static_ziploc_slide",
+      "status": "ok",
+      "score": 88.4,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 56,
+      "n_frames": 16800,
+      "n_critical": 2,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 65.0,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 100.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 94.6,
+          "weight": 0.2
+        }
+      },
+      "revision": "ef8fef75fe96d4f35bdd8bf7bb5035709176f1f9",
+      "duration_s": 4.5,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_mobile_cabinet",
+      "status": "ok",
+      "score": 88.7,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 85,
+      "n_frames": 127500,
+      "n_critical": 1,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 73.8,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 91.7,
+          "weight": 0.2
+        }
+      },
+      "revision": "7a752b39f7e69de7e38aee485a6bab07528a061a",
+      "duration_s": 6.6,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_mobile_chair",
+      "status": "ok",
+      "score": 89.7,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 55,
+      "n_frames": 110000,
+      "n_critical": 1,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 82.5,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 86.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 88.8,
+          "weight": 0.2
+        }
+      },
+      "revision": "95a969f868bd2179b36dc7a2721697cd49455530",
+      "duration_s": 8.3,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_mobile_elevator",
+      "status": "ok",
+      "score": 91.9,
+      "grade": "A",
+      "certification": "fail",
+      "n_episodes": 20,
+      "n_frames": 45000,
+      "n_critical": 1,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 82.5,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 94.6,
+          "weight": 0.2
+        }
+      },
+      "revision": "015f899eb28089c3b9d0328345875e89157471f5",
+      "duration_s": 7.0,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_mobile_shrimp",
+      "status": "ok",
+      "score": 91.3,
+      "grade": "A",
+      "certification": "fail",
+      "n_episodes": 18,
+      "n_frames": 67500,
+      "n_critical": 1,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 82.5,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 91.7,
+          "weight": 0.2
+        }
+      },
+      "revision": "6e828202059d2cc204b61ff968c232d202127a34",
+      "duration_s": 4.5,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_mobile_wash_pan",
+      "status": "ok",
+      "score": 89.3,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 50,
+      "n_frames": 55000,
+      "n_critical": 1,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 73.8,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 94.6,
+          "weight": 0.2
+        }
+      },
+      "revision": "2d7d8593d81eeec29f5785f21e0a8c92bc78bcc0",
+      "duration_s": 6.1,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/aloha_mobile_wipe_wine",
+      "status": "ok",
+      "score": 91.9,
+      "grade": "A",
+      "certification": "fail",
+      "n_episodes": 50,
+      "n_frames": 65000,
+      "n_critical": 1,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 82.5,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 94.6,
+          "weight": 0.2
+        }
+      },
+      "revision": "b57bde2a10c343cbc2be9a0052f126854c4bb091",
+      "duration_s": 5.8,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/xarm_lift_medium",
+      "status": "ok",
+      "score": 83.9,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 800,
+      "n_frames": 20000,
+      "n_critical": 3,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 56.2,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 97.5,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 87.9,
+          "weight": 0.2
+        }
+      },
+      "revision": "79efb0e3cef0e530ddec4b8569b190966ab45808",
+      "duration_s": 5.7,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/xarm_lift_medium_replay",
+      "status": "ok",
+      "score": 82.6,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 800,
+      "n_frames": 20000,
+      "n_critical": 3,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 56.2,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 87.9,
+          "weight": 0.2
+        }
+      },
+      "revision": "1da06eafab3a2e6ad52e36edfba6583bd6378d19",
+      "duration_s": 8.1,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/xarm_push_medium",
+      "status": "ok",
+      "score": 81.2,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 800,
+      "n_frames": 20000,
+      "n_critical": 1,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 53.3,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 85.0,
+          "weight": 0.2
+        }
+      },
+      "revision": "50352b1fd09fd7cb440a3f09c0c0f0b362e45876",
+      "duration_s": 6.6,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/xarm_push_medium_replay",
+      "status": "ok",
+      "score": 85.3,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 800,
+      "n_frames": 20000,
+      "n_critical": 2,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 65.0,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 87.9,
+          "weight": 0.2
+        }
+      },
+      "revision": "c58f218a4946c34c59ed27737d084f2592ce98e3",
+      "duration_s": 6.3,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/xarm_lift_medium_unlabeled",
+      "status": "failed",
+      "score": null,
+      "grade": null,
+      "certification": null,
+      "n_episodes": null,
+      "n_frames": null,
+      "n_critical": null,
+      "revision": null,
+      "duration_s": 0.3,
+      "error": "Dataset 'lerobot/xarm_lift_medium_unlabeled' doesn't exist on the Hub or cannot be accessed."
+    },
+    {
+      "repository_id": "lerobot/unitreeh1_fold_clothes",
+      "status": "ok",
+      "score": 75.0,
+      "grade": "C",
+      "certification": "fail",
+      "n_episodes": 38,
+      "n_frames": 19000,
+      "n_critical": 3,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 30.0,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 88.8,
+          "weight": 0.2
+        }
+      },
+      "revision": "a0926b4dd672560fdc4e6c9d1e68cda17631d608",
+      "duration_s": 6.0,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/unitreeh1_rearrange_objects",
+      "status": "ok",
+      "score": 79.1,
+      "grade": "C",
+      "certification": "fail",
+      "n_episodes": 30,
+      "n_frames": 7150,
+      "n_critical": 3,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 41.7,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.2,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 91.7,
+          "weight": 0.2
+        }
+      },
+      "revision": "e874d89b9024bad414deb45d7da82fa93601c260",
+      "duration_s": 5.0,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/unitreeh1_two_robot_greeting",
+      "status": "ok",
+      "score": 80.8,
+      "grade": "B",
+      "certification": "fail",
+      "n_episodes": 30,
+      "n_frames": 3750,
+      "n_critical": 2,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 53.3,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 82.5,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 91.7,
+          "weight": 0.2
+        }
+      },
+      "revision": "51d65cfa10380beff74570b599b49347abf5fbfa",
+      "duration_s": 4.8,
+      "error": null
+    },
+    {
+      "repository_id": "lerobot/unitreeh1_warehouse",
+      "status": "ok",
+      "score": 76.1,
+      "grade": "C",
+      "certification": "fail",
+      "n_episodes": 24,
+      "n_frames": 11275,
+      "n_critical": 3,
+      "dimensions": {
+        "temporal_integrity": {
+          "score": 100.0,
+          "weight": 0.3
+        },
+        "motion_quality": {
+          "score": 30.0,
+          "weight": 0.3
+        },
+        "behavioral_coverage": {
+          "score": 91.0,
+          "weight": 0.2
+        },
+        "task_integrity": {
+          "score": 94.6,
+          "weight": 0.2
+        }
+      },
+      "revision": "c5bbea3c3b3f787d14a135801dbee2be56e60ba8",
+      "duration_s": 4.8,
+      "error": null
+    }
+  ]
+}
