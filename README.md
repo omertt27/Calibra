@@ -7,11 +7,21 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-BSL_1.1-blue.svg" alt="License"/></a>
 </p>
 
-<p align="center"><b>Data quality and coreset selection for robot learning.</b></p>
+<p align="center"><b>Audit robot datasets. Build better coresets. Train with less data.</b></p>
 
 <p align="center">
-Same robot performance. Up to 75% less training data.
+Open-source tooling for robot dataset quality, diagnostics, and coreset selection.
 </p>
+
+---
+
+## Highlights
+
+- 🔍 Audit robot datasets for quality, synchrony, coverage, and task integrity
+- ✂️ Reduce training data by up to 75% with quality-aware coreset selection
+- 📊 Audit 30+ public LeRobot datasets with an interactive Hugging Face Space
+- 🤖 Supports LeRobot, Isaac Lab, RLDS, HDF5, MCAP, and Hugging Face Hub
+- 📦 Install with `pip install calibra-robotics`
 
 ---
 
@@ -20,6 +30,29 @@ Same robot performance. Up to 75% less training data.
 <p align="center">
   <img src="docs/figures/pipeline.svg" alt="Calibra pipeline" width="420"/>
 </p>
+
+---
+
+## Quick start
+
+```bash
+pip install calibra-robotics
+
+calibra audit lerobot/pusht
+```
+
+---
+
+## Try it online
+
+No installation required.
+
+🔗 [Robot Dataset Health Check](https://huggingface.co/spaces/omert27/robot-dataset-health-check) (Hugging Face Space)
+
+- Audit any LeRobot dataset
+- View health score and percentile
+- Compare against community benchmarks
+- Download a full audit report
 
 ---
 
@@ -88,18 +121,6 @@ Method rankings are stable across all three policy families (Spearman ρ ≥ 0.8
 <p align="center">
   <img src="docs/figures/before_after.svg" alt="Before and after Calibra" width="640"/>
 </p>
-
----
-
-## Quick start
-
-```bash
-pip install calibra-robotics
-
-calibra audit lerobot/pusht
-calibra prune /data/demos.h5 --keep 0.25 --out coreset.json
-calibra certify /data/demos.h5 --policy diffusion
-```
 
 ---
 
