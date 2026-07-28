@@ -18,10 +18,10 @@ from typing import Optional
 import gradio as gr
 
 # ── constants ─────────────────────────────────────────────────────────────────
-SAMPLE_EPISODE_CAP   = 20
-AUDIT_TIMEOUT_S      = 90
+SAMPLE_EPISODE_CAP = 20
+AUDIT_TIMEOUT_S = 90
 BENCHMARK_DATASET_ID = "omert27/calibra-robot-dataset-quality-benchmark"
-SPACE_URL            = "https://huggingface.co/spaces/omert27/robot-dataset-health-check"
+SPACE_URL = "https://huggingface.co/spaces/omert27/robot-dataset-health-check"
 
 # ── community stats ───────────────────────────────────────────────────────────
 _COMMUNITY_STATS: Optional[dict] = None
@@ -53,9 +53,11 @@ def _boot() -> None:
 
 # ── audit ─────────────────────────────────────────────────────────────────────
 
+
 def _hf_revision(repo_id: str) -> Optional[str]:
     try:
         from huggingface_hub import HfApi
+
         return getattr(HfApi().dataset_info(repo_id=repo_id), "sha", None)
     except Exception:
         return None
@@ -67,9 +69,9 @@ def _run_sample_audit(dataset_id: str) -> dict:
     from calibra.report_json import assemble_public_report
     from calibra.schema.public_report import DatasetInfo, SamplingConfig
 
-    revision  = _hf_revision(dataset_id)
-    batch     = load(dataset_id)
-    n_total   = batch.n_episodes
+    revision = _hf_revision(dataset_id)
+    batch = load(dataset_id)
+    n_total = batch.n_episodes
     is_sample = n_total > SAMPLE_EPISODE_CAP
 
     if is_sample:
@@ -98,17 +100,17 @@ def _run_sample_audit(dataset_id: str) -> dict:
 
     overall = public.results.overall
     return {
-        "score":            overall.score,
-        "grade":            overall.grade,
-        "cert":             overall.certification,
-        "n_episodes":       diag.n_episodes,
+        "score": overall.score,
+        "grade": overall.grade,
+        "cert": overall.certification,
+        "n_episodes": diag.n_episodes,
         "n_episodes_total": n_total,
-        "n_samples":        diag.n_samples,
-        "fmt":              diag.format,
-        "findings":         public.results.findings,
-        "dimensions":       public.results.dimensions,
-        "is_sample":        is_sample,
-        "report_path":      _write_temp_report(public, dataset_id),
+        "n_samples": diag.n_samples,
+        "fmt": diag.format,
+        "findings": public.results.findings,
+        "dimensions": public.results.dimensions,
+        "is_sample": is_sample,
+        "report_path": _write_temp_report(public, dataset_id),
     }
 
 
@@ -139,7 +141,7 @@ def run_audit(dataset_id: str, progress=gr.Progress()):
     # ── live audit ────────────────────────────────────────────────────────────
     progress(0.10, desc=f"Loading {dataset_id} ...")
     result: dict = {}
-    error:  list  = []
+    error: list = []
 
     def _worker():
         try:
@@ -153,8 +155,10 @@ def run_audit(dataset_id: str, progress=gr.Progress()):
     while thread.is_alive() and elapsed < AUDIT_TIMEOUT_S:
         thread.join(timeout=3)
         elapsed += 3
-        progress(min(0.15 + elapsed / AUDIT_TIMEOUT_S * 0.75, 0.90),
-                 desc=f"Running quality checks ({elapsed}s) ...")
+        progress(
+            min(0.15 + elapsed / AUDIT_TIMEOUT_S * 0.75, 0.90),
+            desc=f"Running quality checks ({elapsed}s) ...",
+        )
 
     if thread.is_alive():
         raise gr.Error(
@@ -186,9 +190,9 @@ _SCORE_BANDS = [(90, "#22c55e"), (75, "#84cc16"), (60, "#f59e0b"), (40, "#f97316
 _BADGE_COLORS = {"A": "brightgreen", "B": "green", "C": "yellow", "D": "orange", "F": "red"}
 
 _CERT_TEXT = {
-    "pass":        ("✓ Certified",               "#22c55e"),
-    "provisional": ("~ Provisionally Certified",  "#f59e0b"),
-    "fail":        ("✗ Not Certified",             "#ef4444"),
+    "pass": ("✓ Certified", "#22c55e"),
+    "provisional": ("~ Provisionally Certified", "#f59e0b"),
+    "fail": ("✗ Not Certified", "#ef4444"),
 }
 
 _SCORE_MEANING = [
@@ -197,14 +201,14 @@ _SCORE_MEANING = [
     (70, "Generally usable — some quality issues worth reviewing before training."),
     (60, "Moderate issues — consider selective episode retention."),
     (40, "Significant quality issues — pruning recommended before training."),
-    (0,  "Substantial quality issues — major cleanup recommended."),
+    (0, "Substantial quality issues — major cleanup recommended."),
 ]
 
 _DIM_LABELS = {
-    "temporal_integrity":  "Temporal Consistency",
-    "motion_quality":      "Motion Quality",
+    "temporal_integrity": "Temporal Consistency",
+    "motion_quality": "Motion Quality",
     "behavioral_coverage": "Behavioral Coverage",
-    "task_integrity":      "Task Integrity",
+    "task_integrity": "Task Integrity",
 }
 
 _SEV_ORDER = {"critical": 0, "warning": 1, "ok": 2, "info": 3}
@@ -232,15 +236,17 @@ def _pct_rank(score: float, distribution: list) -> int:
 
 # ── badge ─────────────────────────────────────────────────────────────────────
 
+
 def _make_badge_markdown(score: float, grade: str, dataset_id: str) -> str:
-    color   = _BADGE_COLORS.get(grade, "lightgrey")
+    color = _BADGE_COLORS.get(grade, "lightgrey")
     message = urllib.parse.quote(f"{grade} · {score:.0f}/100", safe="")
-    label   = urllib.parse.quote("Calibra Health", safe="")
+    label = urllib.parse.quote("Calibra Health", safe="")
     img_url = f"https://img.shields.io/badge/{label}-{message}-{color}"
     return f"[![Calibra Health]({img_url})]({SPACE_URL})"
 
 
 # ── similar datasets ──────────────────────────────────────────────────────────
+
 
 def _similar_html(dataset_id: str, score: float) -> str:
     if not _CACHE:
@@ -254,12 +260,11 @@ def _similar_html(dataset_id: str, score: float) -> str:
 
     items = ""
     for rid, d in ranked:
-        s     = d["score"]
-        g     = d.get("grade", "?")
+        s = d["score"]
         color = _band_color(s)
         short = rid.split("/")[-1].replace("_", " ")
         delta = s - score
-        sign  = "+" if delta >= 0 else "−"
+        sign = "+" if delta >= 0 else "−"
         delta_color = "#22c55e" if delta >= 0 else "#f97316"
         items += (
             f'<a href="https://huggingface.co/datasets/{rid}" target="_blank"'
@@ -268,9 +273,9 @@ def _similar_html(dataset_id: str, score: float) -> str:
             f'  <span style="font-size:13px;color:#cdd6f4">{short}</span>'
             f'  <span style="font-size:13px;color:{color};font-weight:600">'
             f'    {s:.0f} <span style="color:{delta_color};font-size:11px;font-weight:400">'
-            f'      ({sign}{abs(delta):.0f})</span>'
-            f'  </span>'
-            f'</a>'
+            f"      ({sign}{abs(delta):.0f})</span>"
+            f"  </span>"
+            f"</a>"
         )
 
     return f"""
@@ -286,15 +291,16 @@ def _similar_html(dataset_id: str, score: float) -> str:
 
 # ── percentile section ────────────────────────────────────────────────────────
 
+
 def _percentile_section(score: float, dimensions: dict) -> str:
     if not _COMMUNITY_STATS:
         return ""
 
     overall_dist = _COMMUNITY_STATS.get("scores", [])
-    dim_dists    = _COMMUNITY_STATS.get("dimension_distributions", {})
-    n            = _COMMUNITY_STATS.get("n_datasets", 0)
-    overall_pct  = _pct_rank(score, overall_dist)
-    top_pct      = 100 - overall_pct
+    dim_dists = _COMMUNITY_STATS.get("dimension_distributions", {})
+    n = _COMMUNITY_STATS.get("n_datasets", 0)
+    overall_pct = _pct_rank(score, overall_dist)
+    top_pct = 100 - overall_pct
 
     if top_pct <= 10:
         headline, hcolor = f"Top {top_pct}% of audited datasets", "#22c55e"
@@ -307,11 +313,11 @@ def _percentile_section(score: float, dimensions: dict) -> str:
 
     dim_rows = ""
     for dim_key, dim_result in sorted(dimensions.items()):
-        dist  = dim_dists.get(dim_key, [])
+        dist = dim_dists.get(dim_key, [])
         if not dist:
             continue
-        pct   = _pct_rank(dim_result.score, dist)
-        top   = 100 - pct
+        pct = _pct_rank(dim_result.score, dist)
+        top = 100 - pct
         color = _band_color(dim_result.score)
         label = _DIM_LABELS.get(dim_key, dim_key.replace("_", " ").title())
         if top <= 33:
@@ -328,8 +334,8 @@ def _percentile_section(score: float, dimensions: dict) -> str:
             f'<div style="display:flex;align-items:center;gap:12px">'
             f'<span style="font-size:13px;color:{color};font-weight:600">{dim_result.score:.0f}</span>'
             f'<span style="font-size:12px;color:{rcolor};min-width:100px;text-align:right">'
-            f'{rank_str}</span>'
-            f'</div></div>'
+            f"{rank_str}</span>"
+            f"</div></div>"
         )
 
     return f"""
@@ -352,6 +358,7 @@ def _percentile_section(score: float, dimensions: dict) -> str:
 
 # ── checklist ─────────────────────────────────────────────────────────────────
 
+
 def _checklist_html(findings: list, n_ep: int) -> str:
     problems = sorted(
         [f for f in findings if f.severity in ("critical", "warning")],
@@ -370,7 +377,7 @@ def _checklist_html(findings: list, n_ep: int) -> str:
     for f in problems:
         color = "#ef4444" if f.severity == "critical" else "#f59e0b"
         if f.affected_fraction is not None and n_ep > 0:
-            n    = max(1, round(f.affected_fraction * n_ep))
+            n = max(1, round(f.affected_fraction * n_ep))
             text = f"{n} episode{'s' if n != 1 else ''} — {f.message}"
         else:
             text = f.message
@@ -386,15 +393,16 @@ def _checklist_html(findings: list, n_ep: int) -> str:
 # ── recommendation ────────────────────────────────────────────────────────────
 
 _STRATEGY_RATIONALE = {
-    "light quality filter":       "Removes only the clearest outliers — coverage and diversity are preserved.",
-    "quality filter":             "Trims noisy or low-quality episodes while keeping most of the dataset's diversity.",
+    "light quality filter": "Removes only the clearest outliers — coverage and diversity are preserved.",
+    "quality filter": "Trims noisy or low-quality episodes while keeping most of the dataset's diversity.",
     "hybrid (quality + diversity)": "Balances quality filtering with diversity preservation to avoid overfitting.",
-    "aggressive prune":           "Removes a large share of problematic episodes, prioritizing reliability over dataset size.",
+    "aggressive prune": "Removes a large share of problematic episodes, prioritizing reliability over dataset size.",
 }
 
 
-def _recommend_html(score: float, findings: list, n_ep: int, n_total: int,
-                    is_sample: bool, dataset_id: str) -> str:
+def _recommend_html(
+    score: float, findings: list, n_ep: int, n_total: int, is_sample: bool, dataset_id: str
+) -> str:
     n_issues = sum(1 for f in findings if f.severity in ("critical", "warning"))
     if score >= 88 and n_issues == 0:
         keep_pct, strategy = 90, "light quality filter"
@@ -409,8 +417,12 @@ def _recommend_html(score: float, findings: list, n_ep: int, n_total: int,
 
     keep_n = max(1, round(n_total * keep_pct / 100))
     sample_note = (
-        f' <span style="color:#6c7086;font-size:11px">— estimate from {n_ep}/{n_total} ep sample</span>'
-    ) if is_sample else ""
+        (
+            f' <span style="color:#6c7086;font-size:11px">— estimate from {n_ep}/{n_total} ep sample</span>'
+        )
+        if is_sample
+        else ""
+    )
     rationale = _STRATEGY_RATIONALE.get(strategy, "")
 
     return (
@@ -420,26 +432,33 @@ def _recommend_html(score: float, findings: list, n_ep: int, n_total: int,
         f'<div style="margin-top:4px;font-size:12px;color:#a6adc8">{rationale}</div>'
         f'<div style="margin-top:10px;font-size:12px;color:#6c7086">'
         f'<code style="background:#313244;padding:3px 8px;border-radius:4px">'
-        f"calibra prune hf://{dataset_id} --keep {keep_pct/100:.2f}</code></div>"
+        f"calibra prune hf://{dataset_id} --keep {keep_pct / 100:.2f}</code></div>"
     )
 
 
 # ── card wrapper ──────────────────────────────────────────────────────────────
 
+
 def _card_wrapper(inner: str) -> str:
     return (
-        '<div style="font-family:\'Inter\',\'Segoe UI\',sans-serif;background:#1e1e2e;'
-        'border-radius:14px;padding:24px 28px;color:#cdd6f4;max-width:780px">'
-        + inner + "</div>"
+        "<div style=\"font-family:'Inter','Segoe UI',sans-serif;background:#1e1e2e;"
+        'border-radius:14px;padding:24px 28px;color:#cdd6f4;max-width:780px">' + inner + "</div>"
     )
 
 
-def _score_header(dataset_id: str, score: float, grade: str, cert: str,
-                  n_episodes: int, n_frames: int, fmt: str,
-                  sample_tag: str = "") -> str:
-    color      = _band_color(score)
+def _score_header(
+    dataset_id: str,
+    score: float,
+    grade: str,
+    cert: str,
+    n_episodes: int,
+    n_frames: int,
+    fmt: str,
+    sample_tag: str = "",
+) -> str:
+    color = _band_color(score)
     cert_label, cert_color = _CERT_TEXT.get(cert, ("Unknown", "#6b7280"))
-    meaning    = _score_meaning(score)
+    meaning = _score_meaning(score)
     return f"""
 <div style="font-size:11px;color:#6c7086;letter-spacing:.06em;margin-bottom:10px">
   ROBOT DATASET HEALTH CHECK
@@ -503,24 +522,37 @@ def _footer(dataset_id: str) -> str:
 
 # ── full render ───────────────────────────────────────────────────────────────
 
+
 def _render_health_card(dataset_id: str, r: dict) -> str:
-    n_ep      = r["n_episodes"]
-    n_total   = r["n_episodes_total"]
+    n_ep = r["n_episodes"]
+    n_total = r["n_episodes_total"]
     is_sample = r["is_sample"]
     sample_tag = (
-        f' <span style="font-size:11px;background:#313244;padding:2px 8px;'
-        f'border-radius:10px;color:#a6adc8">sample {n_ep}/{n_total} ep</span>'
-    ) if is_sample else ""
+        (
+            f' <span style="font-size:11px;background:#313244;padding:2px 8px;'
+            f'border-radius:10px;color:#a6adc8">sample {n_ep}/{n_total} ep</span>'
+        )
+        if is_sample
+        else ""
+    )
 
     inner = (
-        _score_header(dataset_id, r["score"], r["grade"], r["cert"],
-                      n_total, r["n_samples"], r["fmt"], sample_tag)
+        _score_header(
+            dataset_id,
+            r["score"],
+            r["grade"],
+            r["cert"],
+            n_total,
+            r["n_samples"],
+            r["fmt"],
+            sample_tag,
+        )
         + _checklist_html(r["findings"], n_ep)
         + _percentile_section(r["score"], r["dimensions"])
         + _similar_html(dataset_id, r["score"])
-        + f'<div style="border-top:1px solid #313244;margin:14px 0"></div>'
-        + f'<div style="font-size:11px;color:#6c7086;text-transform:uppercase;'
-          f'letter-spacing:.06em;margin-bottom:8px">Retention Recommendation</div>'
+        + '<div style="border-top:1px solid #313244;margin:14px 0"></div>'
+        + '<div style="font-size:11px;color:#6c7086;text-transform:uppercase;'
+        'letter-spacing:.06em;margin-bottom:8px">Retention Recommendation</div>'
         + _recommend_html(r["score"], r["findings"], n_ep, n_total, is_sample, dataset_id)
         + _full_audit_block(dataset_id)
         + _footer(dataset_id)
@@ -529,12 +561,12 @@ def _render_health_card(dataset_id: str, r: dict) -> str:
 
 
 def _render_cached_card(dataset_id: str, cached: dict) -> str:
-    score  = cached["score"]
-    grade  = cached.get("grade", "?")
-    cert   = cached.get("certification", "")
-    n_ep   = cached.get("n_episodes") or 0
-    n_fr   = cached.get("n_frames") or 0
-    n_iss  = cached.get("n_critical") or 0
+    score = cached["score"]
+    grade = cached.get("grade", "?")
+    cert = cached.get("certification", "")
+    n_ep = cached.get("n_episodes") or 0
+    n_fr = cached.get("n_frames") or 0
+    n_iss = cached.get("n_critical") or 0
 
     class _Dim:
         def __init__(self, s):
@@ -551,17 +583,21 @@ def _render_cached_card(dataset_id: str, cached: dict) -> str:
         'border-radius:10px;color:#a6adc8">full audit cached</span>'
     )
     issue_line = (
-        f'<div style="color:#f59e0b;font-size:13px;margin-top:6px">'
-        f'{n_iss} quality issue{"s" if n_iss != 1 else ""} detected</div>'
-    ) if n_iss else (
-        '<div style="color:#22c55e;font-size:13px;margin-top:6px">No quality issues detected</div>'
+        (
+            f'<div style="color:#f59e0b;font-size:13px;margin-top:6px">'
+            f"{n_iss} quality issue{'s' if n_iss != 1 else ''} detected</div>"
+        )
+        if n_iss
+        else (
+            '<div style="color:#22c55e;font-size:13px;margin-top:6px">No quality issues detected</div>'
+        )
     )
     detail_link = (
         f'<div style="font-size:13px;color:#a6adc8;margin-bottom:14px">'
-        f'  Full per-episode results in the '
+        f"  Full per-episode results in the "
         f'  <a href="https://huggingface.co/datasets/{BENCHMARK_DATASET_ID}"'
         f'     style="color:#89b4fa">community benchmark dataset →</a>'
-        f'</div>'
+        f"</div>"
     )
 
     inner = (
@@ -579,7 +615,7 @@ def _render_cached_card(dataset_id: str, cached: dict) -> str:
 
 def _write_temp_report(public, dataset_id: str) -> str:
     slug = dataset_id.replace("/", "_")
-    ts   = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     path = os.path.join(tempfile.gettempdir(), f"calibra_{slug}_{ts}.json")
     public.write(path)
     return path
@@ -623,9 +659,9 @@ Pre-audited datasets return instantly from the benchmark cache.
         )
         btn = gr.Button("Check Health", variant="primary", scale=1, min_width=140)
 
-    out_html     = gr.HTML()
+    out_html = gr.HTML()
     out_download = gr.File(label="Download Full Report (JSON)")
-    out_badge    = gr.Textbox(
+    out_badge = gr.Textbox(
         label="README badge — paste into your dataset card",
         interactive=False,
         visible=False,

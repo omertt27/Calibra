@@ -75,6 +75,7 @@ COMMUNITY_DATASETS: list[str] = [
 def _hf_revision(repo_id: str) -> Optional[str]:
     try:
         from huggingface_hub import HfApi
+
         info = HfApi().dataset_info(repo_id=repo_id)
         return getattr(info, "sha", None)
     except Exception:
@@ -116,15 +117,27 @@ def _audit_one(
                 "n_episodes": data.get("dataset", {}).get("episodes_total"),
                 "n_frames": data.get("dataset", {}).get("frames_total"),
                 "n_critical": len(
-                    [f for f in data.get("results", {}).get("findings", [])
-                     if f.get("severity") == "critical"]
+                    [
+                        f
+                        for f in data.get("results", {}).get("findings", [])
+                        if f.get("severity") == "critical"
+                    ]
                 ),
                 "revision": revision,
                 "error": None,
             }
-        return {"repository_id": repo_id, "status": "skipped", "score": None, "grade": None,
-                "certification": None, "n_episodes": None, "n_frames": None,
-                "n_critical": None, "revision": revision, "error": None}
+        return {
+            "repository_id": repo_id,
+            "status": "skipped",
+            "score": None,
+            "grade": None,
+            "certification": None,
+            "n_episodes": None,
+            "n_frames": None,
+            "n_critical": None,
+            "revision": revision,
+            "error": None,
+        }
 
     t0 = time.monotonic()
     print(f"{label}  auditing ...", flush=True)
@@ -323,6 +336,7 @@ def _write_manifest(results: list[dict], out: Path, generated_at: str) -> None:
     # community_stats.json — loaded by the HF Space for percentile comparison
     if scores:
         import statistics
+
         community_stats = {
             "generated_at": generated_at,
             "n_datasets": len(scores),
@@ -346,16 +360,13 @@ def _community_dimension_stats(results: list[dict]) -> dict:
             s = dim_data.get("score") if isinstance(dim_data, dict) else None
             if s is not None:
                 dim_scores.setdefault(dim_name, []).append(s)
-    return {
-        name: round(sum(vals) / len(vals), 1)
-        for name, vals in dim_scores.items()
-        if vals
-    }
+    return {name: round(sum(vals) / len(vals), 1) for name, vals in dim_scores.items() if vals}
 
 
 def _calibra_version() -> str:
     try:
         from calibra import __version__
+
         return __version__
     except Exception:
         return "unknown"
@@ -370,14 +381,23 @@ def main(argv: Optional[list[str]] = None) -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
-    p.add_argument("--out", default="results/community", metavar="DIR",
-                   help="Output directory (default: results/community)")
-    p.add_argument("--workers", type=int, default=2, metavar="N",
-                   help="Parallel workers (default: 2; HF Hub rate-limits concurrent requests)")
-    p.add_argument("--force", action="store_true",
-                   help="Re-audit even when a cached report exists")
-    p.add_argument("--limit", type=int, metavar="N",
-                   help="Audit only the first N datasets (for testing)")
+    p.add_argument(
+        "--out",
+        default="results/community",
+        metavar="DIR",
+        help="Output directory (default: results/community)",
+    )
+    p.add_argument(
+        "--workers",
+        type=int,
+        default=2,
+        metavar="N",
+        help="Parallel workers (default: 2; HF Hub rate-limits concurrent requests)",
+    )
+    p.add_argument("--force", action="store_true", help="Re-audit even when a cached report exists")
+    p.add_argument(
+        "--limit", type=int, metavar="N", help="Audit only the first N datasets (for testing)"
+    )
     args = p.parse_args(argv)
 
     out = Path(args.out)
