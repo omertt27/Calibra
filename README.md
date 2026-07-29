@@ -129,6 +129,7 @@ Method rankings are stable across all three policy families (Spearman ρ ≥ 0.8
 | Command | Description |
 |---|---|
 | `calibra audit` | Full diagnostic report with bootstrap CIs and per-episode outlier detection |
+| `calibra review` | Ranked episode review queue — separates anomaly, quality-risk, and coverage-value signals |
 | `calibra prune` | Two-stage coreset: quality filter + greedy max-coverage selection |
 | `calibra certify` | Structured CERTIFIED / PROVISIONAL / NOT CERTIFIED; `--json` for CI |
 | `calibra predict` | Estimate training outcome before spending GPU time |

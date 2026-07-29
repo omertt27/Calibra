@@ -177,7 +177,8 @@ class TestContextualGrouping:
         easy_ids = [f"easy_{i}" for i in range(6)]
         hard_ids = [f"hard_{i}" for i in range(6)]
         report = _make_synthetic_report(
-            easy_ids + hard_ids, [-5.0, -5.1, -4.9, -5.05, -4.95, -5.0, -25, -25, -25, -25, -25, -25]
+            easy_ids + hard_ids,
+            [-5.0, -5.1, -4.9, -5.05, -4.95, -5.0, -25, -25, -25, -25, -25, -25],
         )
         with_group_but_no_batch = compute_episode_assessments(report, group_by=["task"])
         without_group = compute_episode_assessments(report)
