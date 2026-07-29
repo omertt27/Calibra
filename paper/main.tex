@@ -56,7 +56,9 @@ Calibra's coreset selector reduces held-out action-prediction error by
 13--25\% over random selection on average, on par with dedicated diversity
 baselines (k-center, facility location). In a controlled synthetic benchmark
 with injected corruption, pruning to a 30\% coreset preserves 98\% success
-rate (vs.\ 62\% for random pruning) while saving 70\% of training compute.
+rate (vs.\ 62\% for random pruning) while saving 70\% of training compute ---
+and, in proportion, the energy drawn by training --- relative to full-dataset
+training.
 Calibra is available at \url{https://github.com/omerTT/Calibra}.
 \end{abstract}
 
@@ -82,6 +84,18 @@ without dedicated tooling:
   \item \textbf{Expensive}: Training a full policy to discover a data problem
     wastes hours to days of GPU time.
 \end{enumerate}
+
+A further consequence of these pathologies is purely computational: robot
+demonstration datasets are frequently redundant, and every near-duplicate or
+low-quality episode still consumes a full gradient step during training
+without contributing new information. A curation step that keeps only the
+highest-value fraction of a dataset for a given task therefore reduces the
+number of training examples processed per epoch and, in proportion, the
+wall-clock compute --- and associated energy consumption --- required to
+reach a target level of policy performance. We treat this as a practical
+consequence of the same coreset machinery used to address data quality,
+rather than as a separately optimized objective, and quantify it directly in
+Section~\ref{sec:coreset_exp}.
 
 We present \textbf{Calibra}, a dataset observability system that surfaces
 these issues \emph{before training} using four principled analyzers, a
@@ -478,6 +492,37 @@ corrupted episodes that inject destructive gradients -- but the effect size
 here should be read as an upper bound demonstrated under injected corruption,
 not as the typical gain on uncurated real data (Table~\ref{tab:ablation}).
 
+\paragraph{Compute and energy implications.}
+The \textit{Compute saved} column in Table~\ref{tab:coreset} is the
+proportional reduction in training examples processed under a matched epoch
+schedule ($\text{compute saved} = 1 - \text{retention fraction}$), not an
+independently measured GPU-time trace; because total gradient steps scale
+linearly with dataset size at fixed epoch count and batch size, this is a
+standard and reliable proxy for wall-clock training cost on fixed hardware,
+but we report it as such rather than implying a stopwatch measurement.
+Under this framing, the compute savings at a given retention level are
+identical for \emph{any} selection method --- Random and Calibra both train
+on 30\% as many episodes, and both save $\sim$70\% of training compute. The
+result in Table~\ref{tab:coreset} is therefore not that Calibra saves more
+compute than Random, but that it makes the \emph{same} compute savings
+free: Random pruning at 30\% trades a 24-point drop in success rate (86\%
+$\to$ 62\%) for that reduction, while Calibra's coreset keeps the same
+$\sim$70\% compute reduction while matching or exceeding full-dataset
+performance (98\% vs.\ 86\%). Since energy draw during training tracks
+compute (gradient steps $\times$ hardware power draw) far more directly than
+it tracks any other quantity in this study, a proportional reduction in
+training compute implies a proportional reduction in training energy
+consumption at fixed hardware, even though we did not instrument power
+draw directly and do not report absolute energy or emissions figures.\footnote{As
+an exploratory, single-seed corroboration outside this controlled setting,
+\texttt{experiments/pusht\_real\_benchmark.py} on real \texttt{gym\_pusht}
+data under an episode-scaled step schedule shows a similar pattern in raw
+optimization steps (150{,}000 for the full dataset vs.\ 6{,}300 for a
+Calibra 30\% coreset). We do not report this as a general result: it is a
+single run under one step schedule and is documented in
+\texttt{experiments/RESULTS.md} explicitly as exploratory, not headline,
+evidence.}
+
 \subsection{Predictor Correlation Study}
 \label{sec:predictor_exp}
 
@@ -595,7 +640,12 @@ demonstration collection and policy training.
 
 The Spearman $\rho = 0.597$ predictor correlation and the multi-dataset,
 multi-policy coreset ablation (Section~\ref{sec:coreset_exp}) confirm
-Calibra's value as a practical, architecture-agnostic tool.
+Calibra's value as a practical, architecture-agnostic tool. Because
+demonstration datasets are frequently redundant, matching full-dataset
+performance from a small, well-chosen coreset is also a direct lever on
+training compute and, by extension, the energy cost of reaching a target
+policy --- a secondary but practically significant benefit of treating
+dataset curation as a first-class step in the imitation learning pipeline.
 
 \paragraph{Future work.}
 Key directions include: (1) a world-model connection between Calibra's
