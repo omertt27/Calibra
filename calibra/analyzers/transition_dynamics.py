@@ -23,6 +23,8 @@ class TransitionDynamicsAnalyzer(Analyzer):
     Evaluates state-action transition coverage and fits a forward dynamics model.
     """
 
+    requires = frozenset({"proprio"})
+
     @property
     def name(self) -> str:
         return "transition_dynamics"

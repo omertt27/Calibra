@@ -291,10 +291,10 @@ def generate_html_report(
                     <span>Metric Distributions</span>
                 </button>
                 <button onclick="switchTab('remediation')" id="btn-remediation" class="tab-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/50 text-left transition-all">
-                    <span>Remediation Checklist</span>
+                    <span>Suggested Actions</span>
                 </button>
                 <button onclick="switchTab('outliers')" id="btn-outliers" class="tab-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/50 text-left transition-all">
-                    <span>Outliers & Episodes</span>
+                    <span>Episode Review Queue</span>
                 </button>
             </nav>
         </section>
@@ -343,8 +343,8 @@ def generate_html_report(
             <!-- TAB 3: REMEDIATION CHECKLIST -->
             <div id="tab-remediation" class="tab-content hidden flex flex-col gap-6">
                 <div>
-                    <h2 class="text-lg font-bold text-white">Actionable Remediation Roadmap</h2>
-                    <p class="text-sm text-slate-400">Steps derived from analysis flags to resolve training dataset deficiencies.</p>
+                    <h2 class="text-lg font-bold text-white">Suggested Actions</h2>
+                    <p class="text-sm text-slate-400">Starting points for human review, derived from diagnostic flags. These are inspection prompts, not automated fixes — Calibra surfaces what looks unusual, you decide what it means.</p>
                 </div>
 
                 <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-6 flex flex-col gap-4" id="checklist-container">
@@ -355,8 +355,8 @@ def generate_html_report(
             <!-- TAB 4: OUTLIERS & EPISODES -->
             <div id="tab-outliers" class="tab-content hidden flex flex-col gap-6">
                 <div>
-                    <h2 class="text-lg font-bold text-white">Episode Outlier Analysis</h2>
-                    <p class="text-sm text-slate-400">Episodes flagged as anomalous via robust statistical outlier algorithms (MAD).</p>
+                    <h2 class="text-lg font-bold text-white">Episode Review Queue</h2>
+                    <p class="text-sm text-slate-400">Episodes flagged as statistically unusual (MAD-based outlier detection) — ranked here for human inspection, not automatic removal. An unusual trajectory can just as easily be a recording bug as the most valuable demonstration in the dataset.</p>
                 </div>
 
                 <div class="border border-slate-800 rounded-xl bg-slate-900/20 overflow-hidden">
@@ -365,7 +365,8 @@ def generate_html_report(
                             <tr class="bg-slate-900/80 border-b border-slate-800 text-slate-400">
                                 <th class="px-6 py-3 font-semibold">Index</th>
                                 <th class="px-6 py-3 font-semibold">Episode ID</th>
-                                <th class="px-6 py-3 font-semibold">Anomalies Detected</th>
+                                <th class="px-6 py-3 font-semibold">Reason Flagged</th>
+                                <th class="px-6 py-3 font-semibold">Suggested Action</th>
                             </tr>
                         </thead>
                         <tbody id="outliers-table-body" class="divide-y divide-slate-800/50">
@@ -382,6 +383,26 @@ def generate_html_report(
         const flags = __FLAGS_DATA__;
         const outliers = __OUTLIERS_DATA__;
         const labels = __LABELS__;
+
+        // Suggested Action taxonomy: diagnostics point at something to look
+        // at, they don't decide for the user. Never suggest deletion.
+        const ACTIONS = {
+            ignore: { emoji: "🟢", label: "Ignore" },
+            inspect: { emoji: "🟡", label: "Inspect" },
+            verify: { emoji: "🟠", label: "Verify recording" },
+            recollect: { emoji: "🔴", label: "Consider recollecting" },
+        };
+
+        function suggestedAction(metric, level) {
+            const key = (metric || "").toLowerCase();
+            if (key.includes("timestamp") || key.includes("jitter") || key.includes("dropout") || key.includes("contact")) {
+                return ACTIONS.verify;
+            }
+            // CRITICAL is a severity signal, not a verdict — diagnostics can't
+            // tell a collision from the most valuable demonstration in the
+            // dataset, so the default action stays "inspect" either way.
+            return ACTIONS.inspect;
+        }
         
         const ldljVals = __LDLJ_VALS__;
         const velVals = __VEL_VALS__;
@@ -432,6 +453,7 @@ def generate_html_report(
                 }
 
                 const thresholdSnippet = f.threshold ? `&middot; <span class="text-slate-400">Threshold:</span> <code class="font-mono text-white">${f.threshold}</code>` : '';
+                const action = suggestedAction(f.metric, f.level);
 
                 return `
                     <div class="border rounded-xl p-5 flex flex-col gap-3 transition-all duration-300 hover:bg-slate-900/30 ${colorClass}">
@@ -443,8 +465,13 @@ def generate_html_report(
                             <span class="text-slate-400">Observed Value:</span> <code class="font-mono text-white">${f.observed}</code>
                             ${thresholdSnippet}
                         </div>
+                        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Observation</div>
                         <p class="text-sm text-slate-300 bg-slate-950/40 p-3 rounded-lg border border-slate-900">${f.interpretation}</p>
-                        <p class="text-xs text-slate-400 border-l-2 border-slate-700 pl-3"><strong>Implication:</strong> ${f.implication}</p>
+                        <p class="text-xs text-slate-400 border-l-2 border-slate-700 pl-3"><strong>Possible explanations:</strong> ${f.implication}</p>
+                        <div class="flex items-center gap-2 pt-1 border-t border-slate-900/80 mt-1">
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Suggested Action</span>
+                            <span class="text-sm text-white">${action.emoji} ${action.label}</span>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -456,57 +483,67 @@ def generate_html_report(
             if (outliers.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="3" class="px-6 py-8 text-center text-slate-500">
-                            No individual episode outliers flagged.
+                        <td colspan="4" class="px-6 py-8 text-center text-slate-500">
+                            No episodes flagged for review.
                         </td>
                     </tr>
                 `;
                 return;
             }
 
-            tbody.innerHTML = outliers.map(o => `
-                <tr class="hover:bg-slate-900/20 transition-all">
-                    <td class="px-6 py-4 font-mono font-semibold text-slate-400">${o.index}</td>
-                    <td class="px-6 py-4 font-mono text-white">${o.episode_id}</td>
-                    <td class="px-6 py-4 text-xs text-amber-400 font-medium">${o.reasons.join(', ')}</td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = outliers.map(o => {
+                const reasonText = o.reasons.join(', ');
+                const action = suggestedAction(reasonText, null);
+                return `
+                    <tr class="hover:bg-slate-900/20 transition-all">
+                        <td class="px-6 py-4 font-mono font-semibold text-slate-400">${o.index}</td>
+                        <td class="px-6 py-4 font-mono text-white">${o.episode_id}</td>
+                        <td class="px-6 py-4 text-xs text-amber-400 font-medium">${reasonText}</td>
+                        <td class="px-6 py-4 text-sm text-white whitespace-nowrap">${action.emoji} ${action.label}</td>
+                    </tr>
+                `;
+            }).join('');
         }
 
-        // Build Remediation Roadmap
+        // Build Suggested Actions list
         function renderChecklist() {
             const container = document.getElementById('checklist-container');
             if (flags.length === 0) {
                 container.innerHTML = `
                     <div class="text-slate-400 text-sm">
-                        No remediation actions required. The dataset is fully certified.
+                        No flags raised — nothing queued for review right now.
                     </div>
                 `;
                 return;
             }
 
             container.innerHTML = flags.map((f, i) => {
-                let actionText = "";
+                let inspectText = "";
                 if (f.metric === "ldlj") {
-                    actionText = "Apply trajectory smoothing (e.g. Savitzky-Golay filtering) to minimize action jerk before training.";
+                    inspectText = "High jerk can mean a collision, a recovery behavior, sensor noise, or teleoperation instability. Compare against video for the flagged episodes before deciding whether smoothing or exclusion applies.";
                 } else if (f.metric === "velocity_discontinuity_rate") {
-                    actionText = "Investigate packet drops, communication lag, or sudden joystick/teleop corrections in outlier episodes.";
+                    inspectText = "Look for packet drops, communication lag, or sudden joystick/teleop corrections in the flagged episodes — these can look identical in the metric but call for different responses.";
                 } else if (f.metric === "timestamp_jitter_cv" || f.metric === "timestamp_dropout_rate") {
-                    actionText = "Verify dataset recording clocks. Interpolate missing timestamps or drop frames before feeding to policies.";
+                    inspectText = "Verify dataset recording clocks and check for dropped frames before assuming the underlying demonstration is bad.";
                 } else if (f.metric === "ssl_trajectory_outliers") {
-                    actionText = "Identify and prune the outlier episodes listed under the 'Outliers' tab using the `calibra prune` command.";
+                    inspectText = "Open the flagged episodes in the 'Episode Review Queue' tab. A trajectory outlier is as likely to be your most valuable demonstration as it is a bad recording — watch before deciding.";
                 } else if (f.metric === "contact_dropout") {
-                    actionText = "Check contact sensor configuration mapping and calibration in the robot driver pipeline.";
+                    inspectText = "Check contact sensor configuration mapping and calibration in the robot driver pipeline before assuming the episode itself is at fault.";
                 } else {
-                    actionText = f.implication;
+                    inspectText = f.implication;
                 }
+
+                const action = suggestedAction(f.metric, f.level);
 
                 return `
                     <div class="flex gap-4 items-start bg-slate-900/20 border border-slate-900/60 p-4 rounded-xl hover:border-slate-800 transition-all">
                         <input type="checkbox" id="check-${i}" class="mt-1 h-4 w-4 rounded border-slate-800 text-indigo-600 focus:ring-indigo-600 bg-slate-950">
                         <label for="check-${i}" class="flex-1">
-                            <span class="block text-sm font-semibold text-white">${f.metric} Fix</span>
-                            <span class="block text-xs text-slate-400 mt-1">${actionText}</span>
+                            <span class="flex items-center gap-2">
+                                <span class="block text-sm font-semibold text-white">${f.metric}</span>
+                                <span class="text-xs text-slate-300">${action.emoji} ${action.label}</span>
+                            </span>
+                            <span class="block text-xs text-slate-400 mt-1">${inspectText}</span>
                         </label>
                     </div>
                 `;

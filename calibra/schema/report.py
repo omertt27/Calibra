@@ -131,6 +131,7 @@ class DiagnosticReport(BaseModel):
     policy_family: Optional[str] = None
     episode_ids: list[str] = []
     timing: dict[str, float] = {}  # analyzer_name → wall-clock seconds
+    skipped_analyzers: list[str] = []  # analyzer_name, skipped: batch lacks required capability
 
     # ── convenience accessors ───────────────────────────────────────────────
 

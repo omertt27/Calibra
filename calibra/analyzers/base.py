@@ -21,6 +21,11 @@ class Analyzer(ABC):
     Analyzers must not modify the EpisodeBatch or retain state between calls.
     """
 
+    #: Capability tags (see EpisodeBatch.capabilities) this analyzer needs to
+    #: produce anything beyond a no-op. Empty means "always run" — the default
+    #: for analyzers that degrade gracefully or report on absence itself.
+    requires: frozenset[str] = frozenset()
+
     @abstractmethod
     def analyze(
         self,

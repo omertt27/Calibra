@@ -153,3 +153,37 @@ class EpisodeBatch:
         for ep in self.episodes:
             keys.update(ep.observations.keys())
         return keys
+
+    @property
+    def capabilities(self) -> frozenset[str]:
+        """
+        Format-agnostic capability tags derived from actual episode content.
+
+        Used by Analyzer.requires to skip diagnostics that have nothing to
+        compute on this batch (e.g. force/torque analysis with no wrench or
+        contact sensor data). Token sets mirror the substring heuristics each
+        gated analyzer already uses internally, so a capability tag is only
+        reported present when that analyzer would actually find data.
+        """
+        caps = {"actions", "timestamps"}
+        keys = {k.lower() for k in self.modalities}
+        if any(tok in k for k in keys for tok in _IMAGE_TOKENS):
+            caps.add("images")
+        if any(tok in k for k in keys for tok in _PROPRIO_TOKENS):
+            caps.add("proprio")
+        if any(tok in k for k in keys for tok in _FORCE_TORQUE_TOKENS):
+            caps.add("force_torque")
+        if any(ep.metadata.task_description for ep in self.episodes):
+            caps.add("task_description")
+        if any(ep.metadata.success is not None for ep in self.episodes):
+            caps.add("success_label")
+        if any(ep.obs_timestamps for ep in self.episodes):
+            caps.add("obs_timestamps")
+        if any(ep.action_timestamps is not None for ep in self.episodes):
+            caps.add("action_timestamps")
+        return frozenset(caps)
+
+
+_IMAGE_TOKENS = ("camera", "image", "rgb", "depth", "visual", "cam")
+_PROPRIO_TOKENS = ("proprio", "state", "joint_state", "joint_pos", "robot_state", "qpos", "obs")
+_FORCE_TORQUE_TOKENS = ("force", "torque", "wrench", "contact")

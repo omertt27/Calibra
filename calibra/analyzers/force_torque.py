@@ -25,6 +25,8 @@ class ForceTorqueContactAnalyzer(Analyzer):
     with movement states.
     """
 
+    requires = frozenset({"force_torque"})
+
     @property
     def name(self) -> str:
         return "force_torque"

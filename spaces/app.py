@@ -199,9 +199,9 @@ _SCORE_MEANING = [
     (90, "Excellent quality — ready for training."),
     (80, "Good quality — minor issues worth a quick review."),
     (70, "Generally usable — some quality issues worth reviewing before training."),
-    (60, "Moderate issues — consider selective episode retention."),
-    (40, "Significant quality issues — pruning recommended before training."),
-    (0, "Substantial quality issues — major cleanup recommended."),
+    (60, "Moderate issues — see Recommended Next Steps below."),
+    (40, "Several episodes need review before training — see Recommended Next Steps."),
+    (0, "Many episodes need review before training — see Recommended Next Steps."),
 ]
 
 _DIM_LABELS = {
@@ -359,6 +359,16 @@ def _percentile_section(score: float, dimensions: dict) -> str:
 # ── checklist ─────────────────────────────────────────────────────────────────
 
 
+def _findings_header_html(findings: list) -> str:
+    n = sum(1 for f in findings if f.severity in ("critical", "warning"))
+    if not n:
+        return ""
+    return (
+        '<div style="font-size:11px;color:#6c7086;text-transform:uppercase;'
+        'letter-spacing:.06em;margin-bottom:8px">Diagnostic Findings</div>'
+    )
+
+
 def _checklist_html(findings: list, n_ep: int) -> str:
     problems = sorted(
         [f for f in findings if f.severity in ("critical", "warning")],
@@ -390,17 +400,105 @@ def _checklist_html(findings: list, n_ep: int) -> str:
     return "\n".join(rows)
 
 
-# ── recommendation ────────────────────────────────────────────────────────────
+# ── recommended next steps ──────────────────────────────────────────────────────
+#
+# Findings route into a conservative action taxonomy. "Consider recollecting"
+# only ever fires for a broad-based (majority-of-dataset), CRITICAL sync/
+# integrity failure — never for jerk, duration, or rare-behavior findings,
+# which stay in "Inspect" regardless of severity. An unusual trajectory can
+# be a recording bug or the most valuable demonstration in the dataset;
+# Calibra can't tell which, so it surfaces and ranks, it doesn't decide.
+
+_VERIFY_METRICS = {
+    "timestamp_jitter_cv",
+    "timestamp_dropout_rate",
+    "action_dropout_rate",
+    "contact_dropout",
+    "camera_physics_drift",
+    "action_obs_misalignment",
+}
+_REDUNDANCY_METRICS = {"transition_redundancy"}
+
+# key -> (emoji, color, label)
+_NEXT_STEP_STYLE = {
+    "recollect": ("🔴", "#ef4444", "Consider recollecting"),
+    "verify": ("🟠", "#f97316", "Verify"),
+    "inspect": ("🟡", "#f59e0b", "Inspect"),
+    "redundancy": ("🔵", "#89b4fa", "Review"),
+}
+
+_NEXT_STEP_DETAIL = {
+    "recollect": "episode{s} — recording pipeline issue, not an isolated anomaly",
+    "verify": "episode{s} with possible recording anomalies",
+    "inspect": "unusual episode{s}",
+    "redundancy": "highly similar demonstration{s}",
+}
+
+
+def _categorize_finding(f) -> str:
+    if f.metric in _REDUNDANCY_METRICS:
+        return "redundancy"
+    if f.metric in _VERIFY_METRICS:
+        if f.severity == "critical" and (f.affected_fraction or 0) >= 0.5:
+            return "recollect"
+        return "verify"
+    return "inspect"
+
+
+def _next_steps_html(findings: list, n_ep: int) -> str:
+    problems = [f for f in findings if f.severity in ("critical", "warning")]
+    if not problems:
+        return (
+            '<div style="display:flex;gap:10px;align-items:center">'
+            '<span style="color:#22c55e;font-size:16px">✓</span>'
+            '<span style="color:#cdd6f4;font-size:14px">'
+            "Dataset is otherwise healthy — no next steps flagged</span>"
+            "</div>"
+        )
+
+    buckets: dict[str, list] = {"recollect": [], "verify": [], "inspect": [], "redundancy": []}
+    for f in problems:
+        buckets[_categorize_finding(f)].append(f)
+
+    rows = []
+    for key in ("recollect", "verify", "inspect", "redundancy"):
+        items = buckets[key]
+        if not items:
+            continue
+        items.sort(key=lambda f: (_SEV_ORDER.get(f.severity, 9), -(f.affected_fraction or 0)))
+        primary = items[0]
+        n = None
+        if primary.affected_fraction is not None and n_ep > 0:
+            n = max(1, round(primary.affected_fraction * n_ep))
+
+        emoji, color, label = _NEXT_STEP_STYLE[key]
+        if n:
+            detail = _NEXT_STEP_DETAIL[key].format(s="s" if n != 1 else "")
+            text = f"{n} {detail}"
+        else:
+            text = primary.message
+
+        rows.append(
+            f'<div style="display:flex;gap:10px;align-items:flex-start;margin:5px 0">'
+            f'<span style="min-width:16px;margin-top:1px">{emoji}</span>'
+            f'<span style="color:#cdd6f4;font-size:14px">'
+            f'<span style="color:{color};font-weight:600">{label}</span> {text}</span>'
+            f"</div>"
+        )
+    return "\n".join(rows)
+
+
+# ── optional coreset ──────────────────────────────────────────────────────────
 
 _STRATEGY_RATIONALE = {
     "light quality filter": "Removes only the clearest outliers — coverage and diversity are preserved.",
     "quality filter": "Trims noisy or low-quality episodes while keeping most of the dataset's diversity.",
     "hybrid (quality + diversity)": "Balances quality filtering with diversity preservation to avoid overfitting.",
-    "aggressive prune": "Removes a large share of problematic episodes, prioritizing reliability over dataset size.",
+    "heavy quality filter": "Keeps only episodes that clearly pass quality and diversity checks.",
 }
 
 
-def _recommend_html(
+def _coreset_html(
     score: float, findings: list, n_ep: int, n_total: int, is_sample: bool, dataset_id: str
 ) -> str:
     n_issues = sum(1 for f in findings if f.severity in ("critical", "warning"))
@@ -413,7 +511,7 @@ def _recommend_html(
     elif score >= 40:
         keep_pct, strategy = 35, "hybrid (quality + diversity)"
     else:
-        keep_pct, strategy = 20, "aggressive prune"
+        keep_pct, strategy = 20, "heavy quality filter"
 
     keep_n = max(1, round(n_total * keep_pct / 100))
     sample_note = (
@@ -425,15 +523,26 @@ def _recommend_html(
     )
     rationale = _STRATEGY_RATIONALE.get(strategy, "")
 
-    return (
-        f'<div style="font-size:15px;color:#cdd6f4;font-weight:500">'
-        f"Keep ~{keep_pct}% &nbsp;·&nbsp; {keep_n:,} episodes &nbsp;·&nbsp; {strategy}"
-        f"{sample_note}</div>"
-        f'<div style="margin-top:4px;font-size:12px;color:#a6adc8">{rationale}</div>'
-        f'<div style="margin-top:10px;font-size:12px;color:#6c7086">'
-        f'<code style="background:#313244;padding:3px 8px;border-radius:4px">'
-        f"calibra prune hf://{dataset_id} --keep {keep_pct / 100:.2f}</code></div>"
-    )
+    return f"""
+<div style="background:#181825;border:1px solid #313244;border-radius:10px;
+            padding:16px 18px;margin-top:14px">
+  <div style="font-size:13px;font-weight:600;color:#cdd6f4;margin-bottom:4px">
+    Build a smaller training set
+  </div>
+  <div style="font-size:12px;color:#6c7086;margin-bottom:10px">
+    Optional — after reviewing the episodes flagged above, Calibra can build a
+    quality- and coverage-aware coreset.
+  </div>
+  <div style="font-size:14px;color:#cdd6f4;font-weight:500">
+    Keep ~{keep_pct}% &nbsp;·&nbsp; {keep_n:,} episodes &nbsp;·&nbsp; {strategy}{sample_note}
+  </div>
+  <div style="margin-top:4px;font-size:12px;color:#a6adc8">{rationale}</div>
+  <div style="margin-top:10px;font-size:12px;color:#6c7086">
+    <code style="background:#313244;padding:3px 8px;border-radius:4px">
+      calibra prune hf://{dataset_id} --keep {keep_pct / 100:.2f}</code>
+  </div>
+</div>
+"""
 
 
 # ── card wrapper ──────────────────────────────────────────────────────────────
@@ -473,8 +582,7 @@ def _score_header(
     </div>
     <div style="font-size:13px;color:#a6adc8;margin-top:6px;max-width:260px">{meaning}</div>
     <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
-      <span style="font-size:13px;color:#6c7086">Grade:</span>
-      <span style="font-size:14px;font-weight:600;color:{color}">{grade}</span>
+      <span style="font-size:11px;color:#6c7086">grade {grade}</span>
       <span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;
                    background:{cert_color}22;border:1px solid {cert_color};color:{cert_color}">
         {cert_label}
@@ -547,13 +655,15 @@ def _render_health_card(dataset_id: str, r: dict) -> str:
             r["fmt"],
             sample_tag,
         )
+        + _findings_header_html(r["findings"])
         + _checklist_html(r["findings"], n_ep)
         + _percentile_section(r["score"], r["dimensions"])
         + _similar_html(dataset_id, r["score"])
         + '<div style="border-top:1px solid #313244;margin:14px 0"></div>'
         + '<div style="font-size:11px;color:#6c7086;text-transform:uppercase;'
-        'letter-spacing:.06em;margin-bottom:8px">Retention Recommendation</div>'
-        + _recommend_html(r["score"], r["findings"], n_ep, n_total, is_sample, dataset_id)
+        'letter-spacing:.06em;margin-bottom:8px">Recommended Next Steps</div>'
+        + _next_steps_html(r["findings"], n_ep)
+        + _coreset_html(r["score"], r["findings"], n_ep, n_total, is_sample, dataset_id)
         + _full_audit_block(dataset_id)
         + _footer(dataset_id)
     )

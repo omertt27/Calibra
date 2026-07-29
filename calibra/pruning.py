@@ -488,8 +488,8 @@ def _select_world_model(
 # ── Stage 1: quality scoring ──────────────────────────────────────────────────
 
 
-def _compute_quality_scores(
-    episodes: list[Episode],
+def compute_quality_scores_for_ids(
+    episode_ids: list[str],
     ep_data: dict[str, list],
 ) -> dict[str, float]:
     """
@@ -497,6 +497,11 @@ def _compute_quality_scores(
 
     Weighted combination of normalised quality metrics. All weights sum to 1.
     Missing metrics contribute 0 to the composite (treated as clean).
+
+    Single source of truth for this formula — also used by
+    calibra.assessment.compute_episode_assessments() as the `quality_risk`
+    axis of EpisodeAssessment, so tuning these weights affects both pruning
+    and review-queue ranking consistently.
     """
     spike_rates = ep_data.get("per_episode_spike_rate", [])
     disc_rates = ep_data.get("per_episode_vel_disc_rate", [])
@@ -504,7 +509,7 @@ def _compute_quality_scores(
     ldlj_values = ep_data.get("per_episode_ldlj", [])
 
     scores: dict[str, float] = {}
-    for i, ep in enumerate(episodes):
+    for i, episode_id in enumerate(episode_ids):
         s = 0.0
 
         spike = _safe_get(spike_rates, i)
@@ -525,9 +530,17 @@ def _compute_quality_scores(
             normalised = max(0.0, min(1.0, (ldlj - (-3.0)) / (-30.0 - (-3.0))))
             s += 0.10 * normalised
 
-        scores[ep.metadata.episode_id] = round(s, 6)
+        scores[episode_id] = round(s, 6)
 
     return scores
+
+
+def _compute_quality_scores(
+    episodes: list[Episode],
+    ep_data: dict[str, list],
+) -> dict[str, float]:
+    """Composite quality score per episode, keyed by Episode object. See compute_quality_scores_for_ids."""
+    return compute_quality_scores_for_ids([ep.metadata.episode_id for ep in episodes], ep_data)
 
 
 def _contact_aware_vel_disc(ep_data: dict, cfg: "CoresetSelector") -> float:

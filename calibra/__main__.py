@@ -8,6 +8,7 @@ CLI entry point.
     python -m calibra compare <path> <reference> [--format FORMAT]
     python -m calibra certify <path> [--reference REF] [--policy FAMILY]
     python -m calibra prune <path> --keep FRACTION [--out coreset_index.json]
+    python -m calibra review <path> [--top N] [--mode fast|full] [--group-by task] [--output episode_ids.json]
     python -m calibra corrupt <path> --drop-frames RATE [--add-jitter-ms STD] ...
     python -m calibra retarget <path> [--out DIR] [--obs-key-pos KEY] [--obs-key-quat KEY]
     python -m calibra sft-select <path|hub-id> --keep FRACTION [--out coreset_index.json]
@@ -103,6 +104,12 @@ def main() -> None:
         from calibra.prune import run_prune
 
         run_prune(sys.argv[2:])
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "review":
+        from calibra.review import run_review
+
+        run_review(sys.argv[2:])
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "sft-select":

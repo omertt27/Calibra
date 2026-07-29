@@ -115,6 +115,38 @@ class TestPipelineCustomAnalyzers:
         assert report.flags == []
 
 
+class TestPipelineMode:
+    def test_fast_mode_runs_fewer_analyzers_than_full(self):
+        batch = _make_batch()
+        fast_names = {r.analyzer_name for r in Pipeline(mode="fast").run(batch).analyzer_results}
+        full_names = {r.analyzer_name for r in Pipeline(mode="full").run(batch).analyzer_results}
+        assert fast_names < full_names
+
+    def test_fast_mode_excludes_influence_analyzer(self):
+        batch = _make_batch()
+        report = Pipeline(mode="fast").run(batch)
+        names = {r.analyzer_name for r in report.analyzer_results}
+        assert "influence" not in names
+
+    def test_default_mode_is_full(self):
+        batch = _make_batch()
+        default_names = {r.analyzer_name for r in Pipeline().run(batch).analyzer_results}
+        full_names = {r.analyzer_name for r in Pipeline(mode="full").run(batch).analyzer_results}
+        assert default_names == full_names
+
+    def test_explicit_analyzers_overrides_mode(self):
+        batch = _make_batch()
+        report = Pipeline(analyzers=[TemporalAnalyzer()], mode="fast").run(batch)
+        names = {r.analyzer_name for r in report.analyzer_results}
+        assert names == {"temporal_stability"}
+
+    def test_invalid_mode_raises(self):
+        import pytest
+
+        with pytest.raises(ValueError):
+            Pipeline(mode="bogus")
+
+
 class TestPipelineEmptyBatch:
     def test_empty_batch_no_crash(self):
         empty = EpisodeBatch(

@@ -178,6 +178,8 @@ class LatentDynamicsAnalyzer(Analyzer):
     Evaluates dataset transition graphs and state coverage for world-model predictability.
     """
 
+    requires = frozenset({"proprio"})
+
     proprio_keys: tuple[str, ...] = (
         "proprio",
         "state",

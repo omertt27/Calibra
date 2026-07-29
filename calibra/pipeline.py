@@ -51,6 +51,21 @@ def _default_analyzers() -> list[Analyzer]:
     ]
 
 
+def _fast_analyzers() -> list[Analyzer]:
+    """
+    Action/timestamp-only diagnostics: no pairwise embedding distances
+    (SSLTrajectoryEmbedderAnalyzer, InfluenceAnalyzer), no model fitting
+    (TransitionDynamicsAnalyzer, LatentDynamicsAnalyzer). Cheap, linear-time
+    metrics only — trades away coverage_value and some anomaly reasons for
+    speed on very large datasets.
+    """
+    return [
+        TemporalAnalyzer(),
+        ControlSmoothnessAnalyzer(),
+        CoverageEntropyAnalyzer(),
+    ]
+
+
 class Pipeline:
     """
     Runs a configurable list of analyzers over an EpisodeBatch and
@@ -58,19 +73,26 @@ class Pipeline:
 
     Parameters
     ----------
-    analyzers : list of Analyzer instances to run, in order.
-                Defaults to [TemporalAnalyzer, ControlSmoothnessAnalyzer,
-                CoverageEntropyAnalyzer].
+    analyzers : list of Analyzer instances to run, in order. Overrides `mode`.
+    mode      : "full" (default) runs every analyzer; "fast" restricts to
+                cheap, linear-time action/timestamp diagnostics (see
+                _fast_analyzers). Ignored when `analyzers` is given.
     """
 
     def __init__(
         self,
         analyzers: Optional[list[Analyzer]] = None,
         world_model: bool = False,
+        mode: str = "full",
     ) -> None:
-        self.analyzers: list[Analyzer] = (
-            analyzers if analyzers is not None else _default_analyzers()
-        )
+        if analyzers is not None:
+            self.analyzers: list[Analyzer] = analyzers
+        elif mode == "fast":
+            self.analyzers = _fast_analyzers()
+        elif mode == "full":
+            self.analyzers = _default_analyzers()
+        else:
+            raise ValueError(f"mode must be 'fast' or 'full', got {mode!r}")
         if world_model:
             self.analyzers = list(self.analyzers) + [WorldModelConsistencyAnalyzer()]
 
@@ -108,9 +130,14 @@ class Pipeline:
         if pf_lower and "octo" in pf_lower:
             analyzers.append(OctoCompatibilityAnalyzer())
 
+        capabilities = batch.capabilities
         results = []
         timing: dict[str, float] = {}
+        skipped: list[str] = []
         for analyzer in analyzers:
+            if not analyzer.requires <= capabilities:
+                skipped.append(analyzer.name)
+                continue
             t0 = time.perf_counter()
             results.append(analyzer.analyze(batch, policy_family=policy_family))
             timing[analyzer.name] = round(time.perf_counter() - t0, 4)
@@ -125,6 +152,7 @@ class Pipeline:
             policy_family=policy_family,
             episode_ids=[ep.metadata.episode_id for ep in batch.episodes],
             timing=timing,
+            skipped_analyzers=skipped,
         )
 
         if cache is not None:
