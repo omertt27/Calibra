@@ -10,11 +10,34 @@ Calibra tells you what is wrong with your robot demonstrations — and removes t
 
 ```bash
 pip install calibra-robotics
+calibra integrity /data/my_demos.h5
 calibra compare hf://lerobot/my_dataset aloha
 calibra certify /data/my_demos --reference aloha --policy diffusion
 calibra prune   /data/100k_episodes --keep 0.3 --out coreset.json
 calibra retarget /data/isaac_lab.h5 --out retargeted/
 ```
+
+---
+
+## The workflow
+
+Calibra is organized around the questions practitioners actually ask about a new dataset, in the order they ask them — not around a list of analyzers.
+
+```mermaid
+graph LR
+    A["1. Integrity<br/>Can I trust my data?"] --> B["2. Quality<br/>Is it clean?"]
+    B --> C["3. Coverage<br/>Is it diverse?"]
+    C --> D["4. Optimize<br/>Can I train faster?"]
+```
+
+| Step | Question | Command | Docs |
+|---|---|---|---|
+| 1. Integrity | Can I trust this dataset? | `calibra integrity` | [Integrity Checks](integrity.md) |
+| 2. Quality | Is it clean? | `calibra audit` / `calibra score` | [Command Reference](commands.md) |
+| 3. Coverage | Is it diverse enough? | `calibra review` | [Command Reference](commands.md) |
+| 4. Optimize | Can I train faster/cheaper? | `calibra prune` | [Command Reference](commands.md) |
+
+Integrity checks are deliberately the first thing Calibra runs: timestamp sync, episode completeness, and camera freeze/duplicate-frame detection catch the failures practitioners hit most often, before anything about quality or diversity matters. See [Integrity Checks](integrity.md) for the full list.
 
 ---
 

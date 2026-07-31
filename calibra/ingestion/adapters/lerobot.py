@@ -21,16 +21,21 @@ Supports:
                       (fast path: DuckDB reads Parquet directly without
                        loading image columns into RAM)
 
-Image feature columns are skipped automatically; only scalar/sequence columns
-are loaded into the EpisodeBatch.
+Image feature columns are skipped by default for performance. On the v1 path
+(HuggingFace Hub / local `datasets`-saved directories) they can be decoded
+instead via `LeRobotReader(decode_images=True)` — opt-in, since it changes
+load time and memory characteristics. v2/v3 (video-encoded) datasets don't
+support this yet; see `_read_local_v2_duckdb`/`_read_local_v2_pyarrow`.
 
 Dependencies:
-  pip install 'calibra[lerobot]'  (datasets, pyarrow, duckdb)
+  pip install 'calibra[lerobot]'  (datasets, pyarrow, duckdb, pillow)
 """
 
 from __future__ import annotations
 
+import io
 import json
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
@@ -70,6 +75,18 @@ def _require_duckdb():
         ) from None
 
 
+def _require_pillow():
+    try:
+        from PIL import Image
+
+        return Image
+    except ImportError:
+        raise ImportError(
+            "Pillow is required to decode LeRobot image columns.\n"
+            "Install it with: pip install 'calibra[lerobot]'"
+        ) from None
+
+
 def _is_hub_uri(path: str) -> bool:
     """True for 'hf://lerobot/pusht' style URIs."""
     return path.startswith("hf://")
@@ -100,7 +117,20 @@ def _is_hub_id(path: str) -> bool:
 
 @register
 class LeRobotReader(DatasetReader):
-    """Reads LeRobot-format HuggingFace datasets from Hub or local disk."""
+    """
+    Reads LeRobot-format HuggingFace datasets from Hub or local disk.
+
+    Parameters
+    ----------
+    decode_images : if True, decode HuggingFace `Image`-feature columns into
+                     (T, H, W, C) uint8 arrays instead of excluding them.
+                     Only applies to the v1 path (Hub / local `datasets`-saved
+                     directories) — opt-in because it increases load time and
+                     memory use. v2/v3 (video-encoded) datasets are unaffected.
+    """
+
+    def __init__(self, decode_images: bool = False) -> None:
+        self.decode_images = decode_images
 
     @property
     def format_name(self) -> str:
@@ -133,6 +163,12 @@ class LeRobotReader(DatasetReader):
             p = Path(bare)
             if (p / "meta" / "info.json").exists():
                 # v2/v3 format (meta/info.json + Parquet shards): DuckDB fast path, pyarrow fallback
+                if self.decode_images:
+                    print(
+                        "warning: --decode-images is not yet supported for v2/v3 "
+                        "(video-encoded) LeRobot datasets; images will still be excluded.",
+                        file=sys.stderr,
+                    )
                 try:
                     return self._read_local_v2_duckdb(p, path)
                 except ImportError:
@@ -333,14 +369,21 @@ class LeRobotReader(DatasetReader):
 
     # ── column filtering ─────────────────────────────────────────────────────
 
-    @staticmethod
-    def _scalar_columns(hf: "_hf_datasets", ds: "_hf_datasets.Dataset") -> list[str]:
-        """Return columns that are not HuggingFace Image features."""
+    def _scalar_columns(self, hf: "_hf_datasets", ds: "_hf_datasets.Dataset") -> list[str]:
+        """
+        Return columns to load. HuggingFace Image features are excluded unless
+        `self.decode_images` is set, in which case they're kept for decoding
+        in `_episode_from_group`.
+        """
         try:
             from datasets import Image as HFImage
 
+            if self.decode_images:
+                return list(ds.features.keys())
             return [col for col, feat in ds.features.items() if not isinstance(feat, HFImage)]
         except ImportError:
+            if self.decode_images:
+                return list(ds.column_names)
             return [col for col in ds.column_names if "image" not in col.lower()]
 
     # ── episode construction ─────────────────────────────────────────────────
@@ -383,7 +426,9 @@ class LeRobotReader(DatasetReader):
                 try:
                     raw_obs[key] = np.array(group[col].tolist(), dtype=np.float32)
                 except (ValueError, TypeError):
-                    pass
+                    decoded = _decode_image_column(group[col].tolist())
+                    if decoded is not None:
+                        raw_obs[key] = decoded
 
         obs = normalize_obs_keys(raw_obs)
 
@@ -397,6 +442,47 @@ class LeRobotReader(DatasetReader):
             observations=obs,
             actions=actions,
         )
+
+
+# ── image decoding (v1 only) ─────────────────────────────────────────────────
+
+
+def _decode_image_column(cells: list) -> Optional[np.ndarray]:
+    """
+    Decode a HuggingFace Image-feature column into a (T, H, W, C) uint8 array.
+
+    `Dataset.to_pandas()` yields `{"bytes": <encoded>, "path": <str|None>}`
+    dicts per cell (verified empirically — it does NOT eagerly decode to
+    pixels the way `Dataset.__getitem__` does). Handles that shape, plus an
+    already-decoded PIL.Image cell defensively. Returns None (rather than
+    raising) if the cells aren't image data, so callers can fall back to
+    dropping the column exactly as they did before this column existed.
+    """
+    try:
+        PILImage = _require_pillow()
+    except ImportError:
+        return None
+
+    frames = []
+    for cell in cells:
+        try:
+            if isinstance(cell, dict):
+                data = cell.get("bytes")
+                if data is None and cell.get("path"):
+                    with open(cell["path"], "rb") as f:
+                        data = f.read()
+                if data is None:
+                    return None
+                img = PILImage.open(io.BytesIO(data)).convert("RGB")
+            elif isinstance(cell, PILImage.Image):
+                img = cell.convert("RGB")
+            else:
+                return None
+        except Exception:
+            return None
+        frames.append(np.array(img, dtype=np.uint8))
+
+    return np.stack(frames)
 
 
 # ── metadata readers ─────────────────────────────────────────────────────────

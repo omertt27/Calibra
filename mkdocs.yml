@@ -47,6 +47,8 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Integrity Checks: integrity.md
+  - Command Reference: commands.md
   - Interactive Playground: /Calibra/
   - Claims Registry: claims.md
   - Architecture Decision Records:

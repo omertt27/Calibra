@@ -4,6 +4,43 @@ Full documentation for all Calibra CLI commands. For a quick overview see the [R
 
 ---
 
+## `calibra integrity` — "Can I trust this dataset?"
+
+```bash
+calibra integrity /data/robot_demos.h5
+calibra integrity /data/robot_demos.h5 --format hdf5
+calibra integrity /data/robot_demos.h5 --json
+```
+
+```
+─── Dataset Integrity ────────────────────────────────────
+robot_demos · 120 episodes
+
+Critical (0)
+
+Warnings (1)
+  ⚠️  timestamp_jitter_cv: High coefficient of variation in inter-step
+      timing (18.3% mean CV across 120 episodes).
+      Irregular control-loop timing degrades time-series policies that
+      assume fixed-frequency data.
+
+Passed (5)
+  ✅ timestamp_dropout_rate: Timestamp dropout rate is within acceptable range.
+  ✅ action_dropout_rate: Action-dropout rate is within acceptable range.
+  ✅ short_episode_fraction: No suspiciously short episodes detected.
+  ✅ duplicate_frame_rate: Camera frames show expected frame-to-frame variation.
+  ✅ camera_freeze_events: No sustained camera-freeze runs detected.
+
+Integrity Score: 93/100  ·  Status: Healthy
+──────────────────────────────────────────────────────────
+```
+
+Runs before every other command in the recommended workflow — timestamp consistency, sensor sync, episode completeness, duplicate frames, and camera freezes. Findings are grouped into Critical/Warnings/Passed rather than led with a single score; the score is still computed but demoted to a summary line. Exit code `1` on any CRITICAL finding, safe for CI gating.
+
+See [Integrity Checks](integrity.md) for what each check detects and why it matters.
+
+---
+
 ## `calibra audit` — full diagnostic report
 
 ```bash

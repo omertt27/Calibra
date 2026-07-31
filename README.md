@@ -7,17 +7,31 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-BSL_1.1-blue.svg" alt="License"/></a>
 </p>
 
-<p align="center"><b>Audit robot datasets. Build better coresets. Train with less data.</b></p>
+<p align="center"><b>Know what's wrong with your robot data before training starts.</b></p>
 
 <p align="center">
-Open-source tooling for robot dataset quality, diagnostics, and coreset selection.
+Open-source dataset observability for robot learning — integrity, quality, coverage, and coreset optimization in one pipeline.
 </p>
+
+```
+$ calibra integrity /data/my_demos
+
+Dataset Integrity
+✓ Timestamp consistency
+✓ Episode completeness
+⚠ 12 blurred/duplicate frames
+⚠ Camera freeze detected — episode ep_17
+✓ Metadata consistency
+
+Integrity Score: 82/100  ·  Status: Warning
+```
 
 ---
 
 ## Highlights
 
-- 🔍 Audit robot datasets for quality, synchrony, coverage, and task integrity
+- ✅ **Integrity first** — catch broken timestamps, duplicate frames, and camera freezes before they reach training, with `calibra integrity`
+- 🔍 Audit robot datasets for quality, synchrony, coverage, and task structure
 - ✂️ Reduce training data by up to 75% with quality-aware coreset selection
 - 📊 Audit 30+ public LeRobot datasets with an interactive Hugging Face Space
 - 🤖 Supports LeRobot, Isaac Lab, RLDS, HDF5, MCAP, and Hugging Face Hub
@@ -31,6 +45,15 @@ Open-source tooling for robot dataset quality, diagnostics, and coreset selectio
   <img src="docs/figures/pipeline.svg" alt="Calibra pipeline" width="420"/>
 </p>
 
+Calibra answers the questions practitioners ask about a new dataset, in the order they ask them:
+
+| Step | Question | Command |
+|---|---|---|
+| 1. Integrity | Can I trust this dataset? | `calibra integrity` |
+| 2. Quality | Is it clean? | `calibra audit` / `calibra score` |
+| 3. Coverage | Is it diverse enough? | `calibra review` |
+| 4. Optimize | Can I train faster/cheaper? | `calibra prune` |
+
 ---
 
 ## Quick start
@@ -38,6 +61,7 @@ Open-source tooling for robot dataset quality, diagnostics, and coreset selectio
 ```bash
 pip install calibra-robotics
 
+calibra integrity /data/my_demos.h5
 calibra audit lerobot/pusht
 ```
 
@@ -128,6 +152,7 @@ Method rankings are stable across all three policy families (Spearman ρ ≥ 0.8
 
 | Command | Description |
 |---|---|
+| `calibra integrity` | "Can I trust this dataset?" — timestamps, sync, episode completeness, duplicate/frozen camera frames |
 | `calibra audit` | Full diagnostic report with bootstrap CIs and per-episode outlier detection |
 | `calibra review` | Ranked episode review queue — separates anomaly, quality-risk, and coverage-value signals |
 | `calibra prune` | Two-stage coreset: quality filter + greedy max-coverage selection |
