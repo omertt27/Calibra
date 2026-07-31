@@ -5,6 +5,7 @@
   <a href="https://omertt27.github.io/Calibra/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-blue" alt="Docs"/></a>
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-BSL_1.1-blue.svg" alt="License"/></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v0.7.0-informational" alt="Changelog"/></a>
 </p>
 
 <p align="center"><b>Know what's wrong with your robot data before training starts.</b></p>
@@ -14,14 +15,22 @@ Open-source dataset observability for robot learning — integrity, quality, cov
 </p>
 
 ```
-$ calibra integrity /data/my_demos
+$ calibra integrity /data/my_demos.h5
 
-Dataset Integrity
-✓ Timestamp consistency
-✓ Episode completeness
-⚠ 12 blurred/duplicate frames
-⚠ Camera freeze detected — episode ep_17
-✓ Metadata consistency
+─── Dataset Integrity ────────────────────────────────────
+my_demos · 120 episodes
+
+Critical (1)
+  ❌ camera_freeze_events: 1 of 120 episodes (0.8%) contain a run of ≥5
+     consecutive near-identical camera frames (episode ep_17).
+
+Warnings (1)
+  ⚠️  blurry_episode_fraction: camera frames markedly blurrier than the
+     rest of the dataset in 1 episode.
+
+Passed (5)
+  ✅ timestamp_jitter_cv  ✅ timestamp_dropout_rate  ✅ short_episode_fraction
+  ✅ action_dropout_rate  ✅ duplicate_frame_rate
 
 Integrity Score: 82/100  ·  Status: Warning
 ```
@@ -30,7 +39,7 @@ Integrity Score: 82/100  ·  Status: Warning
 
 ## Highlights
 
-- ✅ **Integrity first** — catch broken timestamps, duplicate frames, and camera freezes before they reach training, with `calibra integrity`
+- ✅ **Integrity first** — catch broken timestamps, duplicate/frozen/blurry camera frames, and incomplete episodes before they reach training, with `calibra integrity` (LeRobot v1, HDF5/Isaac Lab, robomimic)
 - 🔍 Audit robot datasets for quality, synchrony, coverage, and task structure
 - ✂️ Reduce training data by up to 75% with quality-aware coreset selection
 - 📊 Audit 30+ public LeRobot datasets with an interactive Hugging Face Space
@@ -152,7 +161,7 @@ Method rankings are stable across all three policy families (Spearman ρ ≥ 0.8
 
 | Command | Description |
 |---|---|
-| `calibra integrity` | "Can I trust this dataset?" — timestamps, sync, episode completeness, duplicate/frozen camera frames |
+| `calibra integrity` | "Can I trust this dataset?" — timestamps, sync, episode completeness, duplicate/frozen/blurry camera frames (`--decode-images` for LeRobot v1) |
 | `calibra audit` | Full diagnostic report with bootstrap CIs and per-episode outlier detection |
 | `calibra review` | Ranked episode review queue — separates anomaly, quality-risk, and coverage-value signals |
 | `calibra prune` | Two-stage coreset: quality filter + greedy max-coverage selection |
@@ -171,6 +180,14 @@ Method rankings are stable across all three policy families (Spearman ρ ≥ 0.8
 | `calibra serve` | Local REST API server and web dashboard |
 
 → [Full command reference](docs/commands.md)
+
+---
+
+## Roadmap
+
+**v0.7.0 (current) — Dataset Integrity:** `calibra integrity` — timestamps, sync, episode completeness, duplicate/frozen/blurry camera frames, with LeRobot v1 image support via `--decode-images`. Full details in [CHANGELOG.md](CHANGELOG.md).
+
+**Next — Vision Integrity for video-backed LeRobot (v2/v3):** decode sampled frames from LeRobot's mp4-encoded v2/v3 datasets so duplicate-frame/camera-freeze/blur detection work there too.
 
 ---
 
@@ -244,6 +261,8 @@ pip install 'calibra-robotics[all]'               # everything
 
 **Formats supported:** LeRobot v1/v2/v3 (Parquet), HuggingFace Hub IDs, HDF5 (Isaac Lab, Robomimic), RLDS/TF Datasets, MCAP/ROS2 bags.
 
+Camera-frame checks (`duplicate_frame_rate`, `camera_freeze_events`, `blurry_episode_fraction` in `calibra integrity`) work out of the box on HDF5/Isaac Lab/robomimic data, and on LeRobot **v1** datasets via `calibra integrity <path> --decode-images` (opt-in — decodes HuggingFace `Image`-feature columns, off by default since it increases load time/memory). Not yet supported for LeRobot v2/v3 (video-encoded).
+
 ---
 
 ## Paper
@@ -267,7 +286,7 @@ Calibra is not open to external pull requests or contributions at this time.
 ```bash
 git clone https://github.com/omertt27/Calibra
 pip install -e '.[all,dev]'
-pytest              # 596 tests
+pytest              # 679 tests
 ruff check .        # zero errors expected
 ```
 
