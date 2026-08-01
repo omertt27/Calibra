@@ -1,0 +1,48 @@
+<svg width="680" height="260" viewBox="0 0 680 260" xmlns="http://www.w3.org/2000/svg"
+     font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
+
+  <rect width="680" height="260" fill="white"/>
+
+  <!-- ─── BEFORE panel ─── -->
+  <rect x="20" y="20" width="270" height="220" rx="10" fill="#FEF2F2" stroke="#FECACA" stroke-width="1.5"/>
+  <text x="155" y="50" text-anchor="middle" font-size="13" font-weight="700" fill="#991B1B">Before Calibra</text>
+
+  <!-- icon row 1 -->
+  <text x="44" y="90" font-size="22">📦</text>
+  <text x="74" y="90" font-size="13" font-weight="600" fill="#374151">100 demonstrations</text>
+  <text x="74" y="108" font-size="12" fill="#6B7280">train on everything collected</text>
+
+  <!-- icon row 2 -->
+  <text x="44" y="138" font-size="22">⏱</text>
+  <text x="74" y="138" font-size="13" font-weight="600" fill="#374151">Long training runs</text>
+  <text x="74" y="156" font-size="12" fill="#6B7280">compute scales with volume</text>
+
+  <!-- icon row 3 -->
+  <text x="44" y="186" font-size="22">⚠️</text>
+  <text x="74" y="186" font-size="13" font-weight="600" fill="#374151">Hidden data problems</text>
+  <text x="74" y="204" font-size="12" fill="#6B7280">jerk, dropout, near-duplicates</text>
+
+  <!-- ─── ARROW ─── -->
+  <text x="340" y="140" text-anchor="middle" font-size="28" fill="#2563EB">→</text>
+  <text x="340" y="160" text-anchor="middle" font-size="11" font-weight="600" fill="#2563EB">Calibra</text>
+
+  <!-- ─── AFTER panel ─── -->
+  <rect x="390" y="20" width="270" height="220" rx="10" fill="#F0FDF4" stroke="#BBF7D0" stroke-width="1.5"/>
+  <text x="525" y="50" text-anchor="middle" font-size="13" font-weight="700" fill="#166534">After Calibra</text>
+
+  <!-- icon row 1 -->
+  <text x="414" y="90" font-size="22">✅</text>
+  <text x="444" y="90" font-size="13" font-weight="600" fill="#374151">25 curated demonstrations</text>
+  <text x="444" y="108" font-size="12" fill="#6B7280">full behavioral coverage retained</text>
+
+  <!-- icon row 2 -->
+  <text x="414" y="138" font-size="22">⚡</text>
+  <text x="444" y="138" font-size="13" font-weight="600" fill="#374151">75% less compute</text>
+  <text x="444" y="156" font-size="12" fill="#6B7280">same or better policy performance</text>
+
+  <!-- icon row 3 -->
+  <text x="414" y="186" font-size="22">🔍</text>
+  <text x="444" y="186" font-size="13" font-weight="600" fill="#374151">Problems identified</text>
+  <text x="444" y="204" font-size="12" fill="#6B7280">flagged episodes with root causes</text>
+
+</svg>

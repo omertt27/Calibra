@@ -1,0 +1,304 @@
+<!--Copyright 2024 The HuggingFace Team. All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+# Dataset Quality with Calibra
+
+This tutorial shows an optional third-party workflow for auditing and curating
+LeRobot datasets before policy training using
+[Calibra](https://github.com/omerTT/Calibra).
+
+Calibra runs deterministic mathematical estimators — no LLMs, no heuristics —
+over your episodes and tells you which ones have quality problems and which are
+redundant before you spend GPU time training on them.
+
+<Tip>
+Calibra is an independent open-source tool. It is not maintained by the
+LeRobot team. Install it separately:
+
+```bash
+pip install 'calibra-robotics[lerobot]'
+```
+</Tip>
+
+## Why integrate with LeRobot?
+
+- **Zero changes to existing datasets** — Calibra reads LeRobot v1, v2, and v3
+  datasets directly from the Hub or from a local directory.
+- **Fast** — audits a 206-episode dataset in under a second on CPU.
+- **Reproducible quality reports** — every metric includes 95% bootstrap
+  confidence intervals and is backed by a falsifiable claim with stated evidence.
+- **Helps authors before publishing** — identify motion quality issues and
+  episode outliers before a dataset revision goes public.
+- **Optional** — does not modify the training pipeline or dataset format.
+
+---
+
+## Why data quality matters
+
+A typical 1,000-episode demonstration dataset contains:
+
+- **Jerk spikes** — abrupt operator corrections or communication lag create
+  large velocity discontinuities that look like valid training signal to a
+  diffusion policy but are noise.
+- **Timestamp dropout** — dropped physics steps produce irregular timestamps
+  that corrupt temporal metrics in sequence models.
+- **Redundancy** — in a 10,000-episode dataset, 60–80% of episodes are
+  behavioral near-duplicates. GPU cost scales with volume, not uniqueness.
+
+Calibra surfaces these problems before training starts.
+
+---
+
+## 1. Audit a LeRobot dataset
+
+`calibra <path>` runs analyzers over your dataset and produces a diagnostic
+report with 95% bootstrap confidence intervals.
+
+```bash
+calibra lerobot/pusht
+```
+
+The following output was produced by auditing 206 episodes (25,650 steps) in
+**0.97 seconds on CPU**:
+
+```
+=== Calibra Diagnostic Report ===
+Dataset  : pusht
+Format   : lerobot
+Episodes : 206  |  Samples: 25650
+
+❌ CRITICAL: ldlj = -16.01 [-16.17, -15.86] (95% CI) (threshold: -10)
+   → High jerk forces the policy to learn discontinuous action transitions.
+     Consider applying action smoothing (e.g. Savitzky-Golay) before training.
+
+❌ CRITICAL: jerk_spike_rate = 0.07755 [0.07279, 0.08247] (95% CI)
+   [7.8% of samples]
+   → Jerk spikes are typically caused by dropped frames, bad episode boundaries,
+     or incorrect time alignment.
+
+❌ CRITICAL: velocity_discontinuity_rate = 0.1111 [0.1044, 0.1179] (95% CI)
+   [11.1% of samples]
+   → Sudden velocity reversals are physically impossible under normal actuation.
+
+✅ OK: timestamp_jitter_cv = 2.864e-06  →  No jitter risk detected.
+✅ OK: timestamp_dropout_rate = 0       →  No dropout risk detected.
+✅ OK: action_entropy_bits_per_dim = 5.3 bits/dim
+✅ OK: contact_phase_fraction = 0.4491  →  Sufficient contact-phase examples.
+
+4 critical  ·  2 warnings
+
+Timing (0.97s total): temporal_stability: 0.08s  control_smoothness: 0.18s
+  coverage_entropy: 0.00s  task_structure: 0.04s  latent_dynamics: 0.52s
+
+─── Episode Anomalies ─────────────────────────────────────
+27 of 206 episodes are outliers within this dataset:
+  ep_6    vel_disc_rate 9.5× MAD  →  start of dataset — possible warm-up artifact
+  ep_12   spike_rate    3.4× MAD  →  investigate before training
+  ep_38   vel_disc_rate 3.9× MAD, jitter_cv 3.2× MAD  →  possible sync loss
+  ep_174  jitter_cv     5.6× MAD  →  possible sync loss or timestamp irregularity
+  ...
+───────────────────────────────────────────────────────────
+```
+
+<Tip warning={true}>
+The four "critical" findings above reflect Calibra's default audit rubric for
+motion smoothness. They are quality signals for dataset authors to consider,
+not indicators that `lerobot/pusht` is broken or unsuitable for training. PushT
+uses 2D velocity commands, which naturally produce higher jerk rates than
+position-controlled arms.
+</Tip>
+
+**Reproducibility metadata:**
+
+| Field | Value |
+|---|---|
+| Dataset | `lerobot/pusht` |
+| Dataset revision | `7628202a2180` |
+| Calibra | `0.6.0` |
+| Python | `3.10.1` |
+| Platform | Windows 11 / CPU-only |
+| Runtime | 0.97 s |
+
+| Analyzer | What it measures |
+|---|---|
+| `temporal_stability` | Timestamp jitter, dropout rate, frame gaps |
+| `control_smoothness` | LDLJ, jerk spike rate, velocity discontinuities |
+| `coverage_entropy` | Action entropy, state-space coverage |
+| `task_structure` | Contact density, grasp phases, trajectory diversity |
+
+You can also audit a local dataset directory:
+
+```bash
+calibra /data/my_lerobot_dataset/
+```
+
+---
+
+## 2. Detect corrupted or low-quality episodes
+
+Add `--json` to get machine-readable output per episode:
+
+```bash
+calibra lerobot/pusht --json > pusht_audit.json
+```
+
+The JSON report lists every episode with individual metric values, so you can
+inspect outliers programmatically:
+
+```python
+import json
+
+with open("pusht_audit.json") as f:
+    report = json.load(f)
+
+# Find episodes with jerk spike rate above 5%
+bad_episodes = [
+    ep for ep in report["episodes"]
+    if ep["metrics"]["spike_rate"] > 0.05
+]
+print(f"Found {len(bad_episodes)} high-jerk episodes")
+```
+
+On `lerobot/pusht`, Calibra identifies **27 of 206 episodes** as statistical
+outliers — concentrated at the start (warm-up artifacts) and mid-collection
+(sync loss events).
+
+---
+
+## 3. Visualise quality, coverage, and redundancy
+
+`calibra compare` benchmarks your dataset against a reference profile.
+Calibra ships reference profiles for pusht, aloha, DROID-100, SO-100, and
+BridgeData V2:
+
+```bash
+calibra compare /data/my_dataset aloha
+```
+
+```
+VELOCITY DISCONTINUITY RATE
+  Yours:  12.1%
+  aloha:   1.3%
+  Delta:  +10.8%  ▲  Confidence: HIGH  [n=4 real-hardware aloha datasets]
+
+  Significantly rougher than aloha. If using position commands: investigate
+  control noise or abrupt operator corrections.
+```
+
+Every comparison is backed by a falsifiable claim in Calibra's Claims Registry,
+which tracks the evidence count and confidence tier for each assertion.
+
+---
+
+## 4. Select a smaller training subset
+
+`calibra prune` removes low-quality episodes first, then applies greedy
+max-coverage selection to eliminate near-duplicates while maximising behavioral
+diversity.
+
+```bash
+calibra prune lerobot/pusht --keep 0.30 --strategy diversity --out pusht_coreset.json
+```
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CALIBRA PRUNING SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Original episodes  : 206
+  Quality failures   :  51  (removed in Stage 1)
+  Diversity pruned   :  93  (removed in Stage 2)
+  Coreset size       :  62  (30.1% of original)
+  Method             : quality_filter + greedy_max_coverage
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Stage 1** removes the 51 episodes that fail quality thresholds (high jerk,
+timing anomalies). **Stage 2** then selects the 62 most behaviorally distinct
+episodes from the 155 that remain, using greedy farthest-point sampling on
+action-space statistics. The result is a 30% coreset that maximises coverage
+of the original dataset's state-action space.
+
+The output `pusht_coreset.json` contains the retained episode indices. Load it
+back with the HuggingFace `datasets` API to filter before training:
+
+```python
+import json
+import datasets
+
+with open("pusht_coreset.json") as f:
+    coreset = json.load(f)
+
+ds = datasets.load_dataset("lerobot/pusht", split="train")
+ds_pruned = ds.select(coreset["episode_indices"])
+```
+
+The generated report can be used directly before training or before publishing
+a new LeRobot dataset revision.
+
+---
+
+## 5. Add a quality gate to your CI pipeline
+
+`calibra certify` exits non-zero when quality thresholds are violated, making
+it easy to wire into a post-collection check:
+
+```bash
+calibra certify /data/my_dataset/ --policy diffusion
+```
+
+Exit codes: `0` = CERTIFIED, `1` = PROVISIONALLY CERTIFIED, `2` = NOT CERTIFIED.
+
+Example GitHub Actions integration:
+
+```yaml
+- name: Certify dataset quality
+  run: |
+    pip install 'calibra-robotics[lerobot]'
+    calibra certify $DATASET_PATH --policy diffusion --json > cert.json
+  continue-on-error: false
+```
+
+---
+
+## Real-time quality feedback during collection
+
+Calibra also supports real-time quality monitoring during teleoperation via a
+streaming mode. See the
+[lerobot_watch_integration example](https://github.com/omerTT/Calibra/blob/main/examples/lerobot_watch_integration.py)
+for a drop-in wrapper around any LeRobot collection loop.
+
+---
+
+## Supported LeRobot formats
+
+| Format | How to use |
+|---|---|
+| Hub dataset ID | `calibra lerobot/pusht` |
+| HF URI | `calibra hf://lerobot/pusht` |
+| Local v2 | `calibra /path/to/dataset/` (requires `meta/info.json`) |
+| Local v3 | `calibra /path/to/dataset/` (`codebase_version: v3.0` detected automatically) |
+| Local v1 | `calibra /path/to/dataset/` (requires `metadata.json` or `dataset_dict.json`) |
+
+Image columns (`observation.images.*`) are excluded automatically — they never
+enter RAM even for multi-terabyte datasets, thanks to a DuckDB column-projection
+fast path.
+
+---
+
+## Further reading
+
+- [Calibra GitHub](https://github.com/omerTT/Calibra)
+- [Claims Registry](https://github.com/omerTT/Calibra/blob/main/calibra/claims/SPEC.md) — falsification criteria for every metric
+- [Calibra Score specification](https://github.com/omerTT/Calibra/blob/main/docs/calibra-score.md)

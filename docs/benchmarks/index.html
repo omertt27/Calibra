@@ -1,0 +1,1672 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Dataset observability and coreset selection for robotics imitation learning.">
+      
+      
+      
+        <link rel="canonical" href="https://omertt.github.io/Calibra/benchmarks/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../logo-icon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Calibra Benchmark Results - Calibra</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#calibra-benchmark-results" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Calibra" class="md-header__button md-logo" aria-label="Calibra" data-md-component="logo">
+      
+  <img src="../logo-icon.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Calibra
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Calibra Benchmark Results
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="deep-orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/omertt27/Calibra" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../integrity/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Integrity Checks
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../commands/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Command Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="/Calibra/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Interactive Playground
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../claims/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Claims Registry
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../adr/" class="md-tabs__link">
+          
+  
+  
+  Architecture Decision Records
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../hf_blog_post/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Blog Post
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Calibra" class="md-nav__button md-logo" aria-label="Calibra" data-md-component="logo">
+      
+  <img src="../logo-icon.svg" alt="logo">
+
+    </a>
+    Calibra
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/omertt27/Calibra" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrity Checks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="/Calibra/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interactive Playground
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../claims/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claims Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture Decision Records
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture Decision Records
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-001-episodebatch-interchange-format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-001: EpisodeBatch format
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-002-adapter-registry-auto-detection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-002: Adapter registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-003-pydantic-output-schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-003: Pydantic schemas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-004-stateless-analyzer-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-004: Stateless analyzers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-005-observation-key-normalization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-005: Key normalization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-006-duckdb-lerobot-v2-fast-path/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-006: DuckDB fast-path
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-007-optional-format-dependencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-007: Optional dependencies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-008-claims-registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-008: Claims registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-009-two-phase-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-009: Two-phase pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-010-claims-references-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-010: Claims references parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hf_blog_post/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Blog Post
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#lerobot-pusht-targeted-benchmark-primary-real-data-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LeRobot PushT — Targeted Benchmark (Primary Real-Data Result)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="LeRobot PushT — Targeted Benchmark (Primary Real-Data Result)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#5-retention-k8-from-full-k6-from-quality-pool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5% retention — k=8 from full / k=6 from quality pool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-retention-k16-from-full-k12-from-quality-pool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10% retention — k=16 from full / k=12 from quality pool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-retention-k41-from-full-k31-from-quality-pool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        25% retention — k=41 from full / k=31 from quality pool
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key findings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limitations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reproduce" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproduce
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#retention-sweep-lerobot-pusht-5-methods-6-fractions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retention Sweep — LeRobot PushT (5 methods, 6 fractions)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#synthetic-rare-mode-benchmark-controlled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Synthetic Rare-Mode Benchmark (Controlled)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multi-dataset-ablation-bc-mlp-act-diffusion-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Dataset Ablation (BC-MLP, ACT, Diffusion Policy)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="calibra-benchmark-results">Calibra Benchmark Results</h1>
+<p>Complete statistical results, ablation tables, and limitations for all Calibra benchmarks. The README presents the headline numbers; this document has everything.</p>
+<hr />
+<h2 id="lerobot-pusht-targeted-benchmark-primary-real-data-result">LeRobot PushT — Targeted Benchmark (Primary Real-Data Result)</h2>
+<h3 id="setup">Setup</h3>
+<p><strong>Dataset:</strong> <code>lerobot/pusht</code> (HuggingFace Hub, no modification)<br />
+<strong>Episodes:</strong> 206 total · 165 training · 41 test<br />
+<strong>Frames:</strong> 25,650<br />
+<strong>Calibra quality score:</strong> 76.7/100 (4 CRITICAL, 2 WARNING flags)<br />
+<strong>Quality-approved pool:</strong> 123/165 episodes (75%) after Stage-1 filtering  </p>
+<p><strong>Tail episode identification:</strong> k-NN density (k=5) in action-feature space (mean + std of actions + first 4 state dims, L2-normalised). Bottom 15% by local density = <strong>25 training episodes</strong> labelled tail, <strong>7 test episodes</strong> labelled tail, <strong>34 test episodes</strong> common.</p>
+<p><strong>Baselines (single seed, 120 epochs):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th style="text-align: right;">Overall MSE</th>
+<th style="text-align: right;">Common-test MSE</th>
+<th style="text-align: right;">Tail-test MSE</th>
+<th style="text-align: right;">Train time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Full unfiltered (165 ep)</td>
+<td style="text-align: right;">420.93</td>
+<td style="text-align: right;">440.29</td>
+<td style="text-align: right;">323.98</td>
+<td style="text-align: right;">25.3s</td>
+</tr>
+<tr>
+<td>Quality-approved full (123 ep)</td>
+<td style="text-align: right;">423.93</td>
+<td style="text-align: right;">443.58</td>
+<td style="text-align: right;">325.54</td>
+<td style="text-align: right;">15.6s</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Methods compared (all at equal episode budget k):</strong></p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Method</th>
+<th>Episode pool</th>
+<th>Selection</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>random_full</td>
+<td>Random (full)</td>
+<td>All 165 train ep</td>
+<td>Random draw — reference</td>
+</tr>
+<tr>
+<td>random_quality</td>
+<td>Random (quality)</td>
+<td>123 quality-approved ep</td>
+<td>Random draw</td>
+</tr>
+<tr>
+<td>quality_only</td>
+<td>Quality-only</td>
+<td>123 quality-approved ep</td>
+<td>Quality filter → random</td>
+</tr>
+<tr>
+<td>diversity_only</td>
+<td>Diversity-only</td>
+<td>All 165 train ep</td>
+<td>k-center, no quality gate</td>
+</tr>
+<tr>
+<td>calibra</td>
+<td>Calibra</td>
+<td>All 165 → quality filter → 123</td>
+<td>Quality filter + k-center</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Training:</strong> BC-MLP, 3-layer, hidden=256, LayerNorm, SiLU, AdamW, cosine LR, 120 epochs<br />
+<strong>Seeds:</strong> 10. For deterministic methods (calibra, diversity_only, quality_only) the seed controls training randomness only. For random methods (random_full, random_quality) the seed controls both episode selection and training.<br />
+<strong>Statistics:</strong> paired t-test and Cohen's d computed vs. random_full across matched seeds.</p>
+<hr />
+<h3 id="results">Results</h3>
+<h4 id="5-retention-k8-from-full-k6-from-quality-pool">5% retention — k=8 from full / k=6 from quality pool</h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th style="text-align: right;">Tail cov.</th>
+<th style="text-align: right;">Overall MSE</th>
+<th style="text-align: right;">±CI95</th>
+<th style="text-align: right;">vs. random</th>
+<th style="text-align: right;">p</th>
+<th style="text-align: right;">d</th>
+<th style="text-align: right;">Tail MSE</th>
+<th style="text-align: right;">Common MSE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>random_full</td>
+<td style="text-align: right;">4.0%</td>
+<td style="text-align: right;">488.33</td>
+<td style="text-align: right;">29.04</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">407.62</td>
+<td style="text-align: right;">504.44</td>
+</tr>
+<tr>
+<td>random_quality</td>
+<td style="text-align: right;">5.2%</td>
+<td style="text-align: right;">514.48</td>
+<td style="text-align: right;">33.41</td>
+<td style="text-align: right;">−26.16</td>
+<td style="text-align: right;">0.009</td>
+<td style="text-align: right;">−0.60</td>
+<td style="text-align: right;">449.17</td>
+<td style="text-align: right;">527.52</td>
+</tr>
+<tr>
+<td>quality_only</td>
+<td style="text-align: right;"><strong>0.0%</strong></td>
+<td style="text-align: right;">549.11</td>
+<td style="text-align: right;">7.23</td>
+<td style="text-align: right;">−60.79</td>
+<td style="text-align: right;">0.001</td>
+<td style="text-align: right;">−2.05</td>
+<td style="text-align: right;">500.16</td>
+<td style="text-align: right;">558.88</td>
+</tr>
+<tr>
+<td>diversity_only</td>
+<td style="text-align: right;"><strong>16.0%</strong></td>
+<td style="text-align: right;"><strong>449.13</strong></td>
+<td style="text-align: right;"><strong>1.07</strong></td>
+<td style="text-align: right;"><strong>+39.19</strong></td>
+<td style="text-align: right;"><strong>0.014</strong></td>
+<td style="text-align: right;"><strong>+1.36</strong></td>
+<td style="text-align: right;"><strong>351.73</strong></td>
+<td style="text-align: right;"><strong>468.58</strong></td>
+</tr>
+<tr>
+<td>calibra</td>
+<td style="text-align: right;">12.0%</td>
+<td style="text-align: right;">457.64</td>
+<td style="text-align: right;">0.96</td>
+<td style="text-align: right;">+30.68</td>
+<td style="text-align: right;">0.042</td>
+<td style="text-align: right;">+1.07</td>
+<td style="text-align: right;">377.61</td>
+<td style="text-align: right;">473.62</td>
+</tr>
+</tbody>
+</table>
+<h4 id="10-retention-k16-from-full-k12-from-quality-pool">10% retention — k=16 from full / k=12 from quality pool</h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th style="text-align: right;">Tail cov.</th>
+<th style="text-align: right;">Overall MSE</th>
+<th style="text-align: right;">±CI95</th>
+<th style="text-align: right;">vs. random</th>
+<th style="text-align: right;">p</th>
+<th style="text-align: right;">d</th>
+<th style="text-align: right;">Tail MSE</th>
+<th style="text-align: right;">Common MSE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>random_full</td>
+<td style="text-align: right;">8.4%</td>
+<td style="text-align: right;">445.85</td>
+<td style="text-align: right;">10.33</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">353.01</td>
+<td style="text-align: right;">464.38</td>
+</tr>
+<tr>
+<td>random_quality</td>
+<td style="text-align: right;">8.4%</td>
+<td style="text-align: right;">462.61</td>
+<td style="text-align: right;">11.45</td>
+<td style="text-align: right;">−16.76</td>
+<td style="text-align: right;">0.028</td>
+<td style="text-align: right;">−1.10</td>
+<td style="text-align: right;">368.61</td>
+<td style="text-align: right;">481.37</td>
+</tr>
+<tr>
+<td>quality_only</td>
+<td style="text-align: right;">4.0%</td>
+<td style="text-align: right;">463.25</td>
+<td style="text-align: right;">1.66</td>
+<td style="text-align: right;">−17.40</td>
+<td style="text-align: right;">0.004</td>
+<td style="text-align: right;">−1.68</td>
+<td style="text-align: right;">380.42</td>
+<td style="text-align: right;">479.78</td>
+</tr>
+<tr>
+<td><strong>diversity_only</strong></td>
+<td style="text-align: right;"><strong>24.0%</strong></td>
+<td style="text-align: right;"><strong>440.69</strong></td>
+<td style="text-align: right;"><strong>0.96</strong></td>
+<td style="text-align: right;">+5.16</td>
+<td style="text-align: right;">0.319</td>
+<td style="text-align: right;">+0.50</td>
+<td style="text-align: right;"><strong>343.46</strong></td>
+<td style="text-align: right;"><strong>460.11</strong></td>
+</tr>
+<tr>
+<td>calibra</td>
+<td style="text-align: right;">24.0%</td>
+<td style="text-align: right;">463.42</td>
+<td style="text-align: right;">2.40</td>
+<td style="text-align: right;">−17.57</td>
+<td style="text-align: right;"><strong>0.006</strong></td>
+<td style="text-align: right;">−1.68</td>
+<td style="text-align: right;">384.12</td>
+<td style="text-align: right;">479.25</td>
+</tr>
+</tbody>
+</table>
+<h4 id="25-retention-k41-from-full-k31-from-quality-pool">25% retention — k=41 from full / k=31 from quality pool</h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th style="text-align: right;">Tail cov.</th>
+<th style="text-align: right;">Overall MSE</th>
+<th style="text-align: right;">±CI95</th>
+<th style="text-align: right;">vs. random</th>
+<th style="text-align: right;">p</th>
+<th style="text-align: right;">d</th>
+<th style="text-align: right;">Tail MSE</th>
+<th style="text-align: right;">Common MSE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>random_full</td>
+<td style="text-align: right;">23.6%</td>
+<td style="text-align: right;">427.49</td>
+<td style="text-align: right;">1.84</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">327.66</td>
+<td style="text-align: right;">447.42</td>
+</tr>
+<tr>
+<td>random_quality</td>
+<td style="text-align: right;">18.8%</td>
+<td style="text-align: right;">441.27</td>
+<td style="text-align: right;">8.85</td>
+<td style="text-align: right;">−13.78</td>
+<td style="text-align: right;">0.006</td>
+<td style="text-align: right;">−1.54</td>
+<td style="text-align: right;">340.75</td>
+<td style="text-align: right;">461.34</td>
+</tr>
+<tr>
+<td>quality_only</td>
+<td style="text-align: right;">12.0%</td>
+<td style="text-align: right;">432.80</td>
+<td style="text-align: right;">0.52</td>
+<td style="text-align: right;">−5.31</td>
+<td style="text-align: right;">&lt;0.001</td>
+<td style="text-align: right;">−2.81</td>
+<td style="text-align: right;">328.43</td>
+<td style="text-align: right;">453.64</td>
+</tr>
+<tr>
+<td>diversity_only</td>
+<td style="text-align: right;">52.0%</td>
+<td style="text-align: right;">425.71</td>
+<td style="text-align: right;">0.44</td>
+<td style="text-align: right;">+1.79</td>
+<td style="text-align: right;">0.065</td>
+<td style="text-align: right;">+0.96</td>
+<td style="text-align: right;">330.57</td>
+<td style="text-align: right;">444.70</td>
+</tr>
+<tr>
+<td><strong>calibra</strong></td>
+<td style="text-align: right;"><strong>56.0%</strong></td>
+<td style="text-align: right;"><strong>422.89</strong></td>
+<td style="text-align: right;"><strong>0.45</strong></td>
+<td style="text-align: right;"><strong>+4.61</strong></td>
+<td style="text-align: right;"><strong>&lt;0.001</strong></td>
+<td style="text-align: right;"><strong>+2.46</strong></td>
+<td style="text-align: right;"><strong>321.16</strong></td>
+<td style="text-align: right;"><strong>443.20</strong></td>
+</tr>
+</tbody>
+</table>
+<p><em>d = Cohen's d vs. random_full — positive means method has lower (better) MSE than random_full. p = two-sided paired t-test. Tail cov. = fraction of 25 action-space low-density training episodes retained by the method.</em></p>
+<hr />
+<h3 id="key-findings">Key findings</h3>
+<p><strong>1. At 5% retention (8 episodes), both diversity-based methods are statistically significantly better than random (p=0.014 and p=0.042).</strong> diversity_only achieves the best overall MSE (449.13) and tail MSE (351.73) at this budget, retaining 4× more tail episodes than random (16% vs. 4%).</p>
+<p><strong>2. At 10% retention, calibra is significantly worse than random (p=0.006, d=−1.68).</strong> This is not noise — it replicates across all 10 seeds. The quality filter reduces the pool from 165 to 123 episodes before diversity selection, cutting off access to tail episodes. At k=16, drawing from 123 quality-approved episodes provides less tail coverage than drawing from the full 165. diversity_only (full pool, no quality gate) is not significantly different from random at this budget (p=0.319).</p>
+<p><strong>3. At 25% retention, calibra is the strongest method (p&lt;0.001, d=+2.46).</strong> Tail coverage 56% vs. 23.6% for random. Tail MSE <strong>321.16 — below the full-dataset tail MSE of 323.98</strong>. The quality filter pays off at this budget because the 41-episode selection can afford to avoid lower-quality episodes while still covering the tail.</p>
+<p><strong>4. quality_only is consistently the worst performing method at all three budgets.</strong> It achieves 0% tail coverage at 5%, significantly worse MSE at 5% (p=0.001) and 10% (p=0.004), and significantly worse MSE at 25% (p&lt;0.001, d=−2.81). Quality filtering without diversity selection removes tail episodes first (they are often kinematically atypical) and then draws randomly from what remains.</p>
+<p><strong>5. The optimal strategy is budget-dependent.</strong> Below ~25% retention: use diversity-only (k-center on the full pool, no quality gate). At 25%+: Calibra's quality filter pays off. This is consistent with the regime-space analysis in the main ablation.</p>
+<hr />
+<h3 id="limitations">Limitations</h3>
+<ul>
+<li>
+<p><strong>Tail episodes are action-space low-density, not validated semantic edge cases.</strong> The bottom-15% k-NN density threshold identifies episodes with unusual action statistics. These may correspond to genuinely informative behaviours or to episodes that are unusual for incidental reasons (unusual start position, operator hesitation, trajectory length outlier). No manual inspection has been performed to validate their semantic relevance.</p>
+</li>
+<li>
+<p><strong>Tail MSE improvement at 25% is on 7 test episodes.</strong> The tail test set is small. The finding is consistent across 10 seeds, but a larger dataset with more tail test episodes would provide stronger evidence.</p>
+</li>
+<li>
+<p><strong>No simulator rollout.</strong> All evaluation uses held-out trajectory prediction MSE. Connecting tail coverage to task-level success rate requires rollout in a sim environment and is left for future work.</p>
+</li>
+<li>
+<p><strong>Single dataset.</strong> These results are from <code>lerobot/pusht</code> only. Replication on DROID, ALOHA, and other LeRobot datasets is the next step.</p>
+</li>
+<li>
+<p><strong>10% crossover is honest, not explained away.</strong> At 10% retention, calibra is significantly worse than random. This is reported without softening.</p>
+</li>
+</ul>
+<hr />
+<h3 id="reproduce">Reproduce</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;calibra-robotics[lerobot]&quot;</span><span class="w"> </span>torch<span class="w"> </span>matplotlib
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>python<span class="w"> </span>experiments/lerobot_targeted_benchmark.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span>--dataset<span class="w"> </span>lerobot/pusht<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span>--n-seeds<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span>--n-epochs<span class="w"> </span><span class="m">120</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># Results:  experiments/figures/targeted_lerobot_pusht.json</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># Figure:   experiments/figures/targeted_lerobot_pusht.pdf  (6 panels)</span>
+</code></pre></div>
+<p>Smoke test (3 seeds, 60 epochs, ~3 minutes):
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>experiments/lerobot_targeted_benchmark.py<span class="w"> </span>--n-seeds<span class="w"> </span><span class="m">3</span><span class="w"> </span>--n-epochs<span class="w"> </span><span class="m">60</span>
+</code></pre></div></p>
+<hr />
+<h2 id="retention-sweep-lerobot-pusht-5-methods-6-fractions">Retention Sweep — LeRobot PushT (5 methods, 6 fractions)</h2>
+<p>A broader sweep across six retention fractions (5%–100%) comparing Calibra vs. Random (5 seeds) and tracking action-space tail coverage. This is the simpler benchmark run before the targeted statistical study above.</p>
+<p><strong>Setup:</strong> 165 train / 41 test episodes. 5 random seeds. 120 epochs. Tail = bottom 15% of training episodes by action-space density (25 episodes).</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">Keep</th>
+<th style="text-align: right;">N</th>
+<th style="text-align: right;">Calibra MSE</th>
+<th style="text-align: right;">Rel</th>
+<th style="text-align: right;">Tail cov</th>
+<th style="text-align: right;">Random MSE ±std</th>
+<th style="text-align: right;">Rel</th>
+<th style="text-align: right;">Tail cov</th>
+<th style="text-align: right;">Saved</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">5%</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">457.05</td>
+<td style="text-align: right;">1.09x</td>
+<td style="text-align: right;">12.0%</td>
+<td style="text-align: right;">490.95 ±18.0</td>
+<td style="text-align: right;">1.17x</td>
+<td style="text-align: right;">6.4%</td>
+<td style="text-align: right;">95%</td>
+</tr>
+<tr>
+<td style="text-align: right;">10%</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">459.46</td>
+<td style="text-align: right;">1.09x</td>
+<td style="text-align: right;">24.0%</td>
+<td style="text-align: right;">448.13 ±9.5</td>
+<td style="text-align: right;">1.07x</td>
+<td style="text-align: right;">10.4%</td>
+<td style="text-align: right;">90%</td>
+</tr>
+<tr>
+<td style="text-align: right;">25%</td>
+<td style="text-align: right;">41</td>
+<td style="text-align: right;">422.77</td>
+<td style="text-align: right;">1.01x</td>
+<td style="text-align: right;">56.0%</td>
+<td style="text-align: right;">429.61 ±1.7</td>
+<td style="text-align: right;">1.02x</td>
+<td style="text-align: right;">33.6%</td>
+<td style="text-align: right;">75%</td>
+</tr>
+<tr>
+<td style="text-align: right;">50%</td>
+<td style="text-align: right;">82</td>
+<td style="text-align: right;">422.55</td>
+<td style="text-align: right;">1.00x</td>
+<td style="text-align: right;">68.0%</td>
+<td style="text-align: right;">423.36 ±2.2</td>
+<td style="text-align: right;">1.01x</td>
+<td style="text-align: right;">52.8%</td>
+<td style="text-align: right;">50%</td>
+</tr>
+<tr>
+<td style="text-align: right;">75%</td>
+<td style="text-align: right;">124</td>
+<td style="text-align: right;">423.84</td>
+<td style="text-align: right;">1.01x</td>
+<td style="text-align: right;">72.0%</td>
+<td style="text-align: right;">421.67 ±1.4</td>
+<td style="text-align: right;">1.00x</td>
+<td style="text-align: right;">78.4%</td>
+<td style="text-align: right;">25%</td>
+</tr>
+<tr>
+<td style="text-align: right;">100%</td>
+<td style="text-align: right;">123*</td>
+<td style="text-align: right;">423.14</td>
+<td style="text-align: right;">1.01x</td>
+<td style="text-align: right;">72.0%</td>
+<td style="text-align: right;">420.76 ±0.2</td>
+<td style="text-align: right;">1.00x</td>
+<td style="text-align: right;">100.0%</td>
+<td style="text-align: right;">0%</td>
+</tr>
+</tbody>
+</table>
+<p><em>At 100%, Calibra's quality filter caps selection at 123 of 165 episodes. The 100% row reflects quality-filtered full dataset, not the unfiltered full dataset.</em></p>
+<p>Rel = MSE / full-dataset MSE. Values ≤ 1.00 match or beat the full dataset.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python<span class="w"> </span>experiments/lerobot_coreset_benchmark.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span>--dataset<span class="w"> </span>lerobot/pusht<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span>--n-epochs<span class="w"> </span><span class="m">120</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span>--n-seeds<span class="w"> </span><span class="m">5</span>
+</code></pre></div>
+<hr />
+<h2 id="synthetic-rare-mode-benchmark-controlled">Synthetic Rare-Mode Benchmark (Controlled)</h2>
+<p>See README § "Rare-mode preservation" for the controlled 2D multigoal benchmark (worst-group success, 5-seed). Results: 98.7% worst-group (Calibra) vs. 36.5% (Random) at 5% retention.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python<span class="w"> </span>experiments/multigoal_obstacle_benchmark.py
+</code></pre></div>
+<hr />
+<h2 id="multi-dataset-ablation-bc-mlp-act-diffusion-policy">Multi-Dataset Ablation (BC-MLP, ACT, Diffusion Policy)</h2>
+<p>See README § "Ablation study" and § "Cross-architecture check" for full tables across ALOHA Mobile, DROID-100, and PushT real at 30% retention with 5 seeds, 3 policy families, and 7 competing methods including K-Center, Facility Location, and Herding.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>python<span class="w"> </span>experiments/ablation_benchmark.py<span class="w"> </span>--dataset<span class="w"> </span>lerobot/aloha_mobile_cabinet<span class="w"> </span>--seeds<span class="w"> </span><span class="m">5</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>python<span class="w"> </span>experiments/ablation_benchmark.py<span class="w"> </span>--dataset<span class="w"> </span>lerobot/droid_100<span class="w"> </span>--seeds<span class="w"> </span><span class="m">5</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>python<span class="w"> </span>experiments/ablation_benchmark.py<span class="w"> </span>--dataset<span class="w"> </span>lerobot/columbia_cairlab_pusht_real<span class="w"> </span>--seeds<span class="w"> </span><span class="m">5</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>python<span class="w"> </span>experiments/aggregate_ablation.py<span class="w"> </span>results/ablation_*.json
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "content.code.copy", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
