@@ -1,8 +1,11 @@
 """
-Robot Dataset Health Check — powered by Calibra
+Calibra — Dataset Integrity
 
-Public demo: sample audit on up to SAMPLE_EPISODE_CAP episodes.
-Full audit: pip install calibra-robotics && calibra audit hf://<dataset>
+Answers the first question robotics practitioners ask about a new dataset:
+"can I trust it?" — before quality, coverage, or optimization matter.
+
+Public demo: sample check on up to SAMPLE_EPISODE_CAP episodes.
+Full check: pip install calibra-robotics && calibra integrity hf://<dataset>
 """
 
 from __future__ import annotations
@@ -63,6 +66,40 @@ def _hf_revision(repo_id: str) -> Optional[str]:
         return None
 
 
+def _run_integrity_check(batch) -> dict:
+    """Mirrors `calibra integrity`'s own analyzer set and grouping — kept as a
+    separate Pipeline run (not folded into the main audit below) so Integrity
+    findings never leak into the Quality/Coverage dimension scoring, which
+    routes unmatched metrics into a catch-all bucket (see
+    calibra/schema/scoring.py `route_metric_to_dimension`)."""
+    from calibra.analyzers.blur import BlurAnalyzer
+    from calibra.analyzers.camera_freeze import CameraFreezeAnalyzer
+    from calibra.analyzers.duplicate_frame import DuplicateFrameAnalyzer
+    from calibra.analyzers.task_structure import TaskStructureAnalyzer
+    from calibra.analyzers.temporal import TemporalAnalyzer
+    from calibra.integrity import _integrity_flags, _integrity_score
+    from calibra.pipeline import Pipeline
+    from calibra.schema.report import RiskLevel
+
+    analyzers = [
+        TemporalAnalyzer(),
+        TaskStructureAnalyzer(),
+        DuplicateFrameAnalyzer(),
+        CameraFreezeAnalyzer(),
+        BlurAnalyzer(),
+    ]
+    report = Pipeline(analyzers=analyzers).run(batch)
+    flags = _integrity_flags(report)
+    score, status = _integrity_score(flags)
+    return {
+        "critical": [f for f in flags if f.level == RiskLevel.CRITICAL],
+        "warnings": [f for f in flags if f.level == RiskLevel.WARNING],
+        "passed": [f for f in flags if f.level == RiskLevel.OK],
+        "score": score,
+        "status": status,
+    }
+
+
 def _run_sample_audit(dataset_id: str) -> dict:
     from calibra.ingestion.registry import load
     from calibra.pipeline import Pipeline
@@ -78,6 +115,7 @@ def _run_sample_audit(dataset_id: str) -> dict:
         batch.episodes = batch.episodes[:SAMPLE_EPISODE_CAP]
         batch._n_samples_hint = None
 
+    integrity = _run_integrity_check(batch)
     diag = Pipeline().run(batch)
 
     dataset_info = DatasetInfo(
@@ -111,6 +149,7 @@ def _run_sample_audit(dataset_id: str) -> dict:
         "dimensions": public.results.dimensions,
         "is_sample": is_sample,
         "report_path": _write_temp_report(public, dataset_id),
+        "integrity": integrity,
     }
 
 
@@ -208,8 +247,13 @@ _DIM_LABELS = {
     "temporal_integrity": "Temporal Consistency",
     "motion_quality": "Motion Quality",
     "behavioral_coverage": "Behavioral Coverage",
-    "task_integrity": "Task Integrity",
+    # "Integrity" is reserved for the front-door dataset-trust check above —
+    # this dimension (episode length/phase balance) is renamed to avoid
+    # implying it's part of that layer.
+    "task_integrity": "Task Structure",
 }
+
+_INTEGRITY_STATUS_COLOR = {"Healthy": "#22c55e", "Warning": "#f59e0b", "Critical": "#ef4444"}
 
 _SEV_ORDER = {"critical": 0, "warning": 1, "ok": 2, "info": 3}
 
@@ -356,7 +400,60 @@ def _percentile_section(score: float, dimensions: dict) -> str:
 """
 
 
+# ── integrity (front door) ──────────────────────────────────────────────────
+
+_INTEGRITY_ICON = {"critical": ("✗", "#ef4444"), "warning": ("⚠", "#f59e0b"), "passed": ("✓", "#22c55e")}
+
+
+def _integrity_row(f, kind: str) -> str:
+    icon, color = _INTEGRITY_ICON[kind]
+    text = f.interpretation
+    row = (
+        f'<div style="display:flex;gap:10px;align-items:flex-start;margin:5px 0">'
+        f'<span style="color:{color};font-size:14px;min-width:16px;margin-top:1px">{icon}</span>'
+        f'<span style="color:#cdd6f4;font-size:14px">{text}'
+    )
+    if kind != "passed":
+        row += f'<div style="color:#6c7086;font-size:12px;margin-top:1px">{f.implication}</div>'
+    row += "</span></div>"
+    return row
+
+
+def _integrity_html(integrity: dict) -> str:
+    status = integrity["status"]
+    color = _INTEGRITY_STATUS_COLOR.get(status, "#6c7086")
+    critical, warnings, passed = integrity["critical"], integrity["warnings"], integrity["passed"]
+
+    rows = "".join(_integrity_row(f, "critical") for f in critical)
+    rows += "".join(_integrity_row(f, "warning") for f in warnings)
+    rows += "".join(_integrity_row(f, "passed") for f in passed)
+    if not rows:
+        rows = (
+            '<div style="color:#6c7086;font-size:13px">'
+            "No integrity checks applicable to this dataset's modalities.</div>"
+        )
+
+    return f"""
+<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+  <div style="font-size:11px;color:#6c7086;text-transform:uppercase;letter-spacing:.06em">
+    Dataset Integrity — can I trust this?
+  </div>
+  <div style="font-size:13px;font-weight:700;color:{color}">{status} · {integrity["score"]}/100</div>
+</div>
+{rows}
+<div style="border-top:1px solid #313244;margin:16px 0"></div>
+"""
+
+
 # ── checklist ─────────────────────────────────────────────────────────────────
+
+
+def _non_integrity_findings(findings: list) -> list:
+    """Excludes metrics already surfaced in the Integrity section above, so a
+    timestamp/sync issue isn't shown twice under two different headings."""
+    from calibra.integrity import _INTEGRITY_METRICS
+
+    return [f for f in findings if f.metric not in _INTEGRITY_METRICS]
 
 
 def _findings_header_html(findings: list) -> str:
@@ -365,7 +462,7 @@ def _findings_header_html(findings: list) -> str:
         return ""
     return (
         '<div style="font-size:11px;color:#6c7086;text-transform:uppercase;'
-        'letter-spacing:.06em;margin-bottom:8px">Diagnostic Findings</div>'
+        'letter-spacing:.06em;margin-bottom:8px">Quality &amp; Coverage Findings</div>'
     )
 
 
@@ -570,12 +667,12 @@ def _score_header(
     meaning = _score_meaning(score)
     return f"""
 <div style="font-size:11px;color:#6c7086;letter-spacing:.06em;margin-bottom:10px">
-  ROBOT DATASET HEALTH CHECK
+  QUALITY &amp; COVERAGE SCORE
 </div>
 <div style="display:flex;align-items:flex-start;gap:24px;margin-bottom:18px">
   <div>
     <div style="font-size:11px;color:#6c7086;text-transform:uppercase;
-                letter-spacing:.06em;margin-bottom:4px">Health Score</div>
+                letter-spacing:.06em;margin-bottom:4px">Score</div>
     <div>
       <span style="font-size:68px;font-weight:800;color:{color};line-height:1">{score:.0f}</span>
       <span style="font-size:18px;color:#6c7086"> / 100</span>
@@ -644,8 +741,11 @@ def _render_health_card(dataset_id: str, r: dict) -> str:
         else ""
     )
 
+    quality_findings = _non_integrity_findings(r["findings"])
+
     inner = (
-        _score_header(
+        _integrity_html(r["integrity"])
+        + _score_header(
             dataset_id,
             r["score"],
             r["grade"],
@@ -655,8 +755,8 @@ def _render_health_card(dataset_id: str, r: dict) -> str:
             r["fmt"],
             sample_tag,
         )
-        + _findings_header_html(r["findings"])
-        + _checklist_html(r["findings"], n_ep)
+        + _findings_header_html(quality_findings)
+        + _checklist_html(quality_findings, n_ep)
         + _percentile_section(r["score"], r["dimensions"])
         + _similar_html(dataset_id, r["score"])
         + '<div style="border-top:1px solid #313244;margin:14px 0"></div>'
@@ -710,8 +810,18 @@ def _render_cached_card(dataset_id: str, cached: dict) -> str:
         f"</div>"
     )
 
+    integrity_note = (
+        '<div style="background:#181825;border:1px solid #313244;border-radius:8px;'
+        'padding:10px 14px;margin-bottom:14px;font-size:12px;color:#a6adc8">'
+        "This cached result predates the Integrity check — timestamp/sync, "
+        "episode completeness, duplicate frames, camera freeze, and blur. "
+        "<code style='background:#313244;padding:1px 5px;border-radius:3px'>"
+        f"calibra integrity hf://{dataset_id}</code> runs it directly.</div>"
+    )
+
     inner = (
-        _score_header(dataset_id, score, grade, cert, n_ep, n_fr, "lerobot", cached_tag)
+        integrity_note
+        + _score_header(dataset_id, score, grade, cert, n_ep, n_fr, "lerobot", cached_tag)
         + issue_line
         + "<br>"
         + detail_link
@@ -744,7 +854,7 @@ EXAMPLES = [
 _boot()
 
 with gr.Blocks(
-    title="Robot Dataset Health Check",
+    title="Calibra — Dataset Integrity",
     theme=gr.themes.Default(primary_hue="violet"),
     css="""
     .gr-button-primary { background: #7c3aed !important; border-color: #7c3aed !important; }
@@ -752,13 +862,14 @@ with gr.Blocks(
     """,
 ) as demo:
     gr.Markdown("""
-# Robot Dataset Health Check
+# Calibra — Dataset Integrity
 
-**Audit any LeRobot dataset before training.**
+**Before diversity or coreset selection, can you trust this dataset?**
 
-Enter a dataset ID and get a health score, quality issue findings,
-community percentile comparison, similar datasets, and a keep-fraction recommendation.
-Pre-audited datasets return instantly from the benchmark cache.
+Enter a LeRobot dataset ID. Calibra checks Integrity first — timestamp
+consistency, episode completeness, duplicate frames, camera freeze, blur —
+then Quality and Coverage. Pre-checked datasets return instantly from the
+benchmark cache.
 """)
 
     with gr.Row():
@@ -767,7 +878,7 @@ Pre-audited datasets return instantly from the benchmark cache.
             placeholder="lerobot/pusht",
             scale=5,
         )
-        btn = gr.Button("Check Health", variant="primary", scale=1, min_width=140)
+        btn = gr.Button("Check Integrity", variant="primary", scale=1, min_width=140)
 
     out_html = gr.HTML()
     out_download = gr.File(label="Download Full Report (JSON)")
@@ -783,17 +894,21 @@ Pre-audited datasets return instantly from the benchmark cache.
 ---
 **What gets checked**
 
-| Dimension | Checks | Why it matters |
-|-----------|--------|-----------------|
-| Temporal Consistency | Frame dropout rate, timestamp jitter, synchronization lag | Prevents observation/action misalignment during policy learning |
-| Motion Quality | Action jerk spikes, velocity discontinuities, smoothness (LDLJ) | Reduces noisy demonstrations and unstable learned actions |
-| Behavioral Coverage | Trajectory diversity, redundancy fraction, entropy | Improves state-space diversity and reduces overfitting |
-| Task Integrity | Episode length distribution, phase balance, inactivity periods | Flags incomplete or abnormal demonstrations |
+| Layer | Checks | Answers |
+|-------|--------|---------|
+| **Integrity** (first) | Timestamp consistency, sensor sync, episode completeness, duplicate frames, camera freeze, blur | Can I trust this dataset? |
+| Quality | Action jerk spikes, velocity discontinuities, smoothness (LDLJ) | Is this data clean? |
+| Coverage | Trajectory diversity, redundancy fraction, entropy | Does my robot see enough variety? |
+| Task Structure | Episode length distribution, phase balance, inactivity periods | Are episodes complete and well-formed? |
 
-**Full audit locally** (all episodes, per-episode verdicts, certifiable report):
+After Integrity comes Quality, Coverage, and — for building smaller training
+sets — Optimization.
+
+**Full check locally** (all episodes, per-episode verdicts, certifiable report):
 ```bash
 pip install calibra-robotics
-calibra audit hf://lerobot/pusht
+calibra integrity hf://lerobot/pusht
+calibra audit hf://lerobot/pusht      # quality + coverage scoring
 ```
 
 *Powered by [Calibra](https://github.com/omertt27/Calibra) — open-source robotics dataset
