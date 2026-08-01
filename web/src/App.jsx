@@ -1,508 +1,361 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState } from 'react'
 import {
-  Github, BookOpen, FileText, BarChart3, Terminal, ShieldCheck, Layers,
-  Scissors, Activity, GitCompare, Copy, Check, ArrowRight, Zap,
-  Database, FlaskConical, ScrollText, GaugeCircle, Menu, X, Cpu,
-} from 'lucide-react';
-import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement,
-  Tooltip, Legend, Filler,
-} from 'chart.js';
+  ArrowDown,
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  Clipboard,
+  ExternalLink,
+  Github,
+  ShieldAlert,
+  Sparkles,
+  TriangleAlert,
+} from 'lucide-react'
+import './App.css'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
-
-/* ------------------------------------------------------------------ */
-/*  Constants — single source of truth for outbound links.            */
-/* ------------------------------------------------------------------ */
 const LINKS = {
-  github: 'https://github.com/omerTT/Calibra',
-  // arXiv preprint pending — points at the LaTeX source until the ID lands.
-  paper: 'https://github.com/omerTT/Calibra/tree/main/paper',
-  docs: 'https://omerTT.github.io/Calibra/',
-  pypi: 'https://pypi.org/project/calibra-robotics/',
-  contact: 'mailto:omertahtoko@gmail.com',
-};
-const INSTALL_CMD = 'pip install calibra-robotics';
-
-/* ------------------------------------------------------------------ */
-/*  Data — every number below is drawn verbatim from README.md.       */
-/* ------------------------------------------------------------------ */
-const STATS = [
-  { num: '3', unit: '×', label: 'policy architectures validated (BC-MLP, ACT, Diffusion)' },
-  { num: '16', unit: '', label: 'reference datasets shipped' },
-  { num: '41.7', unit: '%', label: 'better than full-data at 10% keep (PushT real)' },
-  { num: '596', unit: '', label: 'tests, deterministic — not a language model' },
-];
-
-const COMMANDS = [
-  { name: 'calibra audit', icon: BarChart3, desc: 'Full diagnostic report — four analyzers, bootstrap CIs, per-episode outlier detection.' },
-  { name: 'calibra compare', icon: GitCompare, desc: 'Evidence-backed comparison against a reference dataset. Every claim is falsifiable.' },
-  { name: 'calibra certify', icon: ShieldCheck, desc: 'Pass / provisional / fail quality gate with CI exit codes and a remediation checklist.' },
-  { name: 'calibra prune', icon: Scissors, desc: 'Two-stage coreset selection: quality filter + greedy max-coverage over ~50k episodes.' },
-  { name: 'calibra predict', icon: GaugeCircle, desc: 'Predict downstream training success before spending a single GPU-hour.' },
-  { name: 'calibra watch', icon: Activity, desc: 'Real-time teleoperation monitor — flags a bad episode seconds after it is saved.' },
-];
-
-// Retention curves — "% improvement over random selection" at each keep fraction.
-const KEEPS = ['10%', '20%', '30%', '50%', '70%'];
-const RETENTION = {
-  pusht: [56.6, 49.1, 42.5, 32.2, 15.0],
-  aloha: [50.0, 35.5, 29.2, 7.8, 7.2],
-  droid: [20.9, 15.2, 10.1, 7.2, 4.5],
-};
-
-// Cross-architecture mean improvement over random (keep 30%, 5 seeds, 3 datasets).
-const ARCH_TABLE = [
-  { method: 'Diversity-only', bc: '+29.5%', act: '+26.5%', diff: '+11.9%' },
-  { method: 'Calibra full', bc: '+24.5%', act: '+23.7%', diff: '+13.8%', hl: true },
-  { method: 'K-Center greedy', bc: '+24.0%', act: '+23.1%', diff: '+10.1%' },
-  { method: 'Facility Location', bc: '+21.5%', act: '+18.4%', diff: '+8.7%' },
-  { method: 'Quality-filter only', bc: '+16.2%', act: '+17.4%', diff: '+11.1%' },
-  { method: 'Random', bc: '0.0%', act: '0.0%', diff: '0.0%' },
-  { method: 'Herding', bc: '−11.4%', act: '−7.5%', diff: '−5.5%' },
-];
-
-const FORMATS = ['LeRobot v2 (Parquet)', 'LeRobot v1', 'HuggingFace Hub', 'HDF5 · Isaac Lab', 'Robomimic', 'RLDS / TFDS', 'MCAP / ROS2'];
-
-/* ------------------------------------------------------------------ */
-/*  Small building blocks                                             */
-/* ------------------------------------------------------------------ */
-function Logo({ size = 30 }) {
-  return (
-    <>
-      <img src="/logo-icon.svg" alt="" width={size} height={size} />
-      <span className="logo-wordmark">Calib<span>ra</span></span>
-    </>
-  );
+  github: 'https://github.com/omertt27/Calibra',
+  demo: 'https://huggingface.co/spaces/omert27/robot-dataset-health-check',
+  docs: 'https://omertt27.github.io/Calibra/docs/',
+  benchmarks: 'https://github.com/omertt27/Calibra#benchmark-results',
+  license: 'https://github.com/omertt27/Calibra/blob/main/LICENSE',
 }
 
-function InstallPill({ onCopy }) {
-  const [copied, setCopied] = useState(false);
-  const copy = () => {
-    navigator.clipboard?.writeText(INSTALL_CMD);
-    setCopied(true);
-    onCopy?.();
-    setTimeout(() => setCopied(false), 1600);
-  };
+const INSTALL_COMMAND = 'pip install calibra-robotics'
+
+const WORKFLOW = [
+  { number: '01', name: 'Integrity', question: 'Can I trust this dataset?', command: 'calibra integrity' },
+  { number: '02', name: 'Quality', question: 'Is it clean?', command: 'calibra audit' },
+  { number: '03', name: 'Coverage', question: 'Is it diverse?', command: 'calibra review' },
+  { number: '04', name: 'Optimization', question: 'Can I train faster?', command: 'calibra prune' },
+]
+
+const ECOSYSTEMS = [
+  { name: 'LeRobot', detail: 'v1 / v2 / v3', logo: 'huggingface.svg' },
+  { name: 'Isaac Lab', detail: 'HDF5', logo: 'nvidia.svg' },
+  { name: 'RLDS', detail: 'TF Datasets', logo: 'tensorflow.svg' },
+  { name: 'robomimic', detail: 'HDF5', mark: 'RM' },
+  { name: 'Hugging Face', detail: 'Hub IDs', logo: 'huggingface.svg' },
+]
+
+function Logo() {
   return (
-    <div className="install-pill" onClick={copy} role="button" tabIndex={0}
-         onKeyDown={(e) => e.key === 'Enter' && copy()}>
-      <span className="dollar">$</span>
-      <span>{INSTALL_CMD}</span>
-      <span className="copy-btn">{copied ? <Check size={15} /> : <Copy size={15} />}</span>
+    <a className="brand" href="#top" aria-label="Calibra home">
+      <img src={`${import.meta.env.BASE_URL}logo-icon.svg`} alt="" />
+      <span>Calibra</span>
+    </a>
+  )
+}
+
+function CopyCommand({ large = false }) {
+  const [copied, setCopied] = useState(false)
+
+  const copy = async () => {
+    await navigator.clipboard.writeText(INSTALL_COMMAND)
+    setCopied(true)
+    window.setTimeout(() => setCopied(false), 1600)
+  }
+
+  return (
+    <button className={`copy-command${large ? ' copy-command-large' : ''}`} onClick={copy} type="button">
+      <code><span>$</span> {INSTALL_COMMAND}</code>
+      <span className="copy-action">
+        {copied ? <Check size={16} /> : <Clipboard size={16} />}
+        {copied ? 'Copied' : 'Copy'}
+      </span>
+    </button>
+  )
+}
+
+function TerminalReport() {
+  return (
+    <div className="terminal" aria-label="Example Calibra integrity report">
+      <div className="terminal-bar">
+        <div className="terminal-dots"><i /><i /><i /></div>
+        <span>calibra — integrity</span>
+        <span className="terminal-status">completed in 2.4s</span>
+      </div>
+      <div className="terminal-body">
+        <div className="terminal-command"><span>$</span> calibra integrity /data/my_demos.h5</div>
+        <div className="report-heading">
+          <span>Dataset Integrity</span>
+          <strong>85 / 100</strong>
+        </div>
+        <p className="report-meta">my_demos · 120 episodes · Status: Warning</p>
+
+        <div className="report-group report-critical">
+          <div className="report-label"><ShieldAlert size={15} /> Critical <span>1</span></div>
+          <p><span>camera_freeze_events</span><strong>episode ep_17</strong></p>
+          <p className="report-detail">1 of 120 episodes contains a run of ≥5 near-identical frames.</p>
+        </div>
+
+        <div className="report-group report-warning">
+          <div className="report-label"><TriangleAlert size={15} /> Warnings <span>1</span></div>
+          <p><span>blurry_episode_fraction</span><strong>1 episode</strong></p>
+        </div>
+
+        <div className="report-group report-passed">
+          <div className="report-label"><CheckCircle2 size={15} /> Passed <span>8</span></div>
+          <p><span>timestamp_jitter_cv</span><strong>pass</strong></p>
+          <p><span>timestamp_dropout_rate</span><strong>pass</strong></p>
+          <p><span>action_dropout_rate</span><strong>pass</strong></p>
+        </div>
+      </div>
     </div>
-  );
+  )
 }
 
-/* ------------------------------------------------------------------ */
-/*  Sections                                                          */
-/* ------------------------------------------------------------------ */
-function Nav() {
-  const [open, setOpen] = useState(false);
-  const item = (href, label, ext = true) => (
-    <a className="nav-link" href={href} onClick={() => setOpen(false)}
-       {...(ext ? { target: '_blank', rel: 'noreferrer' } : {})}>{label}</a>
-  );
+function CoverageGraphic() {
+  const clusters = [
+    ['12%', '18%'], ['20%', '26%'], ['15%', '33%'], ['25%', '15%'],
+    ['72%', '17%'], ['80%', '26%'], ['68%', '32%'], ['84%', '13%'],
+    ['14%', '70%'], ['23%', '80%'], ['28%', '67%'], ['10%', '84%'],
+    ['69%', '72%'], ['79%', '82%'], ['86%', '68%'], ['73%', '88%'],
+  ]
+  const selected = [1, 5, 10, 14]
+
   return (
-    <nav className="nav">
-      <div className="container nav-inner">
-        <div className="nav-brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-          <Logo />
-        </div>
-        <div className={`nav-links ${open ? 'open' : ''}`}>
-          {item('#benchmarks', 'Benchmarks', false)}
-          {item(LINKS.paper, 'Paper')}
-          {item(LINKS.docs, 'Docs')}
-          {item(LINKS.github, 'GitHub')}
-          <a className="btn-primary nav-cta" href={LINKS.github} target="_blank" rel="noreferrer">
-            <Github size={16} /> Star on GitHub
-          </a>
-        </div>
-        <button className="nav-toggle" onClick={() => setOpen(!open)} aria-label="Menu">
-          {open ? <X size={22} /> : <Menu size={22} />}
-        </button>
+    <div className="coverage-card">
+      <div className="coverage-head">
+        <div><span>Behavioral coverage</span><strong>Coreset · 25% retained</strong></div>
+        <span className="coverage-score">4 / 4 regions</span>
       </div>
-    </nav>
-  );
-}
-
-function Hero({ onCopy }) {
-  return (
-    <header className="hero">
-      <div className="container hero-grid">
-        <div>
-          <span className="eyebrow"><Cpu size={14} /> Dataset observability for robot learning</span>
-          <h1>Know what's wrong with your robot data <span className="accent">before you train on it.</span></h1>
-          <p className="hero-sub">
-            Calibra diagnoses kinematic and temporal defects in imitation-learning
-            demonstrations, then prunes the redundant episodes — so you stop burning
-            GPU-hours on data that was never going to help.
-          </p>
-          <div className="hero-actions">
-            <InstallPill onCopy={onCopy} />
-          </div>
-          <div className="hero-actions">
-            <a className="btn-primary" href="#benchmarks"><BarChart3 size={17} /> See the benchmarks</a>
-            <a className="btn-secondary" href={LINKS.github} target="_blank" rel="noreferrer">
-              <Github size={17} /> View source
-            </a>
-          </div>
-          <div className="hero-meta">
-            <span><ShieldCheck size={15} /> Runs entirely locally</span>
-            <span><Zap size={15} /> Deterministic, not an LLM</span>
-            <span><ScrollText size={15} /> BSL 1.1 · source-available</span>
-          </div>
-        </div>
-
-        <div className="hero-terminal glass-card" style={{ padding: 0 }}>
-          <div className="terminal-window" style={{ border: 0, boxShadow: 'none' }}>
-            <div className="terminal-header">
-              <div className="terminal-dots">
-                <span className="terminal-dot terminal-dot-red" />
-                <span className="terminal-dot terminal-dot-yellow" />
-                <span className="terminal-dot terminal-dot-green" />
-              </div>
-              <span className="terminal-title">calibra compare</span>
-            </div>
-            <div className="terminal-body">
-              <div><span className="t-gold">$</span> <span className="t-white">calibra compare </span><span className="t-blue">my_dataset aloha</span></div>
-              <br />
-              <div className="t-rule">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
-              <div className="t-dim">Reference: aloha_mobile_cabinet · 14D · 85 eps</div>
-              <div className="t-dim">Yours:&nbsp;&nbsp;&nbsp;&nbsp;my_dataset · 120 eps</div>
-              <div className="t-rule">────────────────────────────────────</div>
-              <div className="t-white">VELOCITY DISCONTINUITY RATE</div>
-              <div className="t-dim">&nbsp;&nbsp;Yours: <span className="t-red">12.1%</span>&nbsp;&nbsp;aloha: 1.3%&nbsp;&nbsp;<span className="t-red">▲ +10.8%</span></div>
-              <br />
-              <div className="t-white">JERK SPIKE RATE</div>
-              <div className="t-dim">&nbsp;&nbsp;Yours: <span className="t-red">8.4%</span>&nbsp;&nbsp;&nbsp;aloha: 0.7%&nbsp;&nbsp;<span className="t-red">▲ +7.7%</span></div>
-              <div className="t-rule">────────────────────────────────────</div>
-              <div className="t-gold">RECOMMENDED ACTIONS</div>
-              <div className="t-green">&nbsp;&nbsp;Prune episodes 14, 22, 41 — jerk outliers</div>
-              <div className="t-green">&nbsp;&nbsp;(MAD analysis). Investigate command</div>
-              <div className="t-green">&nbsp;&nbsp;packet drops or operator corrections.</div>
-              <div className="t-rule">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-function StatBar() {
-  return (
-    <div className="container section-tight">
-      <div className="stat-bar">
-        {STATS.map((s) => (
-          <div className="stat-cell" key={s.label}>
-            <div className="stat-num">{s.num}<span className="unit">{s.unit}</span></div>
-            <div className="stat-label">{s.label}</div>
-          </div>
+      <div className="coverage-plot" aria-label="Calibra selects demonstrations across all behavioral regions">
+        <span className="axis-y">Behavior B</span>
+        <span className="axis-x">Behavior A</span>
+        <div className="quadrant vertical" />
+        <div className="quadrant horizontal" />
+        {clusters.map(([left, top], index) => (
+          <i
+            className={selected.includes(index) ? 'selected' : ''}
+            key={`${left}-${top}`}
+            style={{ left, top }}
+          />
         ))}
       </div>
+      <div className="coverage-legend">
+        <span><i /> Full dataset</span>
+        <span><i className="selected" /> Calibra selection</span>
+        <strong>Rare behaviors preserved</strong>
+      </div>
     </div>
-  );
+  )
 }
 
-const PROBLEMS = [
-  { icon: Database, title: 'Silent bad data', body: 'Jerk spikes, dropped frames, comms lag and stuck actuators all look like valid training signal to your policy. It learns the noise.' },
-  { icon: Layers, title: 'Wasted compute', body: 'In a 10,000-episode set, 60–80% of episodes are near-duplicates. GPU cost scales with volume, not with the unique behavior you actually need.' },
-  { icon: FlaskConical, title: 'Undiagnosable failure', body: 'When a policy stalls, you cannot tell whether the cause is the architecture, the recipe, or the data. Calibra isolates the data variable.' },
-];
-
-function Problem() {
+function App() {
   return (
-    <section className="section">
-      <div className="container">
-        <div className="section-head">
-          <span className="eyebrow">The problem</span>
-          <h2>Training on all your demonstrations is the expensive mistake</h2>
-          <p>More data is not free, and it is not always better. Calibra tells you which episodes are hurting you before the run, not after.</p>
-        </div>
-        <div className="card-grid">
-          {PROBLEMS.map((p) => (
-            <div className="glass-card feature-card" key={p.title}>
-              <div className="feature-icon"><p.icon size={22} /></div>
-              <h3>{p.title}</h3>
-              <p>{p.body}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Commands() {
-  return (
-    <section className="section" style={{ background: 'var(--bg-secondary)' }}>
-      <div className="container">
-        <div className="section-head">
-          <span className="eyebrow"><Terminal size={14} /> One CLI</span>
-          <h2>From raw demonstrations to a training-ready coreset</h2>
-          <p>Fourteen commands, all local, all deterministic. The six you will reach for most:</p>
-        </div>
-        <div className="cmd-grid">
-          {COMMANDS.map((c) => (
-            <div className="cmd-row" key={c.name}>
-              <div className="cmd-name">{c.name}</div>
-              <div className="cmd-desc">{c.desc}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Benchmarks() {
-  const chartData = {
-    labels: KEEPS,
-    datasets: [
-      mkLine('PushT real', RETENTION.pusht, '#f59e0b'),
-      mkLine('ALOHA mobile', RETENTION.aloha, '#38bdf8'),
-      mkLine('DROID-100', RETENTION.droid, '#a78bfa'),
-    ],
-  };
-  return (
-    <section className="section" id="benchmarks">
-      <div className="container">
-        <div className="section-head">
-          <span className="eyebrow"><BarChart3 size={14} /> Empirical validation</span>
-          <h2>Coverage selection holds across architectures — and we say where it doesn't</h2>
-          <p>
-            Every result is from real GPU training on an RTX 2080, 5 shared seeds, paired
-            <em> t</em>-tests. Reported at the strength the evidence supports.
-          </p>
-        </div>
-
-        <div className="bench-layout">
-          <div className="glass-card bench-chart-card">
-            <h3>Advantage over random selection</h3>
-            <div className="cap">% improvement of a Calibra coreset vs. a random coreset, by keep fraction.</div>
-            <div className="chart-holder"><Line data={chartData} options={CHART_OPTS} /></div>
+    <div id="top">
+      <nav className="nav">
+        <div className="container nav-inner">
+          <Logo />
+          <div className="nav-links">
+            <a href="#workflow">How it works</a>
+            <a href="#research">Research</a>
+            <a href={LINKS.docs}>Docs</a>
           </div>
-
-          <div>
-            <div className="cap" style={{ marginBottom: 12, color: 'var(--text-secondary)', fontSize: 14 }}>
-              Mean improvement over random — <strong style={{ color: '#fff' }}>identical coresets, only the learner changes</strong> (keep 30%, 5 seeds, 3 datasets):
-            </div>
-            <div className="bench-table-wrap">
-              <table className="bench">
-                <thead>
-                  <tr><th>Selection method</th><th>BC-MLP</th><th>ACT</th><th>Diffusion</th></tr>
-                </thead>
-                <tbody>
-                  {ARCH_TABLE.map((r) => (
-                    <tr key={r.method} className={r.hl ? 'highlight' : ''}>
-                      <td>{r.method}</td>
-                      <td className={cls(r.bc)}>{r.bc}</td>
-                      <td className={cls(r.act)}>{r.act}</td>
-                      <td className={cls(r.diff)}>{r.diff}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div style={{ marginTop: 10, fontSize: 12.5, color: 'var(--text-muted)' }}>
-              Method-ranking agreement across learners: Spearman ρ ≥ 0.86 (BC↔ACT = 1.00).
-            </div>
-          </div>
+          <a className="nav-github" href={LINKS.github} target="_blank" rel="noreferrer">
+            <Github size={17} /> GitHub
+          </a>
         </div>
+      </nav>
 
-        <div className="callout" style={{ marginTop: 40 }}>
-          <ScrollText className="ic" size={22} />
-          <p>
-            <strong>We publish the negatives.</strong> Calibra's diversity stage sometimes
-            beats the full pipeline; the quality filter helps under corruption and on the
-            diffusion learner but is a slight drag on clean deterministic policies; DROID
-            morphology-collapse is an open problem. Single-seed runs are labelled
-            exploratory. That honesty is the point — every interpretation ships with a
-            falsifiable claim and a stated falsification condition.
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-const REPRO = [
-  { icon: ScrollText, title: 'Falsifiable claim registry', body: 'Every interpretation is backed by a claim in calibra/claims/ with an evidence count, confidence rating and the exact data that would disprove it.' },
-  { icon: FlaskConical, title: 'One-command reproduction', body: 'Each benchmark in the README ships with the exact command, dataset ID, seed count and epoch budget. Run it on your own hardware.' },
-  { icon: GaugeCircle, title: 'Corruption self-tests', body: 'calibra corrupt injects known defects into clean data to prove each metric actually responds to the fault it claims to detect.' },
-];
-
-function Reproducibility() {
-  return (
-    <section className="section" style={{ background: 'var(--bg-secondary)' }}>
-      <div className="container">
-        <div className="section-head">
-          <span className="eyebrow"><BookOpen size={14} /> Built for labs</span>
-          <h2>The only question that matters: can another lab reproduce it?</h2>
-          <p>Calibra is designed so the answer is yes. No cloud, no account, no black box.</p>
-        </div>
-        <div className="repro-grid">
-          {REPRO.map((r) => (
-            <div className="glass-card repro-card" key={r.title}>
-              <h3><r.icon size={18} className="t-gold" /> {r.title}</h3>
-              <p>{r.body}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Formats() {
-  return (
-    <section className="section-tight">
-      <div className="container">
-        <div className="section-head" style={{ marginBottom: 32 }}>
-          <span className="eyebrow"><Layers size={14} /> Works with your stack</span>
-          <h2 style={{ fontSize: 26 }}>Point it at a Hub ID, a path, or an <code className="bench-mono">hf://</code> URI</h2>
-        </div>
-        <div className="format-row">
-          {FORMATS.map((f) => (
-            <span className="format-chip" key={f}><span className="dot" /> {f}</span>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function CTA({ onCopy }) {
-  return (
-    <section className="section">
-      <div className="container cta-band">
-        <div className="cta-card">
-          <span className="eyebrow"><Terminal size={14} /> Get started</span>
-          <h2>Run it before your next training job</h2>
-          <p>Free for research and internal use. One pip install away.</p>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 26 }}>
-            <InstallPill onCopy={onCopy} />
-          </div>
-          <div className="cta-actions">
-            <a className="btn-primary" href={LINKS.docs} target="_blank" rel="noreferrer">
-              <BookOpen size={17} /> Read the docs <ArrowRight size={15} />
-            </a>
-            <a className="btn-secondary" href={LINKS.paper} target="_blank" rel="noreferrer">
-              <FileText size={17} /> Read the paper
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="footer">
-      <div className="container">
-        <div className="footer-grid">
-          <div className="footer-col footer-about">
-            <div className="nav-brand"><Logo size={26} /></div>
-            <p>Dataset observability and coreset selection for robotics imitation learning. Source-available, local-first.</p>
-          </div>
-          <div className="footer-col">
-            <h4>Product</h4>
-            <a href="#benchmarks">Benchmarks</a>
-            <a href={LINKS.docs} target="_blank" rel="noreferrer">Documentation</a>
-            <a href={LINKS.pypi} target="_blank" rel="noreferrer">PyPI package</a>
-          </div>
-          <div className="footer-col">
-            <h4>Research</h4>
-            <a href={LINKS.paper} target="_blank" rel="noreferrer">Paper (preprint)</a>
-            <a href={`${LINKS.github}/blob/main/README.md#empirical-validation`} target="_blank" rel="noreferrer">Results</a>
-            <a href={`${LINKS.github}/tree/main/calibra/claims`} target="_blank" rel="noreferrer">Claim registry</a>
-          </div>
-          <div className="footer-col">
-            <h4>Project</h4>
-            <a href={LINKS.github} target="_blank" rel="noreferrer">GitHub</a>
-            <a href={`${LINKS.github}/blob/main/LICENSE`} target="_blank" rel="noreferrer">License (BSL 1.1)</a>
-            <a href={LINKS.contact}>Contact</a>
-          </div>
-        </div>
-        <div className="footer-bottom">
-          <span>© {new Date().getFullYear()} Calibra · Business Source License 1.1 → Apache 2.0 on 2030-06-30</span>
-          <a href={LINKS.contact}>omertahtoko@gmail.com</a>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                           */
-/* ------------------------------------------------------------------ */
-function mkLine(label, data, color) {
-  return {
-    label, data,
-    borderColor: color,
-    backgroundColor: color + '22',
-    pointBackgroundColor: color,
-    pointRadius: 3,
-    pointHoverRadius: 5,
-    borderWidth: 2.5,
-    tension: 0.3,
-    fill: false,
-  };
-}
-const CHART_OPTS = {
-  responsive: true,
-  maintainAspectRatio: false,
-  interaction: { mode: 'index', intersect: false },
-  plugins: {
-    legend: { labels: { color: '#94a3b8', font: { size: 12 }, usePointStyle: true, boxWidth: 7 } },
-    tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: +${c.parsed.y}% vs random` } },
-  },
-  scales: {
-    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' }, title: { display: true, text: 'episodes kept', color: '#64748b', font: { size: 11 } } },
-    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', callback: (v) => '+' + v + '%' }, beginAtZero: true },
-  },
-};
-function cls(v) { return v.startsWith('+') ? 'pos' : v.startsWith('−') || v.startsWith('-') ? 'neg' : ''; }
-
-/* ------------------------------------------------------------------ */
-/*  Root                                                              */
-/* ------------------------------------------------------------------ */
-export default function App() {
-  const [toast, setToast] = useState(false);
-  const timer = useRef(null);
-  const showToast = () => {
-    setToast(true);
-    clearTimeout(timer.current);
-    timer.current = setTimeout(() => setToast(false), 1800);
-  };
-  useEffect(() => () => clearTimeout(timer.current), []);
-
-  return (
-    <>
-      <div className="grid-overlay" />
-      <div className="bg-glow-orb bg-glow-top-left" />
-      <div className="bg-glow-orb bg-glow-bottom-right" />
-
-      <Nav />
       <main>
-        <Hero onCopy={showToast} />
-        <StatBar />
-        <hr className="section-divider" />
-        <Problem />
-        <Commands />
-        <Benchmarks />
-        <Reproducibility />
-        <Formats />
-        <CTA onCopy={showToast} />
-      </main>
-      <Footer />
+        <header className="hero">
+          <div className="hero-glow" />
+          <div className="container hero-grid">
+            <div className="hero-copy">
+              <div className="eyebrow"><span /> Dataset observability for robot learning</div>
+              <h1>Know what’s wrong with your robot data <em>before training starts.</em></h1>
+              <p>
+                A source-available CLI for robotics teams using LeRobot, Isaac Lab, and robomimic.
+                Detect dataset problems, understand coverage, and optimize training data before spending GPU time.
+              </p>
+              <div className="hero-actions">
+                <a className="button button-primary" href={LINKS.demo} target="_blank" rel="noreferrer">
+                  Try the demo <ExternalLink size={16} />
+                </a>
+                <a className="button button-secondary" href={LINKS.github} target="_blank" rel="noreferrer">
+                  <Github size={17} /> View on GitHub
+                </a>
+              </div>
+              <CopyCommand />
+            </div>
+            <TerminalReport />
+          </div>
+          <a className="scroll-cue" href="#workflow">
+            See how it works <ArrowDown size={15} />
+          </a>
+        </header>
 
-      {toast && (
-        <div className="toast"><Check size={16} className="t-gold" /> Copied <code style={{ fontFamily: 'var(--font-mono)' }}>{INSTALL_CMD}</code></div>
-      )}
-    </>
-  );
+        <section className="workflow section" id="workflow">
+          <div className="container">
+            <div className="section-intro">
+              <div className="eyebrow"><span /> One pipeline, in the right order</div>
+              <h2>Fix the data question before the model question.</h2>
+              <p>Calibra turns an unknown dataset into a training decision through four explicit checks.</p>
+            </div>
+            <div className="workflow-grid">
+              {WORKFLOW.map((step, index) => (
+                <article className="workflow-step" key={step.name}>
+                  <div className="step-top">
+                    <span className="step-number">{step.number}</span>
+                    {index < WORKFLOW.length - 1 && <ArrowRight className="step-arrow" size={20} />}
+                  </div>
+                  <h3>{step.name}</h3>
+                  <p>{step.question}</p>
+                  <code>{step.command}</code>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="proof section">
+          <div className="container proof-grid">
+            <div className="proof-copy">
+              <div className="eyebrow"><span /> Evidence, not a black box</div>
+              <h2>See the problem. Find the episode. Fix it.</h2>
+              <p>
+                Every warning maps to a measurable condition and the exact episodes that triggered it.
+                Calibra runs locally and produces deterministic results you can inspect.
+              </p>
+              <ul>
+                <li><CheckCircle2 size={18} /> Episode-level root causes</li>
+                <li><CheckCircle2 size={18} /> CI-friendly exit codes</li>
+                <li><CheckCircle2 size={18} /> No upload, account, or API key</li>
+              </ul>
+              <a className="text-link" href={LINKS.docs}>Explore the commands <ArrowRight size={16} /></a>
+            </div>
+            <CoverageGraphic />
+          </div>
+        </section>
+
+        <section className="ecosystems section">
+          <div className="container">
+            <div className="section-intro compact">
+              <div className="eyebrow"><span /> Works with your stack</div>
+              <h2>Start with the data you already have.</h2>
+            </div>
+            <div className="ecosystem-list">
+              {ECOSYSTEMS.map((ecosystem) => (
+                <div className="ecosystem" key={ecosystem.name}>
+                  <div className="ecosystem-logo">
+                    {ecosystem.logo
+                      ? <img src={`${import.meta.env.BASE_URL}${ecosystem.logo}`} alt="" loading="lazy" />
+                      : <span>{ecosystem.mark}</span>}
+                  </div>
+                  <div>
+                    <strong>{ecosystem.name}</strong>
+                    <span>{ecosystem.detail}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="support-note">
+              Camera-frame integrity checks currently support HDF5 datasets and LeRobot v1 with image decoding.
+            </p>
+          </div>
+        </section>
+
+        <section className="demo section" id="demo">
+          <div className="container demo-grid">
+            <div className="demo-copy">
+              <div className="eyebrow"><span /> Try it in the browser</div>
+              <h2>Inspect a public LeRobot dataset without installing anything.</h2>
+              <p>
+                Enter a Hub dataset ID to see integrity checks, quality findings, community
+                comparisons, and a recommended keep fraction.
+              </p>
+              <a className="button button-primary" href={LINKS.demo} target="_blank" rel="noreferrer">
+                Open the live demo <ExternalLink size={16} />
+              </a>
+            </div>
+            <a className="demo-frame" href={LINKS.demo} target="_blank" rel="noreferrer">
+              <div className="demo-frame-bar">
+                <span><i /><i /><i /></span>
+                huggingface.co/spaces/omert27/robot-dataset-health-check
+              </div>
+              <img src={`${import.meta.env.BASE_URL}hf-space.png`} alt="Calibra Robot Dataset Health Check on Hugging Face Spaces" />
+            </a>
+          </div>
+        </section>
+
+        <section className="research section" id="research">
+          <div className="container">
+            <div className="research-card">
+              <div className="research-copy">
+                <div className="research-mark"><Sparkles size={22} /></div>
+                <div className="eyebrow"><span /> Research</div>
+                <h2><strong>75% smaller</strong> with prediction error within 0.5% of full-data training.</h2>
+                <p>
+                  On LeRobot PushT, Calibra retained 41 of 165 training episodes while preserving
+                  more action-space tail coverage than a random coreset.
+                </p>
+                <div className="benchmark-meta">
+                  <span>5 seeds</span><span>120 epochs</span><span>BC-MLP</span><span>25% retained</span>
+                </div>
+                <a className="text-link" href={LINKS.benchmarks} target="_blank" rel="noreferrer">
+                  Full benchmarks and limitations <ArrowRight size={16} />
+                </a>
+              </div>
+              <div className="benchmark-card">
+                <div className="benchmark-title">
+                  <span>LeRobot PushT · test MSE</span>
+                  <small>Lower is better</small>
+                </div>
+                <div className="benchmark-row">
+                  <span>Full dataset <small>165 episodes</small></span>
+                  <div><i style={{ width: '100%' }} /></div>
+                  <strong>420.93</strong>
+                </div>
+                <div className="benchmark-row highlight">
+                  <span>Calibra <small>41 episodes</small></span>
+                  <div><i style={{ width: '99.6%' }} /></div>
+                  <strong>422.77</strong>
+                </div>
+                <div className="benchmark-row">
+                  <span>Random <small>41 episodes</small></span>
+                  <div><i style={{ width: '97.9%' }} /></div>
+                  <strong>429.61</strong>
+                </div>
+                <div className="tail-coverage">
+                  <div><span>Calibra tail coverage</span><strong>56.0%</strong></div>
+                  <div><span>Random tail coverage</span><strong>33.6%</strong></div>
+                </div>
+                <p>Source: 5-seed retention sweep. Full-data MSE is the unfiltered 165-episode baseline.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="final-cta section">
+          <div className="container">
+            <div className="cta-panel">
+              <span className="cta-kicker">Before your next training run</span>
+              <h2>Check the data first.</h2>
+              <p>Install Calibra locally or inspect a public LeRobot dataset in the browser.</p>
+              <CopyCommand large />
+              <a className="button button-primary" href={LINKS.demo} target="_blank" rel="noreferrer">
+                Try the Hugging Face demo <ExternalLink size={16} />
+              </a>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <div className="container footer-inner">
+          <Logo />
+          <p>Dataset observability for robot learning.</p>
+          <div>
+            <a href={LINKS.github}>GitHub</a>
+            <a href={LINKS.docs}>Docs</a>
+            <a href={LINKS.license}>BSL 1.1</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
 }
+
+export default App
