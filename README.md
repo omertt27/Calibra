@@ -28,18 +28,19 @@ Warnings (1)
   ⚠️  blurry_episode_fraction: camera frames markedly blurrier than the
      rest of the dataset in 1 episode.
 
-Passed (5)
+Passed (8)
   ✅ timestamp_jitter_cv  ✅ timestamp_dropout_rate  ✅ short_episode_fraction
-  ✅ action_dropout_rate  ✅ duplicate_frame_rate
+  ✅ action_dropout_rate  ✅ duplicate_frame_rate    ✅ ldlj
+  ✅ jerk_spike_rate      ✅ velocity_discontinuity_rate
 
-Integrity Score: 82/100  ·  Status: Warning
+Integrity Score: 85/100  ·  Status: Warning
 ```
 
 ---
 
 ## Highlights
 
-- ✅ **Integrity first** — catch broken timestamps, duplicate/frozen/blurry camera frames, and incomplete episodes before they reach training, with `calibra integrity` (LeRobot v1, HDF5/Isaac Lab, robomimic)
+- ✅ **Integrity first** — catch broken timestamps, duplicate/frozen/blurry camera frames, jittery/jerky motion, and incomplete episodes before they reach training, with `calibra integrity` (LeRobot v1, HDF5/Isaac Lab, robomimic)
 - 🔍 Audit robot datasets for quality, synchrony, coverage, and task structure
 - ✂️ Reduce training data by up to 75% with quality-aware coreset selection
 - 📊 Audit 30+ public LeRobot datasets with an interactive Hugging Face Space
@@ -80,10 +81,10 @@ calibra audit lerobot/pusht
 
 No installation required.
 
-🔗 [Robot Dataset Health Check](https://huggingface.co/spaces/omert27/robot-dataset-health-check) (Hugging Face Space)
+🔗 [Calibra — Dataset Integrity](https://huggingface.co/spaces/omert27/robot-dataset-health-check) (Hugging Face Space)
 
-- Audit any LeRobot dataset
-- View health score and percentile
+- Check any LeRobot dataset's Integrity first — timestamps, sync, completeness, duplicate/frozen/blurry frames, jittery motion
+- Then see its Quality & Coverage score and percentile
 - Compare against community benchmarks
 - Download a full audit report
 
@@ -161,7 +162,7 @@ Method rankings are stable across all three policy families (Spearman ρ ≥ 0.8
 
 | Command | Description |
 |---|---|
-| `calibra integrity` | "Can I trust this dataset?" — timestamps, sync, episode completeness, duplicate/frozen/blurry camera frames (`--decode-images` for LeRobot v1) |
+| `calibra integrity` | "Can I trust this dataset?" — timestamps, sync, episode completeness, duplicate/frozen/blurry camera frames, jittery/jerky motion (`--decode-images` for LeRobot v1) |
 | `calibra audit` | Full diagnostic report with bootstrap CIs and per-episode outlier detection |
 | `calibra review` | Ranked episode review queue — separates anomaly, quality-risk, and coverage-value signals |
 | `calibra prune` | Two-stage coreset: quality filter + greedy max-coverage selection |
@@ -185,7 +186,7 @@ Method rankings are stable across all three policy families (Spearman ρ ≥ 0.8
 
 ## Roadmap
 
-**v0.7.0 (current) — Dataset Integrity:** `calibra integrity` — timestamps, sync, episode completeness, duplicate/frozen/blurry camera frames, with LeRobot v1 image support via `--decode-images`. Full details in [CHANGELOG.md](CHANGELOG.md).
+**v0.7.1 (current) — Dataset Integrity:** `calibra integrity` — timestamps, sync, episode completeness, duplicate/frozen/blurry camera frames, jittery/jerky motion, with LeRobot v1 image support via `--decode-images`. Full details in [CHANGELOG.md](CHANGELOG.md).
 
 **Next — Vision Integrity for video-backed LeRobot (v2/v3):** decode sampled frames from LeRobot's mp4-encoded v2/v3 datasets so duplicate-frame/camera-freeze/blur detection work there too.
 

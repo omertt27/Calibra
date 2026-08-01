@@ -5,6 +5,13 @@ something real to flag on all three image checks plus the timestamp checks.
 Used by docs/demo.tape to produce a reproducible demo recording without
 depending on a real dataset being available.
 
+Actions are a smooth low-frequency sinusoid rather than i.i.d. noise: raw
+per-step random values are maximally jittery by construction (velocity
+reverses every step), which trips the ControlSmoothnessAnalyzer jerk/
+velocity-discontinuity checks that are also part of `calibra integrity` —
+that noise would swamp the specific defects this fixture is meant to
+demonstrate.
+
 Usage:
     python docs/demo_fixture.py /tmp/calibra_demo.h5
 """
@@ -15,6 +22,21 @@ import sys
 
 import h5py
 import numpy as np
+
+
+def _smooth_actions(rng: np.random.Generator, steps: int, dt: float, dims: int = 6) -> np.ndarray:
+    """Low-frequency sinusoid trajectory — smooth by construction (bounded
+    jerk), unlike i.i.d. per-step noise."""
+    t = np.arange(steps) * dt
+    actions = np.zeros((steps, dims), dtype=np.float32)
+    for d in range(dims):
+        for h in range(1, 3):
+            freq = h * rng.uniform(0.05, 0.12)
+            amp = rng.uniform(0.05, 0.15) / h
+            phase = rng.uniform(0, 2 * np.pi)
+            actions[:, d] += amp * np.sin(2 * np.pi * freq * t + phase)
+        actions[:, d] += rng.uniform(-0.3, 0.3)
+    return actions.astype(np.float32)
 
 
 def main(path: str) -> None:
@@ -41,7 +63,7 @@ def main(path: str) -> None:
 
             obs.create_dataset("camera_rgb", data=frames)
             obs.create_dataset("proprio", data=rng.random((steps, 8)).astype(np.float32))
-            g.create_dataset("actions", data=rng.random((steps, 6)).astype(np.float32))
+            g.create_dataset("actions", data=_smooth_actions(rng, steps, dt=0.05))
             g.create_dataset("timestamps", data=np.arange(steps) * 0.05)
     print(f"Wrote demo dataset to {path}")
 

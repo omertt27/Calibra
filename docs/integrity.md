@@ -26,14 +26,17 @@ Critical (1)
 
 Warnings (0)
 
-Passed (6)
+Passed (8)
   ✅ timestamp_jitter_cv: Step-to-step timing is consistent.
   ✅ timestamp_dropout_rate: Timestamp dropout rate is within acceptable range.
   ✅ action_dropout_rate: Action-dropout rate is within acceptable range.
   ✅ short_episode_fraction: No suspiciously short episodes detected.
   ✅ duplicate_frame_rate: Camera frames show expected frame-to-frame variation.
+  ✅ ldlj: Action trajectories are smooth (LDLJ within threshold).
+  ✅ jerk_spike_rate: Jerk spike rate is within acceptable range.
+  ✅ velocity_discontinuity_rate: Velocity profile is continuous — no sudden reversals.
 
-Integrity Score: 88/100  ·  Status: Warning
+Integrity Score: 89/100  ·  Status: Warning
 ──────────────────────────────────────────────────────────
 ```
 
@@ -110,6 +113,24 @@ Exit code is `1` if any check is CRITICAL, `0` otherwise — safe to wire into a
 !!! note "Format coverage"
     Duplicate-frame, camera-freeze, and blur detection all need decoded image arrays. They work on HDF5-format datasets (Isaac Lab, robomimic-style exports) by default, and on **LeRobot v1** datasets (HuggingFace `Image`-feature columns) via the opt-in `--decode-images` flag — off by default since decoding increases load time and memory use. **LeRobot v2/v3** datasets store frames as encoded mp4 video rather than per-frame images; decoding those isn't supported yet (deliberately deferred — v3 in particular stores multiple episodes concatenated into shared video files with per-episode timestamp offsets, which needs more validation against real data before shipping). On v2/v3, these three checks are silently skipped (not an error), same as before.
 
+### Jittery / jerky motion
+
+**Detects:** physically jittery recorded motion via three metrics — smoothness (`ldlj`, Logarithmic Dimensionless Jerk), abrupt jerk spikes (`jerk_spike_rate`), and sudden velocity reversals (`velocity_discontinuity_rate`).
+
+**Why it matters:** high jerk in demonstration data forces the policy to learn discontinuous action transitions; BC policies trained on jerky data produce jerky rollouts that stress hardware and reduce task success, especially on contact-rich tasks.
+
+**Example output:**
+```
+⚠️  ldlj: Mean LDLJ = -12.40 across 118 episodes (threshold: >-10).
+    Action trajectories contain significant jerk.
+     High jerk in demonstration data forces the policy to learn
+     discontinuous action transitions. Consider applying action
+     smoothing (e.g. Savitzky-Golay) before training.
+```
+
+!!! note "Integrity vs. Quality split for motion"
+    `calibra integrity` only checks whether the recorded motion is *physically jittery* — the same three metrics regardless of why. It does not check action-state tracking error or scripted-vs-teleoperated collection signature; those are collection-method questions, not a trust check, and stay under `calibra audit` (Motion Quality dimension).
+
 ---
 
 ## Demo recording
@@ -127,7 +148,7 @@ vhs docs/demo.tape   # writes docs/figures/integrity_demo.gif
 
 Once a dataset passes Integrity, move to:
 
-- `calibra audit` / `calibra score` — is the data *clean*? (jerk, smoothness, task structure)
+- `calibra audit` / `calibra score` — is the data *clean*? (action-state tracking error, scripted-vs-teleop signature, task structure)
 - `calibra review` — is it *diverse* enough, and which episodes are worth a human look?
 - `calibra prune` — build a smaller, high-quality coreset for training
 

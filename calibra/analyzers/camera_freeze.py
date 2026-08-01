@@ -90,9 +90,7 @@ class CameraFreezeAnalyzer(Analyzer):
         run_lengths: list[Optional[int]] = [
             _episode_freeze_run(ep, self.activity_threshold) for ep in batch.episodes
         ]
-        checked = [
-            (ep, r) for ep, r in zip(batch.episodes, run_lengths) if r is not None
-        ]
+        checked = [(ep, r) for ep, r in zip(batch.episodes, run_lengths) if r is not None]
 
         if not checked:
             return AnalyzerResult(

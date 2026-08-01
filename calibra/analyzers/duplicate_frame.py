@@ -90,9 +90,7 @@ class DuplicateFrameAnalyzer(Analyzer):
         ep_values: list[Optional[float]] = [
             _episode_duplicate_fraction(ep, self.activity_threshold) for ep in batch.episodes
         ]
-        checked = [
-            (ep, v) for ep, v in zip(batch.episodes, ep_values) if v is not None
-        ]
+        checked = [(ep, v) for ep, v in zip(batch.episodes, ep_values) if v is not None]
 
         if not checked:
             return AnalyzerResult(

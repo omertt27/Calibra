@@ -24,18 +24,22 @@ Warnings (1)
       Irregular control-loop timing degrades time-series policies that
       assume fixed-frequency data.
 
-Passed (5)
+Passed (9)
   ✅ timestamp_dropout_rate: Timestamp dropout rate is within acceptable range.
   ✅ action_dropout_rate: Action-dropout rate is within acceptable range.
   ✅ short_episode_fraction: No suspiciously short episodes detected.
   ✅ duplicate_frame_rate: Camera frames show expected frame-to-frame variation.
   ✅ camera_freeze_events: No sustained camera-freeze runs detected.
+  ✅ blurry_episode_fraction: Camera frames are consistently sharp.
+  ✅ ldlj: Action trajectories are smooth (LDLJ within threshold).
+  ✅ jerk_spike_rate: Jerk spike rate is within acceptable range.
+  ✅ velocity_discontinuity_rate: Velocity profile is continuous — no sudden reversals.
 
-Integrity Score: 93/100  ·  Status: Healthy
+Integrity Score: 95/100  ·  Status: Healthy
 ──────────────────────────────────────────────────────────
 ```
 
-Runs before every other command in the recommended workflow — timestamp consistency, sensor sync, episode completeness, duplicate frames, and camera freezes. Findings are grouped into Critical/Warnings/Passed rather than led with a single score; the score is still computed but demoted to a summary line. Exit code `1` on any CRITICAL finding, safe for CI gating.
+Runs before every other command in the recommended workflow — timestamp consistency, sensor sync, episode completeness, duplicate/frozen/blurry camera frames, and jittery/jerky motion. Findings are grouped into Critical/Warnings/Passed rather than led with a single score; the score is still computed but demoted to a summary line. Exit code `1` on any CRITICAL finding, safe for CI gating.
 
 See [Integrity Checks](integrity.md) for what each check detects and why it matters.
 

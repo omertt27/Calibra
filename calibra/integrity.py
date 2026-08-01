@@ -4,10 +4,11 @@ calibra integrity — "Can I trust this dataset?"
 Runs a fixed, cheap set of diagnostics that answer the first question
 practitioners ask about a new dataset before anything about quality,
 diversity, or optimization: are timestamps consistent, are episodes
-complete, is the camera stream actually updating. Groups findings into
-Critical / Warnings / Passed rather than leading with a single score —
-the score is still computed, but demoted to a summary line, not the
-headline result.
+complete, is the camera stream actually updating, are the recorded
+motions themselves jittery/jerky. Groups findings into Critical /
+Warnings / Passed rather than leading with a single score — the score
+is still computed, but demoted to a summary line, not the headline
+result.
 
 Usage:
     calibra integrity /data/my_demos.h5
@@ -29,14 +30,19 @@ import sys
 from calibra.analyzers.blur import BlurAnalyzer
 from calibra.analyzers.camera_freeze import CameraFreezeAnalyzer
 from calibra.analyzers.duplicate_frame import DuplicateFrameAnalyzer
+from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
 from calibra.analyzers.task_structure import TaskStructureAnalyzer
 from calibra.analyzers.temporal import TemporalAnalyzer
 from calibra.pipeline import Pipeline
 from calibra.schema.report import DiagnosticReport, RiskFlag, RiskLevel
 
 # Metric-name whitelist, not analyzer selection — TaskStructureAnalyzer also
-# emits trajectory_diversity/contact_density/grasp_events_per_episode, which
-# belong to the Quality/Coverage layers, not Integrity.
+# emits trajectory_diversity/contact_density/grasp_events_per_episode, and
+# ControlSmoothnessAnalyzer also emits action_state_divergence/
+# motion_collection_signature, which belong to the Quality layer, not
+# Integrity. Only the three raw jerkiness metrics below ("are the recorded
+# motions physically jittery") count as an Integrity-layer trust question —
+# tracking error and collection-method signature are Quality-layer questions.
 _INTEGRITY_METRICS = frozenset(
     {
         "timestamp_jitter_cv",
@@ -48,6 +54,9 @@ _INTEGRITY_METRICS = frozenset(
         "duplicate_frame_rate",
         "camera_freeze_events",
         "blurry_episode_fraction",
+        "ldlj",
+        "jerk_spike_rate",
+        "velocity_discontinuity_rate",
     }
 )
 
@@ -144,6 +153,7 @@ def run_integrity(argv: list[str]) -> None:
             DuplicateFrameAnalyzer(),
             CameraFreezeAnalyzer(),
             BlurAnalyzer(),
+            ControlSmoothnessAnalyzer(),
         ]
         report = Pipeline(analyzers=analyzers).run(batch)
     except Exception as exc:

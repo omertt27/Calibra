@@ -75,6 +75,7 @@ def _run_integrity_check(batch) -> dict:
     from calibra.analyzers.blur import BlurAnalyzer
     from calibra.analyzers.camera_freeze import CameraFreezeAnalyzer
     from calibra.analyzers.duplicate_frame import DuplicateFrameAnalyzer
+    from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
     from calibra.analyzers.task_structure import TaskStructureAnalyzer
     from calibra.analyzers.temporal import TemporalAnalyzer
     from calibra.integrity import _integrity_flags, _integrity_score
@@ -87,6 +88,7 @@ def _run_integrity_check(batch) -> dict:
         DuplicateFrameAnalyzer(),
         CameraFreezeAnalyzer(),
         BlurAnalyzer(),
+        ControlSmoothnessAnalyzer(),
     ]
     report = Pipeline(analyzers=analyzers).run(batch)
     flags = _integrity_flags(report)
@@ -402,7 +404,11 @@ def _percentile_section(score: float, dimensions: dict) -> str:
 
 # ── integrity (front door) ──────────────────────────────────────────────────
 
-_INTEGRITY_ICON = {"critical": ("✗", "#ef4444"), "warning": ("⚠", "#f59e0b"), "passed": ("✓", "#22c55e")}
+_INTEGRITY_ICON = {
+    "critical": ("✗", "#ef4444"),
+    "warning": ("⚠", "#f59e0b"),
+    "passed": ("✓", "#22c55e"),
+}
 
 
 def _integrity_row(f, kind: str) -> str:
@@ -814,7 +820,8 @@ def _render_cached_card(dataset_id: str, cached: dict) -> str:
         '<div style="background:#181825;border:1px solid #313244;border-radius:8px;'
         'padding:10px 14px;margin-bottom:14px;font-size:12px;color:#a6adc8">'
         "This cached result predates the Integrity check — timestamp/sync, "
-        "episode completeness, duplicate frames, camera freeze, and blur. "
+        "episode completeness, duplicate frames, camera freeze, blur, and "
+        "jittery/jerky motion. "
         "<code style='background:#313244;padding:1px 5px;border-radius:3px'>"
         f"calibra integrity hf://{dataset_id}</code> runs it directly.</div>"
     )
@@ -867,9 +874,9 @@ with gr.Blocks(
 **Before diversity or coreset selection, can you trust this dataset?**
 
 Enter a LeRobot dataset ID. Calibra checks Integrity first — timestamp
-consistency, episode completeness, duplicate frames, camera freeze, blur —
-then Quality and Coverage. Pre-checked datasets return instantly from the
-benchmark cache.
+consistency, episode completeness, duplicate frames, camera freeze, blur,
+jittery/jerky motion — then Quality and Coverage. Pre-checked datasets
+return instantly from the benchmark cache.
 """)
 
     with gr.Row():
@@ -896,8 +903,8 @@ benchmark cache.
 
 | Layer | Checks | Answers |
 |-------|--------|---------|
-| **Integrity** (first) | Timestamp consistency, sensor sync, episode completeness, duplicate frames, camera freeze, blur | Can I trust this dataset? |
-| Quality | Action jerk spikes, velocity discontinuities, smoothness (LDLJ) | Is this data clean? |
+| **Integrity** (first) | Timestamp consistency, sensor sync, episode completeness, duplicate frames, camera freeze, blur, jerky/jittery motion (LDLJ, jerk spikes, velocity discontinuities) | Can I trust this dataset? |
+| Quality | Action-state tracking error, scripted-vs-teleop motion signature | Is this data clean? |
 | Coverage | Trajectory diversity, redundancy fraction, entropy | Does my robot see enough variety? |
 | Task Structure | Episode length distribution, phase balance, inactivity periods | Are episodes complete and well-formed? |
 

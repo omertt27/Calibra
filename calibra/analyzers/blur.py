@@ -141,7 +141,9 @@ class BlurAnalyzer(Analyzer):
         outlier_mask = sharpness < lower_fence
         frac = float(np.mean(outlier_mask))
         outlier_ids = [
-            ep.metadata.episode_id for (ep, _), is_outlier in zip(checked, outlier_mask) if is_outlier
+            ep.metadata.episode_id
+            for (ep, _), is_outlier in zip(checked, outlier_mask)
+            if is_outlier
         ]
         raw = {
             "blurry_episode_fraction": frac,

@@ -2,6 +2,17 @@
 
 All notable changes to Calibra are documented here.
 
+## [0.7.1] — Motion smoothness moves into Integrity
+
+### Added
+
+- **`calibra integrity`** now checks jittery/jerky motion — smoothness (`ldlj`), jerk spikes (`jerk_spike_rate`), and velocity discontinuities (`velocity_discontinuity_rate`) — via `ControlSmoothnessAnalyzer`. Prompted by direct practitioner feedback that named this alongside timestamps and blur as one of the recurring basics.
+- `docs/integrity.md` — new "Jittery / jerky motion" section documenting the three metrics and the Integrity-vs-Quality split for motion (physical jitter is a trust check; tracking error and scripted-vs-teleop signature stay under `calibra audit`'s Motion Quality dimension).
+
+### Fixed
+
+- `docs/demo_fixture.py`'s synthetic actions were i.i.d. per-step noise — maximally jittery by construction, which would have swamped this release's own new checks. Replaced with a smooth low-frequency-sinusoid generator so the demo's "Passed" checks stay meaningful next to its three intentionally-injected defects (short episode, camera freeze, blur).
+
 ## [0.7.0] — Dataset Integrity
 
 ### Added
