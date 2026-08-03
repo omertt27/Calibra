@@ -179,9 +179,7 @@ class TestRunIntegrity:
                 run_integrity(["/dummy/path.h5"])
         assert exc_info.value.code == 0
 
-    def test_jittery_actions_flagged_critical(self, capsys):
-        """i.i.d.-noise actions (velocity reverses every step) must trip the
-        smoothness checks — the regression this fixture rewrite guards against."""
+    def _jittery_batch(self) -> EpisodeBatch:
         rng = np.random.default_rng(0)
         n_eps, n_steps = 8, 80
         episodes = []
@@ -195,13 +193,121 @@ class TestRunIntegrity:
                     actions=rng.uniform(-1, 1, (n_steps, 6)).astype(np.float32),
                 )
             )
-        batch = EpisodeBatch(
+        return EpisodeBatch(
             episodes=episodes, dataset_name="jittery", format="hdf5", source_path="/dummy/path.h5"
         )
+
+    def test_jittery_actions_flagged_critical(self, capsys):
+        """i.i.d.-noise actions (velocity reverses every step) must trip the
+        smoothness checks — the regression this fixture rewrite guards against."""
+        batch = self._jittery_batch()
         with patch("calibra.ingestion.registry.load", return_value=batch):
             with pytest.raises(SystemExit) as exc_info:
                 run_integrity(["/dummy/path.h5", "--json"])
-        assert exc_info.value.code == 1
         payload = json.loads(capsys.readouterr().out)
         flagged = {f["metric"] for f in payload["critical"] + payload["warnings"]}
         assert flagged & {"ldlj", "jerk_spike_rate", "velocity_discontinuity_rate"}
+        # Motion-review CRITICALs are a review signal, not an objective acquisition
+        # failure — they must not fail CI by default (this is the exact "6/6 exit 1
+        # but 5/6 Warning" confusion reported by an HF user probing v0.7.1).
+        assert payload["ci_result"] == "Passed"
+        assert exc_info.value.code == 0
+        for f in payload["critical"]:
+            assert f["suggested_action"] == "inspect"
+
+    def test_jittery_actions_fail_ci_with_strict(self, capsys):
+        batch = self._jittery_batch()
+        with patch("calibra.ingestion.registry.load", return_value=batch):
+            with pytest.raises(SystemExit) as exc_info:
+                run_integrity(["/dummy/path.h5", "--json", "--strict"])
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["ci_result"] == "Failed"
+        assert "--strict" in payload["ci_reason"]
+        assert exc_info.value.code == 1
+
+    def test_block_level_critical_fails_ci_without_strict(self, capsys):
+        """short_episode_fraction is an objective completeness failure — should
+        still fail CI by default, unlike the motion-review case above."""
+        batch = _make_batch()
+        with patch("calibra.ingestion.registry.load", return_value=batch):
+            with pytest.raises(SystemExit) as exc_info:
+                run_integrity(["/dummy/path.h5", "--json"])
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["ci_result"] == "Failed"
+        assert "short_episode_fraction" in payload["ci_reason"]
+        assert exc_info.value.code == 1
+
+    def test_not_evaluated_lists_skipped_image_checks(self, capsys):
+        """No image data on this batch -> duplicate_frame/camera_freeze/blur
+        analyzers are skipped by capability gating; they should be surfaced as
+        'Not Evaluated', not silently absent."""
+        batch = _make_batch(n_short=0)
+        with patch("calibra.ingestion.registry.load", return_value=batch):
+            with pytest.raises(SystemExit) as exc_info:
+                run_integrity(["/dummy/path.h5", "--json"])
+        assert exc_info.value.code == 0
+        payload = json.loads(capsys.readouterr().out)
+        checks = {item["check"] for item in payload["not_evaluated"]}
+        assert {"duplicate_frame", "camera_freeze", "blur"} <= checks
+        for item in payload["not_evaluated"]:
+            assert item["reason"] == "requires: images"
+
+    # ── --policy ─────────────────────────────────────────────────────────
+
+    def _write_policy(self, tmp_path, mapping: dict) -> str:
+        path = tmp_path / "policy.json"
+        path.write_text(json.dumps(mapping))
+        return str(path)
+
+    def test_policy_downgrades_block_metric_to_inspect(self, tmp_path, capsys):
+        """short_episode_fraction is block-by-default; a policy explicitly
+        marking it 'inspect' should flip ci_result to Passed and exit 0."""
+        policy_path = self._write_policy(tmp_path, {"short_episode_fraction": "inspect"})
+        batch = _make_batch()
+        with patch("calibra.ingestion.registry.load", return_value=batch):
+            with pytest.raises(SystemExit) as exc_info:
+                run_integrity(["/dummy/path.h5", "--json", "--policy", policy_path])
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["ci_result"] == "Passed"
+        assert payload["policy_path"] == policy_path
+        assert exc_info.value.code == 0
+        crit = next(f for f in payload["critical"] if f["metric"] == "short_episode_fraction")
+        assert crit["suggested_action"] == "inspect"
+
+    def test_policy_upgrades_motion_review_metric_to_block(self, tmp_path, capsys):
+        """ldlj is inspect-by-default (motion-review); a policy explicitly
+        marking it 'block' should flip ci_result to Failed and exit 1."""
+        policy_path = self._write_policy(tmp_path, {"ldlj": "block"})
+        batch = self._jittery_batch()
+        with patch("calibra.ingestion.registry.load", return_value=batch):
+            with pytest.raises(SystemExit) as exc_info:
+                run_integrity(["/dummy/path.h5", "--json", "--policy", policy_path])
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["ci_result"] == "Failed"
+        assert "ldlj" in payload["ci_reason"]
+        assert exc_info.value.code == 1
+
+    def test_policy_unknown_metric_warns_not_crashes(self, tmp_path, capsys):
+        policy_path = self._write_policy(tmp_path, {"totally_made_up_metric": "block"})
+        batch = _make_batch(n_short=0)
+        with patch("calibra.ingestion.registry.load", return_value=batch):
+            with pytest.raises(SystemExit) as exc_info:
+                run_integrity(["/dummy/path.h5", "--json", "--policy", policy_path])
+        assert exc_info.value.code == 0
+        err = capsys.readouterr().err
+        assert "unknown metric" in err
+        assert "totally_made_up_metric" in err
+
+    def test_strict_and_policy_are_mutually_exclusive(self, tmp_path, capsys):
+        policy_path = self._write_policy(tmp_path, {"ldlj": "block"})
+        with pytest.raises(SystemExit) as exc_info:
+            run_integrity(["/dummy/path.h5", "--strict", "--policy", policy_path])
+        assert exc_info.value.code == 2
+        assert "mutually exclusive" in capsys.readouterr().err
+
+    def test_invalid_policy_file_exits_2(self, tmp_path, capsys):
+        policy_path = self._write_policy(tmp_path, {"ldlj": "delete"})
+        with pytest.raises(SystemExit) as exc_info:
+            run_integrity(["/dummy/path.h5", "--policy", policy_path])
+        assert exc_info.value.code == 2
+        assert "error loading policy file" in capsys.readouterr().err

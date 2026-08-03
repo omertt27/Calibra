@@ -73,12 +73,13 @@ def _run_integrity_check(batch) -> dict:
     routes unmatched metrics into a catch-all bucket (see
     calibra/schema/scoring.py `route_metric_to_dimension`)."""
     from calibra.analyzers.blur import BlurAnalyzer
+    from calibra.analyzers.calibration_drift import CalibrationDriftAnalyzer
     from calibra.analyzers.camera_freeze import CameraFreezeAnalyzer
     from calibra.analyzers.duplicate_frame import DuplicateFrameAnalyzer
     from calibra.analyzers.smoothness import ControlSmoothnessAnalyzer
     from calibra.analyzers.task_structure import TaskStructureAnalyzer
     from calibra.analyzers.temporal import TemporalAnalyzer
-    from calibra.integrity import _integrity_flags, _integrity_score
+    from calibra.integrity import _ci_result, _integrity_flags, _integrity_score, _not_evaluated
     from calibra.pipeline import Pipeline
     from calibra.schema.report import RiskLevel
 
@@ -89,16 +90,21 @@ def _run_integrity_check(batch) -> dict:
         CameraFreezeAnalyzer(),
         BlurAnalyzer(),
         ControlSmoothnessAnalyzer(),
+        CalibrationDriftAnalyzer(),
     ]
     report = Pipeline(analyzers=analyzers).run(batch)
     flags = _integrity_flags(report)
     score, status = _integrity_score(flags)
+    ci_result, ci_reason = _ci_result(flags, strict=False)
     return {
         "critical": [f for f in flags if f.level == RiskLevel.CRITICAL],
         "warnings": [f for f in flags if f.level == RiskLevel.WARNING],
         "passed": [f for f in flags if f.level == RiskLevel.OK],
+        "not_evaluated": _not_evaluated(report, batch, analyzers),
         "score": score,
         "status": status,
+        "ci_result": ci_result,
+        "ci_reason": ci_reason,
     }
 
 
@@ -412,8 +418,12 @@ _INTEGRITY_ICON = {
 
 
 def _integrity_row(f, kind: str) -> str:
+    from calibra.integrity import _suggested_action
+
     icon, color = _INTEGRITY_ICON[kind]
     text = f.interpretation
+    if kind == "critical":
+        text += f' <span style="color:#6c7086">[{_suggested_action(f).upper()}]</span>'
     row = (
         f'<div style="display:flex;gap:10px;align-items:flex-start;margin:5px 0">'
         f'<span style="color:{color};font-size:14px;min-width:16px;margin-top:1px">{icon}</span>'
@@ -429,6 +439,9 @@ def _integrity_html(integrity: dict) -> str:
     status = integrity["status"]
     color = _INTEGRITY_STATUS_COLOR.get(status, "#6c7086")
     critical, warnings, passed = integrity["critical"], integrity["warnings"], integrity["passed"]
+    not_evaluated = integrity.get("not_evaluated") or []
+    ci_result = integrity.get("ci_result", "Passed")
+    ci_color = "#ef4444" if ci_result == "Failed" else "#22c55e"
 
     rows = "".join(_integrity_row(f, "critical") for f in critical)
     rows += "".join(_integrity_row(f, "warning") for f in warnings)
@@ -439,6 +452,20 @@ def _integrity_html(integrity: dict) -> str:
             "No integrity checks applicable to this dataset's modalities.</div>"
         )
 
+    not_evaluated_html = ""
+    if not_evaluated:
+        items = "".join(
+            f'<div style="color:#6c7086;font-size:12px;margin:3px 0">'
+            f'⬚ {item["check"]}: {item["reason"]}</div>'
+            for item in not_evaluated
+        )
+        not_evaluated_html = f"""
+<div style="font-size:11px;color:#6c7086;text-transform:uppercase;letter-spacing:.06em;margin-top:12px">
+  Not Evaluated
+</div>
+{items}
+"""
+
     return f"""
 <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
   <div style="font-size:11px;color:#6c7086;text-transform:uppercase;letter-spacing:.06em">
@@ -447,6 +474,8 @@ def _integrity_html(integrity: dict) -> str:
   <div style="font-size:13px;font-weight:700;color:{color}">{status} · {integrity["score"]}/100</div>
 </div>
 {rows}
+{not_evaluated_html}
+<div style="font-size:12px;color:{ci_color};margin-top:10px">CI result: {ci_result}</div>
 <div style="border-top:1px solid #313244;margin:16px 0"></div>
 """
 

@@ -2,6 +2,31 @@
 
 All notable changes to Calibra are documented here.
 
+## [0.7.3] — Configurable Integrity CI policies
+
+Direct follow-up to the same HF feedback thread that drove 0.7.2: after reviewing the built-in block/inspect split, the reviewer proposed letting teams configure it themselves rather than shipping one fixed policy for everyone (a research lab only blocking on corrupted timestamps vs. a production team also blocking on camera freezes vs. a team that's validated calibration-drift thresholds enough to block on those too).
+
+### Added
+
+- **`calibra integrity --policy FILE`** — a flat JSON file mapping a metric name (the exact names shown in `--json` output, e.g. `camera_freeze_events`) to `"block"` or `"inspect"`, overriding the built-in default for CRITICAL findings on the metrics it names. OK and WARNING findings are unaffected — a WARNING never fails CI regardless of policy. New module `calibra/policy.py` handles loading and validation. `--strict` and `--policy` are mutually exclusive. `--json` output gains a `policy_path` field for traceability. See `docs/integrity.md`'s "CI Policy Files" section.
+- Policy files are JSON, not YAML — the core install has zero non-`numpy`/`pydantic` dependencies, and JSON needs no new one.
+
+## [0.7.2] — CI policy split, Not Evaluated, calibration drift
+
+Prompted by a community probe against six public LeRobot datasets (including matched ALOHA human/scripted pairs) run with `calibra integrity` v0.7.1, which surfaced a real gap: every dataset returned exit code 1, while five of six still showed overall `Status: Warning` — because a single CRITICAL motion-smoothness finding (which can legitimately fire on a scripted/planner dataset) carried the exact same operational weight as a dropped-timestamp or corrupted-frame finding.
+
+### Added
+
+- Every finding now carries a `suggested_action`: `informational` (OK), `inspect` (WARNING, or CRITICAL on a context-dependent motion-review metric), or `block` (CRITICAL on an objective acquisition/format/sync/completeness failure).
+- `ci_result` (`Passed`/`Failed`) and `ci_reason` are now reported separately from the severity-only `status` line, and are what actually sets the exit code. By default, only `block`-level CRITICALs fail CI — `ldlj`, `jerk_spike_rate`, and `velocity_discontinuity_rate` no longer fail the build on their own.
+- New `--strict` flag restores the old "any CRITICAL fails" behavior for pipelines that want the blunter policy.
+- Skipped analyzers (e.g. camera checks on video-backed LeRobot v2/v3 without `--decode-images`) are now surfaced as `not_evaluated` with a reason, instead of disappearing from the output silently.
+- **New check: leader/follower calibration drift** (`joint_offset_max_abs`, via `CalibrationDriftAnalyzer`) — detects a systematic per-motor `action - observation.state` offset during sustained stationary hold frames, the signature described in [LeRobot issue #3758](https://github.com/huggingface/lerobot/issues/3758) (a stable joint offset that trains fine but causes consistent under/overshoot at deployment). Post-hoc, read-only, thresholds capped at WARNING until validated against reference hardware data — see `docs/integrity.md`.
+
+### Changed
+
+- `calibra integrity`'s exit code now reflects `ci_result` rather than "any CRITICAL present." Existing CI pipelines that depend on the old blanket behavior should add `--strict`.
+
 ## [0.7.1] — Motion smoothness moves into Integrity
 
 ### Added

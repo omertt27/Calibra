@@ -1,6 +1,6 @@
 """Calibra — dataset reliability and risk profiling for robotics IL pipelines."""
 
-__version__ = "0.7.1"
+__version__ = "0.7.3"
 
 from calibra.analyzers.coverage import CoverageEntropyAnalyzer
 from calibra.analyzers.gr00t import GR00TCompatibilityAnalyzer
