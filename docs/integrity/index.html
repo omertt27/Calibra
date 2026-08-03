@@ -511,6 +511,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#ci-policy-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI Policy Files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#checks" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -593,6 +604,17 @@
     <span class="md-ellipsis">
       
         Jittery / jerky motion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#leaderfollower-calibration-drift" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Leader/follower calibration drift
       
     </span>
   </a>
@@ -1165,6 +1187,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#ci-policy-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI Policy Files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#checks" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1253,6 +1286,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#leaderfollower-calibration-drift" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Leader/follower calibration drift
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1316,7 +1360,7 @@
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>Critical (1)
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>  ❌ camera_freeze_events: 1 of 120 episodes (0.8%) contain a run of ≥5
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>     consecutive near-identical camera frames (longest: 14 frames in
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>     episode ep_17), suggesting the camera stopped updating.
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>     episode ep_17), suggesting the camera stopped updating.  [BLOCK]
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>      A frozen camera segment means the policy would be trained on stale
 <a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>      visual input during that window — likely to cause visually-triggered
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>      failures when deployed against a live, moving scene.
@@ -1334,20 +1378,38 @@
 <a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>  ✅ velocity_discontinuity_rate: Velocity profile is continuous — no sudden reversals.
 <a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>
 <a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>Integrity Score: 89/100  ·  Status: Warning
-<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>──────────────────────────────────────────────────────────
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>CI result: Failed  ·  Reason: 1 CRITICAL block-level finding(s): camera_freeze_events
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>──────────────────────────────────────────────────────────
 </code></pre></div>
-<p>Exit code is <code>1</code> if any check is CRITICAL, <code>0</code> otherwise — safe to wire into a pre-training CI gate.</p>
+<p><code>Status</code> and <code>CI result</code> are deliberately separate. <code>Status</code> is a severity summary across every finding (can read "Warning" even with a CRITICAL present, if enough other checks passed). <code>CI result</code> — the thing that actually sets the exit code — only fails on <strong>block</strong>-level findings: objective acquisition/format/sync/completeness failures (dropped timestamps, missing frames, a frozen or corrupted camera, incomplete episodes). Findings whose <code>suggested_action</code> is <code>inspect</code> — the three motion-smoothness metrics (<code>ldlj</code>, <code>jerk_spike_rate</code>, <code>velocity_discontinuity_rate</code>), which can legitimately hit CRITICAL on a scripted/planner-collected dataset — are a review signal, not proof the dataset is broken, and don't fail CI on their own.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>calibra<span class="w"> </span>integrity<span class="w"> </span>/data/my_demos.h5<span class="w"> </span>--strict
+</code></pre></div>
+<p>Pass <code>--strict</code> to fall back to the old, blunter policy: fail on <em>any</em> CRITICAL finding, including motion-review ones. Every finding also carries a <code>suggested_action</code> (<code>informational</code> / <code>inspect</code> / <code>block</code>) in <code>--json</code> output, so a CI pipeline that wants a custom policy can compute its own pass/fail from the raw findings instead of relying on the built-in <code>ci_result</code>.</p>
+<p>An analyzer that couldn't run at all (e.g. duplicate-frame/camera-freeze/blur on a video-backed LeRobot v2/v3 dataset without <code>--decode-images</code>) shows up under <strong>Not Evaluated</strong> with a reason, rather than disappearing from the output silently.</p>
+<h3 id="ci-policy-files">CI Policy Files</h3>
+<p>The built-in block/inspect split is one reasonable default, not the only one a team might want. A research lab might only want to block on corrupted timestamps; a production team might also block on camera freezes; another team might treat calibration drift as a blocker once they've validated the thresholds against their own hardware. <code>--policy</code> lets you configure that per metric, instead of the all-or-nothing choice between the default and <code>--strict</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>calibra<span class="w"> </span>integrity<span class="w"> </span>/data/my_demos.h5<span class="w"> </span>--policy<span class="w"> </span>ci_policy.json
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;timestamp_jitter_cv&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;block&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">&quot;camera_freeze_events&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;block&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">&quot;joint_offset_max_abs&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;inspect&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="nt">&quot;jerk_spike_rate&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;inspect&quot;</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="p">}</span>
+</code></pre></div>
+<p>A policy file is a flat JSON object mapping a <strong>metric name</strong> — the exact names shown in the <code>metric</code> field of <code>--json</code> output, e.g. <code>camera_freeze_events</code>, <code>blurry_episode_fraction</code>, <code>joint_offset_max_abs</code> — to <code>"block"</code> or <code>"inspect"</code>. It only overrides the CI consequence of a <strong>CRITICAL</strong> finding on that metric; OK and WARNING findings are unaffected — a WARNING never fails CI, policy or not. Metrics not listed keep the built-in default. An unrecognized metric name in the file prints a warning to stderr and is otherwise ignored, so a policy written against an older or newer Calibra version doesn't hard-fail.</p>
+<p><code>--policy</code> and <code>--strict</code> are mutually exclusive — once you're configuring per-metric behavior, that fully replaces the blunt "fail on anything" fallback rather than the two combining in some precedence order.</p>
 <hr />
 <h2 id="checks">Checks</h2>
 <h3 id="timestamp-consistency">Timestamp consistency</h3>
 <p><strong>Detects:</strong> irregular step-to-step timing (<code>timestamp_jitter_cv</code>) and dropped/missed ticks (<code>timestamp_dropout_rate</code>), via coefficient of variation and gap-vs-median-delta analysis.</p>
 <p><strong>Why it matters:</strong> irregular control-loop timing degrades time-series policies (transformers, diffusion) that assume fixed-frequency data. Dropout creates artificial velocity discontinuities that BC policies learn as spurious high-jerk transitions.</p>
 <p><strong>Example output:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>⚠️  timestamp_jitter_cv: High coefficient of variation in inter-step timing
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    (18.3% mean CV across 120 episodes).
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>     Irregular control-loop timing degrades time-series policies that
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>     assume fixed-frequency data. Consider resampling to a uniform
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>     frequency before training.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>⚠️  timestamp_jitter_cv: High coefficient of variation in inter-step timing
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    (18.3% mean CV across 120 episodes).
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>     Irregular control-loop timing degrades time-series policies that
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>     assume fixed-frequency data. Consider resampling to a uniform
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>     frequency before training.
 </code></pre></div></p>
 <h3 id="sensor-synchronization">Sensor synchronization</h3>
 <p><strong>Detects:</strong> camera-timestamp lag relative to the master clock (<code>camera_lag_std[&lt;camera&gt;]</code>), action/observation timestamp misalignment (<code>action_obs_misalignment</code>), and camera-to-proprioception render lag (<code>camera_physics_drift</code>, primarily relevant to simulated data).</p>
@@ -1359,10 +1421,10 @@
 <p><strong>Detects:</strong> camera frames that are near-identical to the frame immediately before them (<code>duplicate_frame_rate</code>) — a dropped grab or re-emitted buffer rather than a genuinely new observation.</p>
 <p><strong>Why it matters:</strong> a policy trained on repeated frames can learn to associate a stale visual observation with the wrong action, or waste model capacity encoding redundant input.</p>
 <p><strong>Example output:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>⚠️  duplicate_frame_rate: 7.2% of camera frame transitions are near-identical
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    to the previous frame, across 118 episodes with image data.
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>     Duplicate frames mean the camera pipeline is not capturing a new
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>     image every control step.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>⚠️  duplicate_frame_rate: 7.2% of camera frame transitions are near-identical
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    to the previous frame, across 118 episodes with image data.
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>     Duplicate frames mean the camera pipeline is not capturing a new
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>     image every control step.
 </code></pre></div></p>
 <h3 id="camera-freeze">Camera freeze</h3>
 <p><strong>Detects:</strong> a <em>sustained run</em> (default: 5+ consecutive frames) of near-identical camera frames within an episode — the camera stopped updating entirely, not just a single dropped grab (<code>camera_freeze_events</code>).</p>
@@ -1371,10 +1433,10 @@
 <p><strong>Detects:</strong> episodes whose camera frames are anomalously blurry <em>relative to the rest of the dataset</em> (<code>blurry_episode_fraction</code>), via an IQR-outlier test on per-episode mean Laplacian variance — the standard, dependency-free sharpness proxy.</p>
 <p><strong>Why it matters:</strong> motion blur, defocus, or a dirty/misconfigured lens gives the policy a degraded or misleading visual observation for that episode.</p>
 <p><strong>Example output:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>⚠️  blurry_episode_fraction: 14.3% of episodes (1/7) have camera frames
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    markedly blurrier than the rest of the dataset (mean Laplacian
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    variance below the IQR lower fence). IDs: [&#39;episode_3&#39;]
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>     Inspect the flagged episodes before training.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>⚠️  blurry_episode_fraction: 14.3% of episodes (1/7) have camera frames
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    markedly blurrier than the rest of the dataset (mean Laplacian
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    variance below the IQR lower fence). IDs: [&#39;episode_3&#39;]
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>     Inspect the flagged episodes before training.
 </code></pre></div></p>
 <div class="admonition note">
 <p class="admonition-title">Relative, not absolute</p>
@@ -1388,21 +1450,38 @@
 <p><strong>Detects:</strong> physically jittery recorded motion via three metrics — smoothness (<code>ldlj</code>, Logarithmic Dimensionless Jerk), abrupt jerk spikes (<code>jerk_spike_rate</code>), and sudden velocity reversals (<code>velocity_discontinuity_rate</code>).</p>
 <p><strong>Why it matters:</strong> high jerk in demonstration data forces the policy to learn discontinuous action transitions; BC policies trained on jerky data produce jerky rollouts that stress hardware and reduce task success, especially on contact-rich tasks.</p>
 <p><strong>Example output:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>⚠️  ldlj: Mean LDLJ = -12.40 across 118 episodes (threshold: &gt;-10).
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    Action trajectories contain significant jerk.
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>     High jerk in demonstration data forces the policy to learn
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>     discontinuous action transitions. Consider applying action
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>     smoothing (e.g. Savitzky-Golay) before training.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>⚠️  ldlj: Mean LDLJ = -12.40 across 118 episodes (threshold: &gt;-10).
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    Action trajectories contain significant jerk.
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>     High jerk in demonstration data forces the policy to learn
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>     discontinuous action transitions. Consider applying action
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>     smoothing (e.g. Savitzky-Golay) before training.
 </code></pre></div></p>
 <div class="admonition note">
 <p class="admonition-title">Integrity vs. Quality split for motion</p>
 <p><code>calibra integrity</code> only checks whether the recorded motion is <em>physically jittery</em> — the same three metrics regardless of why. It does not check action-state tracking error or scripted-vs-teleoperated collection signature; those are collection-method questions, not a trust check, and stay under <code>calibra audit</code> (Motion Quality dimension).</p>
 </div>
+<h3 id="leaderfollower-calibration-drift">Leader/follower calibration drift</h3>
+<p><strong>Detects:</strong> a systematic, consistent per-motor offset between the commanded action and the observed joint state (<code>action - observation.state</code>), measured only during sustained stationary "hold" frames — not during motion, where the gap is dominated by ordinary tracking lag rather than a calibration issue (<code>joint_offset_max_abs</code>).</p>
+<p><strong>Why it matters:</strong> a stale leader/follower calibration — e.g. the arms were re-zeroed differently, or a joint offset drifted between sessions — produces exactly this signature: a <em>stable</em>, motor-specific bias that's invisible in training loss (the policy just learns the biased mapping) but shows up as consistent under/overshoot at deployment. This is the failure mode described in <a href="https://github.com/huggingface/lerobot/issues/3758">LeRobot issue #3758</a>: an unnoticed ~17° offset on one joint produced roughly a 6cm Cartesian gripper error. The check is post-hoc and read-only — it uses <code>action</code> and a paired state observation already present in most teleoperation datasets, no new data collection required.</p>
+<p><strong>Example output:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>⚠️  joint_offset_max_abs: Motor/dim 2 shows a consistent action-state offset
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    of 0.31 (12.4% of its observed range) across 340 pooled stationary
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    frames, stable across holds (|mean|/std = 4.2).  [INSPECT]
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>     A stable per-motor action/state offset during holds — not during
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>     motion — is the signature of a leader/follower calibration drift.
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>     This is a review signal, not proof of a broken dataset: verify the
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>     leader/follower zero-offset calibration before relying on this data
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>     for precision manipulation.
+</code></pre></div></p>
+<div class="admonition note">
+<p class="admonition-title">Uncalibrated thresholds — capped at WARNING</p>
+<p>Unlike <code>action_state_divergence</code> (calibrated from 12 reference hardware profiles), this check has not yet been validated against a dataset with a known injected offset. It never reports CRITICAL, and <code>suggested_action</code> is always <code>inspect</code>, until real-world calibration data is available. The offset threshold is expressed as a fraction of each motor's own observed range (not an absolute unit like radians), since state units vary by dataset and have no universal scale — the same reasoning the <a href="#blur">Blur</a> check applies to Laplacian variance.</p>
+</div>
 <hr />
 <h2 id="demo-recording">Demo recording</h2>
 <p><code>docs/demo.tape</code> is a <a href="https://github.com/charmbracelet/vhs">VHS</a> script that reproduces the full workflow end-to-end — <code>calibra integrity</code> on a small synthetic dataset (generated by <code>docs/demo_fixture.py</code>, no external data needed), then a peek at <code>audit</code>/<code>review</code>/<code>prune</code>. Generate the GIF locally with:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>brew<span class="w"> </span>install<span class="w"> </span>vhs
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>vhs<span class="w"> </span>docs/demo.tape<span class="w">   </span><span class="c1"># writes docs/figures/integrity_demo.gif</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>brew<span class="w"> </span>install<span class="w"> </span>vhs
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>vhs<span class="w"> </span>docs/demo.tape<span class="w">   </span><span class="c1"># writes docs/figures/integrity_demo.gif</span>
 </code></pre></div>
 <hr />
 <h2 id="next-steps">Next steps</h2>
