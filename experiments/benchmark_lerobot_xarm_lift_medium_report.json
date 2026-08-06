@@ -1,0 +1,3812 @@
+{
+  "schema_version": "1.1.0",
+  "report": {
+    "id": "sha256:414777fd61ba0cb43f090b97502d5477a6fa69d7b8cd0423d2e40204b138a2aa",
+    "generated_at": "2026-08-06T20:38:13.887249Z",
+    "calibra_version": "0.7.3",
+    "status": "complete"
+  },
+  "dataset": {
+    "provider": "huggingface",
+    "repository_id": "lerobot/xarm_lift_medium",
+    "revision": null,
+    "dataset_format": "lerobot-v2",
+    "license": null,
+    "homepage": null,
+    "episodes_total": 640,
+    "episodes_audited": 640,
+    "frames_total": 16000,
+    "robot": null
+  },
+  "audit": {
+    "profile": null,
+    "configuration_hash": "sha256:8ae8b26565530b1c",
+    "scoring_rubric": "robot-dataset-quality-v1.0",
+    "sampling": {
+      "mode": "full",
+      "seed": null,
+      "fraction": 1.0
+    },
+    "environment": {
+      "python": "3.10.1",
+      "platform": "windows-amd64"
+    }
+  },
+  "results": {
+    "overall": {
+      "score": 82.6,
+      "grade": "B",
+      "confidence": 0.863,
+      "certification": "fail",
+      "critical_failures": [
+        "velocity_discontinuity_rate",
+        "action_state_divergence",
+        "contact_phase_fraction"
+      ]
+    },
+    "dimensions": {
+      "temporal_integrity": {
+        "score": 100.0,
+        "weight": 0.3,
+        "metrics": {
+          "timestamp_jitter_cv": {
+            "value": 5.541173777601216e-7,
+            "unit": "",
+            "score": 100.0,
+            "ci_lower": 5.541173777601216e-7,
+            "ci_upper": 5.541173777601216e-7,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.timestamp_jitter_cv.v1"
+          },
+          "timestamp_dropout_rate": {
+            "value": 0.0,
+            "unit": "fraction",
+            "score": 100.0,
+            "ci_lower": 0.0,
+            "ci_upper": 0.0,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.timestamp_dropout_rate.v1"
+          },
+          "action_dropout_rate": {
+            "value": 0.0,
+            "unit": "fraction",
+            "score": 100.0,
+            "ci_lower": 0.0,
+            "ci_upper": 0.0,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.action_dropout_rate.v1"
+          }
+        }
+      },
+      "motion_quality": {
+        "score": 56.2,
+        "weight": 0.3,
+        "metrics": {
+          "ldlj": {
+            "value": -14.070752076773832,
+            "unit": "",
+            "score": 65.0,
+            "ci_lower": -14.088210982486283,
+            "ci_upper": -14.053649270054848,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "motion.ldlj.v1"
+          },
+          "jerk_spike_rate": {
+            "value": 0.0,
+            "unit": "fraction",
+            "score": 100.0,
+            "ci_lower": 0.0,
+            "ci_upper": 0.0,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.jerk_spike_rate.v1"
+          },
+          "velocity_discontinuity_rate": {
+            "value": 0.9938179347826086,
+            "unit": "fraction",
+            "score": 30.0,
+            "ci_lower": 0.9925271739130433,
+            "ci_upper": 0.9949728260869565,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.velocity_discontinuity_rate.v1"
+          },
+          "action_state_divergence": {
+            "value": 1.8323189366608859,
+            "unit": "",
+            "score": 30.0,
+            "ci_lower": 1.605619376897812,
+            "ci_upper": 2.0209074318408966,
+            "ci_level": 0.95,
+            "ci_method": "percentile",
+            "methodology": "motion.action_state_divergence.v1"
+          }
+        }
+      },
+      "behavioral_coverage": {
+        "score": 91.0,
+        "weight": 0.2,
+        "metrics": {
+          "action_entropy_bits_per_dim": {
+            "value": 5.118194886499001,
+            "unit": "bits/dim",
+            "score": 100.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.action_entropy_bits_per_dim.v1"
+          },
+          "state_entropy_bits_per_dim[state]": {
+            "value": 4.6403610927009655,
+            "unit": "bits/dim",
+            "score": 100.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.state_entropy_bits_per_dim[state].v1"
+          },
+          "trajectory_diversity": {
+            "value": 0.49220209605694276,
+            "unit": "",
+            "score": 90.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "coverage.trajectory_diversity.v1"
+          },
+          "latent_state_entropy": {
+            "value": 6.553081464512443,
+            "unit": "bits",
+            "score": 100.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.latent_state_entropy.v1"
+          },
+          "ssl_trajectory_outliers": {
+            "value": 0.0515625,
+            "unit": "fraction",
+            "score": 65.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.ssl_trajectory_outliers.v1"
+          }
+        }
+      },
+      "task_integrity": {
+        "score": 87.9,
+        "weight": 0.2,
+        "metrics": {
+          "pca_top2_variance_fraction": {
+            "value": 0.5393780839063456,
+            "unit": "fraction",
+            "score": 100.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.pca_top2_variance_fraction.v1"
+          },
+          "episode_length_distribution": {
+            "value": 0.0,
+            "unit": "CV",
+            "score": 100.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.episode_length_distribution.v1"
+          },
+          "contact_density": {
+            "value": 0.000625,
+            "unit": "fraction",
+            "score": 90.0,
+            "ci_lower": 0.00025,
+            "ci_upper": 0.0010625,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "task.contact_density.v1"
+          },
+          "grasp_events_per_episode": {
+            "value": null,
+            "unit": "",
+            "score": 90.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.grasp_events_per_episode.v1"
+          },
+          "short_episode_fraction": {
+            "value": 0.0,
+            "unit": "fraction",
+            "score": 100.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.short_episode_fraction.v1"
+          },
+          "contact_phase_fraction": {
+            "value": 0.0,
+            "unit": "fraction",
+            "score": 30.0,
+            "ci_lower": 0.0,
+            "ci_upper": 0.0,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.contact_phase_fraction.v1"
+          },
+          "approach_phase_dominance": {
+            "value": 1.0,
+            "unit": "fraction",
+            "score": 90.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.approach_phase_dominance.v1"
+          },
+          "dataset_influence_score": {
+            "value": 0.601453710993735,
+            "unit": "influence",
+            "score": 90.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.dataset_influence_score.v1"
+          },
+          "transition_redundancy": {
+            "value": 0.9445090063916328,
+            "unit": "fraction",
+            "score": 65.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.transition_redundancy.v1"
+          },
+          "dynamics_predictability_r2": {
+            "value": 0.7958468951991182,
+            "unit": "R^2",
+            "score": 100.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.dynamics_predictability_r2.v1"
+          },
+          "causal_action_effect_mi": {
+            "value": 0.17021375792435267,
+            "unit": "dHSIC",
+            "score": 100.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.causal_action_effect_mi.v1"
+          },
+          "outlier_transition_fraction": {
+            "value": 0.014816966879721092,
+            "unit": "fraction",
+            "score": 100.0,
+            "ci_lower": null,
+            "ci_upper": null,
+            "ci_level": 0.95,
+            "ci_method": "bootstrap",
+            "methodology": "calibra.outlier_transition_fraction.v1"
+          }
+        }
+      }
+    },
+    "findings": [
+      {
+        "severity": "ok",
+        "code": "TIMESTAMP_JITTER_CV",
+        "metric": "timestamp_jitter_cv",
+        "message": "Step-to-step timing is consistent.",
+        "implication": "No jitter risk detected.",
+        "affected_fraction": null,
+        "observed_value": 5.541173777601216e-7,
+        "observed_unit": "",
+        "threshold": 0.15
+      },
+      {
+        "severity": "ok",
+        "code": "TIMESTAMP_DROPOUT_RATE",
+        "metric": "timestamp_dropout_rate",
+        "message": "Timestamp dropout rate is within acceptable range.",
+        "implication": "No dropout risk detected.",
+        "affected_fraction": 0.0,
+        "observed_value": 0.0,
+        "observed_unit": "fraction",
+        "threshold": 0.01
+      },
+      {
+        "severity": "ok",
+        "code": "ACTION_DROPOUT_RATE",
+        "metric": "action_dropout_rate",
+        "message": "Action-dropout rate is within acceptable range.",
+        "implication": "No silent command-dropout detected.",
+        "affected_fraction": 0.0,
+        "observed_value": 0.0,
+        "observed_unit": "fraction",
+        "threshold": 0.05
+      },
+      {
+        "severity": "warning",
+        "code": "LDLJ",
+        "metric": "ldlj",
+        "message": "Mean LDLJ = -14.07 across 640 episodes (threshold: >-10). Action trajectories contain significant jerk.",
+        "implication": "High jerk in demonstration data forces the policy to learn discontinuous action transitions. BC policies trained on jerky data produce jerky rollouts that stress hardware and reduce task success on contact-rich tasks. Consider applying action smoothing (e.g. Savitzky-Golay) before training.",
+        "affected_fraction": null,
+        "observed_value": -14.070752076773832,
+        "observed_unit": "",
+        "threshold": -10.0
+      },
+      {
+        "severity": "ok",
+        "code": "JERK_SPIKE_RATE",
+        "metric": "jerk_spike_rate",
+        "message": "Jerk spike rate is within acceptable range.",
+        "implication": "No jerk spike risk detected.",
+        "affected_fraction": 0.0,
+        "observed_value": 0.0,
+        "observed_unit": "fraction",
+        "threshold": 0.02
+      },
+      {
+        "severity": "critical",
+        "code": "VELOCITY_DISCONTINUITY_RATE",
+        "metric": "velocity_discontinuity_rate",
+        "message": "99.4% of steps show velocity change > 20% of peak velocity.",
+        "implication": "Sudden velocity reversals are physically impossible under normal actuation constraints. These are either annotation errors or real but undesired operator behaviour. Policies trained on them will attempt to reproduce them, stressing hardware actuators.",
+        "affected_fraction": 0.9938179347826086,
+        "observed_value": 0.9938179347826086,
+        "observed_unit": "fraction",
+        "threshold": 0.02
+      },
+      {
+        "severity": "critical",
+        "code": "ACTION_STATE_DIVERGENCE",
+        "metric": "action_state_divergence",
+        "message": "Action-state divergence is high (1.8323, threshold: 0.350). Very large gap between commanded position and observed joint state. Likely cause: scripted planner with large waypoint targets, or severe communication lag / wrong control mode.",
+        "implication": "If scripted dataset: divergence > 0.35 indicates the planner issues positions far ahead of the arm. Verify normalisation and coordinate frames. For human teleoperation at this level: prune high-divergence episodes and check motor PD parameters.",
+        "affected_fraction": 1.0,
+        "observed_value": 1.8323189366608859,
+        "observed_unit": "",
+        "threshold": 0.15
+      },
+      {
+        "severity": "ok",
+        "code": "ACTION_ENTROPY_BITS_PER_DIM",
+        "metric": "action_entropy_bits_per_dim",
+        "message": "Action-space coverage is healthy (5.12 bits/dim).",
+        "implication": "No mode collapse risk detected in action space.",
+        "affected_fraction": null,
+        "observed_value": 5.118194886499001,
+        "observed_unit": "bits/dim",
+        "threshold": 3.5
+      },
+      {
+        "severity": "ok",
+        "code": "PCA_TOP2_VARIANCE_FRACTION",
+        "metric": "pca_top2_variance_fraction",
+        "message": "Action variance is spread across many PCs (top-2 explain 53.9%).",
+        "implication": "No low-rank action collapse detected.",
+        "affected_fraction": null,
+        "observed_value": 0.5393780839063456,
+        "observed_unit": "fraction",
+        "threshold": 0.9
+      },
+      {
+        "severity": "ok",
+        "code": "STATE_ENTROPY_BITS_PER_DIM[STATE]",
+        "metric": "state_entropy_bits_per_dim[state]",
+        "message": "State-space coverage is healthy (4.64 bits/dim).",
+        "implication": "No mode collapse risk detected in state space.",
+        "affected_fraction": null,
+        "observed_value": 4.6403610927009655,
+        "observed_unit": "bits/dim",
+        "threshold": 3.5
+      },
+      {
+        "severity": "ok",
+        "code": "EPISODE_LENGTH_DISTRIBUTION",
+        "metric": "episode_length_distribution",
+        "message": "Episode lengths are consistent (mean=25, CV=0.00).",
+        "implication": "No episode length irregularity detected.",
+        "affected_fraction": null,
+        "observed_value": 0.0,
+        "observed_unit": "CV",
+        "threshold": null
+      },
+      {
+        "severity": "info",
+        "code": "CONTACT_DENSITY",
+        "metric": "contact_density",
+        "message": "0.1% of steps are in contact/slow phase (estimated via velocity envelope only (no gripper detected)).",
+        "implication": "High contact density (> 60%) → dataset is contact-rich; policy must learn precise contact-phase behaviour. Low density (< 10%) → mostly free-space motion; consider adding contact-phase demonstrations for manipulation tasks.",
+        "affected_fraction": null,
+        "observed_value": 0.000625,
+        "observed_unit": "fraction",
+        "threshold": null
+      },
+      {
+        "severity": "info",
+        "code": "GRASP_EVENTS_PER_EPISODE",
+        "metric": "grasp_events_per_episode",
+        "message": "No gripper dimension detected — grasp count unavailable.",
+        "implication": "Specify gripper_dims=[<dim_index>] on TaskStructureAnalyzer if the dataset has a gripper.",
+        "affected_fraction": null,
+        "observed_value": null,
+        "observed_unit": "",
+        "threshold": null
+      },
+      {
+        "severity": "info",
+        "code": "TRAJECTORY_DIVERSITY",
+        "metric": "trajectory_diversity",
+        "message": "Trajectory diversity score 0.49 — weak evidence of multiple strategies. May be within-task variation.",
+        "implication": "Consider visualising the episode PCA projection to determine whether the spread represents genuine strategy variation or normal trajectory noise.",
+        "affected_fraction": null,
+        "observed_value": 0.49220209605694276,
+        "observed_unit": "",
+        "threshold": 0.6
+      },
+      {
+        "severity": "ok",
+        "code": "SHORT_EPISODE_FRACTION",
+        "metric": "short_episode_fraction",
+        "message": "No suspiciously short episodes detected.",
+        "implication": "Episode length distribution appears consistent.",
+        "affected_fraction": null,
+        "observed_value": 0.0,
+        "observed_unit": "fraction",
+        "threshold": 0.05
+      },
+      {
+        "severity": "critical",
+        "code": "CONTACT_PHASE_FRACTION",
+        "metric": "contact_phase_fraction",
+        "message": "Contact phase is only 0.0% of total steps (threshold: >10%). Approach dominates at 100.0%.",
+        "implication": "The policy's BC loss is dominated by approach-phase gradients. Contact and grasp steps are underrepresented — the policy will learn to approach reliably but fail at the critical manipulation phase. Fix: augment with contact-phase-only demonstrations, or apply per-phase loss weighting (upweight steps where gripper is closed or velocity is near zero).",
+        "affected_fraction": null,
+        "observed_value": 0.0,
+        "observed_unit": "fraction",
+        "threshold": 0.1
+      },
+      {
+        "severity": "info",
+        "code": "APPROACH_PHASE_DOMINANCE",
+        "metric": "approach_phase_dominance",
+        "message": "Approach phase accounts for 100.0% of all steps. Dataset is approach-heavy.",
+        "implication": "Approach-heavy datasets are common in table-top manipulation with sparse task-completion criteria. If task success depends on contact precision (insertion, in-hand manipulation), the approach dominance creates a distribution mismatch at deployment. Claim PB-001: this pattern appears in ≥80% of public manipulation datasets.",
+        "affected_fraction": null,
+        "observed_value": 1.0,
+        "observed_unit": "fraction",
+        "threshold": 0.8
+      },
+      {
+        "severity": "info",
+        "code": "DATASET_INFLUENCE_SCORE",
+        "metric": "dataset_influence_score",
+        "message": "Computed offline learning influence. Top influential episode IDs: 694, 657, 379",
+        "implication": "Exposing --strategy influence in calibra prune to target informative coreset selections.",
+        "affected_fraction": null,
+        "observed_value": 0.601453710993735,
+        "observed_unit": "influence",
+        "threshold": null
+      },
+      {
+        "severity": "ok",
+        "code": "LATENT_STATE_ENTROPY",
+        "metric": "latent_state_entropy",
+        "message": "Latent state coverage entropy is 6.55 bits.",
+        "implication": "State space displays healthy distribution across workspaces.",
+        "affected_fraction": null,
+        "observed_value": 6.553081464512443,
+        "observed_unit": "bits",
+        "threshold": 2.5
+      },
+      {
+        "severity": "warning",
+        "code": "TRANSITION_REDUNDANCY",
+        "metric": "transition_redundancy",
+        "message": "Transition redundancy is 94.45%.",
+        "implication": "Over 80% of demonstrations contain redundant dynamics. Consider pruning to save compute.",
+        "affected_fraction": null,
+        "observed_value": 0.9445090063916328,
+        "observed_unit": "fraction",
+        "threshold": 0.8
+      },
+      {
+        "severity": "ok",
+        "code": "DYNAMICS_PREDICTABILITY_R2",
+        "metric": "dynamics_predictability_r2",
+        "message": "Dynamics predictability R^2 is 0.7958.",
+        "implication": "Transitions display high causal predictability, suitable for learning world models.",
+        "affected_fraction": null,
+        "observed_value": 0.7958468951991182,
+        "observed_unit": "R^2",
+        "threshold": 0.2
+      },
+      {
+        "severity": "ok",
+        "code": "CAUSAL_ACTION_EFFECT_MI",
+        "metric": "causal_action_effect_mi",
+        "message": "Causal action-effect dependency is 0.1702.",
+        "implication": "OK",
+        "affected_fraction": null,
+        "observed_value": 0.17021375792435267,
+        "observed_unit": "dHSIC",
+        "threshold": 0.1
+      },
+      {
+        "severity": "ok",
+        "code": "OUTLIER_TRANSITION_FRACTION",
+        "metric": "outlier_transition_fraction",
+        "message": "51 transition anomalies detected (1.48%).",
+        "implication": "Transition trajectory is physically smooth and consistent.",
+        "affected_fraction": null,
+        "observed_value": 0.014816966879721092,
+        "observed_unit": "fraction",
+        "threshold": 0.05
+      },
+      {
+        "severity": "warning",
+        "code": "SSL_TRAJECTORY_OUTLIERS",
+        "metric": "ssl_trajectory_outliers",
+        "message": "5.2% of episodes are trajectory-level outliers.",
+        "implication": "A high fraction of outlier trajectories suggests inconsistent demonstration quality, hardware calibration drift, or operator errors. Review these outlier episodes before policy training.",
+        "affected_fraction": 0.0515625,
+        "observed_value": 0.0515625,
+        "observed_unit": "fraction",
+        "threshold": 0.05
+      }
+    ],
+    "recommendations": {
+      "behavior_cloning": {
+        "status": "review",
+        "reason": null
+      },
+      "act": {
+        "status": "review",
+        "reason": null
+      },
+      "diffusion_policy": {
+        "status": "review",
+        "reason": null
+      },
+      "gr00t": {
+        "status": "review",
+        "reason": null
+      }
+    }
+  },
+  "episode_verdicts": {
+    "keep_episode_ids": [],
+    "reject_episode_ids": [
+      "1",
+      "3",
+      "4",
+      "5",
+      "6",
+      "8",
+      "10",
+      "11",
+      "13",
+      "14",
+      "15",
+      "16",
+      "17",
+      "18",
+      "19",
+      "20",
+      "21",
+      "22",
+      "23",
+      "24",
+      "26",
+      "27",
+      "31",
+      "32",
+      "33",
+      "34",
+      "37",
+      "39",
+      "40",
+      "41",
+      "42",
+      "43",
+      "44",
+      "46",
+      "47",
+      "48",
+      "49",
+      "50",
+      "52",
+      "53",
+      "54",
+      "56",
+      "57",
+      "58",
+      "59",
+      "60",
+      "62",
+      "63",
+      "64",
+      "65",
+      "67",
+      "68",
+      "69",
+      "70",
+      "72",
+      "73",
+      "74",
+      "75",
+      "76",
+      "78",
+      "79",
+      "80",
+      "81",
+      "82",
+      "84",
+      "85",
+      "86",
+      "87",
+      "89",
+      "90",
+      "93",
+      "94",
+      "95",
+      "97",
+      "99",
+      "102",
+      "103",
+      "104",
+      "105",
+      "106",
+      "108",
+      "109",
+      "110",
+      "111",
+      "112",
+      "113",
+      "114",
+      "117",
+      "118",
+      "119",
+      "120",
+      "121",
+      "122",
+      "123",
+      "124",
+      "125",
+      "126",
+      "128",
+      "129",
+      "130",
+      "132",
+      "133",
+      "134",
+      "135",
+      "137",
+      "138",
+      "139",
+      "140",
+      "141",
+      "142",
+      "144",
+      "145",
+      "148",
+      "149",
+      "150",
+      "153",
+      "154",
+      "155",
+      "156",
+      "157",
+      "158",
+      "159",
+      "160",
+      "161",
+      "162",
+      "163",
+      "165",
+      "166",
+      "167",
+      "168",
+      "169",
+      "170",
+      "172",
+      "173",
+      "174",
+      "175",
+      "177",
+      "178",
+      "181",
+      "182",
+      "183",
+      "184",
+      "185",
+      "186",
+      "187",
+      "188",
+      "189",
+      "190",
+      "191",
+      "192",
+      "193",
+      "194",
+      "195",
+      "196",
+      "197",
+      "198",
+      "199",
+      "200",
+      "201",
+      "202",
+      "203",
+      "205",
+      "206",
+      "207",
+      "208",
+      "209",
+      "210",
+      "211",
+      "212",
+      "213",
+      "214",
+      "215",
+      "216",
+      "220",
+      "221",
+      "223",
+      "224",
+      "225",
+      "226",
+      "227",
+      "228",
+      "229",
+      "231",
+      "233",
+      "234",
+      "235",
+      "239",
+      "240",
+      "241",
+      "242",
+      "244",
+      "245",
+      "246",
+      "247",
+      "249",
+      "251",
+      "252",
+      "253",
+      "254",
+      "255",
+      "256",
+      "257",
+      "258",
+      "259",
+      "260",
+      "261",
+      "262",
+      "263",
+      "264",
+      "265",
+      "266",
+      "267",
+      "268",
+      "269",
+      "270",
+      "272",
+      "273",
+      "274",
+      "275",
+      "276",
+      "277",
+      "278",
+      "279",
+      "280",
+      "281",
+      "282",
+      "283",
+      "284",
+      "285",
+      "286",
+      "287",
+      "288",
+      "289",
+      "290",
+      "291",
+      "292",
+      "293",
+      "294",
+      "295",
+      "296",
+      "300",
+      "301",
+      "303",
+      "305",
+      "306",
+      "308",
+      "311",
+      "313",
+      "314",
+      "316",
+      "317",
+      "318",
+      "319",
+      "320",
+      "321",
+      "322",
+      "323",
+      "324",
+      "325",
+      "326",
+      "327",
+      "329",
+      "331",
+      "332",
+      "333",
+      "334",
+      "335",
+      "337",
+      "338",
+      "339",
+      "341",
+      "342",
+      "343",
+      "346",
+      "347",
+      "348",
+      "349",
+      "352",
+      "353",
+      "355",
+      "357",
+      "358",
+      "359",
+      "360",
+      "361",
+      "362",
+      "363",
+      "364",
+      "365",
+      "366",
+      "367",
+      "369",
+      "370",
+      "371",
+      "372",
+      "373",
+      "374",
+      "375",
+      "376",
+      "377",
+      "378",
+      "379",
+      "381",
+      "382",
+      "383",
+      "384",
+      "385",
+      "386",
+      "387",
+      "388",
+      "389",
+      "391",
+      "392",
+      "394",
+      "395",
+      "396",
+      "397",
+      "399",
+      "401",
+      "402",
+      "403",
+      "404",
+      "405",
+      "407",
+      "408",
+      "409",
+      "410",
+      "411",
+      "412",
+      "413",
+      "414",
+      "415",
+      "416",
+      "417",
+      "418",
+      "420",
+      "421",
+      "422",
+      "426",
+      "427",
+      "428",
+      "430",
+      "432",
+      "433",
+      "435",
+      "436",
+      "437",
+      "440",
+      "441",
+      "442",
+      "443",
+      "444",
+      "446",
+      "448",
+      "449",
+      "450",
+      "451",
+      "452",
+      "453",
+      "454",
+      "455",
+      "456",
+      "457",
+      "458",
+      "460",
+      "461",
+      "462",
+      "464",
+      "465",
+      "466",
+      "467",
+      "468",
+      "469",
+      "470",
+      "471",
+      "472",
+      "473",
+      "475",
+      "476",
+      "477",
+      "478",
+      "480",
+      "481",
+      "482",
+      "483",
+      "484",
+      "485",
+      "486",
+      "487",
+      "489",
+      "490",
+      "491",
+      "492",
+      "493",
+      "494",
+      "495",
+      "497",
+      "498",
+      "499",
+      "500",
+      "502",
+      "503",
+      "504",
+      "505",
+      "506",
+      "507",
+      "508",
+      "510",
+      "511",
+      "515",
+      "516",
+      "517",
+      "518",
+      "519",
+      "520",
+      "521",
+      "523",
+      "524",
+      "525",
+      "526",
+      "527",
+      "528",
+      "529",
+      "530",
+      "531",
+      "532",
+      "533",
+      "534",
+      "535",
+      "536",
+      "537",
+      "539",
+      "540",
+      "541",
+      "542",
+      "543",
+      "545",
+      "546",
+      "547",
+      "548",
+      "549",
+      "551",
+      "553",
+      "554",
+      "555",
+      "556",
+      "557",
+      "558",
+      "560",
+      "561",
+      "563",
+      "564",
+      "565",
+      "566",
+      "567",
+      "568",
+      "569",
+      "570",
+      "571",
+      "572",
+      "573",
+      "575",
+      "576",
+      "577",
+      "578",
+      "579",
+      "580",
+      "581",
+      "583",
+      "584",
+      "585",
+      "586",
+      "588",
+      "589",
+      "590",
+      "591",
+      "592",
+      "593",
+      "594",
+      "595",
+      "596",
+      "597",
+      "599",
+      "600",
+      "601",
+      "602",
+      "603",
+      "604",
+      "605",
+      "606",
+      "607",
+      "608",
+      "609",
+      "611",
+      "612",
+      "613",
+      "614",
+      "615",
+      "616",
+      "617",
+      "619",
+      "621",
+      "622",
+      "623",
+      "624",
+      "625",
+      "626",
+      "627",
+      "628",
+      "630",
+      "632",
+      "633",
+      "634",
+      "636",
+      "637",
+      "639",
+      "640",
+      "641",
+      "642",
+      "644",
+      "645",
+      "647",
+      "648",
+      "649",
+      "650",
+      "651",
+      "652",
+      "654",
+      "655",
+      "656",
+      "657",
+      "660",
+      "661",
+      "662",
+      "666",
+      "667",
+      "668",
+      "669",
+      "670",
+      "671",
+      "672",
+      "673",
+      "674",
+      "675",
+      "677",
+      "678",
+      "679",
+      "680",
+      "681",
+      "682",
+      "684",
+      "685",
+      "686",
+      "687",
+      "688",
+      "689",
+      "690",
+      "691",
+      "692",
+      "693",
+      "694",
+      "695",
+      "696",
+      "698",
+      "700",
+      "701",
+      "702",
+      "703",
+      "704",
+      "705",
+      "706",
+      "707",
+      "710",
+      "711",
+      "712",
+      "713",
+      "714",
+      "717",
+      "718",
+      "720",
+      "725",
+      "727",
+      "728",
+      "729",
+      "730",
+      "731",
+      "732",
+      "733",
+      "734",
+      "735",
+      "736",
+      "737",
+      "738",
+      "739",
+      "740",
+      "741",
+      "742",
+      "743",
+      "744",
+      "745",
+      "746",
+      "747",
+      "749",
+      "750",
+      "751",
+      "752",
+      "754",
+      "756",
+      "757",
+      "758",
+      "759",
+      "760",
+      "761",
+      "762",
+      "763",
+      "764",
+      "765",
+      "766",
+      "768",
+      "769",
+      "771",
+      "772",
+      "773",
+      "774",
+      "776",
+      "778",
+      "779",
+      "780",
+      "781",
+      "782",
+      "783",
+      "784",
+      "785",
+      "786",
+      "787",
+      "788",
+      "791",
+      "794",
+      "795",
+      "797"
+    ],
+    "reason_codes": {
+      "1": [
+        "velocity_discontinuity"
+      ],
+      "3": [
+        "velocity_discontinuity"
+      ],
+      "4": [
+        "velocity_discontinuity"
+      ],
+      "5": [
+        "velocity_discontinuity"
+      ],
+      "6": [
+        "velocity_discontinuity"
+      ],
+      "8": [
+        "velocity_discontinuity"
+      ],
+      "10": [
+        "velocity_discontinuity"
+      ],
+      "11": [
+        "velocity_discontinuity"
+      ],
+      "13": [
+        "velocity_discontinuity"
+      ],
+      "14": [
+        "velocity_discontinuity"
+      ],
+      "15": [
+        "velocity_discontinuity"
+      ],
+      "16": [
+        "velocity_discontinuity"
+      ],
+      "17": [
+        "velocity_discontinuity"
+      ],
+      "18": [
+        "velocity_discontinuity"
+      ],
+      "19": [
+        "velocity_discontinuity"
+      ],
+      "20": [
+        "velocity_discontinuity"
+      ],
+      "21": [
+        "velocity_discontinuity"
+      ],
+      "22": [
+        "velocity_discontinuity"
+      ],
+      "23": [
+        "velocity_discontinuity"
+      ],
+      "24": [
+        "velocity_discontinuity"
+      ],
+      "26": [
+        "velocity_discontinuity"
+      ],
+      "27": [
+        "velocity_discontinuity"
+      ],
+      "31": [
+        "velocity_discontinuity"
+      ],
+      "32": [
+        "velocity_discontinuity"
+      ],
+      "33": [
+        "velocity_discontinuity"
+      ],
+      "34": [
+        "velocity_discontinuity"
+      ],
+      "37": [
+        "velocity_discontinuity"
+      ],
+      "39": [
+        "velocity_discontinuity"
+      ],
+      "40": [
+        "velocity_discontinuity"
+      ],
+      "41": [
+        "velocity_discontinuity"
+      ],
+      "42": [
+        "velocity_discontinuity"
+      ],
+      "43": [
+        "velocity_discontinuity"
+      ],
+      "44": [
+        "velocity_discontinuity"
+      ],
+      "46": [
+        "velocity_discontinuity"
+      ],
+      "47": [
+        "velocity_discontinuity"
+      ],
+      "48": [
+        "velocity_discontinuity"
+      ],
+      "49": [
+        "velocity_discontinuity"
+      ],
+      "50": [
+        "velocity_discontinuity"
+      ],
+      "52": [
+        "velocity_discontinuity"
+      ],
+      "53": [
+        "velocity_discontinuity"
+      ],
+      "54": [
+        "velocity_discontinuity"
+      ],
+      "56": [
+        "velocity_discontinuity"
+      ],
+      "57": [
+        "velocity_discontinuity"
+      ],
+      "58": [
+        "velocity_discontinuity"
+      ],
+      "59": [
+        "velocity_discontinuity"
+      ],
+      "60": [
+        "velocity_discontinuity"
+      ],
+      "62": [
+        "velocity_discontinuity"
+      ],
+      "63": [
+        "velocity_discontinuity"
+      ],
+      "64": [
+        "velocity_discontinuity"
+      ],
+      "65": [
+        "velocity_discontinuity"
+      ],
+      "67": [
+        "velocity_discontinuity"
+      ],
+      "68": [
+        "velocity_discontinuity"
+      ],
+      "69": [
+        "velocity_discontinuity"
+      ],
+      "70": [
+        "velocity_discontinuity"
+      ],
+      "72": [
+        "velocity_discontinuity"
+      ],
+      "73": [
+        "velocity_discontinuity"
+      ],
+      "74": [
+        "velocity_discontinuity"
+      ],
+      "75": [
+        "velocity_discontinuity"
+      ],
+      "76": [
+        "velocity_discontinuity"
+      ],
+      "78": [
+        "velocity_discontinuity"
+      ],
+      "79": [
+        "velocity_discontinuity"
+      ],
+      "80": [
+        "velocity_discontinuity"
+      ],
+      "81": [
+        "velocity_discontinuity"
+      ],
+      "82": [
+        "velocity_discontinuity"
+      ],
+      "84": [
+        "velocity_discontinuity"
+      ],
+      "85": [
+        "velocity_discontinuity"
+      ],
+      "86": [
+        "velocity_discontinuity"
+      ],
+      "87": [
+        "velocity_discontinuity"
+      ],
+      "89": [
+        "velocity_discontinuity"
+      ],
+      "90": [
+        "velocity_discontinuity"
+      ],
+      "93": [
+        "velocity_discontinuity"
+      ],
+      "94": [
+        "velocity_discontinuity"
+      ],
+      "95": [
+        "velocity_discontinuity"
+      ],
+      "97": [
+        "velocity_discontinuity"
+      ],
+      "99": [
+        "velocity_discontinuity"
+      ],
+      "102": [
+        "velocity_discontinuity"
+      ],
+      "103": [
+        "velocity_discontinuity"
+      ],
+      "104": [
+        "velocity_discontinuity"
+      ],
+      "105": [
+        "velocity_discontinuity"
+      ],
+      "106": [
+        "velocity_discontinuity"
+      ],
+      "108": [
+        "velocity_discontinuity"
+      ],
+      "109": [
+        "velocity_discontinuity"
+      ],
+      "110": [
+        "velocity_discontinuity"
+      ],
+      "111": [
+        "velocity_discontinuity"
+      ],
+      "112": [
+        "velocity_discontinuity"
+      ],
+      "113": [
+        "velocity_discontinuity"
+      ],
+      "114": [
+        "velocity_discontinuity"
+      ],
+      "117": [
+        "velocity_discontinuity"
+      ],
+      "118": [
+        "velocity_discontinuity"
+      ],
+      "119": [
+        "velocity_discontinuity"
+      ],
+      "120": [
+        "velocity_discontinuity"
+      ],
+      "121": [
+        "velocity_discontinuity"
+      ],
+      "122": [
+        "velocity_discontinuity"
+      ],
+      "123": [
+        "velocity_discontinuity"
+      ],
+      "124": [
+        "velocity_discontinuity"
+      ],
+      "125": [
+        "velocity_discontinuity"
+      ],
+      "126": [
+        "velocity_discontinuity"
+      ],
+      "128": [
+        "velocity_discontinuity"
+      ],
+      "129": [
+        "velocity_discontinuity"
+      ],
+      "130": [
+        "velocity_discontinuity"
+      ],
+      "132": [
+        "velocity_discontinuity"
+      ],
+      "133": [
+        "velocity_discontinuity"
+      ],
+      "134": [
+        "velocity_discontinuity"
+      ],
+      "135": [
+        "velocity_discontinuity"
+      ],
+      "137": [
+        "velocity_discontinuity"
+      ],
+      "138": [
+        "velocity_discontinuity"
+      ],
+      "139": [
+        "velocity_discontinuity"
+      ],
+      "140": [
+        "velocity_discontinuity"
+      ],
+      "141": [
+        "velocity_discontinuity"
+      ],
+      "142": [
+        "velocity_discontinuity"
+      ],
+      "144": [
+        "velocity_discontinuity"
+      ],
+      "145": [
+        "velocity_discontinuity"
+      ],
+      "148": [
+        "velocity_discontinuity"
+      ],
+      "149": [
+        "velocity_discontinuity"
+      ],
+      "150": [
+        "velocity_discontinuity"
+      ],
+      "153": [
+        "velocity_discontinuity"
+      ],
+      "154": [
+        "velocity_discontinuity"
+      ],
+      "155": [
+        "velocity_discontinuity"
+      ],
+      "156": [
+        "velocity_discontinuity"
+      ],
+      "157": [
+        "velocity_discontinuity"
+      ],
+      "158": [
+        "velocity_discontinuity"
+      ],
+      "159": [
+        "velocity_discontinuity"
+      ],
+      "160": [
+        "velocity_discontinuity"
+      ],
+      "161": [
+        "velocity_discontinuity"
+      ],
+      "162": [
+        "velocity_discontinuity"
+      ],
+      "163": [
+        "velocity_discontinuity"
+      ],
+      "165": [
+        "velocity_discontinuity"
+      ],
+      "166": [
+        "velocity_discontinuity"
+      ],
+      "167": [
+        "velocity_discontinuity"
+      ],
+      "168": [
+        "velocity_discontinuity"
+      ],
+      "169": [
+        "velocity_discontinuity"
+      ],
+      "170": [
+        "velocity_discontinuity"
+      ],
+      "172": [
+        "velocity_discontinuity"
+      ],
+      "173": [
+        "velocity_discontinuity"
+      ],
+      "174": [
+        "velocity_discontinuity"
+      ],
+      "175": [
+        "velocity_discontinuity"
+      ],
+      "177": [
+        "velocity_discontinuity"
+      ],
+      "178": [
+        "velocity_discontinuity"
+      ],
+      "181": [
+        "velocity_discontinuity"
+      ],
+      "182": [
+        "velocity_discontinuity"
+      ],
+      "183": [
+        "velocity_discontinuity"
+      ],
+      "184": [
+        "velocity_discontinuity"
+      ],
+      "185": [
+        "velocity_discontinuity"
+      ],
+      "186": [
+        "velocity_discontinuity"
+      ],
+      "187": [
+        "velocity_discontinuity"
+      ],
+      "188": [
+        "velocity_discontinuity"
+      ],
+      "189": [
+        "velocity_discontinuity"
+      ],
+      "190": [
+        "velocity_discontinuity"
+      ],
+      "191": [
+        "velocity_discontinuity"
+      ],
+      "192": [
+        "velocity_discontinuity"
+      ],
+      "193": [
+        "velocity_discontinuity"
+      ],
+      "194": [
+        "velocity_discontinuity"
+      ],
+      "195": [
+        "velocity_discontinuity"
+      ],
+      "196": [
+        "velocity_discontinuity"
+      ],
+      "197": [
+        "velocity_discontinuity"
+      ],
+      "198": [
+        "velocity_discontinuity"
+      ],
+      "199": [
+        "velocity_discontinuity"
+      ],
+      "200": [
+        "velocity_discontinuity"
+      ],
+      "201": [
+        "velocity_discontinuity"
+      ],
+      "202": [
+        "velocity_discontinuity"
+      ],
+      "203": [
+        "velocity_discontinuity"
+      ],
+      "205": [
+        "velocity_discontinuity"
+      ],
+      "206": [
+        "velocity_discontinuity"
+      ],
+      "207": [
+        "velocity_discontinuity"
+      ],
+      "208": [
+        "velocity_discontinuity"
+      ],
+      "209": [
+        "velocity_discontinuity"
+      ],
+      "210": [
+        "velocity_discontinuity"
+      ],
+      "211": [
+        "velocity_discontinuity"
+      ],
+      "212": [
+        "velocity_discontinuity"
+      ],
+      "213": [
+        "velocity_discontinuity"
+      ],
+      "214": [
+        "velocity_discontinuity"
+      ],
+      "215": [
+        "velocity_discontinuity"
+      ],
+      "216": [
+        "velocity_discontinuity"
+      ],
+      "220": [
+        "velocity_discontinuity"
+      ],
+      "221": [
+        "velocity_discontinuity"
+      ],
+      "223": [
+        "velocity_discontinuity"
+      ],
+      "224": [
+        "velocity_discontinuity"
+      ],
+      "225": [
+        "velocity_discontinuity"
+      ],
+      "226": [
+        "velocity_discontinuity"
+      ],
+      "227": [
+        "velocity_discontinuity"
+      ],
+      "228": [
+        "velocity_discontinuity"
+      ],
+      "229": [
+        "velocity_discontinuity"
+      ],
+      "231": [
+        "velocity_discontinuity"
+      ],
+      "233": [
+        "velocity_discontinuity"
+      ],
+      "234": [
+        "velocity_discontinuity"
+      ],
+      "235": [
+        "velocity_discontinuity"
+      ],
+      "239": [
+        "velocity_discontinuity"
+      ],
+      "240": [
+        "velocity_discontinuity"
+      ],
+      "241": [
+        "velocity_discontinuity"
+      ],
+      "242": [
+        "velocity_discontinuity"
+      ],
+      "244": [
+        "velocity_discontinuity"
+      ],
+      "245": [
+        "velocity_discontinuity"
+      ],
+      "246": [
+        "velocity_discontinuity"
+      ],
+      "247": [
+        "velocity_discontinuity"
+      ],
+      "249": [
+        "velocity_discontinuity"
+      ],
+      "251": [
+        "velocity_discontinuity"
+      ],
+      "252": [
+        "velocity_discontinuity"
+      ],
+      "253": [
+        "velocity_discontinuity"
+      ],
+      "254": [
+        "velocity_discontinuity"
+      ],
+      "255": [
+        "velocity_discontinuity"
+      ],
+      "256": [
+        "velocity_discontinuity"
+      ],
+      "257": [
+        "velocity_discontinuity"
+      ],
+      "258": [
+        "velocity_discontinuity"
+      ],
+      "259": [
+        "velocity_discontinuity"
+      ],
+      "260": [
+        "velocity_discontinuity"
+      ],
+      "261": [
+        "velocity_discontinuity"
+      ],
+      "262": [
+        "velocity_discontinuity"
+      ],
+      "263": [
+        "velocity_discontinuity"
+      ],
+      "264": [
+        "velocity_discontinuity"
+      ],
+      "265": [
+        "velocity_discontinuity"
+      ],
+      "266": [
+        "velocity_discontinuity"
+      ],
+      "267": [
+        "velocity_discontinuity"
+      ],
+      "268": [
+        "velocity_discontinuity"
+      ],
+      "269": [
+        "velocity_discontinuity"
+      ],
+      "270": [
+        "velocity_discontinuity"
+      ],
+      "272": [
+        "velocity_discontinuity"
+      ],
+      "273": [
+        "velocity_discontinuity"
+      ],
+      "274": [
+        "velocity_discontinuity"
+      ],
+      "275": [
+        "velocity_discontinuity"
+      ],
+      "276": [
+        "velocity_discontinuity"
+      ],
+      "277": [
+        "velocity_discontinuity"
+      ],
+      "278": [
+        "velocity_discontinuity"
+      ],
+      "279": [
+        "velocity_discontinuity"
+      ],
+      "280": [
+        "velocity_discontinuity"
+      ],
+      "281": [
+        "velocity_discontinuity"
+      ],
+      "282": [
+        "velocity_discontinuity"
+      ],
+      "283": [
+        "velocity_discontinuity"
+      ],
+      "284": [
+        "velocity_discontinuity"
+      ],
+      "285": [
+        "velocity_discontinuity"
+      ],
+      "286": [
+        "velocity_discontinuity"
+      ],
+      "287": [
+        "velocity_discontinuity"
+      ],
+      "288": [
+        "velocity_discontinuity"
+      ],
+      "289": [
+        "velocity_discontinuity"
+      ],
+      "290": [
+        "velocity_discontinuity"
+      ],
+      "291": [
+        "velocity_discontinuity"
+      ],
+      "292": [
+        "velocity_discontinuity"
+      ],
+      "293": [
+        "velocity_discontinuity"
+      ],
+      "294": [
+        "velocity_discontinuity"
+      ],
+      "295": [
+        "velocity_discontinuity"
+      ],
+      "296": [
+        "velocity_discontinuity"
+      ],
+      "300": [
+        "velocity_discontinuity"
+      ],
+      "301": [
+        "velocity_discontinuity"
+      ],
+      "303": [
+        "velocity_discontinuity"
+      ],
+      "305": [
+        "velocity_discontinuity"
+      ],
+      "306": [
+        "velocity_discontinuity"
+      ],
+      "308": [
+        "velocity_discontinuity"
+      ],
+      "311": [
+        "velocity_discontinuity"
+      ],
+      "313": [
+        "velocity_discontinuity"
+      ],
+      "314": [
+        "velocity_discontinuity"
+      ],
+      "316": [
+        "velocity_discontinuity"
+      ],
+      "317": [
+        "velocity_discontinuity"
+      ],
+      "318": [
+        "velocity_discontinuity"
+      ],
+      "319": [
+        "velocity_discontinuity"
+      ],
+      "320": [
+        "velocity_discontinuity"
+      ],
+      "321": [
+        "velocity_discontinuity"
+      ],
+      "322": [
+        "velocity_discontinuity"
+      ],
+      "323": [
+        "velocity_discontinuity"
+      ],
+      "324": [
+        "velocity_discontinuity"
+      ],
+      "325": [
+        "velocity_discontinuity"
+      ],
+      "326": [
+        "velocity_discontinuity"
+      ],
+      "327": [
+        "velocity_discontinuity"
+      ],
+      "329": [
+        "velocity_discontinuity"
+      ],
+      "331": [
+        "velocity_discontinuity"
+      ],
+      "332": [
+        "velocity_discontinuity"
+      ],
+      "333": [
+        "velocity_discontinuity"
+      ],
+      "334": [
+        "velocity_discontinuity"
+      ],
+      "335": [
+        "velocity_discontinuity"
+      ],
+      "337": [
+        "velocity_discontinuity"
+      ],
+      "338": [
+        "velocity_discontinuity"
+      ],
+      "339": [
+        "velocity_discontinuity"
+      ],
+      "341": [
+        "velocity_discontinuity"
+      ],
+      "342": [
+        "velocity_discontinuity"
+      ],
+      "343": [
+        "velocity_discontinuity"
+      ],
+      "346": [
+        "velocity_discontinuity"
+      ],
+      "347": [
+        "velocity_discontinuity"
+      ],
+      "348": [
+        "velocity_discontinuity"
+      ],
+      "349": [
+        "velocity_discontinuity"
+      ],
+      "352": [
+        "velocity_discontinuity"
+      ],
+      "353": [
+        "velocity_discontinuity"
+      ],
+      "355": [
+        "velocity_discontinuity"
+      ],
+      "357": [
+        "velocity_discontinuity"
+      ],
+      "358": [
+        "velocity_discontinuity"
+      ],
+      "359": [
+        "velocity_discontinuity"
+      ],
+      "360": [
+        "velocity_discontinuity"
+      ],
+      "361": [
+        "velocity_discontinuity"
+      ],
+      "362": [
+        "velocity_discontinuity"
+      ],
+      "363": [
+        "velocity_discontinuity"
+      ],
+      "364": [
+        "velocity_discontinuity"
+      ],
+      "365": [
+        "velocity_discontinuity"
+      ],
+      "366": [
+        "velocity_discontinuity"
+      ],
+      "367": [
+        "velocity_discontinuity"
+      ],
+      "369": [
+        "velocity_discontinuity"
+      ],
+      "370": [
+        "velocity_discontinuity"
+      ],
+      "371": [
+        "velocity_discontinuity"
+      ],
+      "372": [
+        "velocity_discontinuity"
+      ],
+      "373": [
+        "velocity_discontinuity"
+      ],
+      "374": [
+        "velocity_discontinuity"
+      ],
+      "375": [
+        "velocity_discontinuity"
+      ],
+      "376": [
+        "velocity_discontinuity"
+      ],
+      "377": [
+        "velocity_discontinuity"
+      ],
+      "378": [
+        "velocity_discontinuity"
+      ],
+      "379": [
+        "velocity_discontinuity"
+      ],
+      "381": [
+        "velocity_discontinuity"
+      ],
+      "382": [
+        "velocity_discontinuity"
+      ],
+      "383": [
+        "velocity_discontinuity"
+      ],
+      "384": [
+        "velocity_discontinuity"
+      ],
+      "385": [
+        "velocity_discontinuity"
+      ],
+      "386": [
+        "velocity_discontinuity"
+      ],
+      "387": [
+        "velocity_discontinuity"
+      ],
+      "388": [
+        "velocity_discontinuity"
+      ],
+      "389": [
+        "velocity_discontinuity"
+      ],
+      "391": [
+        "velocity_discontinuity"
+      ],
+      "392": [
+        "velocity_discontinuity"
+      ],
+      "394": [
+        "velocity_discontinuity"
+      ],
+      "395": [
+        "velocity_discontinuity"
+      ],
+      "396": [
+        "velocity_discontinuity"
+      ],
+      "397": [
+        "velocity_discontinuity"
+      ],
+      "399": [
+        "velocity_discontinuity"
+      ],
+      "401": [
+        "velocity_discontinuity"
+      ],
+      "402": [
+        "velocity_discontinuity"
+      ],
+      "403": [
+        "velocity_discontinuity"
+      ],
+      "404": [
+        "velocity_discontinuity"
+      ],
+      "405": [
+        "velocity_discontinuity"
+      ],
+      "407": [
+        "velocity_discontinuity"
+      ],
+      "408": [
+        "velocity_discontinuity"
+      ],
+      "409": [
+        "velocity_discontinuity"
+      ],
+      "410": [
+        "velocity_discontinuity"
+      ],
+      "411": [
+        "velocity_discontinuity"
+      ],
+      "412": [
+        "velocity_discontinuity"
+      ],
+      "413": [
+        "velocity_discontinuity"
+      ],
+      "414": [
+        "velocity_discontinuity"
+      ],
+      "415": [
+        "velocity_discontinuity"
+      ],
+      "416": [
+        "velocity_discontinuity"
+      ],
+      "417": [
+        "velocity_discontinuity"
+      ],
+      "418": [
+        "velocity_discontinuity"
+      ],
+      "420": [
+        "velocity_discontinuity"
+      ],
+      "421": [
+        "velocity_discontinuity"
+      ],
+      "422": [
+        "velocity_discontinuity"
+      ],
+      "426": [
+        "velocity_discontinuity"
+      ],
+      "427": [
+        "velocity_discontinuity"
+      ],
+      "428": [
+        "velocity_discontinuity"
+      ],
+      "430": [
+        "velocity_discontinuity"
+      ],
+      "432": [
+        "velocity_discontinuity"
+      ],
+      "433": [
+        "velocity_discontinuity"
+      ],
+      "435": [
+        "velocity_discontinuity"
+      ],
+      "436": [
+        "velocity_discontinuity"
+      ],
+      "437": [
+        "velocity_discontinuity"
+      ],
+      "440": [
+        "velocity_discontinuity"
+      ],
+      "441": [
+        "velocity_discontinuity"
+      ],
+      "442": [
+        "velocity_discontinuity"
+      ],
+      "443": [
+        "velocity_discontinuity"
+      ],
+      "444": [
+        "velocity_discontinuity"
+      ],
+      "446": [
+        "velocity_discontinuity"
+      ],
+      "448": [
+        "velocity_discontinuity"
+      ],
+      "449": [
+        "velocity_discontinuity"
+      ],
+      "450": [
+        "velocity_discontinuity"
+      ],
+      "451": [
+        "velocity_discontinuity"
+      ],
+      "452": [
+        "velocity_discontinuity"
+      ],
+      "453": [
+        "velocity_discontinuity"
+      ],
+      "454": [
+        "velocity_discontinuity"
+      ],
+      "455": [
+        "velocity_discontinuity"
+      ],
+      "456": [
+        "velocity_discontinuity"
+      ],
+      "457": [
+        "velocity_discontinuity"
+      ],
+      "458": [
+        "velocity_discontinuity"
+      ],
+      "460": [
+        "velocity_discontinuity"
+      ],
+      "461": [
+        "velocity_discontinuity"
+      ],
+      "462": [
+        "velocity_discontinuity"
+      ],
+      "464": [
+        "velocity_discontinuity"
+      ],
+      "465": [
+        "velocity_discontinuity"
+      ],
+      "466": [
+        "velocity_discontinuity"
+      ],
+      "467": [
+        "velocity_discontinuity"
+      ],
+      "468": [
+        "velocity_discontinuity"
+      ],
+      "469": [
+        "velocity_discontinuity"
+      ],
+      "470": [
+        "velocity_discontinuity"
+      ],
+      "471": [
+        "velocity_discontinuity"
+      ],
+      "472": [
+        "velocity_discontinuity"
+      ],
+      "473": [
+        "velocity_discontinuity"
+      ],
+      "475": [
+        "velocity_discontinuity"
+      ],
+      "476": [
+        "velocity_discontinuity"
+      ],
+      "477": [
+        "velocity_discontinuity"
+      ],
+      "478": [
+        "velocity_discontinuity"
+      ],
+      "480": [
+        "velocity_discontinuity"
+      ],
+      "481": [
+        "velocity_discontinuity"
+      ],
+      "482": [
+        "velocity_discontinuity"
+      ],
+      "483": [
+        "velocity_discontinuity"
+      ],
+      "484": [
+        "velocity_discontinuity"
+      ],
+      "485": [
+        "velocity_discontinuity"
+      ],
+      "486": [
+        "velocity_discontinuity"
+      ],
+      "487": [
+        "velocity_discontinuity"
+      ],
+      "489": [
+        "velocity_discontinuity"
+      ],
+      "490": [
+        "velocity_discontinuity"
+      ],
+      "491": [
+        "velocity_discontinuity"
+      ],
+      "492": [
+        "velocity_discontinuity"
+      ],
+      "493": [
+        "velocity_discontinuity"
+      ],
+      "494": [
+        "velocity_discontinuity"
+      ],
+      "495": [
+        "velocity_discontinuity"
+      ],
+      "497": [
+        "velocity_discontinuity"
+      ],
+      "498": [
+        "velocity_discontinuity"
+      ],
+      "499": [
+        "velocity_discontinuity"
+      ],
+      "500": [
+        "velocity_discontinuity"
+      ],
+      "502": [
+        "velocity_discontinuity"
+      ],
+      "503": [
+        "velocity_discontinuity"
+      ],
+      "504": [
+        "velocity_discontinuity"
+      ],
+      "505": [
+        "velocity_discontinuity"
+      ],
+      "506": [
+        "velocity_discontinuity"
+      ],
+      "507": [
+        "velocity_discontinuity"
+      ],
+      "508": [
+        "velocity_discontinuity"
+      ],
+      "510": [
+        "velocity_discontinuity"
+      ],
+      "511": [
+        "velocity_discontinuity"
+      ],
+      "515": [
+        "velocity_discontinuity"
+      ],
+      "516": [
+        "velocity_discontinuity"
+      ],
+      "517": [
+        "velocity_discontinuity"
+      ],
+      "518": [
+        "velocity_discontinuity"
+      ],
+      "519": [
+        "velocity_discontinuity"
+      ],
+      "520": [
+        "velocity_discontinuity"
+      ],
+      "521": [
+        "velocity_discontinuity"
+      ],
+      "523": [
+        "velocity_discontinuity"
+      ],
+      "524": [
+        "velocity_discontinuity"
+      ],
+      "525": [
+        "velocity_discontinuity"
+      ],
+      "526": [
+        "velocity_discontinuity"
+      ],
+      "527": [
+        "velocity_discontinuity"
+      ],
+      "528": [
+        "velocity_discontinuity"
+      ],
+      "529": [
+        "velocity_discontinuity"
+      ],
+      "530": [
+        "velocity_discontinuity"
+      ],
+      "531": [
+        "velocity_discontinuity"
+      ],
+      "532": [
+        "velocity_discontinuity"
+      ],
+      "533": [
+        "velocity_discontinuity"
+      ],
+      "534": [
+        "velocity_discontinuity"
+      ],
+      "535": [
+        "velocity_discontinuity"
+      ],
+      "536": [
+        "velocity_discontinuity"
+      ],
+      "537": [
+        "velocity_discontinuity"
+      ],
+      "539": [
+        "velocity_discontinuity"
+      ],
+      "540": [
+        "velocity_discontinuity"
+      ],
+      "541": [
+        "velocity_discontinuity"
+      ],
+      "542": [
+        "velocity_discontinuity"
+      ],
+      "543": [
+        "velocity_discontinuity"
+      ],
+      "545": [
+        "velocity_discontinuity"
+      ],
+      "546": [
+        "velocity_discontinuity"
+      ],
+      "547": [
+        "velocity_discontinuity"
+      ],
+      "548": [
+        "velocity_discontinuity"
+      ],
+      "549": [
+        "velocity_discontinuity"
+      ],
+      "551": [
+        "velocity_discontinuity"
+      ],
+      "553": [
+        "velocity_discontinuity"
+      ],
+      "554": [
+        "velocity_discontinuity"
+      ],
+      "555": [
+        "velocity_discontinuity"
+      ],
+      "556": [
+        "velocity_discontinuity"
+      ],
+      "557": [
+        "velocity_discontinuity"
+      ],
+      "558": [
+        "velocity_discontinuity"
+      ],
+      "560": [
+        "velocity_discontinuity"
+      ],
+      "561": [
+        "velocity_discontinuity"
+      ],
+      "563": [
+        "velocity_discontinuity"
+      ],
+      "564": [
+        "velocity_discontinuity"
+      ],
+      "565": [
+        "velocity_discontinuity"
+      ],
+      "566": [
+        "velocity_discontinuity"
+      ],
+      "567": [
+        "velocity_discontinuity"
+      ],
+      "568": [
+        "velocity_discontinuity"
+      ],
+      "569": [
+        "velocity_discontinuity"
+      ],
+      "570": [
+        "velocity_discontinuity"
+      ],
+      "571": [
+        "velocity_discontinuity"
+      ],
+      "572": [
+        "velocity_discontinuity"
+      ],
+      "573": [
+        "velocity_discontinuity"
+      ],
+      "575": [
+        "velocity_discontinuity"
+      ],
+      "576": [
+        "velocity_discontinuity"
+      ],
+      "577": [
+        "velocity_discontinuity"
+      ],
+      "578": [
+        "velocity_discontinuity"
+      ],
+      "579": [
+        "velocity_discontinuity"
+      ],
+      "580": [
+        "velocity_discontinuity"
+      ],
+      "581": [
+        "velocity_discontinuity"
+      ],
+      "583": [
+        "velocity_discontinuity"
+      ],
+      "584": [
+        "velocity_discontinuity"
+      ],
+      "585": [
+        "velocity_discontinuity"
+      ],
+      "586": [
+        "velocity_discontinuity"
+      ],
+      "588": [
+        "velocity_discontinuity"
+      ],
+      "589": [
+        "velocity_discontinuity"
+      ],
+      "590": [
+        "velocity_discontinuity"
+      ],
+      "591": [
+        "velocity_discontinuity"
+      ],
+      "592": [
+        "velocity_discontinuity"
+      ],
+      "593": [
+        "velocity_discontinuity"
+      ],
+      "594": [
+        "velocity_discontinuity"
+      ],
+      "595": [
+        "velocity_discontinuity"
+      ],
+      "596": [
+        "velocity_discontinuity"
+      ],
+      "597": [
+        "velocity_discontinuity"
+      ],
+      "599": [
+        "velocity_discontinuity"
+      ],
+      "600": [
+        "velocity_discontinuity"
+      ],
+      "601": [
+        "velocity_discontinuity"
+      ],
+      "602": [
+        "velocity_discontinuity"
+      ],
+      "603": [
+        "velocity_discontinuity"
+      ],
+      "604": [
+        "velocity_discontinuity"
+      ],
+      "605": [
+        "velocity_discontinuity"
+      ],
+      "606": [
+        "velocity_discontinuity"
+      ],
+      "607": [
+        "velocity_discontinuity"
+      ],
+      "608": [
+        "velocity_discontinuity"
+      ],
+      "609": [
+        "velocity_discontinuity"
+      ],
+      "611": [
+        "velocity_discontinuity"
+      ],
+      "612": [
+        "velocity_discontinuity"
+      ],
+      "613": [
+        "velocity_discontinuity"
+      ],
+      "614": [
+        "velocity_discontinuity"
+      ],
+      "615": [
+        "velocity_discontinuity"
+      ],
+      "616": [
+        "velocity_discontinuity"
+      ],
+      "617": [
+        "velocity_discontinuity"
+      ],
+      "619": [
+        "velocity_discontinuity"
+      ],
+      "621": [
+        "velocity_discontinuity"
+      ],
+      "622": [
+        "velocity_discontinuity"
+      ],
+      "623": [
+        "velocity_discontinuity"
+      ],
+      "624": [
+        "velocity_discontinuity"
+      ],
+      "625": [
+        "velocity_discontinuity"
+      ],
+      "626": [
+        "velocity_discontinuity"
+      ],
+      "627": [
+        "velocity_discontinuity"
+      ],
+      "628": [
+        "velocity_discontinuity"
+      ],
+      "630": [
+        "velocity_discontinuity"
+      ],
+      "632": [
+        "velocity_discontinuity"
+      ],
+      "633": [
+        "velocity_discontinuity"
+      ],
+      "634": [
+        "velocity_discontinuity"
+      ],
+      "636": [
+        "velocity_discontinuity"
+      ],
+      "637": [
+        "velocity_discontinuity"
+      ],
+      "639": [
+        "velocity_discontinuity"
+      ],
+      "640": [
+        "velocity_discontinuity"
+      ],
+      "641": [
+        "velocity_discontinuity"
+      ],
+      "642": [
+        "velocity_discontinuity"
+      ],
+      "644": [
+        "velocity_discontinuity"
+      ],
+      "645": [
+        "velocity_discontinuity"
+      ],
+      "647": [
+        "velocity_discontinuity"
+      ],
+      "648": [
+        "velocity_discontinuity"
+      ],
+      "649": [
+        "velocity_discontinuity"
+      ],
+      "650": [
+        "velocity_discontinuity"
+      ],
+      "651": [
+        "velocity_discontinuity"
+      ],
+      "652": [
+        "velocity_discontinuity"
+      ],
+      "654": [
+        "velocity_discontinuity"
+      ],
+      "655": [
+        "velocity_discontinuity"
+      ],
+      "656": [
+        "velocity_discontinuity"
+      ],
+      "657": [
+        "velocity_discontinuity"
+      ],
+      "660": [
+        "velocity_discontinuity"
+      ],
+      "661": [
+        "velocity_discontinuity"
+      ],
+      "662": [
+        "velocity_discontinuity"
+      ],
+      "666": [
+        "velocity_discontinuity"
+      ],
+      "667": [
+        "velocity_discontinuity"
+      ],
+      "668": [
+        "velocity_discontinuity"
+      ],
+      "669": [
+        "velocity_discontinuity"
+      ],
+      "670": [
+        "velocity_discontinuity"
+      ],
+      "671": [
+        "velocity_discontinuity"
+      ],
+      "672": [
+        "velocity_discontinuity"
+      ],
+      "673": [
+        "velocity_discontinuity"
+      ],
+      "674": [
+        "velocity_discontinuity"
+      ],
+      "675": [
+        "velocity_discontinuity"
+      ],
+      "677": [
+        "velocity_discontinuity"
+      ],
+      "678": [
+        "velocity_discontinuity"
+      ],
+      "679": [
+        "velocity_discontinuity"
+      ],
+      "680": [
+        "velocity_discontinuity"
+      ],
+      "681": [
+        "velocity_discontinuity"
+      ],
+      "682": [
+        "velocity_discontinuity"
+      ],
+      "684": [
+        "velocity_discontinuity"
+      ],
+      "685": [
+        "velocity_discontinuity"
+      ],
+      "686": [
+        "velocity_discontinuity"
+      ],
+      "687": [
+        "velocity_discontinuity"
+      ],
+      "688": [
+        "velocity_discontinuity"
+      ],
+      "689": [
+        "velocity_discontinuity"
+      ],
+      "690": [
+        "velocity_discontinuity"
+      ],
+      "691": [
+        "velocity_discontinuity"
+      ],
+      "692": [
+        "velocity_discontinuity"
+      ],
+      "693": [
+        "velocity_discontinuity"
+      ],
+      "694": [
+        "velocity_discontinuity"
+      ],
+      "695": [
+        "velocity_discontinuity"
+      ],
+      "696": [
+        "velocity_discontinuity"
+      ],
+      "698": [
+        "velocity_discontinuity"
+      ],
+      "700": [
+        "velocity_discontinuity"
+      ],
+      "701": [
+        "velocity_discontinuity"
+      ],
+      "702": [
+        "velocity_discontinuity"
+      ],
+      "703": [
+        "velocity_discontinuity"
+      ],
+      "704": [
+        "velocity_discontinuity"
+      ],
+      "705": [
+        "velocity_discontinuity"
+      ],
+      "706": [
+        "velocity_discontinuity"
+      ],
+      "707": [
+        "velocity_discontinuity"
+      ],
+      "710": [
+        "velocity_discontinuity"
+      ],
+      "711": [
+        "velocity_discontinuity"
+      ],
+      "712": [
+        "velocity_discontinuity"
+      ],
+      "713": [
+        "velocity_discontinuity"
+      ],
+      "714": [
+        "velocity_discontinuity"
+      ],
+      "717": [
+        "velocity_discontinuity"
+      ],
+      "718": [
+        "velocity_discontinuity"
+      ],
+      "720": [
+        "velocity_discontinuity"
+      ],
+      "725": [
+        "velocity_discontinuity"
+      ],
+      "727": [
+        "velocity_discontinuity"
+      ],
+      "728": [
+        "velocity_discontinuity"
+      ],
+      "729": [
+        "velocity_discontinuity"
+      ],
+      "730": [
+        "velocity_discontinuity"
+      ],
+      "731": [
+        "velocity_discontinuity"
+      ],
+      "732": [
+        "velocity_discontinuity"
+      ],
+      "733": [
+        "velocity_discontinuity"
+      ],
+      "734": [
+        "velocity_discontinuity"
+      ],
+      "735": [
+        "velocity_discontinuity"
+      ],
+      "736": [
+        "velocity_discontinuity"
+      ],
+      "737": [
+        "velocity_discontinuity"
+      ],
+      "738": [
+        "velocity_discontinuity"
+      ],
+      "739": [
+        "velocity_discontinuity"
+      ],
+      "740": [
+        "velocity_discontinuity"
+      ],
+      "741": [
+        "velocity_discontinuity"
+      ],
+      "742": [
+        "velocity_discontinuity"
+      ],
+      "743": [
+        "velocity_discontinuity"
+      ],
+      "744": [
+        "velocity_discontinuity"
+      ],
+      "745": [
+        "velocity_discontinuity"
+      ],
+      "746": [
+        "velocity_discontinuity"
+      ],
+      "747": [
+        "velocity_discontinuity"
+      ],
+      "749": [
+        "velocity_discontinuity"
+      ],
+      "750": [
+        "velocity_discontinuity"
+      ],
+      "751": [
+        "velocity_discontinuity"
+      ],
+      "752": [
+        "velocity_discontinuity"
+      ],
+      "754": [
+        "velocity_discontinuity"
+      ],
+      "756": [
+        "velocity_discontinuity"
+      ],
+      "757": [
+        "velocity_discontinuity"
+      ],
+      "758": [
+        "velocity_discontinuity"
+      ],
+      "759": [
+        "velocity_discontinuity"
+      ],
+      "760": [
+        "velocity_discontinuity"
+      ],
+      "761": [
+        "velocity_discontinuity"
+      ],
+      "762": [
+        "velocity_discontinuity"
+      ],
+      "763": [
+        "velocity_discontinuity"
+      ],
+      "764": [
+        "velocity_discontinuity"
+      ],
+      "765": [
+        "velocity_discontinuity"
+      ],
+      "766": [
+        "velocity_discontinuity"
+      ],
+      "768": [
+        "velocity_discontinuity"
+      ],
+      "769": [
+        "velocity_discontinuity"
+      ],
+      "771": [
+        "velocity_discontinuity"
+      ],
+      "772": [
+        "velocity_discontinuity"
+      ],
+      "773": [
+        "velocity_discontinuity"
+      ],
+      "774": [
+        "velocity_discontinuity"
+      ],
+      "776": [
+        "velocity_discontinuity"
+      ],
+      "778": [
+        "velocity_discontinuity"
+      ],
+      "779": [
+        "velocity_discontinuity"
+      ],
+      "780": [
+        "velocity_discontinuity"
+      ],
+      "781": [
+        "velocity_discontinuity"
+      ],
+      "782": [
+        "velocity_discontinuity"
+      ],
+      "783": [
+        "velocity_discontinuity"
+      ],
+      "784": [
+        "velocity_discontinuity"
+      ],
+      "785": [
+        "velocity_discontinuity"
+      ],
+      "786": [
+        "velocity_discontinuity"
+      ],
+      "787": [
+        "velocity_discontinuity"
+      ],
+      "788": [
+        "velocity_discontinuity"
+      ],
+      "791": [
+        "velocity_discontinuity"
+      ],
+      "794": [
+        "velocity_discontinuity"
+      ],
+      "795": [
+        "velocity_discontinuity"
+      ],
+      "797": [
+        "velocity_discontinuity"
+      ]
+    },
+    "quality_scores": {
+      "1": 0.389352,
+      "3": 0.392609,
+      "4": 0.390875,
+      "5": 0.389927,
+      "6": 0.391061,
+      "8": 0.391004,
+      "10": 0.39158,
+      "11": 0.391264,
+      "13": 0.390506,
+      "14": 0.391453,
+      "15": 0.391407,
+      "16": 0.388943,
+      "17": 0.390827,
+      "18": 0.391111,
+      "19": 0.391255,
+      "20": 0.390224,
+      "21": 0.391346,
+      "22": 0.391134,
+      "23": 0.388935,
+      "24": 0.390617,
+      "26": 0.3911,
+      "27": 0.391776,
+      "31": 0.391686,
+      "32": 0.390754,
+      "33": 0.391948,
+      "34": 0.392318,
+      "37": 0.391093,
+      "39": 0.390097,
+      "40": 0.389755,
+      "41": 0.392173,
+      "42": 0.390978,
+      "43": 0.391185,
+      "44": 0.39051,
+      "46": 0.390538,
+      "47": 0.392117,
+      "48": 0.391333,
+      "49": 0.392804,
+      "50": 0.391145,
+      "52": 0.39026,
+      "53": 0.390861,
+      "54": 0.391964,
+      "56": 0.390954,
+      "57": 0.390172,
+      "58": 0.391074,
+      "59": 0.390661,
+      "60": 0.389928,
+      "62": 0.390988,
+      "63": 0.389912,
+      "64": 0.391661,
+      "65": 0.390067,
+      "67": 0.391892,
+      "68": 0.390834,
+      "69": 0.391332,
+      "70": 0.390637,
+      "72": 0.391141,
+      "73": 0.392198,
+      "74": 0.389819,
+      "75": 0.391149,
+      "76": 0.390844,
+      "78": 0.390755,
+      "79": 0.390457,
+      "80": 0.39069,
+      "81": 0.39157,
+      "82": 0.388862,
+      "84": 0.391851,
+      "85": 0.391168,
+      "86": 0.390896,
+      "87": 0.389789,
+      "89": 0.390253,
+      "90": 0.39178,
+      "93": 0.390529,
+      "94": 0.391262,
+      "95": 0.39111,
+      "97": 0.391075,
+      "99": 0.392282,
+      "102": 0.390557,
+      "103": 0.391373,
+      "104": 0.390756,
+      "105": 0.391094,
+      "106": 0.39162,
+      "108": 0.390444,
+      "109": 0.391111,
+      "110": 0.391169,
+      "111": 0.39158,
+      "112": 0.390652,
+      "113": 0.389886,
+      "114": 0.391622,
+      "117": 0.392407,
+      "118": 0.391045,
+      "119": 0.391924,
+      "120": 0.390263,
+      "121": 0.390836,
+      "122": 0.392552,
+      "123": 0.390755,
+      "124": 0.390855,
+      "125": 0.391107,
+      "126": 0.390859,
+      "128": 0.389966,
+      "129": 0.389687,
+      "130": 0.391723,
+      "132": 0.391712,
+      "133": 0.390846,
+      "134": 0.39166,
+      "135": 0.39026,
+      "137": 0.390618,
+      "138": 0.389313,
+      "139": 0.391052,
+      "140": 0.390423,
+      "141": 0.390518,
+      "142": 0.39247,
+      "144": 0.390454,
+      "145": 0.390824,
+      "148": 0.391057,
+      "149": 0.391607,
+      "150": 0.392038,
+      "153": 0.391642,
+      "154": 0.390334,
+      "155": 0.389305,
+      "156": 0.393151,
+      "157": 0.391397,
+      "158": 0.391606,
+      "159": 0.392206,
+      "160": 0.388134,
+      "161": 0.391039,
+      "162": 0.392067,
+      "163": 0.390637,
+      "165": 0.391087,
+      "166": 0.389223,
+      "167": 0.39052,
+      "168": 0.390432,
+      "169": 0.391104,
+      "170": 0.390623,
+      "172": 0.390859,
+      "173": 0.391459,
+      "174": 0.390434,
+      "175": 0.391108,
+      "177": 0.392592,
+      "178": 0.392288,
+      "181": 0.392512,
+      "182": 0.390903,
+      "183": 0.391222,
+      "184": 0.390897,
+      "185": 0.391807,
+      "186": 0.390089,
+      "187": 0.387958,
+      "188": 0.392803,
+      "189": 0.390937,
+      "190": 0.390035,
+      "191": 0.392807,
+      "192": 0.390085,
+      "193": 0.391274,
+      "194": 0.39176,
+      "195": 0.389272,
+      "196": 0.389987,
+      "197": 0.390518,
+      "198": 0.39149,
+      "199": 0.390989,
+      "200": 0.389911,
+      "201": 0.390689,
+      "202": 0.391729,
+      "203": 0.392122,
+      "205": 0.391247,
+      "206": 0.392335,
+      "207": 0.389082,
+      "208": 0.390898,
+      "209": 0.392064,
+      "210": 0.390697,
+      "211": 0.391357,
+      "212": 0.39113,
+      "213": 0.391196,
+      "214": 0.390857,
+      "215": 0.388964,
+      "216": 0.390659,
+      "220": 0.390805,
+      "221": 0.391063,
+      "223": 0.390143,
+      "224": 0.39091,
+      "225": 0.39141,
+      "226": 0.391032,
+      "227": 0.390657,
+      "228": 0.389705,
+      "229": 0.391918,
+      "231": 0.391368,
+      "233": 0.39051,
+      "234": 0.392174,
+      "235": 0.390554,
+      "239": 0.391036,
+      "240": 0.392115,
+      "241": 0.3894,
+      "242": 0.391504,
+      "244": 0.391057,
+      "245": 0.390401,
+      "246": 0.390445,
+      "247": 0.39148,
+      "249": 0.391019,
+      "251": 0.391441,
+      "252": 0.39158,
+      "253": 0.391899,
+      "254": 0.391553,
+      "255": 0.391842,
+      "256": 0.390375,
+      "257": 0.390543,
+      "258": 0.391774,
+      "259": 0.392235,
+      "260": 0.389307,
+      "261": 0.390806,
+      "262": 0.391169,
+      "263": 0.390309,
+      "264": 0.390561,
+      "265": 0.390301,
+      "266": 0.39101,
+      "267": 0.390219,
+      "268": 0.390363,
+      "269": 0.390175,
+      "270": 0.390246,
+      "272": 0.391371,
+      "273": 0.391971,
+      "274": 0.390028,
+      "275": 0.391578,
+      "276": 0.391615,
+      "277": 0.391524,
+      "278": 0.391224,
+      "279": 0.391559,
+      "280": 0.389741,
+      "281": 0.390691,
+      "282": 0.392385,
+      "283": 0.389921,
+      "284": 0.39132,
+      "285": 0.390231,
+      "286": 0.391469,
+      "287": 0.390479,
+      "288": 0.39015,
+      "289": 0.391067,
+      "290": 0.39092,
+      "291": 0.391838,
+      "292": 0.39122,
+      "293": 0.391606,
+      "294": 0.391554,
+      "295": 0.390144,
+      "296": 0.391501,
+      "300": 0.391649,
+      "301": 0.390382,
+      "303": 0.391103,
+      "305": 0.392292,
+      "306": 0.38986,
+      "308": 0.390485,
+      "311": 0.391626,
+      "313": 0.390769,
+      "314": 0.390754,
+      "316": 0.389948,
+      "317": 0.390456,
+      "318": 0.390846,
+      "319": 0.391095,
+      "320": 0.390492,
+      "321": 0.390124,
+      "322": 0.390957,
+      "323": 0.391074,
+      "324": 0.390665,
+      "325": 0.391012,
+      "326": 0.391028,
+      "327": 0.390478,
+      "329": 0.392174,
+      "331": 0.39167,
+      "332": 0.392224,
+      "333": 0.389625,
+      "334": 0.391084,
+      "335": 0.390327,
+      "337": 0.389245,
+      "338": 0.391321,
+      "339": 0.389692,
+      "341": 0.392628,
+      "342": 0.389963,
+      "343": 0.39219,
+      "346": 0.391192,
+      "347": 0.392172,
+      "348": 0.390966,
+      "349": 0.389122,
+      "352": 0.391586,
+      "353": 0.391811,
+      "355": 0.391036,
+      "357": 0.391531,
+      "358": 0.391773,
+      "359": 0.392107,
+      "360": 0.390923,
+      "361": 0.390982,
+      "362": 0.391526,
+      "363": 0.390956,
+      "364": 0.390673,
+      "365": 0.3905,
+      "366": 0.389665,
+      "367": 0.391958,
+      "369": 0.39039,
+      "370": 0.390621,
+      "371": 0.391358,
+      "372": 0.391419,
+      "373": 0.391517,
+      "374": 0.391165,
+      "375": 0.389638,
+      "376": 0.392327,
+      "377": 0.391116,
+      "378": 0.390657,
+      "379": 0.389959,
+      "381": 0.39124,
+      "382": 0.390585,
+      "383": 0.39286,
+      "384": 0.389526,
+      "385": 0.391156,
+      "386": 0.391205,
+      "387": 0.391143,
+      "388": 0.391542,
+      "389": 0.390895,
+      "391": 0.391212,
+      "392": 0.391179,
+      "394": 0.391986,
+      "395": 0.392056,
+      "396": 0.390266,
+      "397": 0.390557,
+      "399": 0.391224,
+      "401": 0.392141,
+      "402": 0.389781,
+      "403": 0.390136,
+      "404": 0.391479,
+      "405": 0.390825,
+      "407": 0.391826,
+      "408": 0.391151,
+      "409": 0.391227,
+      "410": 0.391547,
+      "411": 0.390364,
+      "412": 0.39278,
+      "413": 0.391952,
+      "414": 0.391612,
+      "415": 0.391328,
+      "416": 0.392237,
+      "417": 0.391386,
+      "418": 0.3918,
+      "420": 0.391177,
+      "421": 0.390904,
+      "422": 0.391168,
+      "426": 0.390988,
+      "427": 0.39087,
+      "428": 0.390293,
+      "430": 0.390532,
+      "432": 0.389955,
+      "433": 0.391222,
+      "435": 0.392248,
+      "436": 0.39108,
+      "437": 0.392477,
+      "440": 0.390871,
+      "441": 0.391452,
+      "442": 0.39103,
+      "443": 0.388149,
+      "444": 0.391954,
+      "446": 0.390272,
+      "448": 0.390639,
+      "449": 0.391914,
+      "450": 0.391042,
+      "451": 0.391711,
+      "452": 0.390336,
+      "453": 0.391222,
+      "454": 0.391472,
+      "455": 0.391286,
+      "456": 0.390707,
+      "457": 0.391725,
+      "458": 0.391835,
+      "460": 0.391133,
+      "461": 0.390881,
+      "462": 0.391319,
+      "464": 0.391332,
+      "465": 0.390085,
+      "466": 0.392569,
+      "467": 0.391265,
+      "468": 0.391217,
+      "469": 0.390461,
+      "470": 0.391254,
+      "471": 0.391198,
+      "472": 0.391581,
+      "473": 0.391172,
+      "475": 0.391741,
+      "476": 0.390875,
+      "477": 0.39002,
+      "478": 0.39269,
+      "480": 0.391336,
+      "481": 0.391335,
+      "482": 0.391375,
+      "483": 0.391313,
+      "484": 0.390986,
+      "485": 0.392271,
+      "486": 0.390546,
+      "487": 0.390527,
+      "489": 0.390877,
+      "490": 0.390684,
+      "491": 0.391108,
+      "492": 0.392333,
+      "493": 0.392409,
+      "494": 0.389994,
+      "495": 0.390026,
+      "497": 0.392374,
+      "498": 0.391863,
+      "499": 0.392498,
+      "500": 0.390734,
+      "502": 0.390536,
+      "503": 0.391667,
+      "504": 0.391738,
+      "505": 0.391616,
+      "506": 0.389013,
+      "507": 0.392056,
+      "508": 0.39119,
+      "510": 0.390515,
+      "511": 0.391424,
+      "515": 0.389676,
+      "516": 0.389556,
+      "517": 0.392212,
+      "518": 0.391728,
+      "519": 0.390794,
+      "520": 0.391065,
+      "521": 0.390855,
+      "523": 0.391263,
+      "524": 0.391684,
+      "525": 0.391397,
+      "526": 0.390726,
+      "527": 0.389755,
+      "528": 0.388987,
+      "529": 0.389371,
+      "530": 0.391325,
+      "531": 0.39167,
+      "532": 0.39169,
+      "533": 0.390299,
+      "534": 0.390883,
+      "535": 0.390347,
+      "536": 0.39003,
+      "537": 0.39039,
+      "539": 0.391431,
+      "540": 0.392294,
+      "541": 0.391425,
+      "542": 0.390833,
+      "543": 0.390281,
+      "545": 0.390018,
+      "546": 0.391618,
+      "547": 0.391644,
+      "548": 0.390585,
+      "549": 0.392351,
+      "551": 0.391262,
+      "553": 0.391233,
+      "554": 0.389858,
+      "555": 0.391351,
+      "556": 0.39019,
+      "557": 0.391271,
+      "558": 0.39054,
+      "560": 0.391594,
+      "561": 0.392126,
+      "563": 0.389011,
+      "564": 0.391179,
+      "565": 0.391033,
+      "566": 0.390488,
+      "567": 0.391111,
+      "568": 0.390902,
+      "569": 0.390944,
+      "570": 0.389061,
+      "571": 0.391088,
+      "572": 0.390436,
+      "573": 0.391045,
+      "575": 0.390172,
+      "576": 0.39199,
+      "577": 0.390619,
+      "578": 0.390792,
+      "579": 0.391182,
+      "580": 0.390671,
+      "581": 0.390798,
+      "583": 0.390876,
+      "584": 0.390444,
+      "585": 0.391148,
+      "586": 0.389616,
+      "588": 0.392052,
+      "589": 0.391501,
+      "590": 0.391191,
+      "591": 0.391588,
+      "592": 0.390809,
+      "593": 0.391119,
+      "594": 0.391263,
+      "595": 0.39156,
+      "596": 0.391031,
+      "597": 0.390286,
+      "599": 0.390976,
+      "600": 0.390755,
+      "601": 0.390651,
+      "602": 0.391366,
+      "603": 0.390914,
+      "604": 0.391031,
+      "605": 0.390678,
+      "606": 0.39024,
+      "607": 0.390919,
+      "608": 0.3922,
+      "609": 0.389538,
+      "611": 0.389658,
+      "612": 0.388424,
+      "613": 0.389401,
+      "614": 0.391494,
+      "615": 0.390084,
+      "616": 0.390655,
+      "617": 0.390931,
+      "619": 0.391858,
+      "621": 0.390644,
+      "622": 0.391203,
+      "623": 0.390624,
+      "624": 0.389659,
+      "625": 0.3903,
+      "626": 0.392023,
+      "627": 0.391727,
+      "628": 0.391897,
+      "630": 0.391613,
+      "632": 0.391027,
+      "633": 0.390879,
+      "634": 0.390558,
+      "636": 0.391255,
+      "637": 0.390637,
+      "639": 0.391248,
+      "640": 0.392268,
+      "641": 0.391624,
+      "642": 0.391733,
+      "644": 0.3892,
+      "645": 0.39162,
+      "647": 0.391586,
+      "648": 0.390539,
+      "649": 0.390708,
+      "650": 0.391151,
+      "651": 0.390568,
+      "652": 0.390849,
+      "654": 0.39125,
+      "655": 0.390529,
+      "656": 0.391036,
+      "657": 0.390559,
+      "660": 0.39117,
+      "661": 0.390795,
+      "662": 0.390792,
+      "666": 0.39089,
+      "667": 0.390538,
+      "668": 0.392386,
+      "669": 0.390988,
+      "670": 0.389788,
+      "671": 0.390907,
+      "672": 0.390784,
+      "673": 0.390969,
+      "674": 0.391934,
+      "675": 0.392577,
+      "677": 0.392726,
+      "678": 0.391487,
+      "679": 0.390602,
+      "680": 0.392147,
+      "681": 0.389585,
+      "682": 0.391466,
+      "684": 0.389276,
+      "685": 0.390282,
+      "686": 0.390497,
+      "687": 0.390648,
+      "688": 0.391431,
+      "689": 0.39166,
+      "690": 0.389285,
+      "691": 0.39052,
+      "692": 0.391268,
+      "693": 0.389394,
+      "694": 0.391544,
+      "695": 0.391333,
+      "696": 0.392009,
+      "698": 0.391572,
+      "700": 0.390053,
+      "701": 0.389965,
+      "702": 0.391879,
+      "703": 0.389525,
+      "704": 0.391034,
+      "705": 0.391705,
+      "706": 0.391365,
+      "707": 0.391028,
+      "710": 0.390836,
+      "711": 0.389946,
+      "712": 0.391671,
+      "713": 0.390942,
+      "714": 0.391436,
+      "717": 0.393091,
+      "718": 0.390459,
+      "720": 0.391248,
+      "725": 0.389671,
+      "727": 0.390125,
+      "728": 0.39199,
+      "729": 0.390589,
+      "730": 0.392642,
+      "731": 0.39054,
+      "732": 0.389731,
+      "733": 0.392173,
+      "734": 0.390064,
+      "735": 0.391633,
+      "736": 0.390015,
+      "737": 0.39201,
+      "738": 0.391745,
+      "739": 0.390373,
+      "740": 0.391344,
+      "741": 0.391159,
+      "742": 0.391698,
+      "743": 0.390587,
+      "744": 0.391432,
+      "745": 0.39075,
+      "746": 0.389751,
+      "747": 0.390663,
+      "749": 0.391113,
+      "750": 0.391339,
+      "751": 0.391047,
+      "752": 0.390748,
+      "754": 0.390223,
+      "756": 0.391687,
+      "757": 0.390262,
+      "758": 0.391294,
+      "759": 0.391433,
+      "760": 0.390752,
+      "761": 0.390366,
+      "762": 0.391728,
+      "763": 0.392335,
+      "764": 0.3913,
+      "765": 0.391684,
+      "766": 0.393143,
+      "768": 0.38989,
+      "769": 0.392373,
+      "771": 0.390386,
+      "772": 0.390928,
+      "773": 0.390374,
+      "774": 0.391295,
+      "776": 0.390564,
+      "778": 0.392754,
+      "779": 0.391052,
+      "780": 0.390808,
+      "781": 0.391353,
+      "782": 0.390523,
+      "783": 0.392666,
+      "784": 0.39185,
+      "785": 0.392099,
+      "786": 0.391162,
+      "787": 0.392009,
+      "788": 0.390815,
+      "791": 0.390202,
+      "794": 0.389647,
+      "795": 0.390155,
+      "797": 0.39048
+    },
+    "n_original": 640,
+    "n_kept": 0,
+    "keep_fraction_actual": 0.0,
+    "method": "quality_filter + greedy_max_coverage"
+  },
+  "episode_hashes": []
+}

@@ -1,0 +1,98 @@
+{
+  "dataset": "lerobot/droid_100",
+  "calibra_quality_score": 77.0,
+  "n_train_episodes": 80,
+  "n_test_episodes": 20,
+  "n_rare_episodes": 12,
+  "rare_fraction": 0.15,
+  "full_baseline": {
+    "mse": 0.09136398136615753,
+    "train_s": 29.875714499969035
+  },
+  "sweep": [
+    {
+      "keep_fraction": 0.05,
+      "n_episodes": 4,
+      "calibra_mse": 0.10599782317876816,
+      "calibra_mse_relative": 1.1602,
+      "calibra_train_s": 0.63,
+      "calibra_n_episodes": 4,
+      "calibra_rare_coverage": 0.25,
+      "random_mse": 0.10100769400596618,
+      "random_mse_std": 0.006321,
+      "random_mse_relative": 1.1056,
+      "random_train_s": 1.4,
+      "random_rare_coverage": 0.0667
+    },
+    {
+      "keep_fraction": 0.1,
+      "n_episodes": 8,
+      "calibra_mse": 0.10394776612520218,
+      "calibra_mse_relative": 1.1377,
+      "calibra_train_s": 3.15,
+      "calibra_n_episodes": 8,
+      "calibra_rare_coverage": 0.4167,
+      "random_mse": 0.1008019968867302,
+      "random_mse_std": 0.004079,
+      "random_mse_relative": 1.1033,
+      "random_train_s": 2.54,
+      "random_rare_coverage": 0.1333
+    },
+    {
+      "keep_fraction": 0.25,
+      "n_episodes": 20,
+      "calibra_mse": 0.09374307841062546,
+      "calibra_mse_relative": 1.026,
+      "calibra_train_s": 6.19,
+      "calibra_n_episodes": 20,
+      "calibra_rare_coverage": 0.8333,
+      "random_mse": 0.10366718918085098,
+      "random_mse_std": 0.010737,
+      "random_mse_relative": 1.1347,
+      "random_train_s": 6.74,
+      "random_rare_coverage": 0.2833
+    },
+    {
+      "keep_fraction": 0.5,
+      "n_episodes": 40,
+      "calibra_mse": 0.09671040624380112,
+      "calibra_mse_relative": 1.0585,
+      "calibra_train_s": 14.12,
+      "calibra_n_episodes": 40,
+      "calibra_rare_coverage": 0.8333,
+      "random_mse": 0.09883100837469101,
+      "random_mse_std": 0.004022,
+      "random_mse_relative": 1.0817,
+      "random_train_s": 13.71,
+      "random_rare_coverage": 0.4833
+    },
+    {
+      "keep_fraction": 0.75,
+      "n_episodes": 60,
+      "calibra_mse": 0.08858952671289444,
+      "calibra_mse_relative": 0.9696,
+      "calibra_train_s": 20.95,
+      "calibra_n_episodes": 60,
+      "calibra_rare_coverage": 0.8333,
+      "random_mse": 0.09462272226810456,
+      "random_mse_std": 0.002138,
+      "random_mse_relative": 1.0357,
+      "random_train_s": 21.6,
+      "random_rare_coverage": 0.7167
+    },
+    {
+      "keep_fraction": 1.0,
+      "n_episodes": 80,
+      "calibra_mse": 0.0896080881357193,
+      "calibra_mse_relative": 0.9808,
+      "calibra_train_s": 25.16,
+      "calibra_n_episodes": 74,
+      "calibra_rare_coverage": 0.8333,
+      "random_mse": 0.09249843060970306,
+      "random_mse_std": 0.002754,
+      "random_mse_relative": 1.0124,
+      "random_train_s": 27.13,
+      "random_rare_coverage": 1.0
+    }
+  ]
+}

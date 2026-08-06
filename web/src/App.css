@@ -377,6 +377,53 @@ footer a:hover {
   transform: translateX(-50%);
 }
 
+.stats-bar {
+  background: var(--ink);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.stat-item {
+  padding: 52px 42px;
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.stat-item:last-child {
+  border-right: 0;
+}
+
+.stat-number {
+  display: block;
+  font-size: clamp(52px, 6.5vw, 80px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.065em;
+  color: var(--green-bright);
+}
+
+.stat-label {
+  display: block;
+  margin-top: 10px;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.stat-note {
+  display: block;
+  margin-top: 6px;
+  color: #5e6e63;
+  font-family: var(--mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
 .section {
   padding: 112px 0;
 }
@@ -1072,6 +1119,20 @@ footer {
   .research-card {
     grid-template-columns: 1fr;
     gap: 55px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-item {
+    padding: 34px 32px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .stat-item:last-child {
+    border-bottom: 0;
   }
 
   .hero-grid {

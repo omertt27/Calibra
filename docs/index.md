@@ -1,12 +1,12 @@
 # Calibra
 
 <p align="center">
-  <img src="logo.svg" alt="Calibra — dataset observability for robotics" width="480"/>
+  <img src="logo.svg" alt="Calibra — train on less robot data, spend less compute" width="480"/>
 </p>
 
-**Dataset observability and coreset selection for robotics imitation learning.**
+**Stop wasting GPU hours on robot data that doesn't improve your policy.**
 
-Calibra tells you what is wrong with your robot demonstrations — and removes the redundant ones — before you waste GPU time training on bad data.
+Calibra audits dataset integrity, measures quality and coverage, and builds quality-aware coresets — so you train on less data, spend less compute, and know exactly why before training begins.
 
 ```bash
 pip install calibra-robotics
@@ -49,7 +49,9 @@ Robot learning labs collect thousands of demonstration episodes. Naively trainin
 - ❌ **Wastes compute on redundancy** — in a 10,000-episode dataset, 60–80% of episodes are near-duplicates. GPU cost scales with volume, not uniqueness.
 - ❌ **Produces undiagnosable failures** — when a policy stalls or flails, you have no idea whether the cause is the architecture, the training recipe, or the data itself.
 
-Calibra solves the data side by running deterministic mathematical estimators to flag anomalies and prune redundant data points before model training.
+On LeRobot PushT, Calibra reduced training data by **75%** — retaining 41 of 165 episodes — while staying within 0.5% of full-dataset prediction error and preserving 67% more rare behaviors than random selection.
+
+Calibra achieves this by running deterministic mathematical estimators to flag anomalies and prune redundant episodes before model training ever begins.
 
 ---
 

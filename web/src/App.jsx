@@ -23,6 +23,12 @@ const LINKS = {
 
 const INSTALL_COMMAND = 'pip install calibra-robotics'
 
+const STATS = [
+  { number: '75%', label: 'less training data', note: 'at matched policy performance' },
+  { number: '0.5%', label: 'difference from full-data performance', note: 'LeRobot PushT · 25% retention · 5 seeds' },
+  { number: '67%', label: 'better rare-behavior preservation', note: 'vs. random coreset selection' },
+]
+
 const WORKFLOW = [
   { number: '01', name: 'Integrity', question: 'Can I trust this dataset?', command: 'calibra integrity' },
   { number: '02', name: 'Quality', question: 'Is it clean?', command: 'calibra audit' },
@@ -105,6 +111,22 @@ function TerminalReport() {
   )
 }
 
+function StatsBar() {
+  return (
+    <div className="stats-bar">
+      <div className="container stats-grid">
+        {STATS.map((stat) => (
+          <div className="stat-item" key={stat.number}>
+            <strong className="stat-number">{stat.number}</strong>
+            <span className="stat-label">{stat.label}</span>
+            <span className="stat-note">{stat.note}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function CoverageGraphic() {
   const clusters = [
     ['12%', '18%'], ['20%', '26%'], ['15%', '33%'], ['25%', '15%'],
@@ -149,8 +171,8 @@ function App() {
         <div className="container nav-inner">
           <Logo />
           <div className="nav-links">
+            <a href="#benchmark">Benchmark</a>
             <a href="#workflow">How it works</a>
-            <a href="#research">Research</a>
             <a href={LINKS.docs}>Docs</a>
           </div>
           <a className="nav-github" href={LINKS.github} target="_blank" rel="noreferrer">
@@ -164,11 +186,12 @@ function App() {
           <div className="hero-glow" />
           <div className="container hero-grid">
             <div className="hero-copy">
-              <div className="eyebrow"><span /> Dataset observability for robot learning</div>
-              <h1>Know what’s wrong with your robot data <em>before training starts.</em></h1>
+              <div className="eyebrow"><span /> Open-source · CI-ready · No account required</div>
+              <h1>Stop wasting GPU hours <em>on robot data.</em></h1>
               <p>
-                A source-available CLI for robotics teams using LeRobot, Isaac Lab, and robomimic.
-                Detect dataset problems, understand coverage, and optimize training data before spending GPU time.
+                Calibra audits dataset integrity, measures quality and coverage, and builds
+                quality-aware coresets — so you train on less data, spend less compute, and
+                know exactly why before training begins.
               </p>
               <div className="hero-actions">
                 <a className="button button-primary" href={LINKS.demo} target="_blank" rel="noreferrer">
@@ -182,10 +205,61 @@ function App() {
             </div>
             <TerminalReport />
           </div>
-          <a className="scroll-cue" href="#workflow">
-            See how it works <ArrowDown size={15} />
+          <a className="scroll-cue" href="#benchmark">
+            See benchmark results <ArrowDown size={15} />
           </a>
         </header>
+
+        <StatsBar />
+
+        <section className="research section" id="benchmark">
+          <div className="container">
+            <div className="research-card">
+              <div className="research-copy">
+                <div className="research-mark"><Sparkles size={22} /></div>
+                <div className="eyebrow"><span /> Benchmark · LeRobot PushT</div>
+                <h2><strong>75% smaller</strong> dataset. Prediction error within 0.5% of full-data training.</h2>
+                <p>
+                  Calibra retained 41 of 165 training episodes while preserving more
+                  action-space tail coverage than a random coreset — and matching the
+                  full-dataset baseline across 5 seeds.
+                </p>
+                <div className="benchmark-meta">
+                  <span>5 seeds</span><span>120 epochs</span><span>BC-MLP</span><span>25% retained</span>
+                </div>
+                <a className="text-link" href={LINKS.benchmarks} target="_blank" rel="noreferrer">
+                  Full benchmarks and limitations <ArrowRight size={16} />
+                </a>
+              </div>
+              <div className="benchmark-card">
+                <div className="benchmark-title">
+                  <span>LeRobot PushT · test MSE</span>
+                  <small>Lower is better</small>
+                </div>
+                <div className="benchmark-row">
+                  <span>Full dataset <small>165 episodes</small></span>
+                  <div><i style={{ width: '100%' }} /></div>
+                  <strong>420.93</strong>
+                </div>
+                <div className="benchmark-row highlight">
+                  <span>Calibra <small>41 episodes</small></span>
+                  <div><i style={{ width: '99.6%' }} /></div>
+                  <strong>422.77</strong>
+                </div>
+                <div className="benchmark-row">
+                  <span>Random <small>41 episodes</small></span>
+                  <div><i style={{ width: '97.9%' }} /></div>
+                  <strong>429.61</strong>
+                </div>
+                <div className="tail-coverage">
+                  <div><span>Calibra tail coverage</span><strong>56.0%</strong></div>
+                  <div><span>Random tail coverage</span><strong>33.6%</strong></div>
+                </div>
+                <p>Source: 5-seed retention sweep. Full-data MSE is the unfiltered 165-episode baseline.</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section className="workflow section" id="workflow">
           <div className="container">
@@ -280,60 +354,12 @@ function App() {
           </div>
         </section>
 
-        <section className="research section" id="research">
-          <div className="container">
-            <div className="research-card">
-              <div className="research-copy">
-                <div className="research-mark"><Sparkles size={22} /></div>
-                <div className="eyebrow"><span /> Research</div>
-                <h2><strong>75% smaller</strong> with prediction error within 0.5% of full-data training.</h2>
-                <p>
-                  On LeRobot PushT, Calibra retained 41 of 165 training episodes while preserving
-                  more action-space tail coverage than a random coreset.
-                </p>
-                <div className="benchmark-meta">
-                  <span>5 seeds</span><span>120 epochs</span><span>BC-MLP</span><span>25% retained</span>
-                </div>
-                <a className="text-link" href={LINKS.benchmarks} target="_blank" rel="noreferrer">
-                  Full benchmarks and limitations <ArrowRight size={16} />
-                </a>
-              </div>
-              <div className="benchmark-card">
-                <div className="benchmark-title">
-                  <span>LeRobot PushT · test MSE</span>
-                  <small>Lower is better</small>
-                </div>
-                <div className="benchmark-row">
-                  <span>Full dataset <small>165 episodes</small></span>
-                  <div><i style={{ width: '100%' }} /></div>
-                  <strong>420.93</strong>
-                </div>
-                <div className="benchmark-row highlight">
-                  <span>Calibra <small>41 episodes</small></span>
-                  <div><i style={{ width: '99.6%' }} /></div>
-                  <strong>422.77</strong>
-                </div>
-                <div className="benchmark-row">
-                  <span>Random <small>41 episodes</small></span>
-                  <div><i style={{ width: '97.9%' }} /></div>
-                  <strong>429.61</strong>
-                </div>
-                <div className="tail-coverage">
-                  <div><span>Calibra tail coverage</span><strong>56.0%</strong></div>
-                  <div><span>Random tail coverage</span><strong>33.6%</strong></div>
-                </div>
-                <p>Source: 5-seed retention sweep. Full-data MSE is the unfiltered 165-episode baseline.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
         <section className="final-cta section">
           <div className="container">
             <div className="cta-panel">
               <span className="cta-kicker">Before your next training run</span>
               <h2>Check the data first.</h2>
-              <p>Install Calibra locally or inspect a public LeRobot dataset in the browser.</p>
+              <p>Install Calibra locally or inspect a public LeRobot dataset in the browser — free, no account needed.</p>
               <CopyCommand large />
               <a className="button button-primary" href={LINKS.demo} target="_blank" rel="noreferrer">
                 Try the Hugging Face demo <ExternalLink size={16} />
@@ -346,7 +372,7 @@ function App() {
       <footer>
         <div className="container footer-inner">
           <Logo />
-          <p>Dataset observability for robot learning.</p>
+          <p>Train on less data. Spend less compute. Ship better policies.</p>
           <div>
             <a href={LINKS.github}>GitHub</a>
             <a href={LINKS.docs}>Docs</a>

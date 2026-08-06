@@ -1,0 +1,98 @@
+{
+  "dataset": "lerobot/xarm_lift_medium",
+  "calibra_quality_score": 82.7,
+  "n_train_episodes": 640,
+  "n_test_episodes": 160,
+  "n_rare_episodes": 96,
+  "rare_fraction": 0.15,
+  "full_baseline": {
+    "mse": 0.36904144287109375,
+    "train_s": 23.213198400102556
+  },
+  "sweep": [
+    {
+      "keep_fraction": 0.05,
+      "n_episodes": 32,
+      "calibra_mse": 0.3976743221282959,
+      "calibra_mse_relative": 1.0776,
+      "calibra_train_s": 1.23,
+      "calibra_n_episodes": 32,
+      "calibra_rare_coverage": 0.0417,
+      "random_mse": 0.3929476499557495,
+      "random_mse_std": 0.00388,
+      "random_mse_relative": 1.0648,
+      "random_train_s": 1.19,
+      "random_rare_coverage": 0.0312
+    },
+    {
+      "keep_fraction": 0.1,
+      "n_episodes": 64,
+      "calibra_mse": 0.3958132565021515,
+      "calibra_mse_relative": 1.0725,
+      "calibra_train_s": 1.99,
+      "calibra_n_episodes": 64,
+      "calibra_rare_coverage": 0.0938,
+      "random_mse": 0.3851171314716339,
+      "random_mse_std": 0.000724,
+      "random_mse_relative": 1.0436,
+      "random_train_s": 2.06,
+      "random_rare_coverage": 0.0958
+    },
+    {
+      "keep_fraction": 0.25,
+      "n_episodes": 160,
+      "calibra_mse": 0.38078558444976807,
+      "calibra_mse_relative": 1.0318,
+      "calibra_train_s": 4.65,
+      "calibra_n_episodes": 160,
+      "calibra_rare_coverage": 0.25,
+      "random_mse": 0.37636107206344604,
+      "random_mse_std": 0.000839,
+      "random_mse_relative": 1.0198,
+      "random_train_s": 4.54,
+      "random_rare_coverage": 0.2458
+    },
+    {
+      "keep_fraction": 0.5,
+      "n_episodes": 320,
+      "calibra_mse": 0.3752231001853943,
+      "calibra_mse_relative": 1.0168,
+      "calibra_train_s": 9.02,
+      "calibra_n_episodes": 320,
+      "calibra_rare_coverage": 0.5729,
+      "random_mse": 0.3723021924495697,
+      "random_mse_std": 0.000665,
+      "random_mse_relative": 1.0088,
+      "random_train_s": 9.17,
+      "random_rare_coverage": 0.5021
+    },
+    {
+      "keep_fraction": 0.75,
+      "n_episodes": 480,
+      "calibra_mse": 0.3712013363838196,
+      "calibra_mse_relative": 1.0059,
+      "calibra_train_s": 13.34,
+      "calibra_n_episodes": 480,
+      "calibra_rare_coverage": 0.75,
+      "random_mse": 0.37051730751991274,
+      "random_mse_std": 0.000211,
+      "random_mse_relative": 1.004,
+      "random_train_s": 13.24,
+      "random_rare_coverage": 0.75
+    },
+    {
+      "keep_fraction": 1.0,
+      "n_episodes": 640,
+      "calibra_mse": 0.36887070536613464,
+      "calibra_mse_relative": 0.9995,
+      "calibra_train_s": 17.76,
+      "calibra_n_episodes": 640,
+      "calibra_rare_coverage": 1.0,
+      "random_mse": 0.3691537380218506,
+      "random_mse_std": 0.000147,
+      "random_mse_relative": 1.0003,
+      "random_train_s": 17.58,
+      "random_rare_coverage": 1.0
+    }
+  ]
+}

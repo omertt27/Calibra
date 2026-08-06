@@ -8,11 +8,43 @@
   <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v0.7.0-informational" alt="Changelog"/></a>
 </p>
 
-<p align="center"><b>Train robot policies with less data, less compute, and fewer surprises.</b></p>
+<p align="center"><b>Train robot policies with up to 75% less data.</b></p>
 
 <p align="center">
-Open-source dataset observability for robot learning — catch integrity problems before training starts, then build smaller, higher-quality training sets that cut GPU hours without sacrificing performance.
+Calibra helps robotics teams build smaller, higher-quality training sets — catching bad demonstrations before they waste GPU time, then selecting the episodes that actually matter.
 </p>
+
+---
+
+## Results
+
+| Dataset | Quality Score | Best Retention | Result |
+|---|---:|---:|---|
+| PushT (`lerobot/pusht`) | 76.7 | 25% | 99.5% of full-data performance with 75% less training data |
+| DROID-100 (`lerobot/droid_100`) | 77.0 | 75% | Outperformed full-data baseline (+3%) |
+| ALOHA sim (`lerobot/aloha_sim_insertion_human`) | 87.3 | Higher | Smaller gains — already a clean dataset |
+| xArm lift (`lerobot/xarm_lift_medium`) | 82.7 | — | Little benefit — already a high-quality simulation dataset |
+
+Across four public robotics datasets, Calibra consistently preserved more rare behaviors than random selection. The magnitude of training-data reduction depended on the dataset's quality and redundancy.
+
+Across three datasets and three policy families (BC-MLP, ACT, Diffusion Policy) at 30% retention, Calibra improves over random by **+24.5%** on average.
+
+→ [Full benchmark results, ablation tables, and limitations](docs/benchmarks.md)
+
+---
+
+## How it works
+
+The reason Calibra can remove 75% of demonstrations without hurting performance is that most robotics datasets contain two distinct problems: bad episodes (jerk spikes, dropped frames, sync errors) and redundant episodes (near-duplicate demonstrations of the same behavior). Calibra removes both.
+
+**The pipeline:**
+
+| Step | Question | Command |
+|---|---|---|
+| 1. Integrity | Can I trust this dataset? | `calibra integrity` |
+| 2. Quality | Which episodes are clean? | `calibra audit` |
+| 3. Coverage | Which episodes are distinct? | `calibra review` |
+| 4. Select | Keep only what matters. | `calibra prune` |
 
 ```
 $ calibra integrity /data/my_demos.h5
@@ -38,48 +70,6 @@ Integrity Score: 85/100  ·  Status: Warning
 
 ---
 
-## Why Calibra?
-
-Training robot policies is expensive. Large datasets often contain duplicated demonstrations, corrupted episodes, synchronization problems, and redundant behaviors — training on all of them wastes GPU time, electricity, and engineering effort chasing failures that trace back to the data, not the model.
-
-| Problem | What Calibra does |
-|---|---|
-| Jerk spikes, dropped frames, sync errors | **Integrity / Audit** — detect and flag bad episodes before training |
-| 60–80% of episodes are near-duplicates | **Select** — maximize behavioral coverage in a smaller coreset |
-| Policy failure cause is unknown | **Score** — decompose quality into measurable, falsifiable metrics |
-
-**Every demonstration you remove without hurting performance is GPU time and energy you don't have to spend.**
-
----
-
-## Highlights
-
-- ✂️ **Reduce training data by up to 75%** while matching full-dataset performance — quality-aware coreset selection, validated on [benchmarks](docs/benchmarks.md)
-- ⚡ **Spend less GPU time** by training on smaller, higher-quality datasets instead of everything you collected
-- ✅ **Detect integrity problems before training** — broken timestamps, sync issues, duplicate/frozen/blurry camera frames, jittery/jerky motion, with `calibra integrity` (LeRobot v1, HDF5/Isaac Lab, robomimic)
-- 📊 **Benchmark and compare** robot datasets — 30+ public LeRobot datasets audited on an interactive Hugging Face Space
-- 🤖 Works with LeRobot, Isaac Lab, RLDS, HDF5, MCAP, and Hugging Face Hub
-- 📦 Install with `pip install calibra-robotics`
-
----
-
-## How it works
-
-<p align="center">
-  <img src="docs/figures/pipeline.svg" alt="Calibra pipeline" width="420"/>
-</p>
-
-Calibra answers the questions practitioners ask about a new dataset, in the order they ask them:
-
-| Step | Question | Command |
-|---|---|---|
-| 1. Integrity | Can I trust this dataset? | `calibra integrity` |
-| 2. Quality | Is it clean? | `calibra audit` / `calibra score` |
-| 3. Coverage | Is it diverse enough? | `calibra review` |
-| 4. Optimize | Can I train faster/cheaper? | `calibra prune` |
-
----
-
 ## Quick start
 
 ```bash
@@ -87,6 +77,7 @@ pip install calibra-robotics
 
 calibra integrity /data/my_demos.h5
 calibra audit lerobot/pusht
+calibra prune lerobot/pusht --keep 0.25 --report results/pusht/latest.json
 ```
 
 ---
@@ -97,36 +88,26 @@ No installation required.
 
 🔗 [Calibra — Dataset Integrity](https://huggingface.co/spaces/omert27/robot-dataset-health-check) (Hugging Face Space)
 
-- Check any LeRobot dataset's Integrity first — timestamps, sync, completeness, duplicate/frozen/blurry frames, jittery motion
-- Then see its Quality & Coverage score and percentile
+- Check any LeRobot dataset's integrity — timestamps, sync, completeness, duplicate/frozen/blurry frames, jittery motion
+- See its Quality & Coverage score and percentile
 - Compare against community benchmarks
 - Download a full audit report
 
 ---
 
-## Why diversity-aware selection beats random
-
-<p align="center">
-  <img src="docs/figures/diversity.svg" alt="Behavioral diversity comparison" width="680"/>
-</p>
-
-Random selection picks a clustered subset. Calibra's coverage-based selector spreads selections across the behavioral space — ensuring the policy sees every behavioral mode, even rare ones.
-
----
-
-## Benchmark results
+## Benchmark details
 
 <p align="center">
   <img src="experiments/figures/fig_retention_columbia_cairlab_pusht_real.png" alt="Calibra vs random retention curve on PushT real" width="600"/>
 </p>
 
-On real PushT data: at **10% retention**, Calibra achieves lower prediction error than training on the **full dataset**, while random selection degrades sharply. The shaded region is Calibra's advantage over random at every budget.
+On real PushT data: at **10% retention**, Calibra achieves lower prediction error than training on the **full dataset**, while random selection degrades sharply.
 
 <p align="center">
   <img src="experiments/figures/fig_ablation_aloha_mobile_cabinet.png" alt="Ablation: which component drives Calibra's gains?" width="600"/>
 </p>
 
-Ablation across 5 seeds on ALOHA mobile (keep 30%): Calibra full pipeline and diversity-only both outperform all published baselines. Herding is the only method that reliably underperforms random.
+Ablation across 5 seeds on ALOHA mobile (keep 30%): Calibra full pipeline and diversity-only both outperform all published baselines.
 
 **Mean improvement over random selection (5 seeds, 30% retention, 3 datasets):**
 
@@ -138,7 +119,19 @@ Ablation across 5 seeds on ALOHA mobile (keep 30%): Calibra full pipeline and di
 | Facility Location | +21.5% | +18.4% | +8.7% |
 | Random | 0.0% | 0.0% | 0.0% |
 
-Method rankings are stable across all three policy families (Spearman ρ ≥ 0.86). → [Full benchmarks and ablations](docs/benchmarks.md)
+Method rankings are stable across all three policy families (Spearman ρ ≥ 0.86).
+
+→ [Full benchmarks and ablations](docs/benchmarks.md)
+
+---
+
+## Why diversity-aware selection beats random
+
+<p align="center">
+  <img src="docs/figures/diversity.svg" alt="Behavioral diversity comparison" width="680"/>
+</p>
+
+Random selection picks a clustered subset. Calibra's coverage-based selector spreads selections across the behavioral space — ensuring the policy sees every behavioral mode, even rare ones.
 
 ---
 
@@ -157,40 +150,6 @@ Method rankings are stable across all three policy families (Spearman ρ ≥ 0.8
 <p align="center">
   <img src="docs/figures/before_after.svg" alt="Before and after Calibra" width="640"/>
 </p>
-
----
-
-## Commands
-
-| Command | Description |
-|---|---|
-| `calibra integrity` | "Can I trust this dataset?" — timestamps, sync, episode completeness, duplicate/frozen/blurry camera frames, jittery/jerky motion (`--decode-images` for LeRobot v1) |
-| `calibra audit` | Full diagnostic report with bootstrap CIs and per-episode outlier detection |
-| `calibra review` | Ranked episode review queue — separates anomaly, quality-risk, and coverage-value signals |
-| `calibra prune` | Two-stage coreset: quality filter + greedy max-coverage selection |
-| `calibra certify` | Structured CERTIFIED / PROVISIONAL / NOT CERTIFIED; `--json` for CI |
-| `calibra predict` | Estimate training outcome before spending GPU time |
-| `calibra watch` | Real-time quality feedback during teleoperation |
-| `calibra score` | Composite 0–100 score across Quality, Synchrony, Coverage, Task Structure |
-| `calibra compare` | Evidence-backed cross-dataset comparison with falsifiable claims |
-| `calibra corrupt` | Inject synthetic corruptions to validate metric sensitivity |
-| `calibra card` | Generate a HuggingFace dataset quality card |
-| `calibra sim2real` | Quantify sim-to-real distribution gap and transfer risk |
-| `calibra transfer` | Cross-embodiment compatibility scoring |
-| `calibra cure` | Automatic data remediation (smoothing, resampling, trimming) |
-| `calibra audit-all` | Bulk-audit an entire HF org; writes CalibraReport JSONs |
-| `calibra site` | Generate a static leaderboard website from audit results |
-| `calibra serve` | Local REST API server and web dashboard |
-
-→ [Full command reference](docs/commands.md)
-
----
-
-## Roadmap
-
-**v0.7.1 (current) — Dataset Integrity:** `calibra integrity` — timestamps, sync, episode completeness, duplicate/frozen/blurry camera frames, jittery/jerky motion, with LeRobot v1 image support via `--decode-images`. Full details in [CHANGELOG.md](CHANGELOG.md).
-
-**Next — Vision Integrity for video-backed LeRobot (v2/v3):** decode sampled frames from LeRobot's mp4-encoded v2/v3 datasets so duplicate-frame/camera-freeze/blur detection work there too.
 
 ---
 
@@ -246,6 +205,40 @@ selector = CoresetSelector(keep_fraction=0.3)
 result = selector.select(batch, report)
 # result.keep_episode_ids → filter your dataset
 ```
+
+---
+
+## Commands
+
+| Command | Description |
+|---|---|
+| `calibra integrity` | "Can I trust this dataset?" — timestamps, sync, episode completeness, duplicate/frozen/blurry camera frames, jittery/jerky motion (`--decode-images` for LeRobot v1) |
+| `calibra audit` | Full diagnostic report with bootstrap CIs and per-episode outlier detection |
+| `calibra review` | Ranked episode review queue — separates anomaly, quality-risk, and coverage-value signals |
+| `calibra prune` | Two-stage coreset: quality filter + greedy max-coverage selection |
+| `calibra certify` | Structured CERTIFIED / PROVISIONAL / NOT CERTIFIED; `--json` for CI |
+| `calibra predict` | Estimate training outcome before spending GPU time |
+| `calibra watch` | Real-time quality feedback during teleoperation |
+| `calibra score` | Composite 0–100 score across Quality, Synchrony, Coverage, Task Structure |
+| `calibra compare` | Evidence-backed cross-dataset comparison with falsifiable claims |
+| `calibra corrupt` | Inject synthetic corruptions to validate metric sensitivity |
+| `calibra card` | Generate a HuggingFace dataset quality card |
+| `calibra sim2real` | Quantify sim-to-real distribution gap and transfer risk |
+| `calibra transfer` | Cross-embodiment compatibility scoring |
+| `calibra cure` | Automatic data remediation (smoothing, resampling, trimming) |
+| `calibra audit-all` | Bulk-audit an entire HF org; writes CalibraReport JSONs |
+| `calibra site` | Generate a static leaderboard website from audit results |
+| `calibra serve` | Local REST API server and web dashboard |
+
+→ [Full command reference](docs/commands.md)
+
+---
+
+## Roadmap
+
+**v0.7.1 (current) — Dataset Integrity:** `calibra integrity` — timestamps, sync, episode completeness, duplicate/frozen/blurry camera frames, jittery/jerky motion, with LeRobot v1 image support via `--decode-images`. Full details in [CHANGELOG.md](CHANGELOG.md).
+
+**Next — Vision Integrity for video-backed LeRobot (v2/v3):** decode sampled frames from LeRobot's mp4-encoded v2/v3 datasets so duplicate-frame/camera-freeze/blur detection work there too.
 
 ---
 

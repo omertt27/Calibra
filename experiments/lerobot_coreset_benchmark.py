@@ -74,10 +74,13 @@ def _detect_obs_key(features: dict) -> str:
     )
 
 
-def load_lerobot_dataset(dataset_id: str) -> tuple:
+def load_lerobot_dataset(dataset_id: str, max_episodes: int | None = None) -> tuple:
     """
-    Download a LeRobot v2 dataset from HuggingFace and return
-    (hf_dataset, obs_key, action_key).
+    Download a LeRobot dataset from HuggingFace and return (hf_dataset, obs_key, action_key).
+
+    When max_episodes is set, uses streaming mode so only the first N episodes worth of
+    parquet shards are downloaded — critical for large datasets like BridgeData V2 (50k ep).
+    Without max_episodes, downloads the full dataset as before.
     """
     try:
         from datasets import load_dataset as hf_load
@@ -88,6 +91,54 @@ def load_lerobot_dataset(dataset_id: str) -> tuple:
         )
         sys.exit(1)
 
+    if max_episodes is not None:
+        # Stream so we only pull shards until we have enough episodes, then stop.
+        print(f"Streaming {dataset_id!r} (first {max_episodes} episodes) ...")
+        ds_stream = hf_load(dataset_id, split="train", streaming=True)
+        obs_key = _detect_obs_key(ds_stream.features)
+        action_key = "action"
+
+        # Collect rows episode by episode; stop once we have max_episodes complete episodes.
+        rows: dict[str, list] = {
+            "episode_index": [],
+            obs_key: [],
+            action_key: [],
+        }
+        has_ts = "timestamp" in ds_stream.features
+        has_fi = "frame_index" in ds_stream.features
+        if has_ts:
+            rows["timestamp"] = []
+        if has_fi:
+            rows["frame_index"] = []
+
+        seen_eps: set = set()
+        for row in ds_stream:
+            ep_idx = int(row["episode_index"])
+            if ep_idx not in seen_eps:
+                if len(seen_eps) >= max_episodes:
+                    break  # enough complete episodes collected
+                seen_eps.add(ep_idx)
+            rows["episode_index"].append(ep_idx)
+            rows[obs_key].append(row[obs_key])
+            rows[action_key].append(row[action_key])
+            if has_ts:
+                rows["timestamp"].append(float(row["timestamp"]))
+            if has_fi:
+                rows["frame_index"].append(int(row["frame_index"]))
+
+        total_frames = len(rows["episode_index"])
+        print(
+            f"  {len(seen_eps)} episodes · {total_frames:,} frames (streamed)"
+            f"  |  obs: {obs_key}  |  action: {action_key}"
+        )
+
+        # Wrap in a HF Dataset so the rest of the pipeline is unchanged.
+        from datasets import Dataset
+
+        ds = Dataset.from_dict(rows)
+        return ds, obs_key, action_key
+
+    # Full download path (unchanged).
     print(f"Downloading {dataset_id!r} from HuggingFace Hub ...")
     ds = hf_load(dataset_id, split="train")
     obs_key = _detect_obs_key(ds.features)
@@ -372,6 +423,7 @@ def run_benchmark(
     test_fraction: float = 0.2,
     report_path: str | None = None,
     rare_fraction: float = 0.15,
+    max_episodes: int | None = None,
 ) -> dict:
     if keep_fractions is None:
         keep_fractions = [0.05, 0.10, 0.25, 0.50, 0.75, 1.00]
@@ -380,10 +432,12 @@ def run_benchmark(
     print("  Calibra LeRobot Coreset Benchmark")
     print(f"  Dataset : {dataset_id}")
     print(f"  Fractions: {keep_fractions}")
+    if max_episodes:
+        print(f"  Max episodes: {max_episodes}")
     print("=" * 70)
 
     # ── 1. Load data ──────────────────────────────────────────────────────────
-    hf_ds, obs_key, action_key = load_lerobot_dataset(dataset_id)
+    hf_ds, obs_key, action_key = load_lerobot_dataset(dataset_id, max_episodes=max_episodes)
     batch = hf_to_episode_batch(hf_ds, obs_key, action_key, dataset_id)
     all_episodes = list(batch.episodes)
     n_total = len(all_episodes)
@@ -683,6 +737,13 @@ Examples:
         default=None,
         help="Path to write the CalibraReport JSON with episode verdicts",
     )
+    p.add_argument(
+        "--max-episodes",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Randomly sample at most N episodes from the dataset (useful for very large datasets)",
+    )
     args = p.parse_args()
 
     run_benchmark(
@@ -693,4 +754,5 @@ Examples:
         test_fraction=args.test_fraction,
         report_path=args.report,
         rare_fraction=args.rare_fraction,
+        max_episodes=args.max_episodes,
     )
