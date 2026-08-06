@@ -301,7 +301,16 @@ def run_integrity(argv: list[str]) -> None:
     else:
         print(
             render(
-                report, critical, warnings, passed, not_evaluated, score, status, ci_result, ci_reason, policy
+                report,
+                critical,
+                warnings,
+                passed,
+                not_evaluated,
+                score,
+                status,
+                ci_result,
+                ci_reason,
+                policy,
             )
         )
 
@@ -340,7 +349,11 @@ def render(
         lines.append(f"{label} ({len(group)})")
         for f in group:
             icon = _ICONS[f.level]
-            tag = f"  [{_suggested_action(f, policy).upper()}]" if f.level == RiskLevel.CRITICAL else ""
+            tag = (
+                f"  [{_suggested_action(f, policy).upper()}]"
+                if f.level == RiskLevel.CRITICAL
+                else ""
+            )
             lines.append(f"  {icon} {f.metric}: {f.interpretation}{tag}")
             if f.level != RiskLevel.OK:
                 lines.append(f"      {f.implication}")

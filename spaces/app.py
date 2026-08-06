@@ -456,7 +456,7 @@ def _integrity_html(integrity: dict) -> str:
     if not_evaluated:
         items = "".join(
             f'<div style="color:#6c7086;font-size:12px;margin:3px 0">'
-            f'⬚ {item["check"]}: {item["reason"]}</div>'
+            f"⬚ {item['check']}: {item['reason']}</div>"
             for item in not_evaluated
         )
         not_evaluated_html = f"""
