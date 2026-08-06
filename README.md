@@ -8,10 +8,10 @@
   <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v0.7.0-informational" alt="Changelog"/></a>
 </p>
 
-<p align="center"><b>Know what's wrong with your robot data before training starts.</b></p>
+<p align="center"><b>Train robot policies with less data, less compute, and fewer surprises.</b></p>
 
 <p align="center">
-Open-source dataset observability for robot learning — integrity, quality, coverage, and coreset optimization in one pipeline.
+Open-source dataset observability for robot learning — catch integrity problems before training starts, then build smaller, higher-quality training sets that cut GPU hours without sacrificing performance.
 </p>
 
 ```
@@ -38,13 +38,27 @@ Integrity Score: 85/100  ·  Status: Warning
 
 ---
 
+## Why Calibra?
+
+Training robot policies is expensive. Large datasets often contain duplicated demonstrations, corrupted episodes, synchronization problems, and redundant behaviors — training on all of them wastes GPU time, electricity, and engineering effort chasing failures that trace back to the data, not the model.
+
+| Problem | What Calibra does |
+|---|---|
+| Jerk spikes, dropped frames, sync errors | **Integrity / Audit** — detect and flag bad episodes before training |
+| 60–80% of episodes are near-duplicates | **Select** — maximize behavioral coverage in a smaller coreset |
+| Policy failure cause is unknown | **Score** — decompose quality into measurable, falsifiable metrics |
+
+**Every demonstration you remove without hurting performance is GPU time and energy you don't have to spend.**
+
+---
+
 ## Highlights
 
-- ✅ **Integrity first** — catch broken timestamps, duplicate/frozen/blurry camera frames, jittery/jerky motion, and incomplete episodes before they reach training, with `calibra integrity` (LeRobot v1, HDF5/Isaac Lab, robomimic)
-- 🔍 Audit robot datasets for quality, synchrony, coverage, and task structure
-- ✂️ Reduce training data by up to 75% with quality-aware coreset selection
-- 📊 Audit 30+ public LeRobot datasets with an interactive Hugging Face Space
-- 🤖 Supports LeRobot, Isaac Lab, RLDS, HDF5, MCAP, and Hugging Face Hub
+- ✂️ **Reduce training data by up to 75%** while matching full-dataset performance — quality-aware coreset selection, validated on [benchmarks](docs/benchmarks.md)
+- ⚡ **Spend less GPU time** by training on smaller, higher-quality datasets instead of everything you collected
+- ✅ **Detect integrity problems before training** — broken timestamps, sync issues, duplicate/frozen/blurry camera frames, jittery/jerky motion, with `calibra integrity` (LeRobot v1, HDF5/Isaac Lab, robomimic)
+- 📊 **Benchmark and compare** robot datasets — 30+ public LeRobot datasets audited on an interactive Hugging Face Space
+- 🤖 Works with LeRobot, Isaac Lab, RLDS, HDF5, MCAP, and Hugging Face Hub
 - 📦 Install with `pip install calibra-robotics`
 
 ---
@@ -87,18 +101,6 @@ No installation required.
 - Then see its Quality & Coverage score and percentile
 - Compare against community benchmarks
 - Download a full audit report
-
----
-
-## Why quality-aware selection matters
-
-Most robot learning labs collect thousands of demonstrations and train on all of them — silently ingesting bad data, wasting compute on near-duplicates, and producing undiagnosable policy failures.
-
-| Problem | What Calibra does |
-|---|---|
-| Jerk spikes, dropped frames, sync errors | **Audit** — detect and flag bad episodes before training |
-| 60–80% of episodes are near-duplicates | **Select** — maximize behavioral coverage in a smaller coreset |
-| Policy failure cause is unknown | **Score** — decompose quality into measurable, falsifiable metrics |
 
 ---
 

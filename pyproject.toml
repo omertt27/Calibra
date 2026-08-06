@@ -37,6 +37,9 @@ all         = ["calibra-robotics[hdf5,lerobot,rlds,mcap,kinematics,watch,vlm,exp
 [tool.hatch.build.targets.wheel]
 packages = ["calibra"]
 
+[tool.vercel]
+entrypoint = "server.main:app"
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
