@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import zlib
+
 import numpy as np
 
 from calibra.analyzers.blur import BlurAnalyzer, compute_laplacian_variance
@@ -12,7 +14,10 @@ from calibra.schema.report import RiskLevel
 
 
 def _make_ep(episode_id: str = "ep_0", n_steps: int = 10, image_mode: str = "sharp") -> Episode:
-    rng = np.random.default_rng(hash(episode_id) % (2**31))
+    # zlib.crc32 (not the builtin hash()) so the seed — and thus the test's
+    # pass/fail outcome — doesn't depend on PYTHONHASHSEED, which Python
+    # randomizes per process for str.
+    rng = np.random.default_rng(zlib.crc32(episode_id.encode()) % (2**31))
     ts = np.arange(n_steps, dtype=np.float64) * 0.05
     obs: dict = {"proprio": rng.random((n_steps, 8)).astype(np.float32)}
 

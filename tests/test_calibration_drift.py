@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import zlib
+
 import numpy as np
 
 from calibra.analyzers.calibration_drift import CalibrationDriftAnalyzer
@@ -44,7 +46,7 @@ def _make_ep(
 def _make_no_hold_ep(episode_id: str, dims: int = 6, steps: int = 200, dt: float = 0.05) -> Episode:
     """State never holds still (fast-moving sinusoid throughout) — no
     stationary run should be found."""
-    rng = np.random.default_rng(hash(episode_id) % (2**31))
+    rng = np.random.default_rng(zlib.crc32(episode_id.encode()) % (2**31))
     ts = np.arange(steps, dtype=np.float64) * dt
     state = np.zeros((steps, dims), dtype=np.float32)
     for d in range(dims):

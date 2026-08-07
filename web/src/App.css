@@ -48,8 +48,25 @@ footer a:hover {
   color: var(--orange);
 }
 
-.nav-github {
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   justify-self: end;
+}
+
+.nav-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-badges img {
+  display: block;
+  border-radius: 4px;
+}
+
+.nav-github {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -281,22 +298,8 @@ footer a:hover {
   color: var(--green-bright);
 }
 
-.report-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-top: 20px;
-  color: white;
-  font-size: 14px;
-}
-
-.report-heading strong {
-  color: #e58f63;
-  font-size: 16px;
-}
-
 .report-meta {
-  margin: 6px 0 20px;
+  margin: 0 0 20px;
   color: #78837b;
 }
 
@@ -364,6 +367,33 @@ footer a:hover {
   background: rgba(130, 206, 99, 0.12);
 }
 
+.report-skipped .report-label {
+  color: #5e6a63;
+}
+
+.report-skipped .report-label span {
+  background: rgba(94, 106, 99, 0.16);
+}
+
+.report-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 20px;
+  padding-top: 16px;
+  color: #dce5de;
+  border-top: 1px solid #2d382f;
+  font-size: 11px;
+}
+
+.report-footer strong {
+  color: #e58f63;
+}
+
+.report-ci {
+  color: #ff8057;
+}
+
 .scroll-cue {
   position: absolute;
   bottom: 24px;
@@ -394,6 +424,20 @@ footer a:hover {
 
 .stat-item:last-child {
   border-right: 0;
+}
+
+.stats-caveat {
+  padding: 0 0 30px;
+  color: #6c766f;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.stats-caveat a {
+  color: var(--green-bright);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .stat-number {
@@ -616,101 +660,60 @@ footer a:hover {
   font-size: 10px;
 }
 
-.coverage-plot {
-  position: relative;
-  height: 330px;
-  margin: 24px 38px 18px 48px;
-  border-left: 1px solid #bfc6bf;
-  border-bottom: 1px solid #bfc6bf;
-  background: radial-gradient(circle, rgba(30, 91, 58, 0.06) 0, rgba(30, 91, 58, 0.06) 2px, transparent 2.5px);
-  background-size: 22px 22px;
+.coverage-bars {
+  padding: 28px 24px 8px;
 }
 
-.coverage-plot > i {
-  position: absolute;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #9ca69e;
-  transform: translate(-50%, -50%);
-}
-
-.coverage-plot > i.selected,
-.coverage-legend i.selected {
-  width: 14px;
-  height: 14px;
-  background: var(--orange);
-  border: 3px solid #ffe2d5;
-  box-shadow: 0 0 0 2px var(--orange);
-}
-
-.quadrant {
-  position: absolute;
-  background: rgba(30, 91, 58, 0.1);
-}
-
-.quadrant.vertical {
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 1px;
-}
-
-.quadrant.horizontal {
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 1px;
-}
-
-.axis-y,
-.axis-x {
-  position: absolute;
-  color: #7e8880;
-  font-family: var(--mono);
-  font-size: 8px;
-  text-transform: uppercase;
-}
-
-.axis-y {
-  top: 50%;
-  left: -43px;
-  transform: rotate(-90deg);
-}
-
-.axis-x {
-  bottom: -18px;
-  left: 50%;
-}
-
-.coverage-legend {
-  display: flex;
+.coverage-bar-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 54px;
+  gap: 12px;
   align-items: center;
-  gap: 20px;
-  padding: 15px 24px 18px;
+  margin-bottom: 18px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.coverage-bar-row > div {
+  height: 14px;
+  overflow: hidden;
+  background: #e1e4dc;
+  border-radius: 3px;
+}
+
+.coverage-bar-row > div i {
+  height: 100%;
+  display: block;
+  background: #87948a;
+  border-radius: 3px;
+}
+
+.coverage-bar-row strong {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.coverage-bar-row.highlight {
+  color: var(--green);
+}
+
+.coverage-bar-row.highlight > div i {
+  background: var(--orange);
+}
+
+.coverage-bar-row.highlight strong {
+  color: var(--orange);
+}
+
+.coverage-footnote {
+  margin: 6px 24px 22px;
+  padding-top: 16px;
   color: var(--muted);
   border-top: 1px solid var(--line);
-  font-size: 9px;
-}
-
-.coverage-legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.coverage-legend i {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #9ca69e;
-}
-
-.coverage-legend strong {
-  margin-left: auto;
-  color: var(--green);
-  font-family: var(--mono);
-  font-size: 9px;
+  font-size: 11px;
+  line-height: 1.6;
 }
 
 .ecosystems {
@@ -1105,7 +1108,8 @@ footer {
     grid-template-columns: 1fr auto;
   }
 
-  .nav-links {
+  .nav-links,
+  .nav-badges {
     display: none;
   }
 

@@ -4,12 +4,12 @@ import {
   ArrowRight,
   Check,
   CheckCircle2,
+  Circle,
   Clipboard,
   ExternalLink,
   Github,
   ShieldAlert,
   Sparkles,
-  TriangleAlert,
 } from 'lucide-react'
 import './App.css'
 
@@ -19,7 +19,21 @@ const LINKS = {
   docs: 'https://omertt27.github.io/Calibra/docs/',
   benchmarks: 'https://github.com/omertt27/Calibra#benchmark-results',
   license: 'https://github.com/omertt27/Calibra/blob/main/LICENSE',
+  pypi: 'https://pypi.org/project/calibra-robotics/',
 }
+
+const BADGES = [
+  {
+    href: LINKS.github,
+    alt: 'GitHub stars',
+    src: 'https://img.shields.io/github/stars/omertt27/Calibra?style=flat-square&label=stars&labelColor=17211b&color=bde75a',
+  },
+  {
+    href: LINKS.pypi,
+    alt: 'PyPI downloads',
+    src: 'https://img.shields.io/pypi/dm/calibra-robotics?style=flat-square&label=downloads%2Fmo&labelColor=17211b&color=bde75a',
+  },
+]
 
 const INSTALL_COMMAND = 'pip install calibra-robotics'
 
@@ -37,7 +51,7 @@ const WORKFLOW = [
 ]
 
 const ECOSYSTEMS = [
-  { name: 'LeRobot', detail: 'v1 / v2 / v3', logo: 'huggingface.svg' },
+  { name: 'LeRobot', detail: 'v1 / v2 / v3', mark: 'LR' },
   { name: 'Isaac Lab', detail: 'HDF5', logo: 'nvidia.svg' },
   { name: 'RLDS', detail: 'TF Datasets', logo: 'tensorflow.svg' },
   { name: 'robomimic', detail: 'HDF5', mark: 'RM' },
@@ -75,36 +89,39 @@ function CopyCommand({ large = false }) {
 
 function TerminalReport() {
   return (
-    <div className="terminal" aria-label="Example Calibra integrity report">
+    <div className="terminal" aria-label="Real calibra integrity CLI output">
       <div className="terminal-bar">
         <div className="terminal-dots"><i /><i /><i /></div>
         <span>calibra — integrity</span>
-        <span className="terminal-status">completed in 2.4s</span>
+        <span className="terminal-status">completed in 0.8s</span>
       </div>
       <div className="terminal-body">
-        <div className="terminal-command"><span>$</span> calibra integrity /data/my_demos.h5</div>
-        <div className="report-heading">
-          <span>Dataset Integrity</span>
-          <strong>85 / 100</strong>
-        </div>
-        <p className="report-meta">my_demos · 120 episodes · Status: Warning</p>
+        <div className="terminal-command"><span>$</span> calibra integrity pusht_demo</div>
+        <p className="report-meta">pusht_demo · 20 episodes</p>
 
         <div className="report-group report-critical">
           <div className="report-label"><ShieldAlert size={15} /> Critical <span>1</span></div>
-          <p><span>camera_freeze_events</span><strong>episode ep_17</strong></p>
-          <p className="report-detail">1 of 120 episodes contains a run of ≥5 near-identical frames.</p>
-        </div>
-
-        <div className="report-group report-warning">
-          <div className="report-label"><TriangleAlert size={15} /> Warnings <span>1</span></div>
-          <p><span>blurry_episode_fraction</span><strong>1 episode</strong></p>
+          <p><span>short_episode_fraction</span><strong>4 / 20 episodes</strong></p>
+          <p className="report-detail">20.0% of episodes have fewer than 80 steps (lower IQR fence) — likely aborted demonstrations. BC policies trained on these learn to quit tasks early.</p>
         </div>
 
         <div className="report-group report-passed">
-          <div className="report-label"><CheckCircle2 size={15} /> Passed <span>8</span></div>
+          <div className="report-label"><CheckCircle2 size={15} /> Passed <span>6</span></div>
           <p><span>timestamp_jitter_cv</span><strong>pass</strong></p>
-          <p><span>timestamp_dropout_rate</span><strong>pass</strong></p>
           <p><span>action_dropout_rate</span><strong>pass</strong></p>
+          <p><span>ldlj</span><strong>pass</strong></p>
+          <p><span>jerk_spike_rate</span><strong>pass</strong></p>
+        </div>
+
+        <div className="report-group report-skipped">
+          <div className="report-label"><Circle size={15} /> Not evaluated <span>3</span></div>
+          <p><span>camera_freeze</span><strong>requires images</strong></p>
+          <p><span>duplicate_frame</span><strong>requires images</strong></p>
+        </div>
+
+        <div className="report-footer">
+          <span>Integrity Score: <strong>86 / 100</strong> · Status: Warning</span>
+          <span className="report-ci">CI result: Failed — 1 critical finding</span>
         </div>
       </div>
     </div>
@@ -123,43 +140,42 @@ function StatsBar() {
           </div>
         ))}
       </div>
+      <div className="container">
+        <p className="stats-caveat">
+          Measured on LeRobot PushT. Curation gains hold up across a broader 5-seed sweep on
+          3 datasets and 3 policy families (BC-MLP, ACT, Diffusion Policy) —{' '}
+          <a href={LINKS.benchmarks} target="_blank" rel="noreferrer">see the full benchmark table</a>.
+        </p>
+      </div>
     </div>
   )
 }
 
-function CoverageGraphic() {
-  const clusters = [
-    ['12%', '18%'], ['20%', '26%'], ['15%', '33%'], ['25%', '15%'],
-    ['72%', '17%'], ['80%', '26%'], ['68%', '32%'], ['84%', '13%'],
-    ['14%', '70%'], ['23%', '80%'], ['28%', '67%'], ['10%', '84%'],
-    ['69%', '72%'], ['79%', '82%'], ['86%', '68%'], ['73%', '88%'],
-  ]
-  const selected = [1, 5, 10, 14]
+const TAIL_COVERAGE = [
+  { label: 'Calibra coreset', value: 56.0, className: 'highlight' },
+  { label: 'Random baseline', value: 33.6, className: '' },
+]
 
+function CoverageGraphic() {
   return (
     <div className="coverage-card">
       <div className="coverage-head">
-        <div><span>Behavioral coverage</span><strong>Coreset · 25% retained</strong></div>
-        <span className="coverage-score">4 / 4 regions</span>
+        <div><span>Tail-behavior coverage</span><strong>41/165 episodes · LeRobot PushT</strong></div>
+        <span className="coverage-score">+67% vs. random</span>
       </div>
-      <div className="coverage-plot" aria-label="Calibra selects demonstrations across all behavioral regions">
-        <span className="axis-y">Behavior B</span>
-        <span className="axis-x">Behavior A</span>
-        <div className="quadrant vertical" />
-        <div className="quadrant horizontal" />
-        {clusters.map(([left, top], index) => (
-          <i
-            className={selected.includes(index) ? 'selected' : ''}
-            key={`${left}-${top}`}
-            style={{ left, top }}
-          />
+      <div className="coverage-bars">
+        {TAIL_COVERAGE.map((row) => (
+          <div className={`coverage-bar-row ${row.className}`} key={row.label}>
+            <span>{row.label}</span>
+            <div><i style={{ width: `${row.value}%` }} /></div>
+            <strong>{row.value.toFixed(1)}%</strong>
+          </div>
         ))}
       </div>
-      <div className="coverage-legend">
-        <span><i /> Full dataset</span>
-        <span><i className="selected" /> Calibra selection</span>
-        <strong>Rare behaviors preserved</strong>
-      </div>
+      <p className="coverage-footnote">
+        Share of held-out rare-behavior episodes represented in a 41-episode coreset at 25%
+        retention — same benchmark run shown above.
+      </p>
     </div>
   )
 }
@@ -175,9 +191,18 @@ function App() {
             <a href="#workflow">How it works</a>
             <a href={LINKS.docs}>Docs</a>
           </div>
-          <a className="nav-github" href={LINKS.github} target="_blank" rel="noreferrer">
-            <Github size={17} /> GitHub
-          </a>
+          <div className="nav-right">
+            <div className="nav-badges">
+              {BADGES.map((badge) => (
+                <a href={badge.href} key={badge.alt} target="_blank" rel="noreferrer">
+                  <img src={badge.src} alt={badge.alt} height={20} />
+                </a>
+              ))}
+            </div>
+            <a className="nav-github" href={LINKS.github} target="_blank" rel="noreferrer">
+              <Github size={17} /> GitHub
+            </a>
+          </div>
         </div>
       </nav>
 
