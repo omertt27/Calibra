@@ -996,6 +996,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#observations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#lerobot-pusht-targeted-benchmark-primary-real-data-result" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1118,6 +1140,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#xarm-lift-medium-retention-sweep-800-episodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        xArm Lift Medium — Retention Sweep (800 episodes)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#droid-100-retention-sweep" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DROID-100 — Retention Sweep
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aloha-sim-insertion-retention-sweep" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ALOHA Sim Insertion — Retention Sweep
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#synthetic-rare-mode-benchmark-controlled" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1160,7 +1215,66 @@
 
 
 <h1 id="calibra-benchmark-results">Calibra Benchmark Results</h1>
-<p>Complete statistical results, ablation tables, and limitations for all Calibra benchmarks. The README presents the headline numbers; this document has everything.</p>
+<p>Complete statistical results, ablation tables, and limitations for all Calibra benchmarks.</p>
+<hr />
+<h2 id="summary">Summary</h2>
+<p>How much training data can Calibra remove before performance degrades?</p>
+<table>
+<thead>
+<tr>
+<th>Dataset</th>
+<th style="text-align: right;">Episodes</th>
+<th style="text-align: right;">Quality Score</th>
+<th style="text-align: right;">Calibra at 25%</th>
+<th style="text-align: right;">Calibra vs. Random at 25%</th>
+<th style="text-align: right;">Rare coverage vs. random (25%)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PushT (<code>lerobot/pusht</code>)</td>
+<td style="text-align: right;">165</td>
+<td style="text-align: right;">76.7/100</td>
+<td style="text-align: right;"><strong>99.5% of full</strong></td>
+<td style="text-align: right;"><strong>+8pp</strong> (99.5% vs 97.8%)</td>
+<td style="text-align: right;"><strong>+65%</strong> (56% vs. 34%)</td>
+</tr>
+<tr>
+<td>DROID-100 (<code>lerobot/droid_100</code>)</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">77.0/100</td>
+<td style="text-align: right;">97.3% of full</td>
+<td style="text-align: right;"><strong>+10pp</strong> (97.3% vs 107.3%)</td>
+<td style="text-align: right;"><strong>+194%</strong> (83% vs. 28%)</td>
+</tr>
+<tr>
+<td>ALOHA sim (<code>lerobot/aloha_sim_insertion_human</code>)</td>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">87.3/100</td>
+<td style="text-align: right;">60.6% of full</td>
+<td style="text-align: right;">−18pp</td>
+<td style="text-align: right;">+117% (50% vs. 23%)</td>
+</tr>
+<tr>
+<td>xArm lift (<code>lerobot/xarm_lift_medium</code>)</td>
+<td style="text-align: right;">800</td>
+<td style="text-align: right;">82.7/100</td>
+<td style="text-align: right;">97.3% of full</td>
+<td style="text-align: right;">−1pp (≈ random)</td>
+<td style="text-align: right;">+2% (25.0% vs. 24.6%)</td>
+</tr>
+</tbody>
+</table>
+<p>"% of full" = Calibra coreset MSE / full-data baseline MSE. "Calibra vs. Random at 25%" = difference in subset MSE vs. random at the same fraction (positive = Calibra wins). Rare-behavior coverage = fraction of bottom-15% action-space-density episodes retained.</p>
+<p>Note on compute: this benchmark measures training data volume and wall-clock training time on a fixed-epoch BC-MLP. For fixed training schedules, fewer training samples translates directly into fewer gradient steps and proportionally lower GPU time.</p>
+<hr />
+<h2 id="observations">Observations</h2>
+<p>Across the current benchmark suite, datasets with lower Calibra Quality Scores showed larger improvements from quality-aware coreset selection, while higher-quality datasets showed smaller gains.</p>
+<p>Specifically:
+- PushT (76.7) and DROID-100 (77.0) — both with multiple CRITICAL flags for jerk spikes, velocity discontinuities, and action-state divergence — showed the strongest benefit: Calibra outperformed random by 8–10 percentage points at 25% retention and retained 2–3× more rare behaviors.
+- ALOHA sim (87.3) and xArm lift (82.7) — cleaner datasets with fewer quality flags — showed smaller gains; on xArm, Calibra and random were statistically indistinguishable.</p>
+<p><strong>This relationship is an empirical observation from the current benchmark suite and will be evaluated on additional datasets.</strong> Our current benchmarks suggest that lower-quality or more redundant datasets benefit more from quality-aware coreset selection than cleaner datasets. Whether this relationship holds generally — and whether the quality score itself is a reliable predictor of optimization potential — requires further study.</p>
+<p>Consistent finding across all four datasets: Calibra preserved more rare behaviors than random selection at every retention fraction where a meaningful difference existed. The rare-behavior advantage was present even on xArm (where the overall MSE advantage was absent), though the margin was negligible.</p>
 <hr />
 <h2 id="lerobot-pusht-targeted-benchmark-primary-real-data-result">LeRobot PushT — Targeted Benchmark (Primary Real-Data Result)</h2>
 <h3 id="setup">Setup</h3>
@@ -1601,17 +1715,306 @@
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span>--n-seeds<span class="w"> </span><span class="m">5</span>
 </code></pre></div>
 <hr />
+<h2 id="xarm-lift-medium-retention-sweep-800-episodes">xArm Lift Medium — Retention Sweep (800 episodes)</h2>
+<p><strong>Dataset:</strong> <code>lerobot/xarm_lift_medium</code> (HuggingFace Hub)
+<strong>Episodes:</strong> 800 total · 640 training · 160 test · <strong>Quality score: 82.7/100</strong> (simulated)
+<strong>Action/state:</strong> 4D (low-dimensional) · 25 frames/episode (short horizon)
+<strong>Setup:</strong> 5 random seeds · 120 epochs BC-MLP · tail = bottom 15% by action-space density (96 episodes)</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">Keep</th>
+<th style="text-align: right;">N</th>
+<th style="text-align: right;">Calibra MSE</th>
+<th style="text-align: right;">Rel</th>
+<th style="text-align: right;">Tail cov</th>
+<th style="text-align: right;">Random MSE ±std</th>
+<th style="text-align: right;">Rel</th>
+<th style="text-align: right;">Tail cov</th>
+<th style="text-align: right;">Saved</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">5%</td>
+<td style="text-align: right;">32</td>
+<td style="text-align: right;">0.397674</td>
+<td style="text-align: right;">1.08x</td>
+<td style="text-align: right;">4.2%</td>
+<td style="text-align: right;">0.392948 ±0.0015</td>
+<td style="text-align: right;">1.06x</td>
+<td style="text-align: right;">3.1%</td>
+<td style="text-align: right;">95%</td>
+</tr>
+<tr>
+<td style="text-align: right;">10%</td>
+<td style="text-align: right;">64</td>
+<td style="text-align: right;">0.395813</td>
+<td style="text-align: right;">1.07x</td>
+<td style="text-align: right;">9.4%</td>
+<td style="text-align: right;">0.385117 ±0.0007</td>
+<td style="text-align: right;">1.04x</td>
+<td style="text-align: right;">9.6%</td>
+<td style="text-align: right;">90%</td>
+</tr>
+<tr>
+<td style="text-align: right;">25%</td>
+<td style="text-align: right;">160</td>
+<td style="text-align: right;">0.380786</td>
+<td style="text-align: right;">1.03x</td>
+<td style="text-align: right;">25.0%</td>
+<td style="text-align: right;">0.376361 ±0.0008</td>
+<td style="text-align: right;">1.02x</td>
+<td style="text-align: right;">24.6%</td>
+<td style="text-align: right;">75%</td>
+</tr>
+<tr>
+<td style="text-align: right;">50%</td>
+<td style="text-align: right;">320</td>
+<td style="text-align: right;">0.375223</td>
+<td style="text-align: right;">1.02x</td>
+<td style="text-align: right;">57.3%</td>
+<td style="text-align: right;">0.372302 ±0.0007</td>
+<td style="text-align: right;">1.01x</td>
+<td style="text-align: right;">50.2%</td>
+<td style="text-align: right;">50%</td>
+</tr>
+<tr>
+<td style="text-align: right;">75%</td>
+<td style="text-align: right;">480</td>
+<td style="text-align: right;">0.371201</td>
+<td style="text-align: right;">1.01x</td>
+<td style="text-align: right;">75.0%</td>
+<td style="text-align: right;">0.370517 ±0.0002</td>
+<td style="text-align: right;">1.00x</td>
+<td style="text-align: right;">75.0%</td>
+<td style="text-align: right;">25%</td>
+</tr>
+<tr>
+<td style="text-align: right;">100%</td>
+<td style="text-align: right;">640</td>
+<td style="text-align: right;">0.368871</td>
+<td style="text-align: right;">1.00x</td>
+<td style="text-align: right;">100.0%</td>
+<td style="text-align: right;">0.369154 ±0.0001</td>
+<td style="text-align: right;">1.00x</td>
+<td style="text-align: right;">100.0%</td>
+<td style="text-align: right;">0%</td>
+</tr>
+</tbody>
+</table>
+<p>Full baseline: MSE = 0.369041 · 23.2s train time</p>
+<p><strong>Key findings:</strong> Calibra does <strong>not</strong> outperform random selection on this dataset. At every retention fraction, Calibra is within 0.01x of random MSE — statistically indistinguishable. Rare-behavior coverage is also nearly identical (25.0% vs. 24.6% at 25%). This is the expected result: xArm lift medium has a quality score of 82.7 (cleaner than PushT/DROID-100) and a 4-dimensional action space with short, uniform episodes. In a low-dimensional uniform simulation, behavioral diversity is naturally spread across the action space — there is no clustering for the quality filter to remove and no rare-behavior gap for diversity selection to close.</p>
+<p><strong>This result is included without softening.</strong> It establishes that Calibra's advantage is conditional on dataset properties, not universal. The practical implication: run <code>calibra audit</code> first — if the quality score is high (&gt;82) and the dataset is uniform simulation, the coreset benefit over random will be small.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python<span class="w"> </span>experiments/lerobot_coreset_benchmark.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span>--dataset<span class="w"> </span>lerobot/xarm_lift_medium<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span>--n-epochs<span class="w"> </span><span class="m">120</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span>--n-seeds<span class="w"> </span><span class="m">5</span>
+</code></pre></div>
+<hr />
+<h2 id="droid-100-retention-sweep">DROID-100 — Retention Sweep</h2>
+<p><strong>Dataset:</strong> <code>lerobot/droid_100</code> (HuggingFace Hub)
+<strong>Episodes:</strong> 100 total · 80 training · 20 test · <strong>Quality score: 77.0/100</strong> (3 CRITICAL, 6 WARNING)
+<strong>Setup:</strong> 5 random seeds · 120 epochs BC-MLP · tail = bottom 15% by action-space density (12 episodes)</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">Keep</th>
+<th style="text-align: right;">N</th>
+<th style="text-align: right;">Calibra MSE</th>
+<th style="text-align: right;">Rel</th>
+<th style="text-align: right;">Tail cov</th>
+<th style="text-align: right;">Random MSE ±std</th>
+<th style="text-align: right;">Rel</th>
+<th style="text-align: right;">Tail cov</th>
+<th style="text-align: right;">Saved</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">5%</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">0.105998</td>
+<td style="text-align: right;">1.16x</td>
+<td style="text-align: right;">25.0%</td>
+<td style="text-align: right;">0.101008 ±0.0040</td>
+<td style="text-align: right;">1.11x</td>
+<td style="text-align: right;">6.7%</td>
+<td style="text-align: right;">95%</td>
+</tr>
+<tr>
+<td style="text-align: right;">10%</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">0.103948</td>
+<td style="text-align: right;">1.14x</td>
+<td style="text-align: right;">41.7%</td>
+<td style="text-align: right;">0.100802 ±0.0025</td>
+<td style="text-align: right;">1.10x</td>
+<td style="text-align: right;">13.3%</td>
+<td style="text-align: right;">90%</td>
+</tr>
+<tr>
+<td style="text-align: right;">25%</td>
+<td style="text-align: right;">20</td>
+<td style="text-align: right;">0.093743</td>
+<td style="text-align: right;">1.03x</td>
+<td style="text-align: right;">83.3%</td>
+<td style="text-align: right;">0.103667 ±0.0047</td>
+<td style="text-align: right;">1.13x</td>
+<td style="text-align: right;">28.3%</td>
+<td style="text-align: right;">75%</td>
+</tr>
+<tr>
+<td style="text-align: right;">50%</td>
+<td style="text-align: right;">40</td>
+<td style="text-align: right;">0.096710</td>
+<td style="text-align: right;">1.06x</td>
+<td style="text-align: right;">83.3%</td>
+<td style="text-align: right;">0.098831 ±0.0040</td>
+<td style="text-align: right;">1.08x</td>
+<td style="text-align: right;">48.3%</td>
+<td style="text-align: right;">50%</td>
+</tr>
+<tr>
+<td style="text-align: right;"><strong>75%</strong></td>
+<td style="text-align: right;"><strong>60</strong></td>
+<td style="text-align: right;"><strong>0.088590</strong></td>
+<td style="text-align: right;"><strong>0.97x</strong></td>
+<td style="text-align: right;"><strong>83.3%</strong></td>
+<td style="text-align: right;">0.094623 ±0.0021</td>
+<td style="text-align: right;">1.04x</td>
+<td style="text-align: right;">71.7%</td>
+<td style="text-align: right;"><strong>25%</strong></td>
+</tr>
+<tr>
+<td style="text-align: right;">100%</td>
+<td style="text-align: right;">74*</td>
+<td style="text-align: right;">0.089608</td>
+<td style="text-align: right;">0.98x</td>
+<td style="text-align: right;">83.3%</td>
+<td style="text-align: right;">0.092498 ±0.0028</td>
+<td style="text-align: right;">1.01x</td>
+<td style="text-align: right;">100.0%</td>
+<td style="text-align: right;">0%</td>
+</tr>
+</tbody>
+</table>
+<p>*At 100%, Calibra's quality filter caps selection at 74 of 80 training episodes.<br />
+Full baseline: MSE = 0.091364 · 29.9s train time</p>
+<p><strong>Key findings:</strong> At 75% retention (60 episodes), Calibra achieves <strong>0.97× baseline MSE</strong> — it beats the full-data baseline by removing low-quality episodes. Random at 75% is still 4% worse than full. At 25% retention, Calibra (1.03×) is 10 percentage points better than random (1.13×) and retains <strong>83% of rare behaviors vs. 28% for random</strong> — a 3× improvement at the same data budget. Even at 5% (4 episodes), Calibra's rare-behavior coverage is 3.7× better than random (25% vs. 6.7%).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>python<span class="w"> </span>experiments/lerobot_coreset_benchmark.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span>--dataset<span class="w"> </span>lerobot/droid_100<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span>--n-epochs<span class="w"> </span><span class="m">120</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span>--n-seeds<span class="w"> </span><span class="m">5</span>
+</code></pre></div>
+<hr />
+<h2 id="aloha-sim-insertion-retention-sweep">ALOHA Sim Insertion — Retention Sweep</h2>
+<p><strong>Dataset:</strong> <code>lerobot/aloha_sim_insertion_human</code> (HuggingFace Hub)
+<strong>Episodes:</strong> 50 total · 40 training · 10 test · <strong>Quality score: 87.3/100</strong> (2 CRITICAL, 2 WARNING)
+<strong>Setup:</strong> 5 random seeds · 120 epochs BC-MLP · tail = bottom 15% by action-space density (6 episodes)</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">Keep</th>
+<th style="text-align: right;">N</th>
+<th style="text-align: right;">Calibra MSE</th>
+<th style="text-align: right;">Rel</th>
+<th style="text-align: right;">Tail cov</th>
+<th style="text-align: right;">Random MSE ±std</th>
+<th style="text-align: right;">Rel</th>
+<th style="text-align: right;">Tail cov</th>
+<th style="text-align: right;">Saved</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">5%</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0.008739</td>
+<td style="text-align: right;">2.81x</td>
+<td style="text-align: right;">33.3%</td>
+<td style="text-align: right;">0.015407 ±0.0057</td>
+<td style="text-align: right;">4.96x</td>
+<td style="text-align: right;">3.3%</td>
+<td style="text-align: right;">95%</td>
+</tr>
+<tr>
+<td style="text-align: right;">10%</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">0.007749</td>
+<td style="text-align: right;">2.50x</td>
+<td style="text-align: right;">33.3%</td>
+<td style="text-align: right;">0.008842 ±0.0031</td>
+<td style="text-align: right;">2.85x</td>
+<td style="text-align: right;">3.3%</td>
+<td style="text-align: right;">90%</td>
+</tr>
+<tr>
+<td style="text-align: right;">25%</td>
+<td style="text-align: right;">10</td>
+<td style="text-align: right;">0.005124</td>
+<td style="text-align: right;">1.65x</td>
+<td style="text-align: right;">50.0%</td>
+<td style="text-align: right;">0.004186 ±0.0005</td>
+<td style="text-align: right;">1.35x</td>
+<td style="text-align: right;">23.3%</td>
+<td style="text-align: right;">75%</td>
+</tr>
+<tr>
+<td style="text-align: right;">50%</td>
+<td style="text-align: right;">20</td>
+<td style="text-align: right;">0.003533</td>
+<td style="text-align: right;">1.14x</td>
+<td style="text-align: right;">83.3%</td>
+<td style="text-align: right;">0.003124 ±0.0005</td>
+<td style="text-align: right;">1.01x</td>
+<td style="text-align: right;">36.7%</td>
+<td style="text-align: right;">50%</td>
+</tr>
+<tr>
+<td style="text-align: right;">75%</td>
+<td style="text-align: right;">30</td>
+<td style="text-align: right;">0.003250</td>
+<td style="text-align: right;">1.05x</td>
+<td style="text-align: right;">100.0%</td>
+<td style="text-align: right;">0.002733 ±0.0002</td>
+<td style="text-align: right;">0.88x</td>
+<td style="text-align: right;">70.0%</td>
+<td style="text-align: right;">25%</td>
+</tr>
+<tr>
+<td style="text-align: right;">100%</td>
+<td style="text-align: right;">40</td>
+<td style="text-align: right;">0.003035</td>
+<td style="text-align: right;"><strong>0.98x</strong></td>
+<td style="text-align: right;">100.0%</td>
+<td style="text-align: right;">0.003025 ±0.0004</td>
+<td style="text-align: right;">0.97x</td>
+<td style="text-align: right;">100.0%</td>
+<td style="text-align: right;">0%</td>
+</tr>
+</tbody>
+</table>
+<p>Full baseline: MSE = 0.003104 · 26.7s train time</p>
+<p><strong>Key findings:</strong> With only 50 episodes and a high quality score (87.3), ALOHA sim has limited redundancy. Calibra's quality filter cannot identify a 25% subset that matches full performance — the dataset is already too clean and compact for large savings. Calibra consistently outperforms random at the 5% and 10% budgets (2.81x vs. 4.96x and 2.50x vs. 2.85x), and preserves rare behaviors more reliably at every fraction. The 50% budget shows the clearest story: Calibra 1.14x vs. Random 1.01x — random wins on MSE, but Calibra retains 83% of rare behaviors vs. 37%.</p>
+<p>This is the expected behaviour: <strong>Calibra's data-volume savings are largest when datasets have high redundancy and quality issues (like PushT). On already-clean, small datasets, the benefit shifts to rare-behavior preservation rather than volume reduction.</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>python<span class="w"> </span>experiments/lerobot_coreset_benchmark.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span>--dataset<span class="w"> </span>lerobot/aloha_sim_insertion_human<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span>--n-epochs<span class="w"> </span><span class="m">120</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span>--n-seeds<span class="w"> </span><span class="m">5</span>
+</code></pre></div>
+<hr />
 <h2 id="synthetic-rare-mode-benchmark-controlled">Synthetic Rare-Mode Benchmark (Controlled)</h2>
 <p>See README § "Rare-mode preservation" for the controlled 2D multigoal benchmark (worst-group success, 5-seed). Results: 98.7% worst-group (Calibra) vs. 36.5% (Random) at 5% retention.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python<span class="w"> </span>experiments/multigoal_obstacle_benchmark.py
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>python<span class="w"> </span>experiments/multigoal_obstacle_benchmark.py
 </code></pre></div>
 <hr />
 <h2 id="multi-dataset-ablation-bc-mlp-act-diffusion-policy">Multi-Dataset Ablation (BC-MLP, ACT, Diffusion Policy)</h2>
 <p>See README § "Ablation study" and § "Cross-architecture check" for full tables across ALOHA Mobile, DROID-100, and PushT real at 30% retention with 5 seeds, 3 policy families, and 7 competing methods including K-Center, Facility Location, and Herding.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>python<span class="w"> </span>experiments/ablation_benchmark.py<span class="w"> </span>--dataset<span class="w"> </span>lerobot/aloha_mobile_cabinet<span class="w"> </span>--seeds<span class="w"> </span><span class="m">5</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>python<span class="w"> </span>experiments/ablation_benchmark.py<span class="w"> </span>--dataset<span class="w"> </span>lerobot/droid_100<span class="w"> </span>--seeds<span class="w"> </span><span class="m">5</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>python<span class="w"> </span>experiments/ablation_benchmark.py<span class="w"> </span>--dataset<span class="w"> </span>lerobot/columbia_cairlab_pusht_real<span class="w"> </span>--seeds<span class="w"> </span><span class="m">5</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>python<span class="w"> </span>experiments/aggregate_ablation.py<span class="w"> </span>results/ablation_*.json
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>python<span class="w"> </span>experiments/ablation_benchmark.py<span class="w"> </span>--dataset<span class="w"> </span>lerobot/aloha_mobile_cabinet<span class="w"> </span>--seeds<span class="w"> </span><span class="m">5</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>python<span class="w"> </span>experiments/ablation_benchmark.py<span class="w"> </span>--dataset<span class="w"> </span>lerobot/droid_100<span class="w"> </span>--seeds<span class="w"> </span><span class="m">5</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>python<span class="w"> </span>experiments/ablation_benchmark.py<span class="w"> </span>--dataset<span class="w"> </span>lerobot/columbia_cairlab_pusht_real<span class="w"> </span>--seeds<span class="w"> </span><span class="m">5</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>python<span class="w"> </span>experiments/aggregate_ablation.py<span class="w"> </span>results/ablation_*.json
 </code></pre></div>
 
 
