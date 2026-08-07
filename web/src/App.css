@@ -91,33 +91,13 @@ footer a:hover {
   border-bottom: 1px solid var(--line);
 }
 
-.hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(115deg, rgba(244, 245, 239, 0) 50%, rgba(30, 91, 58, 0.055) 50%);
-}
-
-.hero-glow {
-  position: absolute;
-  width: 520px;
-  height: 520px;
-  right: 8%;
-  top: 11%;
-  border-radius: 50%;
-  background: rgba(189, 231, 90, 0.25);
-  filter: blur(110px);
-  pointer-events: none;
-}
-
 .hero-grid {
   position: relative;
   display: grid;
   grid-template-columns: 1.08fr 0.92fr;
   gap: 78px;
   align-items: center;
-  padding-block: 88px 118px;
+  padding-block: 100px 132px;
 }
 
 .eyebrow {
@@ -147,11 +127,6 @@ footer a:hover {
   letter-spacing: -0.065em;
 }
 
-.hero h1 em {
-  color: var(--green);
-  font-style: normal;
-}
-
 .hero-copy > p {
   max-width: 590px;
   margin: 28px 0 30px;
@@ -163,7 +138,27 @@ footer a:hover {
 .hero-actions {
   display: flex;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 22px;
+}
+
+.hero-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+
+.hero-github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hero-github-link:hover {
+  color: var(--ink);
 }
 
 .button {
@@ -189,10 +184,6 @@ footer a:hover {
   color: white;
   background: var(--green);
   border-color: var(--green);
-}
-
-.button-secondary {
-  background: rgba(251, 252, 247, 0.75);
 }
 
 .copy-command {
