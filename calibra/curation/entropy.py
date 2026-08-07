@@ -65,7 +65,9 @@ def compute_trajectory_entropy(actions: np.ndarray, num_bins: int = 20) -> float
     joint). This is fast and sufficient for detecting near-duplicate trajectories
     where all dimensions are simultaneously low-entropy.
     """
-    acts = np.asarray(actions, dtype=np.float32)
+    # float32 loses precision on the sub-mm-variance columns this function targets,
+    # which can collapse distinct values and make np.histogram raise on degenerate edges.
+    acts = np.asarray(actions, dtype=np.float64)
     if acts.ndim == 1:
         acts = acts[:, np.newaxis]
 

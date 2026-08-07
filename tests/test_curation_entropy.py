@@ -74,6 +74,19 @@ class TestComputeTrajectoryEntropy:
         # More bins → finer resolution → higher entropy (more spread)
         assert h40 > h10
 
+    def test_large_offset_submillimeter_variation_does_not_crash(self):
+        """
+        Regression test: action values with a large base offset (e.g. world-frame
+        positions) and sub-millimeter variance used to crash np.histogram once cast
+        to float32, since the precision loss could collapse hundreds of distinct
+        values down to one or two, degenerating the histogram bin edges.
+        """
+        rng = np.random.default_rng(0)
+        base = 1234.5678
+        acts = base + rng.uniform(-1e-4, 1e-4, (500, 1))
+        entropy = compute_trajectory_entropy(acts, num_bins=20)
+        assert entropy > 0.0
+
 
 # ── score_batch_entropy / rank_by_entropy ─────────────────────────────────────
 
