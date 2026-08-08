@@ -724,6 +724,45 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#calibra-benchmark-full-vs-random-vs-calibra-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        calibra benchmark — full vs. random vs. Calibra comparison
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#calibra-experiment-record-and-report-measured-training-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        calibra experiment — record and report measured training results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="calibra experiment — record and report measured training results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#partner-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Partner workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1422,6 +1461,45 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#calibra-benchmark-full-vs-random-vs-calibra-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        calibra benchmark — full vs. random vs. Calibra comparison
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#calibra-experiment-record-and-report-measured-training-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        calibra experiment — record and report measured training results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="calibra experiment — record and report measured training results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#partner-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Partner workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1802,6 +1880,91 @@
 <a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>calibra<span class="w"> </span>serve<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0
 </code></pre></div>
 <p>Starts a local HTTP server exposing all Calibra diagnostics as a REST API and serving the visual web dashboard at <code>http://localhost:7842</code>. Use <code>--host 0.0.0.0</code> to expose on all network interfaces.</p>
+<hr />
+<h2 id="calibra-benchmark-full-vs-random-vs-calibra-comparison"><code>calibra benchmark</code> — full vs. random vs. Calibra comparison</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="c1"># Single retention level, purely simulated</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>calibra<span class="w"> </span>benchmark<span class="w"> </span>lerobot/pusht<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.3<span class="w"> </span>--policy<span class="w"> </span>diffusion
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="c1"># Full retention curve in one shot</span>
+<a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>calibra<span class="w"> </span>benchmark<span class="w"> </span>lerobot/pusht<span class="w"> </span>--sweep
+<a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>
+<a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="c1"># Custom retention levels</span>
+<a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>calibra<span class="w"> </span>benchmark<span class="w"> </span>lerobot/pusht<span class="w"> </span>--sweep<span class="w"> </span>--fractions<span class="w"> </span><span class="m">0</span>.10,0.30,0.50,1.00
+<a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>
+<a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a><span class="c1"># Substitute real measured results wherever they&#39;ve been recorded</span>
+<a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a>calibra<span class="w"> </span>benchmark<span class="w"> </span>lerobot/pusht<span class="w"> </span>--sweep<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht
+<a id="__codelineno-28-12" name="__codelineno-28-12" href="#__codelineno-28-12"></a>
+<a id="__codelineno-28-13" name="__codelineno-28-13" href="#__codelineno-28-13"></a>calibra<span class="w"> </span>benchmark<span class="w"> </span>lerobot/pusht<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.3<span class="w"> </span>--json<span class="w">   </span><span class="c1"># machine-readable</span>
+</code></pre></div>
+<p>Runs diagnostics + the heuristic outcome predictor on three conditions — the raw dataset, a randomly pruned subset, and the Calibra coreset — and reports GPU-hours and predicted success rate for each. GPU-hours are simulated by default: linear scaling of <code>--base-gpu-hours</code> (default 24.0) by episode-count fraction.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--keep FRACTION</code></td>
+<td>Retention fraction for a single-point comparison (default 0.3). Ignored with <code>--sweep</code>.</td>
+</tr>
+<tr>
+<td><code>--sweep</code></td>
+<td>Run the full design-partner retention curve instead of one <code>--keep</code> value: full baseline, then random vs. Calibra at every level in <code>--fractions</code>.</td>
+</tr>
+<tr>
+<td><code>--fractions LIST</code></td>
+<td>Comma-separated retention fractions for <code>--sweep</code> (default <code>0.10,0.25,0.50,0.75,1.00</code>, matching the design-partner protocol).</td>
+</tr>
+<tr>
+<td><code>--experiment-id ID</code></td>
+<td>Substitute real measured GPU-hours / eval success rate from <code>calibra experiment record</code> wherever a matching condition and retention level has been logged. Falls back to simulated values for anything not yet measured.</td>
+</tr>
+<tr>
+<td><code>--base-gpu-hours H</code></td>
+<td>GPU-hours to train on the full (100%) dataset, used for simulated scaling (default 24.0).</td>
+</tr>
+<tr>
+<td><code>--policy</code></td>
+<td>Policy family for the outcome predictor (<code>bc-mlp</code>, <code>act</code>, <code>diffusion</code>, <code>gr00t</code>, ...).</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>Machine-readable output.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Simulated vs. measured.</strong> Every reported number is tagged <code>(simulated)</code> or <code>(measured)</code>, and the report carries an overall status:</p>
+<ul>
+<li><strong>SIMULATED</strong> — nothing measured yet; the numbers are predictions from the heuristic outcome model and linear GPU-hour scaling. Not a case study.</li>
+<li><strong>PARTIAL MEASUREMENT</strong> — some conditions are measured, others still simulated. Not safe to present as a validated result — mixing real and predicted numbers without labeling them is misleading.</li>
+<li><strong>CASE STUDY / VALIDATED</strong> — full, random, and Calibra are all backed by real recorded training runs at that retention level. Safe to report as a validated case study.</li>
+</ul>
+<p>Compute savings are computed from GPU-hours, not episode-count reduction — once real numbers are mixed in, the two can diverge (dataloader/I/O overhead doesn't shrink proportionally with data).</p>
+<hr />
+<h2 id="calibra-experiment-record-and-report-measured-training-results"><code>calibra experiment</code> — record and report measured training results</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="c1"># Log one training run&#39;s result</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>calibra<span class="w"> </span>experiment<span class="w"> </span>record<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="w">    </span>--dataset<span class="w"> </span>partner-a/pusht_v3<span class="w"> </span>--condition<span class="w"> </span>calibra<span class="w"> </span>--retention<span class="w"> </span><span class="m">25</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a><span class="w">    </span>--n-episodes<span class="w"> </span><span class="m">300</span><span class="w"> </span>--policy<span class="w"> </span>act<span class="w"> </span>--eval-success-rate<span class="w"> </span><span class="m">0</span>.84<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a><span class="w">    </span>--gpu-hours<span class="w"> </span><span class="m">19</span>.8<span class="w"> </span>--seed<span class="w"> </span><span class="m">0</span>
+<a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>
+<a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>calibra<span class="w"> </span>experiment<span class="w"> </span>list<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht
+<a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>calibra<span class="w"> </span>experiment<span class="w"> </span>report<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht
+<a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a>calibra<span class="w"> </span>experiment<span class="w"> </span>report<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht<span class="w"> </span>--json
+</code></pre></div>
+<p>Records the <em>results</em> of real training runs — GPU-hours, wall-clock time, energy, eval success rate — against the design-partner protocol's three conditions (<code>full</code>, <code>random</code>, <code>calibra</code>) at a given retention percentage. This command doesn't run training itself; training happens in whatever pipeline the partner already uses (<code>lerobot-train</code>, a custom loop, etc.) — <code>calibra experiment</code> just logs what came out of it, consistently, so it can be compared and fed into <code>calibra benchmark --experiment-id</code>.</p>
+<p>Stored as JSON Lines at <code>~/.calibra/experiments.jsonl</code> by default (override with <code>--path</code>). Local only — never synced to any network endpoint, matching the rest of Calibra's on-prem posture.</p>
+<p><code>calibra experiment report</code> prints the full retention curve for one experiment, the Calibra-vs-random delta at each level, and which <code>(retention%, condition)</code> pairs the protocol still expects but haven't been recorded (<code>10/25/50/75/100%</code> × <code>full/random/calibra</code>, minus the combinations that don't apply — <code>full</code> only at 100%, <code>random</code>/<code>calibra</code> never at 100%).</p>
+<h3 id="partner-workflow">Partner workflow</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>1. Run Calibra           calibra prune / calibra benchmark --sweep
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>2. Train Full / Random / Calibra   (partner&#39;s own training pipeline)
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>3. Record measured results         calibra experiment record --condition ... --retention ...
+<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>4. Run benchmark with experiment ID   calibra benchmark --sweep --experiment-id &lt;ID&gt;
+<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>5. Generate comparison              calibra experiment report --experiment-id &lt;ID&gt;
+</code></pre></div>
+<p>Repeat steps 2–3 for each condition/retention level until <code>calibra experiment report</code> shows the protocol complete, at which point <code>calibra benchmark --sweep --experiment-id &lt;ID&gt;</code> reports <code>CASE STUDY / VALIDATED</code>.</p>
 
 
 
