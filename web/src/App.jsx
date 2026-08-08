@@ -211,7 +211,7 @@ function App() {
           <div className="container hero-grid">
             <div className="hero-copy">
               <div className="eyebrow"><span /> Open-source · CI-ready · No account required</div>
-              <h1>Stop wasting GPU hours on robot data.</h1>
+              <h1>Stop wasting <span className="accent-word">GPU hours</span> on robot data.</h1>
               <p>
                 Calibra audits dataset integrity, measures quality and coverage, and builds
                 quality-aware coresets — so you train on less data, spend less compute, and
@@ -221,15 +221,17 @@ function App() {
                 <a className="button button-primary" href={LINKS.demo} target="_blank" rel="noreferrer">
                   Try the demo <ExternalLink size={16} />
                 </a>
-              </div>
-              <div className="hero-meta-row">
-                <CopyCommand />
-                <a className="hero-github-link" href={LINKS.github} target="_blank" rel="noreferrer">
+                <a className="button" href={LINKS.github} target="_blank" rel="noreferrer">
                   <Github size={16} /> View on GitHub
                 </a>
               </div>
+              <div className="hero-meta-row">
+                <CopyCommand />
+              </div>
             </div>
-            <TerminalReport />
+            <div className="terminal-wrap">
+              <TerminalReport />
+            </div>
           </div>
           <a className="scroll-cue" href="#benchmark">
             See benchmark results <ArrowDown size={15} />

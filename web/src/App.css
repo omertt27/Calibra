@@ -7,8 +7,8 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  border-bottom: 1px solid rgba(23, 33, 27, 0.12);
-  background: rgba(244, 245, 239, 0.88);
+  border-bottom: 1px solid var(--line);
+  background: rgba(10, 13, 9, 0.78);
   backdrop-filter: blur(14px);
 }
 
@@ -45,7 +45,7 @@
 
 .nav-links a:hover,
 footer a:hover {
-  color: var(--orange);
+  color: var(--green-bright);
 }
 
 .nav-right {
@@ -71,15 +71,18 @@ footer a:hover {
   align-items: center;
   gap: 8px;
   padding: 9px 14px;
-  border: 1px solid var(--ink);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
   border-radius: 100px;
   font-size: 13px;
   font-weight: 700;
+  transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
 }
 
 .nav-github:hover {
-  color: white;
-  background: var(--ink);
+  color: var(--paper);
+  background: var(--green-bright);
+  border-color: var(--green-bright);
 }
 
 .hero {
@@ -105,7 +108,7 @@ footer a:hover {
   align-items: center;
   gap: 9px;
   margin-bottom: 22px;
-  color: var(--green);
+  color: var(--green-bright);
   font-family: var(--mono);
   font-size: 11px;
   font-weight: 500;
@@ -120,16 +123,21 @@ footer a:hover {
 }
 
 .hero h1 {
-  max-width: 680px;
+  max-width: 760px;
   margin: 0;
-  font-size: clamp(48px, 6.2vw, 78px);
+  color: var(--ink);
+  font-size: clamp(46px, 6.6vw, 92px);
   line-height: 0.98;
   letter-spacing: -0.065em;
 }
 
+.hero h1 .accent-word {
+  color: var(--green-bright);
+}
+
 .hero-copy > p {
   max-width: 590px;
-  margin: 28px 0 30px;
+  margin: 30px 0 34px;
   color: var(--muted);
   font-size: 18px;
   line-height: 1.7;
@@ -138,7 +146,7 @@ footer a:hover {
 .hero-actions {
   display: flex;
   gap: 12px;
-  margin-bottom: 22px;
+  margin-bottom: 26px;
 }
 
 .hero-meta-row {
@@ -148,42 +156,35 @@ footer a:hover {
   flex-wrap: wrap;
 }
 
-.hero-github-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.hero-github-link:hover {
-  color: var(--ink);
-}
-
 .button {
-  min-height: 47px;
+  min-height: 50px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 9px;
-  padding: 0 20px;
-  border: 1px solid var(--ink);
+  padding: 0 22px;
+  border: 1px solid var(--line-strong);
   border-radius: 6px;
+  color: var(--ink);
   font-size: 13px;
   font-weight: 700;
-  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease;
 }
 
 .button:hover {
   transform: translateY(-2px);
-  box-shadow: 4px 4px 0 var(--ink);
+  border-color: var(--green-bright);
+  box-shadow: 4px 4px 0 var(--green-bright);
 }
 
 .button-primary {
-  color: white;
-  background: var(--green);
-  border-color: var(--green);
+  color: var(--paper);
+  background: var(--green-bright);
+  border-color: var(--green-bright);
+}
+
+.button-primary:hover {
+  box-shadow: 4px 4px 0 rgba(189, 231, 90, 0.35);
 }
 
 .copy-command {
@@ -194,9 +195,9 @@ footer a:hover {
   justify-content: space-between;
   gap: 20px;
   padding: 0 8px 0 16px;
-  color: #dbe4dc;
-  background: var(--ink);
-  border: 1px solid var(--ink);
+  color: #c5cec7;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   border-radius: 6px;
   cursor: pointer;
 }
@@ -218,8 +219,8 @@ footer a:hover {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: #c5cec7;
-  border-left: 1px solid #39433d;
+  color: #7f8a80;
+  border-left: 1px solid var(--line);
   font-size: 11px;
 }
 
@@ -227,14 +228,27 @@ footer a:hover {
   color: var(--green-bright);
 }
 
+.terminal-wrap {
+  position: relative;
+}
+
+.terminal-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -40px;
+  z-index: -1;
+  background: radial-gradient(circle at 50% 40%, rgba(189, 231, 90, 0.16), transparent 68%);
+  filter: blur(6px);
+}
+
 .terminal {
   position: relative;
   overflow: hidden;
   color: #dce5de;
-  background: #111914;
-  border: 1px solid #071009;
+  background: #0e130e;
+  border: 1px solid var(--line-strong);
   border-radius: 10px;
-  box-shadow: 12px 14px 0 rgba(30, 91, 58, 0.14);
+  box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(189, 231, 90, 0.05);
   font-family: var(--mono);
 }
 
@@ -245,8 +259,8 @@ footer a:hover {
   align-items: center;
   padding: 0 15px;
   color: #879289;
-  background: #1b251e;
-  border-bottom: 1px solid #2d382f;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
   font-size: 10px;
 }
 
@@ -259,7 +273,7 @@ footer a:hover {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #e6642e;
+  background: var(--orange);
 }
 
 .terminal-dots i:nth-child(2) {
@@ -282,7 +296,7 @@ footer a:hover {
 .terminal-command {
   padding-bottom: 20px;
   color: #f4f7f4;
-  border-bottom: 1px solid #2d382f;
+  border-bottom: 1px solid var(--line);
 }
 
 .terminal-command span {
@@ -339,7 +353,7 @@ footer a:hover {
 }
 
 .report-critical .report-label span {
-  background: rgba(255, 128, 87, 0.12);
+  background: rgba(255, 128, 87, 0.14);
 }
 
 .report-warning .report-label {
@@ -347,7 +361,7 @@ footer a:hover {
 }
 
 .report-warning .report-label span {
-  background: rgba(224, 187, 82, 0.12);
+  background: rgba(224, 187, 82, 0.14);
 }
 
 .report-passed .report-label {
@@ -355,15 +369,15 @@ footer a:hover {
 }
 
 .report-passed .report-label span {
-  background: rgba(130, 206, 99, 0.12);
+  background: rgba(130, 206, 99, 0.14);
 }
 
 .report-skipped .report-label {
-  color: #5e6a63;
+  color: #6b776f;
 }
 
 .report-skipped .report-label span {
-  background: rgba(94, 106, 99, 0.16);
+  background: rgba(107, 119, 111, 0.18);
 }
 
 .report-footer {
@@ -373,7 +387,7 @@ footer a:hover {
   margin-top: 20px;
   padding-top: 16px;
   color: #dce5de;
-  border-top: 1px solid #2d382f;
+  border-top: 1px solid var(--line);
   font-size: 11px;
 }
 
@@ -399,8 +413,8 @@ footer a:hover {
 }
 
 .stats-bar {
-  background: var(--ink);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
 }
 
 .stats-grid {
@@ -410,7 +424,7 @@ footer a:hover {
 
 .stat-item {
   padding: 52px 42px;
-  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  border-right: 1px solid var(--line);
 }
 
 .stat-item:last-child {
@@ -419,7 +433,7 @@ footer a:hover {
 
 .stats-caveat {
   padding: 0 0 30px;
-  color: #6c766f;
+  color: #626d64;
   font-family: var(--mono);
   font-size: 10px;
   line-height: 1.7;
@@ -433,7 +447,7 @@ footer a:hover {
 
 .stat-number {
   display: block;
-  font-size: clamp(52px, 6.5vw, 80px);
+  font-size: clamp(52px, 6.5vw, 86px);
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.065em;
@@ -443,7 +457,7 @@ footer a:hover {
 .stat-label {
   display: block;
   margin-top: 10px;
-  color: white;
+  color: var(--ink);
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -452,7 +466,7 @@ footer a:hover {
 .stat-note {
   display: block;
   margin-top: 6px;
-  color: #5e6e63;
+  color: var(--muted);
   font-family: var(--mono);
   font-size: 9px;
   text-transform: uppercase;
@@ -477,8 +491,9 @@ footer a:hover {
 .research-card h2,
 .cta-panel h2 {
   margin: 0;
-  font-size: clamp(34px, 4.7vw, 55px);
-  line-height: 1.05;
+  color: var(--ink);
+  font-size: clamp(36px, 5vw, 60px);
+  line-height: 1.02;
   letter-spacing: -0.055em;
 }
 
@@ -492,7 +507,7 @@ footer a:hover {
 }
 
 .workflow {
-  background: var(--surface);
+  background: var(--paper);
   border-bottom: 1px solid var(--line);
 }
 
@@ -500,7 +515,7 @@ footer a:hover {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   border: 1px solid var(--line);
-  background: var(--paper);
+  background: var(--surface);
 }
 
 .workflow-step {
@@ -528,13 +543,14 @@ footer a:hover {
 }
 
 .step-arrow {
-  color: #a3aaa4;
+  color: var(--muted);
   transform: translateX(37px);
   z-index: 1;
 }
 
 .workflow-step h3 {
   margin: 0 0 8px;
+  color: var(--ink);
   font-size: 23px;
   letter-spacing: -0.035em;
 }
@@ -548,7 +564,7 @@ footer a:hover {
 }
 
 .workflow-step code {
-  color: var(--green);
+  color: var(--green-bright);
   font-family: var(--mono);
   font-size: 10px;
 }
@@ -564,6 +580,7 @@ footer a:hover {
 }
 
 .proof {
+  background: var(--paper);
   border-bottom: 1px solid var(--line);
 }
 
@@ -584,6 +601,7 @@ footer a:hover {
   margin: 0 0 34px;
   padding: 0;
   list-style: none;
+  color: var(--ink);
   font-size: 13px;
   font-weight: 600;
 }
@@ -595,7 +613,7 @@ footer a:hover {
 }
 
 .proof-copy li svg {
-  color: var(--green);
+  color: var(--green-bright);
 }
 
 .text-link {
@@ -603,8 +621,8 @@ footer a:hover {
   align-items: center;
   gap: 8px;
   padding-bottom: 4px;
-  color: var(--green);
-  border-bottom: 1px solid var(--green);
+  color: var(--green-bright);
+  border-bottom: 1px solid var(--green-bright);
   font-size: 13px;
   font-weight: 700;
 }
@@ -614,7 +632,7 @@ footer a:hover {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 10px;
-  box-shadow: 12px 14px 0 rgba(30, 91, 58, 0.11);
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.55);
 }
 
 .coverage-head {
@@ -639,16 +657,18 @@ footer a:hover {
 }
 
 .coverage-head strong {
+  color: var(--ink);
   font-size: 14px;
 }
 
 .coverage-head .coverage-score {
   margin: 0;
   padding: 6px 10px;
-  color: var(--green);
-  background: rgba(189, 231, 90, 0.25);
+  color: var(--paper);
+  background: var(--green-bright);
   border-radius: 100px;
   font-size: 10px;
+  font-weight: 700;
 }
 
 .coverage-bars {
@@ -669,14 +689,14 @@ footer a:hover {
 .coverage-bar-row > div {
   height: 14px;
   overflow: hidden;
-  background: #e1e4dc;
+  background: var(--surface-2);
   border-radius: 3px;
 }
 
 .coverage-bar-row > div i {
   height: 100%;
   display: block;
-  background: #87948a;
+  background: #4a564d;
   border-radius: 3px;
 }
 
@@ -687,15 +707,15 @@ footer a:hover {
 }
 
 .coverage-bar-row.highlight {
-  color: var(--green);
+  color: var(--green-bright);
 }
 
 .coverage-bar-row.highlight > div i {
-  background: var(--orange);
+  background: var(--green-bright);
 }
 
 .coverage-bar-row.highlight strong {
-  color: var(--orange);
+  color: var(--green-bright);
 }
 
 .coverage-footnote {
@@ -709,8 +729,8 @@ footer a:hover {
 
 .ecosystems {
   padding-block: 90px;
-  background: var(--ink);
-  color: white;
+  background: var(--surface-2);
+  color: var(--ink);
 }
 
 .ecosystems .eyebrow {
@@ -720,7 +740,7 @@ footer a:hover {
 .ecosystem-list {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  border-block: 1px solid #39433d;
+  border-block: 1px solid var(--line);
 }
 
 .ecosystem {
@@ -728,7 +748,7 @@ footer a:hover {
   align-items: center;
   gap: 12px;
   padding: 25px 18px;
-  border-right: 1px solid #39433d;
+  border-right: 1px solid var(--line);
 }
 
 .ecosystem:last-child {
@@ -742,6 +762,7 @@ footer a:hover {
 
 .ecosystem strong {
   margin-bottom: 4px;
+  color: var(--ink);
   font-size: 15px;
 }
 
@@ -751,9 +772,9 @@ footer a:hover {
   flex: 0 0 35px;
   display: grid;
   place-items: center;
-  border: 1px solid #465149;
+  border: 1px solid var(--line-strong);
   border-radius: 8px;
-  background: #202b23;
+  background: var(--paper);
 }
 
 .ecosystem-logo img {
@@ -771,7 +792,7 @@ footer a:hover {
 
 .ecosystem span,
 .support-note {
-  color: #89958c;
+  color: var(--muted);
   font-family: var(--mono);
   font-size: 10px;
 }
@@ -781,7 +802,7 @@ footer a:hover {
 }
 
 .demo {
-  background: var(--surface);
+  background: var(--paper);
   border-bottom: 1px solid var(--line);
 }
 
@@ -794,6 +815,7 @@ footer a:hover {
 
 .demo-copy h2 {
   margin: 0;
+  color: var(--ink);
   font-size: clamp(34px, 4.5vw, 52px);
   line-height: 1.05;
   letter-spacing: -0.055em;
@@ -811,13 +833,14 @@ footer a:hover {
   display: block;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: white;
-  box-shadow: 12px 14px 0 rgba(30, 91, 58, 0.11);
-  transition: transform 160ms ease;
+  background: var(--surface);
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.55);
+  transition: transform 160ms ease, box-shadow 160ms ease;
 }
 
 .demo-frame:hover {
   transform: translateY(-3px);
+  box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(189, 231, 90, 0.12);
 }
 
 .demo-frame-bar {
@@ -827,8 +850,8 @@ footer a:hover {
   gap: 18px;
   padding: 0 14px;
   overflow: hidden;
-  color: #7d857f;
-  background: #edf0ea;
+  color: var(--muted);
+  background: var(--surface-2);
   border-bottom: 1px solid var(--line);
   font-family: var(--mono);
   font-size: 8px;
@@ -845,7 +868,7 @@ footer a:hover {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #d16a45;
+  background: var(--orange);
 }
 
 .demo-frame-bar i:nth-child(2) {
@@ -862,10 +885,11 @@ footer a:hover {
   display: block;
   object-fit: cover;
   object-position: top;
+  filter: brightness(0.92) saturate(1.05);
 }
 
 .research {
-  background: #e8eadf;
+  background: var(--surface);
   border-bottom: 1px solid var(--line);
 }
 
@@ -881,7 +905,7 @@ footer a:hover {
   height: 58px;
   display: grid;
   place-items: center;
-  color: var(--green);
+  color: var(--paper);
   background: var(--green-bright);
   border-radius: 50%;
   margin-bottom: 26px;
@@ -896,7 +920,7 @@ footer a:hover {
 }
 
 .research-copy h2 strong {
-  color: var(--green);
+  color: var(--green-bright);
 }
 
 .research-copy > p {
@@ -912,9 +936,9 @@ footer a:hover {
 
 .benchmark-meta span {
   padding: 6px 9px;
-  color: var(--green);
-  background: rgba(30, 91, 58, 0.07);
-  border: 1px solid rgba(30, 91, 58, 0.14);
+  color: var(--green-bright);
+  background: rgba(189, 231, 90, 0.09);
+  border: 1px solid rgba(189, 231, 90, 0.22);
   border-radius: 4px;
   font-family: var(--mono);
   font-size: 8px;
@@ -923,10 +947,10 @@ footer a:hover {
 
 .benchmark-card {
   padding: 26px;
-  background: var(--surface);
+  background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: 10px;
-  box-shadow: 10px 12px 0 rgba(30, 91, 58, 0.1);
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.55);
 }
 
 .benchmark-title {
@@ -934,6 +958,7 @@ footer a:hover {
   justify-content: space-between;
   padding-bottom: 18px;
   border-bottom: 1px solid var(--line);
+  color: var(--ink);
   font-size: 12px;
   font-weight: 700;
 }
@@ -965,7 +990,7 @@ footer a:hover {
 .benchmark-row > div {
   height: 12px;
   overflow: hidden;
-  background: #e1e4dc;
+  background: var(--paper);
   border-radius: 2px;
 }
 
@@ -973,7 +998,7 @@ footer a:hover {
   height: 100%;
   display: block;
   float: right;
-  background: #87948a;
+  background: #4a564d;
 }
 
 .benchmark-row strong {
@@ -984,12 +1009,12 @@ footer a:hover {
 }
 
 .benchmark-row.highlight {
-  color: var(--green);
+  color: var(--green-bright);
   font-weight: 700;
 }
 
 .benchmark-row.highlight > div i {
-  background: var(--green);
+  background: var(--green-bright);
 }
 
 .tail-coverage {
@@ -1001,7 +1026,7 @@ footer a:hover {
 
 .tail-coverage > div {
   padding: 13px;
-  background: #edf0e8;
+  background: var(--paper);
   border-radius: 5px;
 }
 
@@ -1017,14 +1042,14 @@ footer a:hover {
 
 .tail-coverage strong {
   margin-top: 4px;
-  color: var(--green);
+  color: var(--green-bright);
   font-family: var(--mono);
   font-size: 16px;
 }
 
 .benchmark-card > p {
   margin: 17px 0 0;
-  color: #7b847d;
+  color: var(--muted);
   font-family: var(--mono);
   font-size: 7px;
   line-height: 1.5;
@@ -1032,6 +1057,7 @@ footer a:hover {
 
 .final-cta {
   padding-block: 90px;
+  background: var(--paper);
 }
 
 .cta-panel {
@@ -1040,7 +1066,7 @@ footer a:hover {
   color: white;
   background: var(--green);
   border-radius: 12px;
-  box-shadow: 10px 10px 0 var(--green-bright);
+  box-shadow: 0 30px 80px -24px rgba(189, 231, 90, 0.16);
 }
 
 .cta-kicker {
@@ -1061,10 +1087,11 @@ footer a:hover {
 .cta-panel .copy-command {
   display: flex;
   margin: 0 auto 14px;
+  background: rgba(10, 13, 9, 0.35);
 }
 
 .cta-panel .button {
-  color: var(--ink);
+  color: var(--green);
   background: var(--green-bright);
   border-color: var(--green-bright);
 }
@@ -1123,7 +1150,7 @@ footer {
   .stat-item {
     padding: 34px 32px;
     border-right: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    border-bottom: 1px solid var(--line);
   }
 
   .stat-item:last-child {
@@ -1159,7 +1186,7 @@ footer {
   }
 
   .ecosystem {
-    border-bottom: 1px solid #39433d;
+    border-bottom: 1px solid var(--line);
   }
 
 }
