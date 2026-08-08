@@ -14,6 +14,9 @@ CLI entry point.
     python -m calibra retarget <path> [--out DIR] [--obs-key-pos KEY] [--obs-key-quat KEY]
     python -m calibra sft-select <path|hub-id> --keep FRACTION [--out coreset_index.json]
     python -m calibra sft-outcome --coreset coreset_index.json [--record-outcome RATE]
+    python -m calibra experiment record --experiment-id ID --condition full|random|calibra \
+                                         --retention PCT [--gpu-hours H] [--eval-success-rate R]
+    python -m calibra experiment report --experiment-id ID
 
 Examples:
     python -m calibra /data/robot_demos.h5
@@ -201,6 +204,12 @@ def main() -> None:
         from calibra.benchmark import run_benchmark
 
         run_benchmark(sys.argv[2:])
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "experiment":
+        from calibra.experiment import run_experiment
+
+        run_experiment(sys.argv[2:])
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "card":
