@@ -2,6 +2,21 @@
 
 All notable changes to Calibra are documented here.
 
+## [Unreleased] — Measured training results
+
+Calibra's predictions (`calibra benchmark`) were always simulated — a heuristic outcome model plus linear GPU-hour scaling. That's useful for a first pass, but not evidence. This adds the other half: a way to record what a design partner's *real* training runs actually cost and achieved, and to fold those measured numbers into the benchmark report wherever they're available, so a report is never presented as a validated result when parts of it are still predictions.
+
+### Added
+
+- **`calibra experiment record`** — logs one training run's result (GPU-hours, wall-clock time, energy, eval success rate) against the design-partner protocol's `full` / `random` / `calibra` conditions at a given retention percentage. Training itself runs in the partner's own pipeline; this only records the outcome. Stored locally as JSON Lines at `~/.calibra/experiments.jsonl` — never synced to any network endpoint. New module `calibra/experiment_log.py`.
+- **`calibra experiment list` / `calibra experiment report`** — list recorded runs, or print the full retention-curve comparison for one experiment, including the Calibra-vs-random delta at each level and which `(retention%, condition)` pairs the protocol still expects but haven't been recorded yet. New CLI handler `calibra/experiment.py`.
+- **`calibra benchmark --sweep`** — runs the full design-partner retention curve (default `10/25/50/75/100%`, override with `--fractions`) in one shot instead of a single `--keep` fraction.
+- **`calibra benchmark --experiment-id ID`** — substitutes real measured GPU-hours / eval success rate from `calibra experiment record` into the benchmark report wherever a matching condition and retention level has been logged, falling back to simulated values for anything not yet measured.
+- Benchmark reports now carry a **status**: `SIMULATED` (nothing measured — a prediction), `PARTIAL MEASUREMENT` (some conditions measured, others still simulated — not safe to report as validated), or `CASE STUDY / VALIDATED` (full, random, and Calibra all backed by real recorded training runs). Every number is individually tagged `(measured)` or `(simulated)`.
+- Compute savings are now computed from GPU-hours rather than episode-count reduction, since the two can diverge once real measured numbers are mixed in.
+
+See `docs/commands.md`'s `calibra benchmark` and `calibra experiment` sections for the full partner workflow.
+
 ## [0.7.3] — Configurable Integrity CI policies
 
 Direct follow-up to the same HF feedback thread that drove 0.7.2: after reviewing the built-in block/inspect split, the reviewer proposed letting teams configure it themselves rather than shipping one fixed policy for everyone (a research lab only blocking on corrupted timestamps vs. a production team also blocking on camera freezes vs. a team that's validated calibration-drift thresholds enough to block on those too).

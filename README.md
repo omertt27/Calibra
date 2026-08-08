@@ -125,6 +125,35 @@ Method rankings are stable across all three policy families (Spearman ρ ≥ 0.8
 
 ---
 
+## Measure real training savings
+
+Calibra can record measured training results from real experiments and connect them to benchmark reports.
+
+```bash
+calibra experiment record --experiment-id my-run --condition calibra --retention 25 \
+                           --gpu-hours 6.2 --eval-success-rate 0.88
+calibra experiment list --experiment-id my-run
+calibra experiment report --experiment-id my-run
+```
+
+Run a retention sweep:
+
+```bash
+calibra benchmark --sweep
+```
+
+Connect measured results to the benchmark:
+
+```bash
+calibra benchmark --sweep --experiment-id my-run
+```
+
+Reports distinguish **simulated**, **partially measured**, and **validated case-study** results so estimated compute savings are not confused with measured results.
+
+→ [Full command reference](docs/commands.md)
+
+---
+
 ## Why diversity-aware selection beats random
 
 <p align="center">
@@ -229,6 +258,8 @@ result = selector.select(batch, report)
 | `calibra audit-all` | Bulk-audit an entire HF org; writes CalibraReport JSONs |
 | `calibra site` | Generate a static leaderboard website from audit results |
 | `calibra serve` | Local REST API server and web dashboard |
+| `calibra benchmark` | Compare full, random, and Calibra-selected datasets across training-data retention levels |
+| `calibra experiment` | Record and report measured training results such as GPU-hours and evaluation success |
 
 → [Full command reference](docs/commands.md)
 

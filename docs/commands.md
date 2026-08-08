@@ -456,3 +456,77 @@ calibra serve --host 0.0.0.0
 ```
 
 Starts a local HTTP server exposing all Calibra diagnostics as a REST API and serving the visual web dashboard at `http://localhost:7842`. Use `--host 0.0.0.0` to expose on all network interfaces.
+
+---
+
+## `calibra benchmark` — full vs. random vs. Calibra comparison
+
+```bash
+# Single retention level, purely simulated
+calibra benchmark lerobot/pusht --keep 0.3 --policy diffusion
+
+# Full retention curve in one shot
+calibra benchmark lerobot/pusht --sweep
+
+# Custom retention levels
+calibra benchmark lerobot/pusht --sweep --fractions 0.10,0.30,0.50,1.00
+
+# Substitute real measured results wherever they've been recorded
+calibra benchmark lerobot/pusht --sweep --experiment-id partner-a-pusht
+
+calibra benchmark lerobot/pusht --keep 0.3 --json   # machine-readable
+```
+
+Runs diagnostics + the heuristic outcome predictor on three conditions — the raw dataset, a randomly pruned subset, and the Calibra coreset — and reports GPU-hours and predicted success rate for each. GPU-hours are simulated by default: linear scaling of `--base-gpu-hours` (default 24.0) by episode-count fraction.
+
+| Flag | Description |
+|---|---|
+| `--keep FRACTION` | Retention fraction for a single-point comparison (default 0.3). Ignored with `--sweep`. |
+| `--sweep` | Run the full design-partner retention curve instead of one `--keep` value: full baseline, then random vs. Calibra at every level in `--fractions`. |
+| `--fractions LIST` | Comma-separated retention fractions for `--sweep` (default `0.10,0.25,0.50,0.75,1.00`, matching the design-partner protocol). |
+| `--experiment-id ID` | Substitute real measured GPU-hours / eval success rate from `calibra experiment record` wherever a matching condition and retention level has been logged. Falls back to simulated values for anything not yet measured. |
+| `--base-gpu-hours H` | GPU-hours to train on the full (100%) dataset, used for simulated scaling (default 24.0). |
+| `--policy` | Policy family for the outcome predictor (`bc-mlp`, `act`, `diffusion`, `gr00t`, ...). |
+| `--json` | Machine-readable output. |
+
+**Simulated vs. measured.** Every reported number is tagged `(simulated)` or `(measured)`, and the report carries an overall status:
+
+- **SIMULATED** — nothing measured yet; the numbers are predictions from the heuristic outcome model and linear GPU-hour scaling. Not a case study.
+- **PARTIAL MEASUREMENT** — some conditions are measured, others still simulated. Not safe to present as a validated result — mixing real and predicted numbers without labeling them is misleading.
+- **CASE STUDY / VALIDATED** — full, random, and Calibra are all backed by real recorded training runs at that retention level. Safe to report as a validated case study.
+
+Compute savings are computed from GPU-hours, not episode-count reduction — once real numbers are mixed in, the two can diverge (dataloader/I/O overhead doesn't shrink proportionally with data).
+
+---
+
+## `calibra experiment` — record and report measured training results
+
+```bash
+# Log one training run's result
+calibra experiment record --experiment-id partner-a-pusht \
+    --dataset partner-a/pusht_v3 --condition calibra --retention 25 \
+    --n-episodes 300 --policy act --eval-success-rate 0.84 \
+    --gpu-hours 19.8 --seed 0
+
+calibra experiment list --experiment-id partner-a-pusht
+calibra experiment report --experiment-id partner-a-pusht
+calibra experiment report --experiment-id partner-a-pusht --json
+```
+
+Records the *results* of real training runs — GPU-hours, wall-clock time, energy, eval success rate — against the design-partner protocol's three conditions (`full`, `random`, `calibra`) at a given retention percentage. This command doesn't run training itself; training happens in whatever pipeline the partner already uses (`lerobot-train`, a custom loop, etc.) — `calibra experiment` just logs what came out of it, consistently, so it can be compared and fed into `calibra benchmark --experiment-id`.
+
+Stored as JSON Lines at `~/.calibra/experiments.jsonl` by default (override with `--path`). Local only — never synced to any network endpoint, matching the rest of Calibra's on-prem posture.
+
+`calibra experiment report` prints the full retention curve for one experiment, the Calibra-vs-random delta at each level, and which `(retention%, condition)` pairs the protocol still expects but haven't been recorded (`10/25/50/75/100%` × `full/random/calibra`, minus the combinations that don't apply — `full` only at 100%, `random`/`calibra` never at 100%).
+
+### Partner workflow
+
+```text
+1. Run Calibra           calibra prune / calibra benchmark --sweep
+2. Train Full / Random / Calibra   (partner's own training pipeline)
+3. Record measured results         calibra experiment record --condition ... --retention ...
+4. Run benchmark with experiment ID   calibra benchmark --sweep --experiment-id <ID>
+5. Generate comparison              calibra experiment report --experiment-id <ID>
+```
+
+Repeat steps 2–3 for each condition/retention level until `calibra experiment report` shows the protocol complete, at which point `calibra benchmark --sweep --experiment-id <ID>` reports `CASE STUDY / VALIDATED`.
