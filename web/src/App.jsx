@@ -1,14 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ArrowDown,
   ArrowRight,
   Check,
   CheckCircle2,
-  Circle,
   Clipboard,
   ExternalLink,
   Github,
-  ShieldAlert,
   Sparkles,
 } from 'lucide-react'
 import './App.css'
@@ -58,6 +56,38 @@ const ECOSYSTEMS = [
   { name: 'Hugging Face', detail: 'Hub IDs', logo: 'huggingface.svg' },
 ]
 
+function Reveal({ as: Tag = 'div', className = '', delay = 0, children, ...props }) {
+  const ref = useRef(null)
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true)
+          observer.disconnect()
+        }
+      },
+      { threshold: 0.2, rootMargin: '0px 0px -60px 0px' }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <Tag
+      ref={ref}
+      className={`reveal${visible ? ' in-view' : ''}${className ? ` ${className}` : ''}`}
+      style={delay ? { transitionDelay: `${delay}ms` } : undefined}
+      {...props}
+    >
+      {children}
+    </Tag>
+  )
+}
+
 function Logo() {
   return (
     <a className="brand" href="#top" aria-label="Calibra home">
@@ -87,57 +117,16 @@ function CopyCommand({ large = false }) {
   )
 }
 
-function TerminalReport() {
-  return (
-    <div className="terminal" aria-label="Real calibra integrity CLI output">
-      <div className="terminal-bar">
-        <div className="terminal-dots"><i /><i /><i /></div>
-        <span>calibra — integrity</span>
-        <span className="terminal-status">completed in 0.8s</span>
-      </div>
-      <div className="terminal-body">
-        <div className="terminal-command"><span>$</span> calibra integrity pusht_demo</div>
-        <p className="report-meta">pusht_demo · 20 episodes</p>
-
-        <div className="report-group report-critical">
-          <div className="report-label"><ShieldAlert size={15} /> Critical <span>1</span></div>
-          <p><span>short_episode_fraction</span><strong>4 / 20 episodes</strong></p>
-          <p className="report-detail">20.0% of episodes have fewer than 80 steps (lower IQR fence) — likely aborted demonstrations. BC policies trained on these learn to quit tasks early.</p>
-        </div>
-
-        <div className="report-group report-passed">
-          <div className="report-label"><CheckCircle2 size={15} /> Passed <span>6</span></div>
-          <p><span>timestamp_jitter_cv</span><strong>pass</strong></p>
-          <p><span>action_dropout_rate</span><strong>pass</strong></p>
-          <p><span>ldlj</span><strong>pass</strong></p>
-          <p><span>jerk_spike_rate</span><strong>pass</strong></p>
-        </div>
-
-        <div className="report-group report-skipped">
-          <div className="report-label"><Circle size={15} /> Not evaluated <span>3</span></div>
-          <p><span>camera_freeze</span><strong>requires images</strong></p>
-          <p><span>duplicate_frame</span><strong>requires images</strong></p>
-        </div>
-
-        <div className="report-footer">
-          <span>Integrity Score: <strong>86 / 100</strong> · Status: Warning</span>
-          <span className="report-ci">CI result: Failed — 1 critical finding</span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function StatsBar() {
   return (
     <div className="stats-bar">
       <div className="container stats-grid">
-        {STATS.map((stat) => (
-          <div className="stat-item" key={stat.number}>
+        {STATS.map((stat, index) => (
+          <Reveal as="div" className="stat-item" key={stat.number} delay={index * 90}>
             <strong className="stat-number">{stat.number}</strong>
             <span className="stat-label">{stat.label}</span>
             <span className="stat-note">{stat.note}</span>
-          </div>
+          </Reveal>
         ))}
       </div>
       <div className="container">
@@ -158,7 +147,7 @@ const TAIL_COVERAGE = [
 
 function CoverageGraphic() {
   return (
-    <div className="coverage-card">
+    <Reveal as="div" className="coverage-card">
       <div className="coverage-head">
         <div><span>Tail-behavior coverage</span><strong>41/165 episodes · LeRobot PushT</strong></div>
         <span className="coverage-score">+67% vs. random</span>
@@ -167,7 +156,7 @@ function CoverageGraphic() {
         {TAIL_COVERAGE.map((row) => (
           <div className={`coverage-bar-row ${row.className}`} key={row.label}>
             <span>{row.label}</span>
-            <div><i style={{ width: `${row.value}%` }} /></div>
+            <div><i style={{ '--bar-width': `${row.value}%` }} /></div>
             <strong>{row.value.toFixed(1)}%</strong>
           </div>
         ))}
@@ -176,7 +165,7 @@ function CoverageGraphic() {
         Share of held-out rare-behavior episodes represented in a 41-episode coreset at 25%
         retention — same benchmark run shown above.
       </p>
-    </div>
+    </Reveal>
   )
 }
 
@@ -229,9 +218,6 @@ function App() {
                 <CopyCommand />
               </div>
             </div>
-            <div className="terminal-wrap">
-              <TerminalReport />
-            </div>
           </div>
           <a className="scroll-cue" href="#benchmark">
             See benchmark results <ArrowDown size={15} />
@@ -242,7 +228,7 @@ function App() {
 
         <section className="research section" id="benchmark">
           <div className="container">
-            <div className="research-card">
+            <Reveal as="div" className="research-card">
               <div className="research-copy">
                 <div className="research-mark"><Sparkles size={22} /></div>
                 <div className="eyebrow"><span /> Benchmark · LeRobot PushT</div>
@@ -266,17 +252,17 @@ function App() {
                 </div>
                 <div className="benchmark-row">
                   <span>Full dataset <small>165 episodes</small></span>
-                  <div><i style={{ width: '100%' }} /></div>
+                  <div><i style={{ '--bar-width': '100%' }} /></div>
                   <strong>420.93</strong>
                 </div>
                 <div className="benchmark-row highlight">
                   <span>Calibra <small>41 episodes</small></span>
-                  <div><i style={{ width: '99.6%' }} /></div>
+                  <div><i style={{ '--bar-width': '99.6%' }} /></div>
                   <strong>422.77</strong>
                 </div>
                 <div className="benchmark-row">
                   <span>Random <small>41 episodes</small></span>
-                  <div><i style={{ width: '97.9%' }} /></div>
+                  <div><i style={{ '--bar-width': '97.9%' }} /></div>
                   <strong>429.61</strong>
                 </div>
                 <div className="tail-coverage">
@@ -285,20 +271,20 @@ function App() {
                 </div>
                 <p>Source: 5-seed retention sweep. Full-data MSE is the unfiltered 165-episode baseline.</p>
               </div>
-            </div>
+            </Reveal>
           </div>
         </section>
 
         <section className="workflow section" id="workflow">
           <div className="container">
-            <div className="section-intro">
+            <Reveal as="div" className="section-intro">
               <div className="eyebrow"><span /> One pipeline, in the right order</div>
               <h2>Fix the data question before the model question.</h2>
               <p>Calibra turns an unknown dataset into a training decision through four explicit checks.</p>
-            </div>
+            </Reveal>
             <div className="workflow-grid">
               {WORKFLOW.map((step, index) => (
-                <article className="workflow-step" key={step.name}>
+                <Reveal as="article" className="workflow-step" key={step.name} delay={index * 90}>
                   <div className="step-top">
                     <span className="step-number">{step.number}</span>
                     {index < WORKFLOW.length - 1 && <ArrowRight className="step-arrow" size={20} />}
@@ -306,7 +292,7 @@ function App() {
                   <h3>{step.name}</h3>
                   <p>{step.question}</p>
                   <code>{step.command}</code>
-                </article>
+                </Reveal>
               ))}
             </div>
           </div>
@@ -314,7 +300,7 @@ function App() {
 
         <section className="proof section">
           <div className="container proof-grid">
-            <div className="proof-copy">
+            <Reveal as="div" className="proof-copy">
               <div className="eyebrow"><span /> Evidence, not a black box</div>
               <h2>See the problem. Find the episode. Fix it.</h2>
               <p>
@@ -327,20 +313,20 @@ function App() {
                 <li><CheckCircle2 size={18} /> No upload, account, or API key</li>
               </ul>
               <a className="text-link" href={LINKS.docs}>Explore the commands <ArrowRight size={16} /></a>
-            </div>
+            </Reveal>
             <CoverageGraphic />
           </div>
         </section>
 
         <section className="ecosystems section">
           <div className="container">
-            <div className="section-intro compact">
+            <Reveal as="div" className="section-intro compact">
               <div className="eyebrow"><span /> Works with your stack</div>
               <h2>Start with the data you already have.</h2>
-            </div>
+            </Reveal>
             <div className="ecosystem-list">
-              {ECOSYSTEMS.map((ecosystem) => (
-                <div className="ecosystem" key={ecosystem.name}>
+              {ECOSYSTEMS.map((ecosystem, index) => (
+                <Reveal as="div" className="ecosystem" key={ecosystem.name} delay={index * 70}>
                   <div className="ecosystem-logo">
                     {ecosystem.logo
                       ? <img src={`${import.meta.env.BASE_URL}${ecosystem.logo}`} alt="" loading="lazy" />
@@ -350,7 +336,7 @@ function App() {
                     <strong>{ecosystem.name}</strong>
                     <span>{ecosystem.detail}</span>
                   </div>
-                </div>
+                </Reveal>
               ))}
             </div>
             <p className="support-note">
@@ -361,7 +347,7 @@ function App() {
 
         <section className="demo section" id="demo">
           <div className="container demo-grid">
-            <div className="demo-copy">
+            <Reveal as="div" className="demo-copy">
               <div className="eyebrow"><span /> Try it in the browser</div>
               <h2>Inspect a public LeRobot dataset without installing anything.</h2>
               <p>
@@ -371,20 +357,20 @@ function App() {
               <a className="button button-primary" href={LINKS.demo} target="_blank" rel="noreferrer">
                 Open the live demo <ExternalLink size={16} />
               </a>
-            </div>
-            <a className="demo-frame" href={LINKS.demo} target="_blank" rel="noreferrer">
+            </Reveal>
+            <Reveal as="a" className="demo-frame" href={LINKS.demo} target="_blank" rel="noreferrer" delay={120}>
               <div className="demo-frame-bar">
                 <span><i /><i /><i /></span>
                 huggingface.co/spaces/omert27/robot-dataset-health-check
               </div>
               <img src={`${import.meta.env.BASE_URL}hf-space.png`} alt="Calibra Robot Dataset Health Check on Hugging Face Spaces" />
-            </a>
+            </Reveal>
           </div>
         </section>
 
         <section className="final-cta section">
           <div className="container">
-            <div className="cta-panel">
+            <Reveal as="div" className="cta-panel">
               <span className="cta-kicker">Before your next training run</span>
               <h2>Check the data first.</h2>
               <p>Install Calibra locally or inspect a public LeRobot dataset in the browser — free, no account needed.</p>
@@ -392,7 +378,7 @@ function App() {
               <a className="button button-primary" href={LINKS.demo} target="_blank" rel="noreferrer">
                 Try the Hugging Face demo <ExternalLink size={16} />
               </a>
-            </div>
+            </Reveal>
           </div>
         </section>
       </main>

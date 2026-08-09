@@ -1,22 +1,23 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap');
 
 :root {
-  font-family: 'Manrope', sans-serif;
-  color: #f2f5ee;
-  background: #0a0d09;
+  font-family: 'Hanken Grotesk', sans-serif;
+  color: #f2f2f0;
+  background: #0a0a0a;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --ink: #f2f5ee;
-  --muted: #8a9689;
-  --paper: #0a0d09;
-  --surface: #12170f;
-  --surface-2: #191f16;
-  --line: rgba(242, 245, 238, 0.1);
-  --line-strong: rgba(242, 245, 238, 0.2);
-  --green: #1e5b3a;
-  --green-bright: #bde75a;
-  --orange: #ff7a49;
-  --mono: 'DM Mono', monospace;
+  --ink: #f2f2f0;
+  --muted: #8f8f8c;
+  --paper: #0a0a0a;
+  --surface: #131313;
+  --surface-2: #1a1a1a;
+  --line: rgba(245, 245, 245, 0.1);
+  --line-strong: rgba(245, 245, 245, 0.22);
+  --green: #202020;
+  --green-bright: #ffffff;
+  --orange: #6b6b6b;
+  --mono: 'IBM Plex Mono', monospace;
+  --display: 'Fraunces', serif;
 }
 
 * {
@@ -31,12 +32,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background:
-    radial-gradient(ellipse 1100px 620px at 50% -8%, rgba(189, 231, 90, 0.1), transparent 60%),
-    linear-gradient(rgba(242, 245, 238, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(242, 245, 238, 0.035) 1px, transparent 1px),
-    var(--paper);
-  background-size: auto, 32px 32px, 32px 32px;
+  background: var(--paper);
 }
 
 button,
@@ -51,7 +47,7 @@ a {
 
 button:focus-visible,
 a:focus-visible {
-  outline: 3px solid rgba(189, 231, 90, 0.4);
+  outline: 3px solid rgba(255, 255, 255, 0.4);
   outline-offset: 3px;
 }
 
