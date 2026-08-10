@@ -229,7 +229,9 @@ def run_benchmark(argv: List[str]) -> None:
     log("Running diagnostics on Randomly pruned baseline ...")
     random.seed(42)
     random_ids = random.sample([ep.metadata.episode_id for ep in batch.episodes], k_size)
-    random_n, random_score = _diagnose_subset(pipeline, batch, random_ids, "random_pruned", args.policy)
+    random_n, random_score = _diagnose_subset(
+        pipeline, batch, random_ids, "random_pruned", args.policy
+    )
 
     # 5. Substitute real measured numbers wherever `calibra experiment record`
     # has logged them for a matching condition and retention level.
@@ -244,8 +246,12 @@ def run_benchmark(argv: List[str]) -> None:
     calibra_rec = _lookup_measured(elog_table, "calibra", args.keep * 100.0)
 
     raw_cond = _condition_result(n_total, n_total, args.base_gpu_hours, raw_score, full_rec)
-    random_cond = _condition_result(random_n, n_total, args.base_gpu_hours, random_score, random_rec)
-    calibra_cond = _condition_result(calibra_n, n_total, args.base_gpu_hours, calibra_score, calibra_rec)
+    random_cond = _condition_result(
+        random_n, n_total, args.base_gpu_hours, random_score, random_rec
+    )
+    calibra_cond = _condition_result(
+        calibra_n, n_total, args.base_gpu_hours, calibra_score, calibra_rec
+    )
 
     # Compute savings from GPU-hours directly, not from episode-count reduction —
     # data reduction and compute reduction are only equal under the simulated
@@ -270,9 +276,21 @@ def run_benchmark(argv: List[str]) -> None:
         "any_measured": any_measured,
         "status": status,
         "results": {
-            "raw": {**raw_cond, "gpu_hours": round(raw_cond["gpu_hours"], 1), "predicted_success_rate": round(raw_cond["predicted_success_rate"], 1)},
-            "random": {**random_cond, "gpu_hours": round(random_cond["gpu_hours"], 1), "predicted_success_rate": round(random_cond["predicted_success_rate"], 1)},
-            "calibra": {**calibra_cond, "gpu_hours": round(calibra_cond["gpu_hours"], 1), "predicted_success_rate": round(calibra_cond["predicted_success_rate"], 1)},
+            "raw": {
+                **raw_cond,
+                "gpu_hours": round(raw_cond["gpu_hours"], 1),
+                "predicted_success_rate": round(raw_cond["predicted_success_rate"], 1),
+            },
+            "random": {
+                **random_cond,
+                "gpu_hours": round(random_cond["gpu_hours"], 1),
+                "predicted_success_rate": round(random_cond["predicted_success_rate"], 1),
+            },
+            "calibra": {
+                **calibra_cond,
+                "gpu_hours": round(calibra_cond["gpu_hours"], 1),
+                "predicted_success_rate": round(calibra_cond["predicted_success_rate"], 1),
+            },
         },
         "compute_savings_pct": round(compute_savings, 1),
     }
@@ -406,8 +424,12 @@ def _run_sweep(args, batch, pipeline, raw_report, raw_score, n_total, log) -> No
 
         random_rec = _lookup_measured(elog_table, "random", pct)
         calibra_rec = _lookup_measured(elog_table, "calibra", pct)
-        random_cond = _condition_result(random_n, n_total, args.base_gpu_hours, random_score, random_rec)
-        calibra_cond = _condition_result(calibra_n, n_total, args.base_gpu_hours, calibra_score, calibra_rec)
+        random_cond = _condition_result(
+            random_n, n_total, args.base_gpu_hours, random_score, random_rec
+        )
+        calibra_cond = _condition_result(
+            calibra_n, n_total, args.base_gpu_hours, calibra_score, calibra_rec
+        )
 
         delta = calibra_cond["predicted_success_rate"] - random_cond["predicted_success_rate"]
         rows.append(

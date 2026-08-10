@@ -128,13 +128,9 @@ def test_benchmark_report_flags_partial_measurement(mock_batch, monkeypatch, cap
     import calibra.ingestion.registry as registry
 
     monkeypatch.setattr(registry, "load", lambda path, reader=None: mock_batch)
-    elog.record(
-        experiment_id="partner-a", condition="calibra", retention_pct=30.0, gpu_hours=8.4
-    )
+    elog.record(experiment_id="partner-a", condition="calibra", retention_pct=30.0, gpu_hours=8.4)
 
-    run_benchmark(
-        ["mock_path", "--keep", "0.3", "--experiment-id", "partner-a"]
-    )
+    run_benchmark(["mock_path", "--keep", "0.3", "--experiment-id", "partner-a"])
     out = capsys.readouterr().out
     assert "(measured)" in out
     assert "(simulated)" in out
@@ -169,9 +165,7 @@ def test_benchmark_fully_measured_is_validated(mock_batch, monkeypatch, capsys, 
         eval_success_rate=0.88,
     )
 
-    run_benchmark(
-        ["mock_path", "--keep", "0.3", "--experiment-id", "partner-a", "--json"]
-    )
+    run_benchmark(["mock_path", "--keep", "0.3", "--experiment-id", "partner-a", "--json"])
     summary = json.loads(capsys.readouterr().out)
     assert summary["status"] == "CASE STUDY / VALIDATED"
 
@@ -261,8 +255,11 @@ def test_sweep_fully_measured_is_validated(mock_batch, monkeypatch, capsys, elog
 
     monkeypatch.setattr(registry, "load", lambda path, reader=None: mock_batch)
     elog.record(
-        experiment_id="partner-a", condition="full", retention_pct=100.0,
-        gpu_hours=24.0, eval_success_rate=0.90,
+        experiment_id="partner-a",
+        condition="full",
+        retention_pct=100.0,
+        gpu_hours=24.0,
+        eval_success_rate=0.90,
     )
     for pct, r_gpu, r_succ, c_gpu, c_succ in [
         (10.0, 3.1, 0.71, 2.8, 0.74),
@@ -271,12 +268,18 @@ def test_sweep_fully_measured_is_validated(mock_batch, monkeypatch, capsys, elog
         (75.0, 18.0, 0.89, 18.0, 0.89),
     ]:
         elog.record(
-            experiment_id="partner-a", condition="random", retention_pct=pct,
-            gpu_hours=r_gpu, eval_success_rate=r_succ,
+            experiment_id="partner-a",
+            condition="random",
+            retention_pct=pct,
+            gpu_hours=r_gpu,
+            eval_success_rate=r_succ,
         )
         elog.record(
-            experiment_id="partner-a", condition="calibra", retention_pct=pct,
-            gpu_hours=c_gpu, eval_success_rate=c_succ,
+            experiment_id="partner-a",
+            condition="calibra",
+            retention_pct=pct,
+            gpu_hours=c_gpu,
+            eval_success_rate=c_succ,
         )
 
     run_benchmark(["mock_path", "--sweep", "--experiment-id", "partner-a", "--json"])
@@ -293,17 +296,26 @@ def test_sweep_partial_measurement_cannot_be_validated(mock_batch, monkeypatch, 
 
     monkeypatch.setattr(registry, "load", lambda path, reader=None: mock_batch)
     elog.record(
-        experiment_id="partner-a", condition="full", retention_pct=100.0,
-        gpu_hours=24.0, eval_success_rate=0.90,
+        experiment_id="partner-a",
+        condition="full",
+        retention_pct=100.0,
+        gpu_hours=24.0,
+        eval_success_rate=0.90,
     )
     # Only the 25% level is fully measured; everything else stays simulated.
     elog.record(
-        experiment_id="partner-a", condition="random", retention_pct=25.0,
-        gpu_hours=6.5, eval_success_rate=0.79,
+        experiment_id="partner-a",
+        condition="random",
+        retention_pct=25.0,
+        gpu_hours=6.5,
+        eval_success_rate=0.79,
     )
     elog.record(
-        experiment_id="partner-a", condition="calibra", retention_pct=25.0,
-        gpu_hours=6.0, eval_success_rate=0.83,
+        experiment_id="partner-a",
+        condition="calibra",
+        retention_pct=25.0,
+        gpu_hours=6.0,
+        eval_success_rate=0.83,
     )
 
     run_benchmark(["mock_path", "--sweep", "--experiment-id", "partner-a", "--json"])

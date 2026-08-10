@@ -102,9 +102,7 @@ class ExperimentRecord:
         if not 0.0 <= retention_pct <= 100.0:
             raise ValueError(f"retention_pct must be in [0, 100], got {retention_pct!r}")
         if eval_success_rate is not None and not 0.0 <= eval_success_rate <= 1.0:
-            raise ValueError(
-                f"eval_success_rate must be in [0, 1], got {eval_success_rate!r}"
-            )
+            raise ValueError(f"eval_success_rate must be in [0, 1], got {eval_success_rate!r}")
 
         self.record_id = record_id
         self.timestamp = timestamp
@@ -321,9 +319,15 @@ class ExperimentLog:
                 rec = table[level].get(cond)
                 if rec is None:
                     continue
-                success = f"{rec.eval_success_rate:.1%}" if rec.eval_success_rate is not None else "n/a"
+                success = (
+                    f"{rec.eval_success_rate:.1%}" if rec.eval_success_rate is not None else "n/a"
+                )
                 gpu = f"{rec.gpu_hours:.1f}" if rec.gpu_hours is not None else "n/a"
-                wall = f"{rec.wall_clock_seconds / 3600:.1f}h" if rec.wall_clock_seconds is not None else "n/a"
+                wall = (
+                    f"{rec.wall_clock_seconds / 3600:.1f}h"
+                    if rec.wall_clock_seconds is not None
+                    else "n/a"
+                )
                 lines.append(
                     f"{level:>9.0f}% {cond:<8} {rec.n_episodes:>7} {success:>9} {gpu:>9} {wall:>10}"
                 )
@@ -333,7 +337,9 @@ class ExperimentLog:
         if measured:
             lines.append("─" * 72)
             for level in sorted(measured):
-                sign = "beats" if measured[level] > 0 else "trails" if measured[level] < 0 else "ties"
+                sign = (
+                    "beats" if measured[level] > 0 else "trails" if measured[level] < 0 else "ties"
+                )
                 lines.append(
                     f"  At {level:.0f}% retention: Calibra {sign} random by "
                     f"{abs(measured[level]):.1%} eval success."
@@ -347,7 +353,9 @@ class ExperimentLog:
                 lines.append(f"    {level:.0f}% / {cond}")
         else:
             lines.append("─" * 72)
-            lines.append("  Protocol complete: full baseline + random/calibra at all retention levels.")
+            lines.append(
+                "  Protocol complete: full baseline + random/calibra at all retention levels."
+            )
 
         return "\n".join(lines)
 

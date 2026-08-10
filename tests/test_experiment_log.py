@@ -93,12 +93,8 @@ def test_retention_table_groups_by_level_and_condition(tmp_path):
 
 def test_retention_table_rerecording_supersedes(tmp_path):
     log = _log(tmp_path)
-    log.record(
-        experiment_id="e1", condition="calibra", retention_pct=25.0, eval_success_rate=0.5
-    )
-    log.record(
-        experiment_id="e1", condition="calibra", retention_pct=25.0, eval_success_rate=0.9
-    )
+    log.record(experiment_id="e1", condition="calibra", retention_pct=25.0, eval_success_rate=0.5)
+    log.record(experiment_id="e1", condition="calibra", retention_pct=25.0, eval_success_rate=0.9)
     table = log.retention_table("e1")
     assert table[25.0]["calibra"].eval_success_rate == 0.9
 
@@ -130,12 +126,8 @@ def test_missing_conditions_full_protocol_complete(tmp_path):
 
 def test_calibra_vs_random_delta(tmp_path):
     log = _log(tmp_path)
-    log.record(
-        experiment_id="e1", condition="random", retention_pct=25.0, eval_success_rate=0.70
-    )
-    log.record(
-        experiment_id="e1", condition="calibra", retention_pct=25.0, eval_success_rate=0.84
-    )
+    log.record(experiment_id="e1", condition="random", retention_pct=25.0, eval_success_rate=0.70)
+    log.record(experiment_id="e1", condition="calibra", retention_pct=25.0, eval_success_rate=0.84)
     deltas = log.calibra_vs_random("e1")
     assert deltas[25.0] == pytest.approx(0.14)
 
@@ -165,12 +157,8 @@ def test_report_empty_experiment(tmp_path):
 
 def test_report_includes_delta_and_missing_summary(tmp_path):
     log = _log(tmp_path)
-    log.record(
-        experiment_id="e1", condition="random", retention_pct=25.0, eval_success_rate=0.70
-    )
-    log.record(
-        experiment_id="e1", condition="calibra", retention_pct=25.0, eval_success_rate=0.84
-    )
+    log.record(experiment_id="e1", condition="random", retention_pct=25.0, eval_success_rate=0.70)
+    log.record(experiment_id="e1", condition="calibra", retention_pct=25.0, eval_success_rate=0.84)
     text = log.report("e1")
     assert "beats random" in text
     assert "Protocol incomplete" in text

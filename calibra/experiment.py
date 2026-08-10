@@ -43,13 +43,22 @@ def run_experiment(argv: List[str]) -> None:
     record_p = sub.add_parser("record", help="Log the result of one training run")
     record_p.add_argument("--experiment-id", required=True, help="Groups related runs together")
     record_p.add_argument(
-        "--condition", required=True, choices=CONDITIONS, help="Which arm of the comparison this run is"
+        "--condition",
+        required=True,
+        choices=CONDITIONS,
+        help="Which arm of the comparison this run is",
     )
     record_p.add_argument(
-        "--retention", type=float, required=True, metavar="PCT", help="Retention percentage, e.g. 25"
+        "--retention",
+        type=float,
+        required=True,
+        metavar="PCT",
+        help="Retention percentage, e.g. 25",
     )
     record_p.add_argument("--dataset", default="unknown", help="Dataset name/repo id")
-    record_p.add_argument("--partner", default="", help="Design-partner label (free text, local only)")
+    record_p.add_argument(
+        "--partner", default="", help="Design-partner label (free text, local only)"
+    )
     record_p.add_argument("--embodiment", default="", help="e.g. 'so-100', 'aloha', 'humanoid'")
     record_p.add_argument("--task", default="")
     record_p.add_argument("--policy", dest="policy_family", default="generic")
@@ -64,14 +73,18 @@ def run_experiment(argv: List[str]) -> None:
     )
     record_p.add_argument("--seed", type=int, default=None)
     record_p.add_argument("--notes", default="")
-    record_p.add_argument("--path", default=None, help="Override the default ~/.calibra/experiments.jsonl")
+    record_p.add_argument(
+        "--path", default=None, help="Override the default ~/.calibra/experiments.jsonl"
+    )
 
     list_p = sub.add_parser("list", help="List recorded runs")
     list_p.add_argument("--experiment-id", default=None)
     list_p.add_argument("--json", action="store_true")
     list_p.add_argument("--path", default=None)
 
-    report_p = sub.add_parser("report", help="Print the retention-curve comparison for one experiment")
+    report_p = sub.add_parser(
+        "report", help="Print the retention-curve comparison for one experiment"
+    )
     report_p.add_argument("--experiment-id", required=True)
     report_p.add_argument("--json", action="store_true")
     report_p.add_argument("--path", default=None)
@@ -104,7 +117,9 @@ def run_experiment(argv: List[str]) -> None:
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
             sys.exit(1)
-        print(f"Recorded {rec.record_id}: {rec.experiment_id} / {rec.condition} @ {rec.retention_pct:.0f}%")
+        print(
+            f"Recorded {rec.record_id}: {rec.experiment_id} / {rec.condition} @ {rec.retention_pct:.0f}%"
+        )
         print(f"  -> {log.path}")
         return
 
