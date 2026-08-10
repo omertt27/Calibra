@@ -2,7 +2,7 @@
 
 All notable changes to Calibra are documented here.
 
-## [Unreleased] — Measured training results
+## [0.8.0] — Measured training results
 
 Calibra's predictions (`calibra benchmark`) were always simulated — a heuristic outcome model plus linear GPU-hour scaling. That's useful for a first pass, but not evidence. This adds the other half: a way to record what a design partner's *real* training runs actually cost and achieved, and to fold those measured numbers into the benchmark report wherever they're available, so a report is never presented as a validated result when parts of it are still predictions.
 
@@ -16,6 +16,10 @@ Calibra's predictions (`calibra benchmark`) were always simulated — a heuristi
 - Compute savings are now computed from GPU-hours rather than episode-count reduction, since the two can diverge once real measured numbers are mixed in.
 
 See `docs/commands.md`'s `calibra benchmark` and `calibra experiment` sections for the full partner workflow.
+
+### Fixed
+
+- `compute_trajectory_entropy` force-cast actions to `float32` before `np.histogram`, which could collapse distinct values (and raise "Too many bins for data range") on large-offset, sub-millimeter-variance action columns — exactly the near-duplicate-trajectory case the function is meant to detect. Now computed in `float64`. Reported via a Reddit user testing on real data.
 
 ## [0.7.3] — Configurable Integrity CI policies
 
