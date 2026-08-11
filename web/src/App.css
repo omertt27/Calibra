@@ -154,26 +154,6 @@ footer a:hover {
   animation-delay: 390ms;
 }
 
-.eyebrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  margin-bottom: 24px;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-
-.eyebrow > span {
-  width: 20px;
-  height: 2px;
-  background: var(--line-strong);
-}
-
 .hero h1 {
   max-width: 720px;
   margin: 0;
@@ -660,10 +640,6 @@ footer a:hover {
   color: var(--ink);
 }
 
-.ecosystems .eyebrow {
-  color: var(--green-bright);
-}
-
 .ecosystem-list {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -830,10 +806,6 @@ footer a:hover {
   background: var(--green-bright);
   border-radius: 50%;
   margin-bottom: 26px;
-}
-
-.research-copy .eyebrow {
-  margin-bottom: 13px;
 }
 
 .research-copy h2 {

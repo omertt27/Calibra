@@ -43,7 +43,7 @@ const STATS = [
 
 const WORKFLOW = [
   { number: '01', name: 'Integrity', question: 'Can I trust this dataset?', command: 'calibra integrity' },
-  { number: '02', name: 'Quality', question: 'Is it clean?', command: 'calibra audit' },
+  { number: '02', name: 'Quality', question: 'Is it clean?', command: 'calibra <path>' },
   { number: '03', name: 'Coverage', question: 'Is it diverse?', command: 'calibra review' },
   { number: '04', name: 'Optimization', question: 'Can I train faster?', command: 'calibra prune' },
 ]
@@ -199,7 +199,6 @@ function App() {
         <header className="hero">
           <div className="container hero-grid">
             <div className="hero-copy">
-              <div className="eyebrow"><span /> Open-source · CI-ready · No account required</div>
               <h1>Stop wasting <span className="accent-word">GPU hours</span> on robot data.</h1>
               <p>
                 Calibra audits dataset integrity, measures quality and coverage, and builds
@@ -231,7 +230,6 @@ function App() {
             <Reveal as="div" className="research-card">
               <div className="research-copy">
                 <div className="research-mark"><Sparkles size={22} /></div>
-                <div className="eyebrow"><span /> Benchmark · LeRobot PushT</div>
                 <h2><strong>75% smaller</strong> dataset. Prediction error within 0.5% of full-data training.</h2>
                 <p>
                   Calibra retained 41 of 165 training episodes while preserving more
@@ -278,7 +276,6 @@ function App() {
         <section className="workflow section" id="workflow">
           <div className="container">
             <Reveal as="div" className="section-intro">
-              <div className="eyebrow"><span /> One pipeline, in the right order</div>
               <h2>Fix the data question before the model question.</h2>
               <p>Calibra turns an unknown dataset into a training decision through four explicit checks.</p>
             </Reveal>
@@ -301,7 +298,6 @@ function App() {
         <section className="proof section">
           <div className="container proof-grid">
             <Reveal as="div" className="proof-copy">
-              <div className="eyebrow"><span /> Evidence, not a black box</div>
               <h2>See the problem. Find the episode. Fix it.</h2>
               <p>
                 Every warning maps to a measurable condition and the exact episodes that triggered it.
@@ -321,7 +317,6 @@ function App() {
         <section className="ecosystems section">
           <div className="container">
             <Reveal as="div" className="section-intro compact">
-              <div className="eyebrow"><span /> Works with your stack</div>
               <h2>Start with the data you already have.</h2>
             </Reveal>
             <div className="ecosystem-list">
@@ -348,7 +343,6 @@ function App() {
         <section className="demo section" id="demo">
           <div className="container demo-grid">
             <Reveal as="div" className="demo-copy">
-              <div className="eyebrow"><span /> Try it in the browser</div>
               <h2>Inspect a public LeRobot dataset without installing anything.</h2>
               <p>
                 Enter a Hub dataset ID to see integrity checks, quality findings, community
