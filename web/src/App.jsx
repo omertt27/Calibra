@@ -18,6 +18,8 @@ const LINKS = {
   benchmarks: 'https://github.com/omertt27/Calibra#benchmark-results',
   license: 'https://github.com/omertt27/Calibra/blob/main/LICENSE',
   pypi: 'https://pypi.org/project/calibra-robotics/',
+  productHunt:
+    'https://www.producthunt.com/products/calibra-train-with-less-data?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-calibra-cut-robot-training-costs',
 }
 
 const BADGES = [
@@ -382,6 +384,14 @@ function App() {
           <Logo />
           <p>Train on less data. Spend less compute. Ship better policies.</p>
           <div>
+            <a href={LINKS.productHunt} target="_blank" rel="noopener noreferrer" className="ph-badge">
+              <img
+                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1221274&theme=light"
+                alt="Calibra: Cut Robot Training Costs - Find bad data. Train on less. Save GPU. | Product Hunt"
+                width={200}
+                height={43}
+              />
+            </a>
             <a href={LINKS.github}>GitHub</a>
             <a href={LINKS.docs}>Docs</a>
             <a href={LINKS.license}>BSL 1.1</a>

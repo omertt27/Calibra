@@ -1015,9 +1015,15 @@ footer {
 .footer-inner > div {
   justify-self: end;
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 24px;
   color: var(--muted);
   font-size: 11px;
+}
+
+.ph-badge img {
+  display: block;
 }
 
 @media (max-width: 900px) {
