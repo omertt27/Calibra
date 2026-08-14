@@ -70,8 +70,11 @@ We evaluated Calibra's offline training success prediction rubric (`calibra pred
 
 Initial study using 7 fully verified dataset–success-rate pairs (ALOHA sim × 4, PushT image, Mobile ALOHA × 2):
 
-*   **Spearman ρ = 0.5971**  (p = 0.0146, significant at p < 0.05)
-*   **Pearson r = 0.3995**
+*   **Spearman ρ = 0.600**  (p = 0.154, asymptotic; p = 0.165, exact permutation over all 5040 orderings — **not significant at p < 0.05**)
+*   **Pearson r = 0.140**  (p = 0.766)
+*   Leave-one-out sensitivity: dropping any single dataset moves ρ between 0.41 and 0.71; no leave-one-out subset reaches significance either.
+
+> ⚠️ **Correction (2026-08-14):** an earlier version of this document reported ρ = 0.5971 with p = 0.0146. Re-running `experiments/predict_correlation_study.py --no-estimates` against the current code and reference data reproduces ρ ≈ 0.60, but the p-value was wrong — 0.0146 is the correct asymptotic p-value for ρ = 0.597 at **n = 16** (the total reference-profile count), not n = 7 (the actual size of the verified correlation set), i.e. it used the wrong degrees of freedom. At the correct n = 7 this correlation is **not** statistically significant. Treat it as an exploratory signal, not a validated predictor.
 
 ### 2.2 Extended Study (11 datasets, including aloha_static)
 
@@ -87,9 +90,9 @@ PYTHONPATH=. python experiments/predict_correlation_study.py --save-fig       # 
 ```
 
 ### Key Takeaways
-1. **Predictive Capability without Training:** Spearman ρ ≥ 0.60 across both dataset sizes confirms that Calibra's offline heuristic scoring significantly predicts downstream policy success before any GPU training.
+1. **Exploratory predictive signal, not a validated predictor:** Spearman ρ ≈ 0.60 on the verified 7-dataset set (11-dataset extended set: ρ = 0.504, p = 0.114) is a moderate positive rank association, but at these sample sizes it is not statistically significant. It is a promising direction motivating a larger, independently-evaluated benchmark before any claim of predictive validity.
 2. **Policy-conditioned Rubric:** ACT-specific thresholds (stricter spike and entropy penalties) produce better rankings for position-command arm datasets than generic thresholds.
-3. **Remaining gap:** BridgeData V2 and DROID-100 are excluded due to a control-mode mismatch (velocity-command datasets have structurally high vel_disc_rate that the current rubric over-penalises). Calibrating vel_disc thresholds per control mode is the next step to expand to 13+ datasets.
+3. **Remaining gap — two distinct exclusion reasons:** BridgeData V2 is excluded due to a genuine control-mode mismatch (velocity-command, mean vel_disc_rate = 0.80, which the current rubric — calibrated on position-command arms — over-penalises). DROID-100 is excluded for a different reason: it is itself position-controlled with an unremarkable vel_disc_rate (0.07), and was excluded simply because no independently verified published success rate for this exact 100-episode subset was found. Calibrating vel_disc thresholds per control mode addresses the BridgeData V2 gap; sourcing a verified DROID-100 success rate (e.g. from the OpenVLA paper) is the separate fix needed there.
 
 ---
 

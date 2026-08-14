@@ -50,18 +50,27 @@ prediction loop by blending heuristic scoring with empirically observed
 training outcomes stored in a local database.
 
 We profile 16 standard robotic datasets (ALOHA, DROID, BridgeData~V2, PushT,
-SO-100) spanning five hardware platforms; on the 7 of these with a published
-ground-truth policy success rate, Calibra's offline predictor achieves a
-Spearman rank correlation of $\rho = 0.597$ ($p = 0.015$) with actual policy
-success rates. Across three real datasets and three policy architectures
-(BC-MLP, ACT, Diffusion Policy) at fixed 30\% retention with 5 seeds each,
-Calibra's coreset selector reduces held-out action-prediction error by
-13--25\% over random selection on average, on par with dedicated diversity
-baselines (k-center, facility location). In a controlled synthetic benchmark
-with injected corruption, pruning to a 30\% coreset preserves 98\% success
-rate (vs.\ 62\% for random pruning) while saving 70\% of training compute ---
-and, in proportion, the energy drawn by training --- relative to full-dataset
-training.
+SO-100) spanning five hardware platforms. Across three real datasets and
+three policy architectures (BC-MLP, ACT, Diffusion Policy) at fixed 30\%
+retention with 5 seeds each, Calibra's coreset selector reduces held-out
+action-prediction error by 13--25\% over random selection on average, on par
+with dedicated diversity baselines (k-center, facility location). A companion
+10-seed retention sweep on PushT shows this benefit is budget-dependent, not
+universal: Calibra's combined quality-filter-plus-diversity selector is
+significantly \emph{worse} than random at 10\% retention ($p=0.006$) and
+significantly better at 25\% retention ($p<0.001$). We report dataset
+curation as a retention-dependent strategy choice rather than a single
+universally-best method. In a controlled synthetic benchmark with injected
+corruption, pruning to a 30\% coreset preserves 98\% success rate (vs.\ 62\%
+for random pruning) while saving 70\% of training compute --- and, in
+proportion, the energy drawn by training --- relative to full-dataset
+training. On the 7 of the 16 profiled datasets with an independently
+published ground-truth policy success rate, Calibra's offline predictor
+shows a positive but not statistically significant rank association with
+actual policy success (Spearman $\rho = 0.60$, $p = 0.15$, $n = 7$; exact
+permutation $p = 0.17$), which we report as an exploratory signal motivating
+a larger, independently-evaluated benchmark rather than a validated
+predictor.
 Calibra is available at \url{https://github.com/omerTT/Calibra}.
 \end{abstract}
 
@@ -536,42 +545,57 @@ image, Mobile ALOHA $\times$2) have a policy success rate reported
 unambiguously in the original dataset paper; we treat this as the primary,
 verified evaluation set. We paired each of these 7 profiles with its
 published success rate, ran \texttt{calibra predict}, and computed Spearman
-and Pearson correlations. BridgeData~V2 and DROID-100 are excluded from this
-correlation study because their velocity-command control mode produces
-structurally high \texttt{vel\_disc\_rate} that the current rubric
-over-penalises relative to position-command arms -- a known rubric
-limitation, not a result. A secondary, non-headline extension adds 4 Static
-ALOHA tasks with success rates read off Table~2 of \citet{zhao2023act}; we
-do not include this extension in the reported statistic because those 4
-values have not been independently re-verified against the exact table
-row/column.
+and Pearson correlations
+(\texttt{experiments/predict\_correlation\_study.py \-\-no-estimates}).
+BridgeData~V2 and DROID-100 are excluded from this correlation study for two
+distinct reasons, which we state separately rather than grouping them under
+one rationale: BridgeData~V2 uses velocity-command control and has a
+structurally high mean \texttt{vel\_disc\_rate} (0.80 across 50{,}415
+episodes) that the current rubric, calibrated on position-command arms,
+over-penalises -- a known rubric limitation, not a result. DROID-100 is
+itself position-controlled with an unremarkable \texttt{vel\_disc\_rate}
+(0.07) and is excluded purely because no independently verified published
+success rate for this exact 100-episode subset was found in the literature
+at submission time. A secondary, non-headline extension adds 4 Static ALOHA
+tasks with success rates read off Table~2 of \citet{zhao2023act}; we do not
+include this extension in the reported statistic because those 4 values have
+not been independently re-verified against the exact table row/column.
 
 \begin{table}[h]
 \centering
-\caption{Predictor correlation across the 7 verified datasets.}
+\caption{Predictor correlation across the 7 verified datasets. $n=7$; the
+Spearman exact $p$ is computed over all $7! = 5040$ permutations.}
 \label{tab:predict}
 \small
-\begin{tabular}{lcc}
+\begin{tabular}{lccc}
 \toprule
-\textbf{Metric} & \textbf{Value} & \textbf{$p$-value} \\
+\textbf{Metric} & \textbf{Value} & \textbf{$p$ (asympt.)} & \textbf{$p$ (exact)} \\
 \midrule
-Spearman $\rho$ & 0.5971 & 0.0146 \\
-Pearson $r$ & 0.3995 & 0.125  \\
+Spearman $\rho$ & 0.600 & 0.154 & 0.165 \\
+Pearson $r$ & 0.140 & 0.766 & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \paragraph{Results.}
-Spearman $\rho = 0.597$ ($p = 0.015$, $n = 7$) is statistically significant
-at $\alpha = 0.05$, confirming that Calibra's heuristic ranking of dataset
-quality is informative of downstream policy performance without requiring
-any training. We note the small sample size: with $n=7$, this result should
-be read as a promising signal, not a settled claim, and expanding the
-verified evaluation set (starting with a control-mode-aware rubric that lets
-BridgeData~V2 and DROID-100 be included) is the clearest way to strengthen
-it before a camera-ready version.
-The lower Pearson $r$ (linear, $p = 0.125$) is expected: the relationship
-between data quality and policy success is not linear.
+Spearman $\rho = 0.60$ is a moderate positive rank association, but at
+$n = 7$ it is \emph{not} statistically significant at $\alpha = 0.05$
+($p = 0.154$ by the standard asymptotic test; $p = 0.165$ by an exact
+permutation test over all 5040 orderings of the 7 outcomes, confirming the
+asymptotic result is not an artifact of the small-sample approximation). We
+also computed a leave-one-out sensitivity: dropping any single dataset moves
+$\rho$ between 0.41 and 0.71, and no leave-one-out subset reaches
+significance either. We therefore report this correlation as an exploratory,
+promising-but-unsettled signal that Calibra's heuristic ranking of dataset
+quality tracks downstream policy performance, not a validated predictor.
+Pearson $r = 0.140$ ($p = 0.766$) is much weaker than the rank correlation,
+consistent with a non-linear or noisy relationship between data quality and
+policy success at this sample size. Expanding the verified evaluation set
+well beyond $n = 7$ -- starting with a control-mode-aware rubric that lets
+BridgeData~V2 be included, and with independently verified success rates for
+DROID-100 and additional datasets -- is a prerequisite for treating this as a
+validated predictor, not merely a strengthening of an already-significant
+result.
 
 \subsection{Scale Benchmark}
 \label{sec:scale}
@@ -609,22 +633,35 @@ The exact selector becomes infeasible past $\sim$50k episodes.
 
 \begin{table}[h]
 \centering
-\caption{16 reference datasets profiled in Calibra.}
+\caption{All 16 reference datasets profiled in Calibra. \textbf{Corr.} marks
+use in the predictor correlation study of Section~\ref{sec:predictor_exp}:
+V~=~verified (in the primary $n=7$ statistic), E~=~extension (unverified
+success rate, not in the headline statistic), X~=~excluded (see
+Section~\ref{sec:predictor_exp} for the dataset-specific reason), ---~=~no
+published success rate located.}
 \label{tab:datasets}
 \footnotesize
 \resizebox{\linewidth}{!}{%
-\begin{tabular}{lllr}
+\begin{tabular}{lllrl}
 \toprule
-\textbf{Dataset} & \textbf{Control} & \textbf{Hardware} & \textbf{Episodes} \\
+\textbf{Dataset} & \textbf{Control} & \textbf{Hardware} & \textbf{Episodes} & \textbf{Corr.} \\
 \midrule
-pusht (velocity, 10Hz)   & velocity  & sim    & 206 \\
-aloha\_sim (pos, 50Hz)   & position  & sim    & 50 \\
-aloha\_mobile\_cabinet   & position  & real   & 85 \\
-aloha\_mobile\_shrimp    & position  & real   & 100 \\
-droid\_100               & position  & real   & 100 \\
-bridgedata\_v2           & velocity  & real   & 50,415 \\
-svla\_so100\_pickplace   & position  & real   & 50 \\
-\ldots (16 total)        & ---        & ---    & --- \\
+pusht\_image                & velocity & sim  & 206    & V \\
+pusht\_velocity\_command    & velocity & sim  & 206    & --- \\
+aloha\_sim\_insertion\_human        & position & sim  & 50     & V \\
+aloha\_sim\_insertion\_scripted     & position & sim  & 50     & V \\
+aloha\_sim\_transfer\_cube\_human   & position & sim  & 50     & V \\
+aloha\_sim\_transfer\_cube\_scripted& position & sim  & 50     & V \\
+aloha\_mobile\_cabinet      & position & real & 85     & V \\
+aloha\_mobile\_shrimp       & position & real & 18     & V \\
+aloha\_static\_battery      & position & real & 49     & E \\
+aloha\_static\_candy        & position & real & 50     & E \\
+aloha\_static\_coffee       & position & real & 50     & E \\
+aloha\_static\_cups\_open   & position & real & 50     & E \\
+bridgedata\_v2              & velocity & real & 50,415 & X (control-mode) \\
+droid\_100                  & position & real & 100    & X (no verified SR) \\
+svla\_so100\_pickplace      & position & real & 50     & --- \\
+svla\_so100\_stacking       & position & real & 56     & --- \\
 \bottomrule
 \end{tabular}%
 }
@@ -641,14 +678,27 @@ coreset selection, and a prediction loop that improves with accumulated
 outcomes, Calibra provides the missing infrastructure layer between raw
 demonstration collection and policy training.
 
-The Spearman $\rho = 0.597$ predictor correlation and the multi-dataset,
-multi-policy coreset ablation (Section~\ref{sec:coreset_exp}) confirm
-Calibra's value as a practical, architecture-agnostic tool. Because
-demonstration datasets are frequently redundant, matching full-dataset
-performance from a small, well-chosen coreset is also a direct lever on
-training compute and, by extension, the energy cost of reaching a target
-policy --- a secondary but practically significant benefit of treating
-dataset curation as a first-class step in the imitation learning pipeline.
+We separate three distinct claims rather than collapsing them into one.
+\textbf{Profiling} -- that Calibra's diagnostic metrics characterize dataset
+quality along interpretable axes -- is directly demonstrated by the
+diagnostic analyzers and claim registry (Sections~\ref{sec:metrics}--
+\ref{sec:claims}). \textbf{Selection} -- that Calibra's coreset selector
+improves training outcomes at a fixed retention budget -- has solid but
+budget-dependent empirical support: the multi-dataset, multi-policy ablation
+(Section~\ref{sec:coreset_exp}) shows a 13--25\% MSE improvement over Random
+at 30\% retention, but the retention sweep on PushT shows this reverses to a
+significant \emph{harm} at 10\% retention, so selection strategy should be
+chosen conditional on the retention budget rather than assumed uniformly
+beneficial. \textbf{Prediction} -- that dataset-level metrics alone predict
+downstream policy success without training -- is exploratory: $\rho = 0.60$
+at $n=7$ is a promising but not statistically significant association
+(Section~\ref{sec:predictor_exp}), and should not be read as a validated
+predictor. Because demonstration datasets are frequently redundant, matching
+full-dataset performance from a small, well-chosen coreset is also a direct
+lever on training compute and, by extension, the energy cost of reaching a
+target policy --- a secondary but practically significant benefit of
+treating dataset curation as a first-class step in the imitation learning
+pipeline, independent of the open prediction question above.
 
 \paragraph{Future work.}
 Key directions include: (1) a world-model connection between Calibra's
