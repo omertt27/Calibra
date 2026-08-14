@@ -160,7 +160,7 @@ footer a:hover {
   color: var(--ink);
   font-family: var(--display);
   font-size: clamp(42px, 5.8vw, 76px);
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.05;
   letter-spacing: -0.02em;
 }
@@ -385,7 +385,7 @@ footer a:hover {
   color: var(--ink);
   font-family: var(--display);
   font-size: clamp(34px, 4.6vw, 54px);
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.08;
   letter-spacing: -0.015em;
 }
@@ -721,7 +721,7 @@ footer a:hover {
   color: var(--ink);
   font-family: var(--display);
   font-size: clamp(32px, 4vw, 46px);
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.1;
   letter-spacing: -0.015em;
 }

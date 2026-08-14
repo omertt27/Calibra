@@ -1,7 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-  font-family: 'Hanken Grotesk', sans-serif;
+  font-family: 'IBM Plex Sans', sans-serif;
   color: #f2f2f0;
   background: #0a0a0a;
   font-synthesis: none;
@@ -17,7 +17,7 @@
   --green-bright: #ffffff;
   --orange: #6b6b6b;
   --mono: 'IBM Plex Mono', monospace;
-  --display: 'Fraunces', serif;
+  --display: 'IBM Plex Sans', sans-serif;
 }
 
 * {
