@@ -13,7 +13,10 @@ Usage:
 
 from __future__ import annotations
 
+import hashlib
+import json
 import time
+from datetime import datetime, timezone
 from typing import Optional
 
 from calibra.analyzers.base import Analyzer
@@ -34,6 +37,23 @@ from calibra.analyzers.transition_dynamics import TransitionDynamicsAnalyzer
 from calibra.analyzers.world_model import WorldModelConsistencyAnalyzer
 from calibra.schema.episode import EpisodeBatch
 from calibra.schema.report import DiagnosticReport
+
+
+def _config_hash(calibra_version: str, policy_family: Optional[str], analyzer_versions: dict) -> str:
+    """
+    Deterministic fingerprint of "what produced this report" — the Calibra
+    version, target policy family, and the exact analyzer/version set that
+    ran. Two reports with matching config_hash were built by the same
+    analysis logic, so their numbers are safe to compare directly; a mismatch
+    is a signal to check *why* before treating a delta as a real finding.
+    """
+    payload = {
+        "calibra_version": calibra_version,
+        "policy_family": policy_family or "",
+        "analyzers": sorted(analyzer_versions.items()),
+    }
+    blob = json.dumps(payload, sort_keys=True)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
 
 
 def _default_analyzers() -> list[Analyzer]:
@@ -134,6 +154,7 @@ class Pipeline:
         results = []
         timing: dict[str, float] = {}
         skipped: list[str] = []
+        analyzer_versions: dict[str, str] = {}
         for analyzer in analyzers:
             if not analyzer.requires <= capabilities:
                 skipped.append(analyzer.name)
@@ -141,6 +162,9 @@ class Pipeline:
             t0 = time.perf_counter()
             results.append(analyzer.analyze(batch, policy_family=policy_family))
             timing[analyzer.name] = round(time.perf_counter() - t0, 4)
+            analyzer_versions[analyzer.name] = analyzer.version
+
+        from calibra import __version__ as calibra_version
 
         report = DiagnosticReport(
             dataset_name=batch.dataset_name,
@@ -153,6 +177,10 @@ class Pipeline:
             episode_ids=[ep.metadata.episode_id for ep in batch.episodes],
             timing=timing,
             skipped_analyzers=skipped,
+            calibra_version=calibra_version,
+            analyzer_versions=analyzer_versions,
+            config_hash=_config_hash(calibra_version, policy_family, analyzer_versions),
+            generated_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         )
 
         if cache is not None:

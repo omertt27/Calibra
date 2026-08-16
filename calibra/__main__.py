@@ -5,6 +5,7 @@ CLI entry point.
     python -m calibra audit-all --org lerobot [--out DIR] [--workers N] [--force]
     python -m calibra audit-all --dataset lerobot/pusht lerobot/aloha_sim_insertion_human
     python -m calibra site [--results DIR] [--out DIR] [--title "..."]
+    python -m calibra analyze <path> [--policy FAMILY] [--keep FRACTION] [--export coreset_index.json]
     python -m calibra compare <path> <reference> [--format FORMAT]
     python -m calibra certify <path> [--reference REF] [--policy FAMILY]
     python -m calibra prune <path> --keep FRACTION [--out coreset_index.json]
@@ -17,6 +18,7 @@ CLI entry point.
     python -m calibra experiment record --experiment-id ID --condition full|random|calibra \
                                          --retention PCT [--gpu-hours H] [--eval-success-rate R]
     python -m calibra experiment report --experiment-id ID
+    python -m calibra case-study --experiment-id ID [--partner NAME] [--gpu-cost-per-hour RATE] [--out FILE.md]
 
 Examples:
     python -m calibra /data/robot_demos.h5
@@ -194,6 +196,12 @@ def main() -> None:
         run_gap(sys.argv[2:])
         return
 
+    if len(sys.argv) > 1 and sys.argv[1] == "analyze":
+        from calibra.analyze import run_analyze
+
+        run_analyze(sys.argv[2:])
+        return
+
     if len(sys.argv) > 1 and sys.argv[1] == "diagnose":
         from calibra.diagnose import run_diagnose
 
@@ -210,6 +218,12 @@ def main() -> None:
         from calibra.experiment import run_experiment
 
         run_experiment(sys.argv[2:])
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "case-study":
+        from calibra.case_study import run_case_study
+
+        run_case_study(sys.argv[2:])
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "card":

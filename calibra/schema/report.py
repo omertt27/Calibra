@@ -133,6 +133,17 @@ class DiagnosticReport(BaseModel):
     timing: dict[str, float] = {}  # analyzer_name → wall-clock seconds
     skipped_analyzers: list[str] = []  # analyzer_name, skipped: batch lacks required capability
 
+    # ── reproducibility metadata ────────────────────────────────────────────
+    # Lets a report be checked, not just trusted: "was this the same Calibra
+    # version and analyzer set as the run I'm comparing it to?" config_hash
+    # covers calibra_version + policy_family + the exact analyzer/version set
+    # that ran — deliberately excludes generated_at, which is audit-trail
+    # info, not part of "would this configuration reproduce the same result."
+    calibra_version: str = ""
+    analyzer_versions: dict[str, str] = {}
+    config_hash: str = ""
+    generated_at: str = ""  # ISO 8601 UTC timestamp
+
     # ── convenience accessors ───────────────────────────────────────────────
 
     @property
@@ -183,5 +194,11 @@ class DiagnosticReport(BaseModel):
             total = sum(self.timing.values())
             timing_parts = "  ".join(f"{name}: {t:.2f}s" for name, t in self.timing.items())
             lines.append(f"\nTiming ({total:.2f}s total): {timing_parts}")
+
+        if self.calibra_version:
+            repro = f"\nCalibra v{self.calibra_version}  ·  config {self.config_hash}"
+            if self.generated_at:
+                repro += f"  ·  generated {self.generated_at}"
+            lines.append(repro)
 
         return "\n".join(lines)

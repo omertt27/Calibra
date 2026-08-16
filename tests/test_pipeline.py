@@ -174,3 +174,77 @@ class TestPipelineFlagAggregation:
         n_warn = len(report.flags_at_level(RiskLevel.WARNING))
         assert f"{n_crit} critical" in summary
         assert f"{n_warn} warning" in summary
+
+
+class TestReproducibilityMetadata:
+    def test_calibra_version_stamped(self):
+        from calibra import __version__
+
+        report = Pipeline().run(_make_batch())
+        assert report.calibra_version == __version__
+
+    def test_analyzer_versions_cover_ran_analyzers_only(self):
+        pipeline = Pipeline(mode="fast")
+        report = pipeline.run(_make_batch())
+        ran_names = {r.analyzer_name for r in report.analyzer_results}
+        assert set(report.analyzer_versions.keys()) == ran_names
+        assert all(v for v in report.analyzer_versions.values())
+
+    def test_skipped_analyzers_excluded_from_versions(self):
+        # Empty-batch runs still populate the standard analyzer set (they all
+        # degrade gracefully), so use a custom single-analyzer pipeline to
+        # keep this test's expectation exact.
+        pipeline = Pipeline(analyzers=[TemporalAnalyzer()])
+        report = pipeline.run(_make_batch())
+        assert list(report.analyzer_versions.keys()) == ["temporal_stability"]
+
+    def test_config_hash_is_deterministic_for_same_inputs(self):
+        batch = _make_batch()
+        r1 = Pipeline(mode="fast").run(batch)
+        r2 = Pipeline(mode="fast").run(batch)
+        assert r1.config_hash == r2.config_hash
+        assert r1.config_hash != ""
+
+    def test_config_hash_changes_with_policy_family(self):
+        batch = _make_batch()
+        r1 = Pipeline(mode="fast").run(batch, policy_family="act")
+        r2 = Pipeline(mode="fast").run(batch, policy_family="diffusion")
+        assert r1.config_hash != r2.config_hash
+
+    def test_config_hash_changes_with_analyzer_set(self):
+        batch = _make_batch()
+        r1 = Pipeline(mode="fast").run(batch)
+        r2 = Pipeline(mode="full").run(batch)
+        assert r1.config_hash != r2.config_hash
+
+    def test_generated_at_is_iso8601(self):
+        report = Pipeline().run(_make_batch())
+        # Should not raise — fromisoformat accepts the timespec="seconds" format we emit.
+        from datetime import datetime
+
+        datetime.fromisoformat(report.generated_at)
+
+    def test_summary_includes_reproducibility_footer(self):
+        report = Pipeline().run(_make_batch())
+        summary = report.summary()
+        assert f"Calibra v{report.calibra_version}" in summary
+        assert report.config_hash in summary
+
+    def test_summary_omits_footer_when_unstamped(self):
+        # A hand-built report (e.g. in a test or an old cached artifact) with
+        # no reproducibility metadata should render cleanly, not blank fields.
+        report = DiagnosticReport(
+            dataset_name="d",
+            source_path="/tmp/d",
+            format="hdf5",
+            n_episodes=1,
+            n_samples=1,
+        )
+        assert "Calibra v" not in report.summary()
+
+    def test_json_roundtrip_preserves_reproducibility_fields(self):
+        report = Pipeline().run(_make_batch())
+        restored = DiagnosticReport.model_validate_json(report.model_dump_json())
+        assert restored.calibra_version == report.calibra_version
+        assert restored.config_hash == report.config_hash
+        assert restored.analyzer_versions == report.analyzer_versions

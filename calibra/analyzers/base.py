@@ -26,6 +26,12 @@ class Analyzer(ABC):
     #: for analyzers that degrade gracefully or report on absence itself.
     requires: frozenset[str] = frozenset()
 
+    #: Bump when this analyzer's metric definitions or thresholds change in a
+    #: way that could shift its output on the same input data. Stamped into
+    #: DiagnosticReport.analyzer_versions / config_hash so two reports can be
+    #: checked for "same analysis logic" before comparing their numbers.
+    version: str = "1"
+
     @abstractmethod
     def analyze(
         self,
