@@ -41,7 +41,10 @@ def _protocol_gaps(log: ExperimentLog, experiment_id: str) -> List[str]:
     a fully measured protocol: unrecorded (level, condition) slots, plus
     recorded slots missing gpu_hours or eval_success_rate."""
     table = log.retention_table(experiment_id)
-    gaps = [f"{level:.0f}% / {cond} — not recorded" for level, cond in log.missing_conditions(experiment_id)]
+    gaps = [
+        f"{level:.0f}% / {cond} — not recorded"
+        for level, cond in log.missing_conditions(experiment_id)
+    ]
     for level in PROTOCOL_RETENTION_LEVELS:
         for cond_name, rec in table.get(level, {}).items():
             if _fully_measured(rec):
@@ -51,7 +54,9 @@ def _protocol_gaps(log: ExperimentLog, experiment_id: str) -> List[str]:
                 missing_fields.append("gpu_hours")
             if rec.eval_success_rate is None:
                 missing_fields.append("eval_success_rate")
-            gaps.append(f"{level:.0f}% / {cond_name} — recorded but missing {', '.join(missing_fields)}")
+            gaps.append(
+                f"{level:.0f}% / {cond_name} — recorded but missing {', '.join(missing_fields)}"
+            )
     return gaps
 
 
@@ -119,7 +124,9 @@ def generate_case_study(
             f"**{c.eval_success_rate:.1%} eval success**"
         )
         if full_success:
-            headline += f" (**{c.eval_success_rate / full_success:.0%}** of the full-dataset baseline)"
+            headline += (
+                f" (**{c.eval_success_rate / full_success:.0%}** of the full-dataset baseline)"
+            )
         headline += f", vs. **{r.eval_success_rate:.1%}** for a random subset of the same size."
         lines.append(headline)
 
@@ -152,7 +159,9 @@ def generate_case_study(
             cost = _cost(rec.gpu_hours, gpu_cost_per_hour)
             cost_str = f"${cost:,.0f}" if cost is not None else "—"
             mark = "" if _fully_measured(rec) else " *(partial)*"
-            lines.append(f"| {level:.0f}% | {cond}{mark} | {rec.n_episodes} | {success} | {gpu} | {cost_str} |")
+            lines.append(
+                f"| {level:.0f}% | {cond}{mark} | {rec.n_episodes} | {success} | {gpu} | {cost_str} |"
+            )
     lines.append("")
 
     deltas = log.calibra_vs_random(experiment_id)
@@ -222,7 +231,9 @@ def run_case_study(argv: List[str]) -> None:
         default=2.50,
         help="Assumed $/GPU-hour for the cost estimate columns (default: 2.50)",
     )
-    p.add_argument("--out", default=None, help="Write the markdown report to this path instead of stdout")
+    p.add_argument(
+        "--out", default=None, help="Write the markdown report to this path instead of stdout"
+    )
     p.add_argument("--path", default=None, help="Override the default ~/.calibra/experiments.jsonl")
     args = p.parse_args(argv)
 

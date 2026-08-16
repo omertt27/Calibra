@@ -66,11 +66,20 @@ _DEFAULT_KEEP_FRACTION = 0.5
 # its analyzer(s) were skipped (missing capability), not "passed".
 _INTEGRITY_CATEGORIES: dict[str, frozenset[str]] = {
     "Timestamps & sync": frozenset(
-        {"timestamp_jitter_cv", "timestamp_dropout_rate", "action_obs_misalignment", "camera_physics_drift"}
+        {
+            "timestamp_jitter_cv",
+            "timestamp_dropout_rate",
+            "action_obs_misalignment",
+            "camera_physics_drift",
+        }
     ),
     "Episode structure": frozenset({"action_dropout_rate", "short_episode_fraction"}),
-    "Camera feed": frozenset({"duplicate_frame_rate", "camera_freeze_events", "blurry_episode_fraction"}),
-    "Motion & control": frozenset({"ldlj", "jerk_spike_rate", "velocity_discontinuity_rate", "joint_offset_max_abs"}),
+    "Camera feed": frozenset(
+        {"duplicate_frame_rate", "camera_freeze_events", "blurry_episode_fraction"}
+    ),
+    "Motion & control": frozenset(
+        {"ldlj", "jerk_spike_rate", "velocity_discontinuity_rate", "joint_offset_max_abs"}
+    ),
 }
 
 
@@ -183,12 +192,16 @@ def run_analysis(
             keep_fraction if keep_fraction is not None else _recommend_keep_fraction(redundancy)
         )
         try:
-            selector = CoresetSelector(keep_fraction=resolved_keep_fraction, **diagnosis.recommended_config)
+            selector = CoresetSelector(
+                keep_fraction=resolved_keep_fraction, **diagnosis.recommended_config
+            )
             prune_result = selector.select(batch, report)
         except Exception:
             prune_result = None
 
-    n_tasks = len({ep.metadata.task_description for ep in batch.episodes if ep.metadata.task_description})
+    n_tasks = len(
+        {ep.metadata.task_description for ep in batch.episodes if ep.metadata.task_description}
+    )
     action_dim = batch.episodes[0].action_dim if batch.episodes else None
 
     return AnalysisResult(
@@ -246,7 +259,9 @@ def render_analysis(result: AnalysisResult) -> str:
             f"  Redundancy (estimated)    {result.redundancy:5.1%}  of state-space occupies duplicate regions"
         )
     elif r.n_episodes < 5:
-        lines.append("  Redundancy (estimated)    n/a — dataset has < 5 episodes (need >= 5 to diagnose)")
+        lines.append(
+            "  Redundancy (estimated)    n/a — dataset has < 5 episodes (need >= 5 to diagnose)"
+        )
     else:
         lines.append("  Redundancy (estimated)    n/a — requires proprioceptive/state observations")
 
@@ -258,15 +273,21 @@ def render_analysis(result: AnalysisResult) -> str:
         lines.append("    Not enough episodes to compute a coreset recommendation (need >= 5).")
     else:
         if result.regime_diagnosis is not None:
-            lines.append(f"    Regime             : {_REGIME_LABELS[result.regime_diagnosis.regime]}")
+            lines.append(
+                f"    Regime             : {_REGIME_LABELS[result.regime_diagnosis.regime]}"
+            )
         lines.append(f"    Training set       : {pr.n_kept:,} / {pr.n_original:,} episodes")
         lines.append(f"    Expected retention : {pr.keep_fraction_actual:.0%}")
         lines.append("")
         lines.append("    Reasons:")
         if pr.n_quality_failures:
-            lines.append(f"      • removes {pr.n_quality_failures:,} corrupted/low-quality episodes")
+            lines.append(
+                f"      • removes {pr.n_quality_failures:,} corrupted/low-quality episodes"
+            )
         if pr.n_diversity_pruned:
-            lines.append(f"      • removes {pr.n_diversity_pruned:,} redundant episodes (diversity selection)")
+            lines.append(
+                f"      • removes {pr.n_diversity_pruned:,} redundant episodes (diversity selection)"
+            )
         lines.append("      • preserves behavioral coverage via greedy max-coverage selection")
         lines.append("")
         lines.append(
@@ -280,7 +301,9 @@ def render_analysis(result: AnalysisResult) -> str:
 
     lines.append(_THICK)
     if r.calibra_version:
-        lines.append(f"  Calibra v{r.calibra_version}  ·  config {r.config_hash}  ·  generated {r.generated_at}")
+        lines.append(
+            f"  Calibra v{r.calibra_version}  ·  config {r.config_hash}  ·  generated {r.generated_at}"
+        )
 
     return "\n".join(lines)
 
@@ -432,7 +455,9 @@ def run_analyze(argv: list[str]) -> None:
         cache = AuditCache(args.cache_dir)
 
     try:
-        result = run_analysis(batch, policy_family=args.policy, keep_fraction=args.keep, cache=cache)
+        result = run_analysis(
+            batch, policy_family=args.policy, keep_fraction=args.keep, cache=cache
+        )
     except Exception as exc:
         print(f"error running analysis: {exc}", file=sys.stderr)
         sys.exit(1)

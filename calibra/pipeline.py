@@ -39,7 +39,9 @@ from calibra.schema.episode import EpisodeBatch
 from calibra.schema.report import DiagnosticReport
 
 
-def _config_hash(calibra_version: str, policy_family: Optional[str], analyzer_versions: dict) -> str:
+def _config_hash(
+    calibra_version: str, policy_family: Optional[str], analyzer_versions: dict
+) -> str:
     """
     Deterministic fingerprint of "what produced this report" — the Calibra
     version, target policy family, and the exact analyzer/version set that
