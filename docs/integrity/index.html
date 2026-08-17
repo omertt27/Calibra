@@ -1391,10 +1391,10 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>calibra<span class="w"> </span>integrity<span class="w"> </span>/data/my_demos.h5<span class="w"> </span>--policy<span class="w"> </span>ci_policy.json
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;timestamp_jitter_cv&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;block&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">&quot;camera_freeze_events&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;block&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">&quot;joint_offset_max_abs&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;inspect&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="nt">&quot;jerk_spike_rate&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;inspect&quot;</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">"timestamp_jitter_cv"</span><span class="p">:</span><span class="w"> </span><span class="s2">"block"</span><span class="p">,</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">"camera_freeze_events"</span><span class="p">:</span><span class="w"> </span><span class="s2">"block"</span><span class="p">,</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">"joint_offset_max_abs"</span><span class="p">:</span><span class="w"> </span><span class="s2">"inspect"</span><span class="p">,</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="nt">"jerk_spike_rate"</span><span class="p">:</span><span class="w"> </span><span class="s2">"inspect"</span>
 <a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="p">}</span>
 </code></pre></div>
 <p>A policy file is a flat JSON object mapping a <strong>metric name</strong> — the exact names shown in the <code>metric</code> field of <code>--json</code> output, e.g. <code>camera_freeze_events</code>, <code>blurry_episode_fraction</code>, <code>joint_offset_max_abs</code> — to <code>"block"</code> or <code>"inspect"</code>. It only overrides the CI consequence of a <strong>CRITICAL</strong> finding on that metric; OK and WARNING findings are unaffected — a WARNING never fails CI, policy or not. Metrics not listed keep the built-in default. An unrecognized metric name in the file prints a warning to stderr and is otherwise ignored, so a policy written against an older or newer Calibra version doesn't hard-fail.</p>
@@ -1435,7 +1435,7 @@
 <p><strong>Example output:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>⚠️  blurry_episode_fraction: 14.3% of episodes (1/7) have camera frames
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    markedly blurrier than the rest of the dataset (mean Laplacian
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    variance below the IQR lower fence). IDs: [&#39;episode_3&#39;]
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    variance below the IQR lower fence). IDs: ['episode_3']
 <a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>     Inspect the flagged episodes before training.
 </code></pre></div></p>
 <div class="admonition note">

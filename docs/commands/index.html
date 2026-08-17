@@ -549,6 +549,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#calibra-analyze-one-command-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        calibra analyze — one-command report
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#calibra-audit-full-diagnostic-report" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -760,6 +771,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#calibra-case-study-partner-facing-case-study-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        calibra case-study — partner-facing case-study report
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1286,6 +1308,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#calibra-analyze-one-command-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        calibra analyze — one-command report
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#calibra-audit-full-diagnostic-report" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1500,6 +1533,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#calibra-case-study-partner-facing-case-study-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        calibra case-study — partner-facing case-study report
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1556,120 +1600,204 @@
 <p>Runs before every other command in the recommended workflow — timestamp consistency, sensor sync, episode completeness, duplicate/frozen/blurry camera frames, and jittery/jerky motion. Findings are grouped into Critical/Warnings/Passed rather than led with a single score; the score is still computed but demoted to a summary line. Exit code <code>1</code> on any CRITICAL finding, safe for CI gating.</p>
 <p>See <a href="../integrity/">Integrity Checks</a> for what each check detects and why it matters.</p>
 <hr />
+<h2 id="calibra-analyze-one-command-report"><code>calibra analyze</code> — one-command report</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>calibra<span class="w"> </span>analyze<span class="w"> </span>/data/robot_demos
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>calibra<span class="w"> </span>analyze<span class="w"> </span>lerobot/pusht<span class="w"> </span>--format<span class="w"> </span>lerobot<span class="w"> </span>--policy<span class="w"> </span>act
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>calibra<span class="w"> </span>analyze<span class="w"> </span>/data/robot_demos<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.4<span class="w"> </span>--export<span class="w"> </span>coreset_index.json
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>calibra<span class="w"> </span>analyze<span class="w"> </span>/data/robot_demos<span class="w"> </span>--json
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>────────────────────────────────────────────────────────────
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  CALIBRA ANALYSIS
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>────────────────────────────────────────────────────────────
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  Dataset
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    Name       : lerobot/pusht
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    Episodes   : 206
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    Frames     : 25,650
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    Format     : lerobot
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>──────────────────────────────────────────────────────────
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>  Integrity
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    ✅ Timestamps &amp; sync
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    ✅ Episode structure
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    ✅ Camera feed
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    ✅ Motion &amp; control
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    Integrity score: 95/100 — Healthy
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>──────────────────────────────────────────────────────────
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>  Quality (Calibra Score)     76.7 / 100   —  Good
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>  Coverage / diversity        68.2 / 100
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>  Redundancy (estimated)      41.0%  of state-space occupies duplicate regions
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>──────────────────────────────────────────────────────────
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>  RECOMMENDATION
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>
+<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a>    Regime             : Redundancy-dominated
+<a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>    Training set       : 52 / 206 episodes
+<a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>    Expected retention : 25%
+<a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>
+<a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a>    Reasons:
+<a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a>      • removes 6 corrupted/low-quality episodes
+<a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>      • removes 148 redundant episodes (diversity selection)
+<a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>      • preserves behavioral coverage via greedy max-coverage selection
+<a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a>
+<a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a>    This is a heuristic starting point (~1 - measured redundancy), not a
+<a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a>    validated retention curve. Run the design-partner protocol
+<a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a>    (`calibra experiment` + `calibra case-study`) before committing a
+<a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a>    production training run to this number.
+<a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a>
+<a id="__codelineno-3-38" name="__codelineno-3-38" href="#__codelineno-3-38"></a>    Export this coreset: calibra analyze &lt;path&gt; --export coreset_index.json
+<a id="__codelineno-3-39" name="__codelineno-3-39" href="#__codelineno-3-39"></a>────────────────────────────────────────────────────────────
+</code></pre></div>
+<p>The single-command "is this trustworthy, how good is it, what should I train on" report — the same story that otherwise takes three separate commands (<code>calibra integrity</code> for trust, <code>calibra audit</code>-style scoring for quality, <code>calibra prune</code> for a coreset) to assemble by hand. Nothing here is a new metric: it's the existing analyzers, the existing Calibra Score, and the existing regime-adaptive coreset selector (see <code>calibra prune</code>), composed into one report object.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--format FMT</code></td>
+<td>Force a format adapter (default: auto-detect).</td>
+</tr>
+<tr>
+<td><code>--policy FAMILY</code></td>
+<td>Target policy family for conditioned hints (e.g. <code>diffusion</code>, <code>act</code>).</td>
+</tr>
+<tr>
+<td><code>--keep FRACTION</code></td>
+<td>Override the automatic training-set retention recommendation (0–1].</td>
+</tr>
+<tr>
+<td><code>--export PATH</code></td>
+<td>Write the recommended coreset index to <code>PATH</code> (same format as <code>calibra prune --out</code>).</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>Print the full result as JSON instead of the formatted report.</td>
+</tr>
+<tr>
+<td><code>--cache-dir DIR</code></td>
+<td>Cache directory for incremental analysis — an unchanged dataset returns the cached result instantly.</td>
+</tr>
+</tbody>
+</table>
+<p>Datasets under 5 episodes skip the coreset recommendation (not enough data to diagnose a regime) but still get the integrity and quality sections.</p>
+<p>The training-set recommendation is a heuristic starting point (roughly <code>1 - measured state redundancy</code>, clamped) — not a substitute for the design-partner three-condition retention-sweep protocol. The report says so explicitly; <code>calibra experiment</code> and <code>calibra case-study</code> are the commands that turn it into a validated number.</p>
+<hr />
 <h2 id="calibra-audit-full-diagnostic-report"><code>calibra audit</code> — full diagnostic report</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>calibra<span class="w"> </span>/data/robot_demos.h5
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>calibra<span class="w"> </span>lerobot/pusht<span class="w"> </span>--policy<span class="w"> </span>diffusion
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>calibra<span class="w"> </span>/data/demo.h5<span class="w"> </span>--policy<span class="w"> </span>act<span class="w"> </span>--json
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>calibra<span class="w"> </span>/data/robot_demos.h5<span class="w"> </span>--html-out<span class="w"> </span>report.html<span class="w">   </span><span class="c1"># save visual HTML dashboard</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>calibra<span class="w"> </span>/data/demos.h5<span class="w"> </span>--cache-dir<span class="w"> </span>.calibra/cache<span class="w">     </span><span class="c1"># incremental analysis</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>calibra<span class="w"> </span>/data/robot_demos.h5
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>calibra<span class="w"> </span>lerobot/pusht<span class="w"> </span>--policy<span class="w"> </span>diffusion
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>calibra<span class="w"> </span>/data/demo.h5<span class="w"> </span>--policy<span class="w"> </span>act<span class="w"> </span>--json
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>calibra<span class="w"> </span>/data/robot_demos.h5<span class="w"> </span>--html-out<span class="w"> </span>report.html<span class="w">   </span><span class="c1"># save visual HTML dashboard</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>calibra<span class="w"> </span>/data/demos.h5<span class="w"> </span>--cache-dir<span class="w"> </span>.calibra/cache<span class="w">     </span><span class="c1"># incremental analysis</span>
 </code></pre></div>
 <p>Runs four analyzers over every episode and flags anomalies with bootstrap confidence intervals and per-episode outlier detection. The <code>--html-out</code> dashboard includes a <strong>Dataset Health Score panel</strong> — a composite 0–100 score derived from diagnostic flags, broken down into four sub-scores: Quality, Synchrony, Coverage, and Integrity (color-coded green/yellow/red).</p>
 <p><code>--cache-dir DIR</code> enables incremental analysis: the pipeline result is stored in a file-based cache keyed by a SHA-256 fingerprint of the episode manifest. On unchanged data, the next run returns instantly from cache. Useful when collecting daily demos and re-auditing the same dataset repeatedly.</p>
 <hr />
 <h2 id="calibra-compare-evidence-backed-cross-dataset-comparison"><code>calibra compare</code> — evidence-backed cross-dataset comparison</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>calibra<span class="w"> </span>compare<span class="w"> </span>/data/my_demos<span class="w"> </span>pusht
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>calibra<span class="w"> </span>compare<span class="w"> </span>hf://lerobot/my_dataset<span class="w"> </span>aloha
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>calibra<span class="w"> </span>compare<span class="w"> </span>/data/robot.h5<span class="w"> </span>aloha<span class="w"> </span>--format<span class="w"> </span>hdf5<span class="w"> </span>--gripper-dims<span class="w"> </span><span class="m">6</span>,13
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>calibra<span class="w"> </span>compare<span class="w"> </span>/data/my_demos<span class="w"> </span>pusht
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>calibra<span class="w"> </span>compare<span class="w"> </span>hf://lerobot/my_dataset<span class="w"> </span>aloha
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>calibra<span class="w"> </span>compare<span class="w"> </span>/data/robot.h5<span class="w"> </span>aloha<span class="w"> </span>--format<span class="w"> </span>hdf5<span class="w"> </span>--gripper-dims<span class="w"> </span><span class="m">6</span>,13
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>calibra compare — my_dataset  vs.  aloha
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>Reference: lerobot/aloha_mobile_cabinet  (position-command · 14D · 85 episodes)
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>Yours:     my_dataset  (120 episodes)
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>────────────────────────────────────────────────────────
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>VELOCITY DISCONTINUITY RATE
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>  Yours:  12.1%
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>  aloha   1.3%
-<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>  Delta:  +10.8%  ▲
-<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>
-<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>  Significantly rougher than aloha_mobile_cabinet.
-<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>  If using position commands: investigate control noise or
-<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>  abrupt operator corrections.
-<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>
-<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>  Confidence: HIGH · [HIGH · n=2 (aloha_sim, aloha_mobile)]
-<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>────────────────────────────────────────────────────────
-<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>JERK SPIKE RATE
-<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>  Yours:  8.4%
-<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>  aloha   0.7%
-<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>  Delta:  +7.7%  ▲
-<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>
-<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a>  Higher spike rate than reference. Check for dropped
-<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>  frames, bad episode boundaries, or bimodal speed profiles.
-<a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a>
-<a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a>  Confidence: MODERATE · [LOW-MODERATE · n=1 (aloha_sim)]
-<a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a>────────────────────────────────────────────────────────
-<a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a>
-<a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a>RECOMMENDED ACTIONS
-<a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a>────────────────────────────────────────────────────────
-<a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a>  Prune episode(s) 14, 22, 41 — jerk outliers detected by MAD analysis.
-<a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a>  Velocity discontinuity rate is 12.1% (above 4% position-control
-<a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a>  threshold). Investigate command packet drops, hardware communication
-<a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a>  lag, or abrupt operator corrections.
-<a id="__codelineno-4-37" name="__codelineno-4-37" href="#__codelineno-4-37"></a>────────────────────────────────────────────────────────
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>calibra compare — my_dataset  vs.  aloha
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>Reference: lerobot/aloha_mobile_cabinet  (position-command · 14D · 85 episodes)
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>Yours:     my_dataset  (120 episodes)
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>────────────────────────────────────────────────────────
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>VELOCITY DISCONTINUITY RATE
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>  Yours:  12.1%
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>  aloha   1.3%
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>  Delta:  +10.8%  ▲
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>  Significantly rougher than aloha_mobile_cabinet.
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>  If using position commands: investigate control noise or
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>  abrupt operator corrections.
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>  Confidence: HIGH · [HIGH · n=2 (aloha_sim, aloha_mobile)]
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>────────────────────────────────────────────────────────
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>JERK SPIKE RATE
+<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>  Yours:  8.4%
+<a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>  aloha   0.7%
+<a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a>  Delta:  +7.7%  ▲
+<a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a>
+<a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a>  Higher spike rate than reference. Check for dropped
+<a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a>  frames, bad episode boundaries, or bimodal speed profiles.
+<a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a>
+<a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a>  Confidence: MODERATE · [LOW-MODERATE · n=1 (aloha_sim)]
+<a id="__codelineno-6-29" name="__codelineno-6-29" href="#__codelineno-6-29"></a>────────────────────────────────────────────────────────
+<a id="__codelineno-6-30" name="__codelineno-6-30" href="#__codelineno-6-30"></a>
+<a id="__codelineno-6-31" name="__codelineno-6-31" href="#__codelineno-6-31"></a>RECOMMENDED ACTIONS
+<a id="__codelineno-6-32" name="__codelineno-6-32" href="#__codelineno-6-32"></a>────────────────────────────────────────────────────────
+<a id="__codelineno-6-33" name="__codelineno-6-33" href="#__codelineno-6-33"></a>  Prune episode(s) 14, 22, 41 — jerk outliers detected by MAD analysis.
+<a id="__codelineno-6-34" name="__codelineno-6-34" href="#__codelineno-6-34"></a>  Velocity discontinuity rate is 12.1% (above 4% position-control
+<a id="__codelineno-6-35" name="__codelineno-6-35" href="#__codelineno-6-35"></a>  threshold). Investigate command packet drops, hardware communication
+<a id="__codelineno-6-36" name="__codelineno-6-36" href="#__codelineno-6-36"></a>  lag, or abrupt operator corrections.
+<a id="__codelineno-6-37" name="__codelineno-6-37" href="#__codelineno-6-37"></a>────────────────────────────────────────────────────────
 </code></pre></div>
 <p>Every interpretation is backed by a falsifiable claim in <code>calibra/claims/</code> with an evidence count, confidence rating, and a stated falsification condition.</p>
 <hr />
 <h2 id="calibra-certify-structured-passfail-certification"><code>calibra certify</code> — structured pass/fail certification</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>calibra<span class="w"> </span>certify<span class="w"> </span>/data/my_demos
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>calibra<span class="w"> </span>certify<span class="w"> </span>/data/my_demos<span class="w"> </span>--reference<span class="w"> </span>aloha<span class="w"> </span>--policy<span class="w"> </span>diffusion<span class="w"> </span>--strict
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>calibra<span class="w"> </span>certify<span class="w"> </span>hf://lerobot/my_dataset<span class="w"> </span>--json<span class="w">   </span><span class="c1"># for CI pipelines</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>calibra<span class="w"> </span>certify<span class="w"> </span>/data/my_demos<span class="w"> </span>--report<span class="w"> </span>results/my_demos/latest.json<span class="w">  </span><span class="c1"># write CalibraReport JSON</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>calibra<span class="w"> </span>certify<span class="w"> </span>/data/my_demos
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>calibra<span class="w"> </span>certify<span class="w"> </span>/data/my_demos<span class="w"> </span>--reference<span class="w"> </span>aloha<span class="w"> </span>--policy<span class="w"> </span>diffusion<span class="w"> </span>--strict
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>calibra<span class="w"> </span>certify<span class="w"> </span>hf://lerobot/my_dataset<span class="w"> </span>--json<span class="w">   </span><span class="c1"># for CI pipelines</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>calibra<span class="w"> </span>certify<span class="w"> </span>/data/my_demos<span class="w"> </span>--report<span class="w"> </span>results/my_demos/latest.json<span class="w">  </span><span class="c1"># write CalibraReport JSON</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>  CALIBRA CERTIFICATION REPORT
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>  Dataset  : my_demos
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>  Episodes : 120
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>  Steps    : 180000
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>  Policy   : diffusion
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>  Reference: aloha
-<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
-<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>  ──────────────────────────────────────────────────────────
-<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>  ⚠  PROVISIONALLY CERTIFIED
-<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>
-<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>  Warnings:
-<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>    • ldlj: Mean LDLJ = -12.4 (threshold: &gt;-10). Action trajectories
-<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>      contain significant jerk.
-<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>
-<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>  ──────────────────────────────────────────────────────────
-<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>  REMEDIATION CHECKLIST
-<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>  ──────────────────────────────────────────────────────────
-<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>  1. [WARNING] ldlj: High jerk in demonstration data forces the policy
-<a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>     to learn discontinuous action transitions. Consider applying action
-<a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a>     smoothing (e.g. Savitzky-Golay) before training.
-<a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>  CALIBRA CERTIFICATION REPORT
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>  Dataset  : my_demos
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>  Episodes : 120
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>  Steps    : 180000
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>  Policy   : diffusion
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>  Reference: aloha
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>  ──────────────────────────────────────────────────────────
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>  ⚠  PROVISIONALLY CERTIFIED
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>  Warnings:
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>    • ldlj: Mean LDLJ = -12.4 (threshold: &gt;-10). Action trajectories
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>      contain significant jerk.
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>  ──────────────────────────────────────────────────────────
+<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>  REMEDIATION CHECKLIST
+<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>  ──────────────────────────────────────────────────────────
+<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a>  1. [WARNING] ldlj: High jerk in demonstration data forces the policy
+<a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a>     to learn discontinuous action transitions. Consider applying action
+<a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a>     smoothing (e.g. Savitzky-Golay) before training.
+<a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 </code></pre></div>
 <p>Exit codes: <code>0</code> = CERTIFIED, <code>1</code> = PROVISIONALLY CERTIFIED (warnings), <code>2</code> = NOT CERTIFIED (critical failures). Wire into CI with <code>--json</code> for machine-readable output.</p>
 <p><code>--report PATH</code> writes a schema-versioned <strong>CalibraReport</strong> JSON consumed by <code>calibra site</code>.</p>
 <hr />
 <h2 id="calibra-prune-coreset-selection"><code>calibra prune</code> — coreset selection</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>calibra<span class="w"> </span>prune<span class="w"> </span>/data/100k_episodes<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.3<span class="w"> </span>--out<span class="w"> </span>coreset.json
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>calibra<span class="w"> </span>prune<span class="w"> </span>/data/my_ds<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.5<span class="w"> </span>--quality-only
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>calibra<span class="w"> </span>prune<span class="w"> </span>/data/my_ds<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.25<span class="w"> </span>--max-spike-rate<span class="w"> </span><span class="m">0</span>.03<span class="w"> </span>--max-vel-disc-rate<span class="w"> </span><span class="m">0</span>.08
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="c1"># Write a schema-versioned CalibraReport with per-episode verdicts (recommended)</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>calibra<span class="w"> </span>prune<span class="w"> </span>/data/demos.h5<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.3<span class="w"> </span>--report<span class="w"> </span>results/my_ds/latest.json
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="c1"># GR00T fine-tuning: strict quality thresholds + entropy-weighted diversity</span>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>calibra<span class="w"> </span>prune<span class="w"> </span>demos.hdf5<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.3<span class="w"> </span>--policy<span class="w"> </span>gr00t<span class="w"> </span>--report<span class="w"> </span>results/franka/latest.json
-<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
-<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="c1"># Incremental analysis: skip re-running the pipeline on unchanged episodes</span>
-<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>calibra<span class="w"> </span>prune<span class="w"> </span>/data/demos.h5<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.3<span class="w"> </span>--cache-dir<span class="w"> </span>.calibra/cache<span class="w"> </span>--report<span class="w"> </span>results/latest.json
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>calibra<span class="w"> </span>prune<span class="w"> </span>/data/100k_episodes<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.3<span class="w"> </span>--out<span class="w"> </span>coreset.json
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>calibra<span class="w"> </span>prune<span class="w"> </span>/data/my_ds<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.5<span class="w"> </span>--quality-only
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>calibra<span class="w"> </span>prune<span class="w"> </span>/data/my_ds<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.25<span class="w"> </span>--max-spike-rate<span class="w"> </span><span class="m">0</span>.03<span class="w"> </span>--max-vel-disc-rate<span class="w"> </span><span class="m">0</span>.08
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1"># Write a schema-versioned CalibraReport with per-episode verdicts (recommended)</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>calibra<span class="w"> </span>prune<span class="w"> </span>/data/demos.h5<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.3<span class="w"> </span>--report<span class="w"> </span>results/my_ds/latest.json
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="c1"># GR00T fine-tuning: strict quality thresholds + entropy-weighted diversity</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>calibra<span class="w"> </span>prune<span class="w"> </span>demos.hdf5<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.3<span class="w"> </span>--policy<span class="w"> </span>gr00t<span class="w"> </span>--report<span class="w"> </span>results/franka/latest.json
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="c1"># Incremental analysis: skip re-running the pipeline on unchanged episodes</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>calibra<span class="w"> </span>prune<span class="w"> </span>/data/demos.h5<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.3<span class="w"> </span>--cache-dir<span class="w"> </span>.calibra/cache<span class="w"> </span>--report<span class="w"> </span>results/latest.json
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>  CALIBRA PRUNING SUMMARY
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>  Original episodes  : 1000
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>  Quality failures   : 87   (removed in Stage 1)
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>  Diversity pruned   : 613  (removed in Stage 2)
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>  Coreset size       : 300  (30.0% of original)
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>  Method             : quality_filter + greedy_max_coverage
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>────────────────────────────────────────────────────────
-<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>  To use: filter your dataset to the episode IDs in keep_episode_ids.
-<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>  CALIBRA PRUNING SUMMARY
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>  Original episodes  : 1000
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>  Quality failures   : 87   (removed in Stage 1)
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>  Diversity pruned   : 613  (removed in Stage 2)
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>  Coreset size       : 300  (30.0% of original)
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>  Method             : quality_filter + greedy_max_coverage
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>────────────────────────────────────────────────────────
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>  To use: filter your dataset to the episode IDs in keep_episode_ids.
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 </code></pre></div>
 <p>Two-stage pipeline:
 - <strong>Stage 1 — Quality filter:</strong> removes episodes that fail kinematic/temporal thresholds (jerk spike rate, velocity discontinuity, dropout, LDLJ, minimum length).
@@ -1679,171 +1807,171 @@
 <p><code>--cache-dir DIR</code> caches the diagnostic pipeline result keyed by episode manifest fingerprint. On repeated runs with unchanged data, skips the pipeline — typically 10–50× faster on large datasets collected incrementally.</p>
 <hr />
 <h2 id="calibra-corrupt-validate-metric-sensitivity"><code>calibra corrupt</code> — validate metric sensitivity</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>calibra<span class="w"> </span>corrupt<span class="w"> </span>lerobot/pusht<span class="w"> </span>--drop-frames<span class="w"> </span><span class="m">0</span>.10
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>calibra<span class="w"> </span>corrupt<span class="w"> </span>/data/robot.h5<span class="w"> </span>--inject-spikes<span class="w"> </span><span class="m">0</span>.05
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>calibra<span class="w"> </span>corrupt<span class="w"> </span>lerobot/pusht<span class="w"> </span>--add-jitter-ms<span class="w"> </span><span class="m">50</span><span class="w"> </span>--drop-frames<span class="w"> </span><span class="m">0</span>.08
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>calibra<span class="w"> </span>corrupt<span class="w"> </span>lerobot/pusht<span class="w"> </span>--drop-frames<span class="w"> </span><span class="m">0</span>.10
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>calibra<span class="w"> </span>corrupt<span class="w"> </span>/data/robot.h5<span class="w"> </span>--inject-spikes<span class="w"> </span><span class="m">0</span>.05
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>calibra<span class="w"> </span>corrupt<span class="w"> </span>lerobot/pusht<span class="w"> </span>--add-jitter-ms<span class="w"> </span><span class="m">50</span><span class="w"> </span>--drop-frames<span class="w"> </span><span class="m">0</span>.08
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>calibra corrupt — pusht
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>Corruptions: drop_frames=10.0%
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>
-<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>  Metric                      Original   Corrupted       Δ  React
-<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>──────────────────────────────────────────────────────────────────
-<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>  Timestamp dropout rate         0.0%       9.4%    +9.4%  🔴
-<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>  Timestamp jitter CV          3.0e-06    8.1e-06  +5.1e-06 🟡
-<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>  Jerk spike rate                4.9%       5.2%    +0.3%   —
-<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>  Velocity discontinuity        16.7%      16.9%    +0.2%   —
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>calibra corrupt — pusht
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>Corruptions: drop_frames=10.0%
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>  Metric                      Original   Corrupted       Δ  React
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>──────────────────────────────────────────────────────────────────
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>  Timestamp dropout rate         0.0%       9.4%    +9.4%  🔴
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>  Timestamp jitter CV          3.0e-06    8.1e-06  +5.1e-06 🟡
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>  Jerk spike rate                4.9%       5.2%    +0.3%   —
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>  Velocity discontinuity        16.7%      16.9%    +0.2%   —
 </code></pre></div>
 <p>Inject synthetic corruptions into a known-good dataset to verify that your metrics actually respond to the defects they claim to detect.</p>
 <hr />
 <h2 id="calibra-retarget-convert-absolute-eef-actions-to-relative-deltas"><code>calibra retarget</code> — convert absolute EEF actions to relative deltas</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>calibra<span class="w"> </span>retarget<span class="w"> </span>/data/isaac_lab_demos.h5<span class="w"> </span>--out<span class="w"> </span>/data/retargeted/
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>calibra<span class="w"> </span>retarget<span class="w"> </span>/data/demos.h5<span class="w"> </span>--pad<span class="w"> </span>--out<span class="w"> </span>retargeted/
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>calibra<span class="w"> </span>retarget<span class="w"> </span>/data/demos.h5<span class="w"> </span>--obs-key-pos<span class="w"> </span>robot0_eef_pos<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">                                 </span>--obs-key-quat<span class="w"> </span>robot0_eef_quat
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>calibra<span class="w"> </span>retarget<span class="w"> </span>/data/isaac_lab_demos.h5<span class="w"> </span>--out<span class="w"> </span>/data/retargeted/
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>calibra<span class="w"> </span>retarget<span class="w"> </span>/data/demos.h5<span class="w"> </span>--pad<span class="w"> </span>--out<span class="w"> </span>retargeted/
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>calibra<span class="w"> </span>retarget<span class="w"> </span>/data/demos.h5<span class="w"> </span>--obs-key-pos<span class="w"> </span>robot0_eef_pos<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">                                 </span>--obs-key-quat<span class="w"> </span>robot0_eef_quat
 </code></pre></div>
 <p>NVIDIA GR00T N1.7+ uses a <strong>Relative End-Effector (EEF)</strong> action space. Isaac Lab and robomimic HDF5 datasets record actions in absolute world-frame coordinates. <code>retarget</code> converts absolute 7-DoF poses <code>[x, y, z, qx, qy, qz, qw]</code> into 6-DoF local-frame deltas <code>[dx, dy, dz, droll, dpitch, dyaw]</code>.</p>
 <p>Use <code>--pad</code> to append a zero row so output shape is <code>(T, 6)</code> instead of <code>(T−1, 6)</code> when your policy requires fixed-length sequences.</p>
 <hr />
 <h2 id="calibra-predict-predict-training-outcome-before-spending-gpu-time"><code>calibra predict</code> — predict training outcome before spending GPU time</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>calibra<span class="w"> </span>predict<span class="w"> </span>/data/my_demos.h5
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>calibra<span class="w"> </span>predict<span class="w"> </span>lerobot/my_dataset<span class="w"> </span>--policy<span class="w"> </span>diffusion<span class="w"> </span>--reference<span class="w"> </span>aloha
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>calibra<span class="w"> </span>predict<span class="w"> </span>/data/my_demos.h5<span class="w"> </span>--policy<span class="w"> </span>gr00t<span class="w"> </span>--record-outcome<span class="w"> </span><span class="m">0</span>.82
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>calibra<span class="w"> </span>predict<span class="w"> </span>/data/my_demos.h5
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>calibra<span class="w"> </span>predict<span class="w"> </span>lerobot/my_dataset<span class="w"> </span>--policy<span class="w"> </span>diffusion<span class="w"> </span>--reference<span class="w"> </span>aloha
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>calibra<span class="w"> </span>predict<span class="w"> </span>/data/my_demos.h5<span class="w"> </span>--policy<span class="w"> </span>gr00t<span class="w"> </span>--record-outcome<span class="w"> </span><span class="m">0</span>.82
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>  CALIBRA TRAINING OUTCOME PREDICTION
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>  Dataset  : my_demos  ·  Episodes: 120  ·  Policy: gr00t
-<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>  🟢  Predicted Success: 81%  [range 71%–91%]  —  GOOD
-<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>  ──────────────────────────────────────────────────────────
-<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>  ⚠️  -8.0pt  ldlj
-<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>     Mean LDLJ = -12.4. High jerk forces discontinuous action transitions.
-<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>  ──────────────────────────────────────────────────────────
-<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>  NEXT STEPS
-<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>  ✓ Data quality is sufficient. Proceed with training.
-<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>  After training, close the loop:
-<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>    calibra predict &lt;dataset&gt; --record-outcome &lt;actual_success_rate&gt;
-<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>  CALIBRA TRAINING OUTCOME PREDICTION
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>  Dataset  : my_demos  ·  Episodes: 120  ·  Policy: gr00t
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>  🟢  Predicted Success: 81%  [range 71%–91%]  —  GOOD
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>  ──────────────────────────────────────────────────────────
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>  ⚠️  -8.0pt  ldlj
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>     Mean LDLJ = -12.4. High jerk forces discontinuous action transitions.
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>  ──────────────────────────────────────────────────────────
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>  NEXT STEPS
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>  ✓ Data quality is sufficient. Proceed with training.
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>  After training, close the loop:
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a>    calibra predict &lt;dataset&gt; --record-outcome &lt;actual_success_rate&gt;
+<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 </code></pre></div>
 <p><code>--record-outcome RATE</code> stores the observed training success rate alongside the diagnostic fingerprint in <code>~/.calibra/outcomes.jsonl</code>. Future predictions on similar datasets blend the heuristic score with these empirical observations via inverse-distance weighting.</p>
 <hr />
 <h2 id="calibra-card-huggingface-dataset-quality-card"><code>calibra card</code> — HuggingFace dataset quality card</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>calibra<span class="w"> </span>card<span class="w"> </span>/data/my_demos.h5
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>calibra<span class="w"> </span>card<span class="w"> </span>lerobot/my_dataset<span class="w"> </span>--policy<span class="w"> </span>diffusion<span class="w"> </span>--out<span class="w"> </span>quality_card.md
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>calibra<span class="w"> </span>card<span class="w"> </span>/data/my_demos.h5<span class="w"> </span>--push<span class="w">   </span><span class="c1"># push directly to HuggingFace Hub README</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>calibra<span class="w"> </span>card<span class="w"> </span>/data/my_demos.h5
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>calibra<span class="w"> </span>card<span class="w"> </span>lerobot/my_dataset<span class="w"> </span>--policy<span class="w"> </span>diffusion<span class="w"> </span>--out<span class="w"> </span>quality_card.md
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>calibra<span class="w"> </span>card<span class="w"> </span>/data/my_demos.h5<span class="w"> </span>--push<span class="w">   </span><span class="c1"># push directly to HuggingFace Hub README</span>
 </code></pre></div>
 <p>Generates a structured Markdown quality card with certification badge, per-metric status table, and predicted training outcome. Embed it in your dataset's HuggingFace Hub README so other researchers can see data quality at a glance.</p>
 <hr />
 <h2 id="calibra-watch-real-time-teleoperation-quality-monitor"><code>calibra watch</code> — real-time teleoperation quality monitor</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>calibra<span class="w"> </span>watch<span class="w"> </span>/data/collection_session/
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>calibra<span class="w"> </span>watch<span class="w"> </span>/data/session/<span class="w"> </span>--remediate<span class="w">          </span><span class="c1"># print fix instructions on failure</span>
-<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>calibra<span class="w"> </span>watch<span class="w"> </span>/data/session/<span class="w"> </span>--log-file<span class="w"> </span>session.jsonl
-<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
-<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="c1"># Stream mode: pipe metrics from your collection script</span>
-<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>python<span class="w"> </span>collect_demos.py<span class="w"> </span><span class="p">|</span><span class="w"> </span>calibra<span class="w"> </span>watch<span class="w"> </span>--stream<span class="w"> </span>--remediate
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>calibra<span class="w"> </span>watch<span class="w"> </span>/data/collection_session/
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>calibra<span class="w"> </span>watch<span class="w"> </span>/data/session/<span class="w"> </span>--remediate<span class="w">          </span><span class="c1"># print fix instructions on failure</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>calibra<span class="w"> </span>watch<span class="w"> </span>/data/session/<span class="w"> </span>--log-file<span class="w"> </span>session.jsonl
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="c1"># Stream mode: pipe metrics from your collection script</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>python<span class="w"> </span>collect_demos.py<span class="w"> </span><span class="p">|</span><span class="w"> </span>calibra<span class="w"> </span>watch<span class="w"> </span>--stream<span class="w"> </span>--remediate
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>  CALIBRA WATCH — real-time data quality monitor
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>  Remediation advice: ON
-<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>  Watching: /data/collection_session/
-<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>
-<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>  ✅ [   1] ep_001.h5         PASS — all metrics OK
-<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>  ✅ [   2] ep_002.h5         PASS — all metrics OK
-<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>  ❌ [   3] ep_003.h5         FAIL — jerk_spike_rate = 0.087
-<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>       ↳ RE-RECORD: Move more smoothly — avoid abrupt stops and direction changes.
-<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>  ✅ [   4] ep_004.h5         PASS — all metrics OK
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>  CALIBRA WATCH — real-time data quality monitor
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>  Remediation advice: ON
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>  Watching: /data/collection_session/
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>  ✅ [   1] ep_001.h5         PASS — all metrics OK
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>  ✅ [   2] ep_002.h5         PASS — all metrics OK
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>  ❌ [   3] ep_003.h5         FAIL — jerk_spike_rate = 0.087
+<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>       ↳ RE-RECORD: Move more smoothly — avoid abrupt stops and direction changes.
+<a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>  ✅ [   4] ep_004.h5         PASS — all metrics OK
 </code></pre></div>
 <p><code>--remediate</code> prints a specific operator instruction on every FAIL/WARN. <code>--stream</code> reads JSON metric lines from stdin for integration with teleoperation software without filesystem round-trips.</p>
 <hr />
 <h2 id="calibra-score-composite-0100-quality-score"><code>calibra score</code> — composite 0–100 quality score</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>calibra<span class="w"> </span>score<span class="w"> </span>/data/robot_demos.h5
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>calibra<span class="w"> </span>score<span class="w"> </span>lerobot/my_dataset<span class="w"> </span>--policy<span class="w"> </span>diffusion
-<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>calibra<span class="w"> </span>score<span class="w"> </span>/data/my_ds<span class="w"> </span>--reference<span class="w"> </span>aloha<span class="w"> </span>--json
-<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>calibra<span class="w"> </span>score<span class="w"> </span>hf://lerobot/pusht_image<span class="w"> </span>--badge<span class="w">   </span><span class="c1"># print markdown badge for dataset cards</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>calibra<span class="w"> </span>score<span class="w"> </span>/data/robot_demos.h5
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>calibra<span class="w"> </span>score<span class="w"> </span>lerobot/my_dataset<span class="w"> </span>--policy<span class="w"> </span>diffusion
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>calibra<span class="w"> </span>score<span class="w"> </span>/data/my_ds<span class="w"> </span>--reference<span class="w"> </span>aloha<span class="w"> </span>--json
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>calibra<span class="w"> </span>score<span class="w"> </span>hf://lerobot/pusht_image<span class="w"> </span>--badge<span class="w">   </span><span class="c1"># print markdown badge for dataset cards</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>  CALIBRA SCORE
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>
-<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>  Dataset  : my_demos
-<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>  Episodes : 120  ·  Steps: 180000
-<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>
-<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>────────────────────────────────────────────────────────────
-<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>  🟢  78.0 / 100  —  Good
-<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>────────────────────────────────────────────────────────────
-<a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>
-<a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a>  Temporal Stability       22.00/25  [█████████████████░░░]  88%
-<a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a>  Control Smoothness       26.00/35  [██████████████░░░░░░]  74%
-<a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a>  Coverage / Diversity     19.00/25  [███████████████░░░░░]  76%
-<a id="__codelineno-18-15" name="__codelineno-18-15" href="#__codelineno-18-15"></a>  Task Structure           11.00/15  [██████████████░░░░░░]  73%
-<a id="__codelineno-18-16" name="__codelineno-18-16" href="#__codelineno-18-16"></a>
-<a id="__codelineno-18-17" name="__codelineno-18-17" href="#__codelineno-18-17"></a>  0 critical flags  ·  3 warnings
-<a id="__codelineno-18-18" name="__codelineno-18-18" href="#__codelineno-18-18"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>  CALIBRA SCORE
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>  Dataset  : my_demos
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>  Episodes : 120  ·  Steps: 180000
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>────────────────────────────────────────────────────────────
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>  🟢  78.0 / 100  —  Good
+<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>────────────────────────────────────────────────────────────
+<a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>
+<a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>  Temporal Stability       22.00/25  [█████████████████░░░]  88%
+<a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a>  Control Smoothness       26.00/35  [██████████████░░░░░░]  74%
+<a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a>  Coverage / Diversity     19.00/25  [███████████████░░░░░]  76%
+<a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a>  Task Structure           11.00/15  [██████████████░░░░░░]  73%
+<a id="__codelineno-20-16" name="__codelineno-20-16" href="#__codelineno-20-16"></a>
+<a id="__codelineno-20-17" name="__codelineno-20-17" href="#__codelineno-20-17"></a>  0 critical flags  ·  3 warnings
+<a id="__codelineno-20-18" name="__codelineno-20-18" href="#__codelineno-20-18"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 </code></pre></div>
 <p>Score categories: 90–100 Excellent, 75–89 Good, 60–74 Fair, 40–59 Poor, 0–39 Critical. Exit codes: <code>0</code> = Good or better (≥75), <code>1</code> = Fair or Poor (40–74), <code>2</code> = Critical (&lt;40).</p>
 <hr />
 <h2 id="calibra-sim2real-sim-to-real-distribution-gap"><code>calibra sim2real</code> — sim-to-real distribution gap</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>calibra<span class="w"> </span>sim2real<span class="w"> </span>/data/sim_demos.h5<span class="w"> </span>/data/real_demos.h5
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>calibra<span class="w"> </span>sim2real<span class="w"> </span>lerobot/sim_dataset<span class="w"> </span>/data/real.h5<span class="w"> </span>--policy<span class="w"> </span>pi0
-<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>calibra<span class="w"> </span>sim2real<span class="w"> </span>/data/sim.h5<span class="w"> </span>/data/real.h5<span class="w"> </span>--json
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>calibra<span class="w"> </span>sim2real<span class="w"> </span>/data/sim_demos.h5<span class="w"> </span>/data/real_demos.h5
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>calibra<span class="w"> </span>sim2real<span class="w"> </span>lerobot/sim_dataset<span class="w"> </span>/data/real.h5<span class="w"> </span>--policy<span class="w"> </span>pi0
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>calibra<span class="w"> </span>sim2real<span class="w"> </span>/data/sim.h5<span class="w"> </span>/data/real.h5<span class="w"> </span>--json
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>  CALIBRA SIM-TO-REAL GAP ANALYSIS
-<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>
-<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>  Sim dataset  : isaac_lab_pick  (500 eps)
-<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>  Real dataset : real_pick       (120 eps)
-<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>
-<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>  🟡  Overall Transfer Risk: MEDIUM
-<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>  📊  Pre-training Alignment Index (PAI): 71.3%
-<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>
-<a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>  🟢 Ldlj Gap                  [LOW]   Sim: -6.2   Real: -8.1   Δ = 1.9
-<a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>  🟡 Action Kl Divergence      [MEDIUM] Value: 0.73
-<a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a>  🟢 Sim Coverage Of Real      [LOW]   Value: 0.81
-<a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a>  🟢 Control Frequency Gap     [LOW]   Sim: 50Hz   Real: 50Hz   Δ = 0.0
-<a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>  CALIBRA SIM-TO-REAL GAP ANALYSIS
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>  Sim dataset  : isaac_lab_pick  (500 eps)
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>  Real dataset : real_pick       (120 eps)
+<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>
+<a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a>  🟡  Overall Transfer Risk: MEDIUM
+<a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a>  📊  Pre-training Alignment Index (PAI): 71.3%
+<a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a>
+<a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a>  🟢 Ldlj Gap                  [LOW]   Sim: -6.2   Real: -8.1   Δ = 1.9
+<a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a>  🟡 Action Kl Divergence      [MEDIUM] Value: 0.73
+<a id="__codelineno-22-13" name="__codelineno-22-13" href="#__codelineno-22-13"></a>  🟢 Sim Coverage Of Real      [LOW]   Value: 0.81
+<a id="__codelineno-22-14" name="__codelineno-22-14" href="#__codelineno-22-14"></a>  🟢 Control Frequency Gap     [LOW]   Sim: 50Hz   Real: 50Hz   Δ = 0.0
+<a id="__codelineno-22-15" name="__codelineno-22-15" href="#__codelineno-22-15"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 </code></pre></div>
 <p>Reports overall transfer risk (LOW / MEDIUM / HIGH / CRITICAL) and a Pre-training Alignment Index (PAI, 0–100%). Exit codes: <code>0</code> = LOW or MEDIUM, <code>1</code> = HIGH, <code>2</code> = CRITICAL.</p>
 <hr />
 <h2 id="calibra-transfer-cross-embodiment-compatibility"><code>calibra transfer</code> — cross-embodiment compatibility</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>calibra<span class="w"> </span>transfer<span class="w"> </span>/data/source_robot.h5<span class="w"> </span>/data/target_robot.h5
-<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>calibra<span class="w"> </span>transfer<span class="w"> </span>lerobot/aloha_mobile_cabinet<span class="w"> </span>lerobot/svla_so100_pickplace
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>calibra<span class="w"> </span>transfer<span class="w"> </span>/data/source_robot.h5<span class="w"> </span>/data/target_robot.h5
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>calibra<span class="w"> </span>transfer<span class="w"> </span>lerobot/aloha_mobile_cabinet<span class="w"> </span>lerobot/svla_so100_pickplace
 </code></pre></div>
 <p>Scores reuse compatibility across action dimensionality, control frequency, trajectory smoothness, episode length, and action range overlap. Levels: DIRECT (mix freely), ADAPT (normalise or retarget first), DIFFICULT, INCOMPATIBLE. Exit codes: <code>0</code> = DIRECT or ADAPT, <code>1</code> = DIFFICULT, <code>2</code> = INCOMPATIBLE.</p>
 <hr />
 <h2 id="calibra-cure-automatic-data-remediation"><code>calibra cure</code> — automatic data remediation</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>calibra<span class="w"> </span>cure<span class="w"> </span>/data/robot_demos.h5<span class="w"> </span>--out<span class="w"> </span>cured/
-<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>calibra<span class="w"> </span>cure<span class="w"> </span>/data/demos.h5<span class="w"> </span>--remedy<span class="w"> </span>smooth,trim<span class="w"> </span>--out<span class="w"> </span>cured/
-<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>calibra<span class="w"> </span>cure<span class="w"> </span>lerobot/pusht<span class="w"> </span>--hz<span class="w"> </span><span class="m">10</span><span class="w"> </span>--out<span class="w"> </span>cured/<span class="w"> </span>--format<span class="w"> </span>lerobot
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>calibra<span class="w"> </span>cure<span class="w"> </span>/data/robot_demos.h5<span class="w"> </span>--out<span class="w"> </span>cured/
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>calibra<span class="w"> </span>cure<span class="w"> </span>/data/demos.h5<span class="w"> </span>--remedy<span class="w"> </span>smooth,trim<span class="w"> </span>--out<span class="w"> </span>cured/
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>calibra<span class="w"> </span>cure<span class="w"> </span>lerobot/pusht<span class="w"> </span>--hz<span class="w"> </span><span class="m">10</span><span class="w"> </span>--out<span class="w"> </span>cured/<span class="w"> </span>--format<span class="w"> </span>lerobot
 </code></pre></div>
 <p>Applies kinematic and temporal fixes to every episode and writes cleaned per-episode <code>.npz</code> files. Default remedy pipeline: <code>smooth,interpolate,trim</code> — Savitzky-Golay filtering, uniform resampling, and dead-time trimming. Use <code>--remedy</code> to apply a subset, <code>--hz</code> to pin the output control frequency. Writes a <code>cure_manifest.json</code> with original and cured step counts.</p>
 <hr />
 <h2 id="calibra-audit-all-bulk-dataset-auditor"><code>calibra audit-all</code> — bulk dataset auditor</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>calibra<span class="w"> </span>audit-all<span class="w"> </span>--org<span class="w"> </span>lerobot<span class="w">                        </span><span class="c1"># audit every dataset in an HF org</span>
-<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>calibra<span class="w"> </span>audit-all<span class="w"> </span>--org<span class="w"> </span>lerobot<span class="w"> </span>--out<span class="w"> </span>./results<span class="w"> </span>--workers<span class="w"> </span><span class="m">8</span>
-<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>calibra<span class="w"> </span>audit-all<span class="w"> </span>--dataset<span class="w"> </span>lerobot/pusht<span class="w"> </span>lerobot/aloha_sim_insertion_human
-<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>calibra<span class="w"> </span>audit-all<span class="w"> </span>--org<span class="w"> </span>lerobot<span class="w"> </span>--force<span class="w">                </span><span class="c1"># re-audit even if cached</span>
-<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>calibra<span class="w"> </span>audit-all<span class="w"> </span>--org<span class="w"> </span>lerobot<span class="w"> </span>--limit<span class="w"> </span><span class="m">5</span><span class="w"> </span>--dry-run<span class="w">    </span><span class="c1"># preview without running</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>calibra<span class="w"> </span>audit-all<span class="w"> </span>--org<span class="w"> </span>lerobot<span class="w">                        </span><span class="c1"># audit every dataset in an HF org</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>calibra<span class="w"> </span>audit-all<span class="w"> </span>--org<span class="w"> </span>lerobot<span class="w"> </span>--out<span class="w"> </span>./results<span class="w"> </span>--workers<span class="w"> </span><span class="m">8</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>calibra<span class="w"> </span>audit-all<span class="w"> </span>--dataset<span class="w"> </span>lerobot/pusht<span class="w"> </span>lerobot/aloha_sim_insertion_human
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>calibra<span class="w"> </span>audit-all<span class="w"> </span>--org<span class="w"> </span>lerobot<span class="w"> </span>--force<span class="w">                </span><span class="c1"># re-audit even if cached</span>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>calibra<span class="w"> </span>audit-all<span class="w"> </span>--org<span class="w"> </span>lerobot<span class="w"> </span>--limit<span class="w"> </span><span class="m">5</span><span class="w"> </span>--dry-run<span class="w">    </span><span class="c1"># preview without running</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>Discovering datasets (org=lerobot) ...
-<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>Found 47 dataset(s).
-<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>[1/47] lerobot/pusht  auditing ...
-<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>[1/47] lerobot/pusht  OK  score=74.2 grade=C cert=provisional  8.3s
-<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>...
-<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>Done.  audited=45  skipped=2  failed=0  mean_score=71.8
-<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>Manifest: results/manifest.json
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>Discovering datasets (org=lerobot) ...
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>Found 47 dataset(s).
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>[1/47] lerobot/pusht  auditing ...
+<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>[1/47] lerobot/pusht  OK  score=74.2 grade=C cert=provisional  8.3s
+<a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>...
+<a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a>Done.  audited=45  skipped=2  failed=0  mean_score=71.8
+<a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a>Manifest: results/manifest.json
 </code></pre></div>
 <p>Bulk-audits a HuggingFace org or explicit dataset list in parallel. Writes CalibraReport JSONs to:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>results/&lt;org&gt;/&lt;slug&gt;/&lt;revision-sha[:8]&gt;/&lt;timestamp&gt;.json
-<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>results/&lt;org&gt;/&lt;slug&gt;/latest.json    ← always up-to-date symlink
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>results/&lt;org&gt;/&lt;slug&gt;/&lt;revision-sha[:8]&gt;/&lt;timestamp&gt;.json
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>results/&lt;org&gt;/&lt;slug&gt;/latest.json    ← always up-to-date symlink
 </code></pre></div>
 <p>Skips datasets whose current revision is already cached; use <code>--force</code> to re-audit. Requires <code>pip install huggingface-hub</code>.</p>
 <hr />
 <h2 id="calibra-site-static-leaderboard-website"><code>calibra site</code> — static leaderboard website</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>calibra<span class="w"> </span>site<span class="w"> </span>--results<span class="w"> </span>./results<span class="w"> </span>--out<span class="w"> </span>./site
-<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>calibra<span class="w"> </span>site<span class="w"> </span>--results<span class="w"> </span>./results<span class="w"> </span>--out<span class="w"> </span>./site<span class="w"> </span>--title<span class="w"> </span><span class="s2">&quot;My Robot Lab Leaderboard&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>calibra<span class="w"> </span>site<span class="w"> </span>--results<span class="w"> </span>./results<span class="w"> </span>--out<span class="w"> </span>./site
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>calibra<span class="w"> </span>site<span class="w"> </span>--results<span class="w"> </span>./results<span class="w"> </span>--out<span class="w"> </span>./site<span class="w"> </span>--title<span class="w"> </span><span class="s2">"My Robot Lab Leaderboard"</span>
 </code></pre></div>
 <p>Reads the <code>results/</code> directory tree produced by <code>audit-all</code> and generates a self-contained static website:</p>
 <table>
@@ -1875,26 +2003,26 @@
 <p>No build step, no dependencies — host on GitHub Pages, Netlify, or any static file server.</p>
 <hr />
 <h2 id="calibra-serve-local-rest-api-server-and-web-dashboard"><code>calibra serve</code> — local REST API server and web dashboard</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>calibra<span class="w"> </span>serve<span class="w">                    </span><span class="c1"># start on localhost:7842</span>
-<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>calibra<span class="w"> </span>serve<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
-<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>calibra<span class="w"> </span>serve<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>calibra<span class="w"> </span>serve<span class="w">                    </span><span class="c1"># start on localhost:7842</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>calibra<span class="w"> </span>serve<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>calibra<span class="w"> </span>serve<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0
 </code></pre></div>
 <p>Starts a local HTTP server exposing all Calibra diagnostics as a REST API and serving the visual web dashboard at <code>http://localhost:7842</code>. Use <code>--host 0.0.0.0</code> to expose on all network interfaces.</p>
 <hr />
 <h2 id="calibra-benchmark-full-vs-random-vs-calibra-comparison"><code>calibra benchmark</code> — full vs. random vs. Calibra comparison</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="c1"># Single retention level, purely simulated</span>
-<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>calibra<span class="w"> </span>benchmark<span class="w"> </span>lerobot/pusht<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.3<span class="w"> </span>--policy<span class="w"> </span>diffusion
-<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>
-<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="c1"># Full retention curve in one shot</span>
-<a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>calibra<span class="w"> </span>benchmark<span class="w"> </span>lerobot/pusht<span class="w"> </span>--sweep
-<a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>
-<a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="c1"># Custom retention levels</span>
-<a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>calibra<span class="w"> </span>benchmark<span class="w"> </span>lerobot/pusht<span class="w"> </span>--sweep<span class="w"> </span>--fractions<span class="w"> </span><span class="m">0</span>.10,0.30,0.50,1.00
-<a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>
-<a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a><span class="c1"># Substitute real measured results wherever they&#39;ve been recorded</span>
-<a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a>calibra<span class="w"> </span>benchmark<span class="w"> </span>lerobot/pusht<span class="w"> </span>--sweep<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht
-<a id="__codelineno-28-12" name="__codelineno-28-12" href="#__codelineno-28-12"></a>
-<a id="__codelineno-28-13" name="__codelineno-28-13" href="#__codelineno-28-13"></a>calibra<span class="w"> </span>benchmark<span class="w"> </span>lerobot/pusht<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.3<span class="w"> </span>--json<span class="w">   </span><span class="c1"># machine-readable</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="c1"># Single retention level, purely simulated</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>calibra<span class="w"> </span>benchmark<span class="w"> </span>lerobot/pusht<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.3<span class="w"> </span>--policy<span class="w"> </span>diffusion
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>
+<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="c1"># Full retention curve in one shot</span>
+<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>calibra<span class="w"> </span>benchmark<span class="w"> </span>lerobot/pusht<span class="w"> </span>--sweep
+<a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>
+<a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a><span class="c1"># Custom retention levels</span>
+<a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a>calibra<span class="w"> </span>benchmark<span class="w"> </span>lerobot/pusht<span class="w"> </span>--sweep<span class="w"> </span>--fractions<span class="w"> </span><span class="m">0</span>.10,0.30,0.50,1.00
+<a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a>
+<a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a><span class="c1"># Substitute real measured results wherever they've been recorded</span>
+<a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a>calibra<span class="w"> </span>benchmark<span class="w"> </span>lerobot/pusht<span class="w"> </span>--sweep<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht
+<a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a>
+<a id="__codelineno-30-13" name="__codelineno-30-13" href="#__codelineno-30-13"></a>calibra<span class="w"> </span>benchmark<span class="w"> </span>lerobot/pusht<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.3<span class="w"> </span>--json<span class="w">   </span><span class="c1"># machine-readable</span>
 </code></pre></div>
 <p>Runs diagnostics + the heuristic outcome predictor on three conditions — the raw dataset, a randomly pruned subset, and the Calibra coreset — and reports GPU-hours and predicted success rate for each. GPU-hours are simulated by default: linear scaling of <code>--base-gpu-hours</code> (default 24.0) by episode-count fraction.</p>
 <table>
@@ -1944,26 +2072,72 @@
 <p>Compute savings are computed from GPU-hours, not episode-count reduction — once real numbers are mixed in, the two can diverge (dataloader/I/O overhead doesn't shrink proportionally with data).</p>
 <hr />
 <h2 id="calibra-experiment-record-and-report-measured-training-results"><code>calibra experiment</code> — record and report measured training results</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="c1"># Log one training run&#39;s result</span>
-<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>calibra<span class="w"> </span>experiment<span class="w"> </span>record<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="w">    </span>--dataset<span class="w"> </span>partner-a/pusht_v3<span class="w"> </span>--condition<span class="w"> </span>calibra<span class="w"> </span>--retention<span class="w"> </span><span class="m">25</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a><span class="w">    </span>--n-episodes<span class="w"> </span><span class="m">300</span><span class="w"> </span>--policy<span class="w"> </span>act<span class="w"> </span>--eval-success-rate<span class="w"> </span><span class="m">0</span>.84<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a><span class="w">    </span>--gpu-hours<span class="w"> </span><span class="m">19</span>.8<span class="w"> </span>--seed<span class="w"> </span><span class="m">0</span>
-<a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>
-<a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>calibra<span class="w"> </span>experiment<span class="w"> </span>list<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht
-<a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>calibra<span class="w"> </span>experiment<span class="w"> </span>report<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht
-<a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a>calibra<span class="w"> </span>experiment<span class="w"> </span>report<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht<span class="w"> </span>--json
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="c1"># Log one training run's result</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>calibra<span class="w"> </span>experiment<span class="w"> </span>record<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="w">    </span>--dataset<span class="w"> </span>partner-a/pusht_v3<span class="w"> </span>--condition<span class="w"> </span>calibra<span class="w"> </span>--retention<span class="w"> </span><span class="m">25</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a><span class="w">    </span>--n-episodes<span class="w"> </span><span class="m">300</span><span class="w"> </span>--policy<span class="w"> </span>act<span class="w"> </span>--eval-success-rate<span class="w"> </span><span class="m">0</span>.84<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a><span class="w">    </span>--gpu-hours<span class="w"> </span><span class="m">19</span>.8<span class="w"> </span>--seed<span class="w"> </span><span class="m">0</span>
+<a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a>
+<a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a>calibra<span class="w"> </span>experiment<span class="w"> </span>list<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht
+<a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a>calibra<span class="w"> </span>experiment<span class="w"> </span>report<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht
+<a id="__codelineno-31-9" name="__codelineno-31-9" href="#__codelineno-31-9"></a>calibra<span class="w"> </span>experiment<span class="w"> </span>report<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht<span class="w"> </span>--json
 </code></pre></div>
 <p>Records the <em>results</em> of real training runs — GPU-hours, wall-clock time, energy, eval success rate — against the design-partner protocol's three conditions (<code>full</code>, <code>random</code>, <code>calibra</code>) at a given retention percentage. This command doesn't run training itself; training happens in whatever pipeline the partner already uses (<code>lerobot-train</code>, a custom loop, etc.) — <code>calibra experiment</code> just logs what came out of it, consistently, so it can be compared and fed into <code>calibra benchmark --experiment-id</code>.</p>
 <p>Stored as JSON Lines at <code>~/.calibra/experiments.jsonl</code> by default (override with <code>--path</code>). Local only — never synced to any network endpoint, matching the rest of Calibra's on-prem posture.</p>
 <p><code>calibra experiment report</code> prints the full retention curve for one experiment, the Calibra-vs-random delta at each level, and which <code>(retention%, condition)</code> pairs the protocol still expects but haven't been recorded (<code>10/25/50/75/100%</code> × <code>full/random/calibra</code>, minus the combinations that don't apply — <code>full</code> only at 100%, <code>random</code>/<code>calibra</code> never at 100%).</p>
 <h3 id="partner-workflow">Partner workflow</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>1. Run Calibra           calibra prune / calibra benchmark --sweep
-<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>2. Train Full / Random / Calibra   (partner&#39;s own training pipeline)
-<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>3. Record measured results         calibra experiment record --condition ... --retention ...
-<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>4. Run benchmark with experiment ID   calibra benchmark --sweep --experiment-id &lt;ID&gt;
-<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>5. Generate comparison              calibra experiment report --experiment-id &lt;ID&gt;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>1. Run Calibra           calibra prune / calibra benchmark --sweep
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>2. Train Full / Random / Calibra   (partner's own training pipeline)
+<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>3. Record measured results         calibra experiment record --condition ... --retention ...
+<a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>4. Run benchmark with experiment ID   calibra benchmark --sweep --experiment-id &lt;ID&gt;
+<a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a>5. Generate comparison              calibra experiment report --experiment-id &lt;ID&gt;
+<a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>6. Generate partner-facing report   calibra case-study --experiment-id &lt;ID&gt; --out case_study.md
 </code></pre></div>
+<hr />
+<h2 id="calibra-case-study-partner-facing-case-study-report"><code>calibra case-study</code> — partner-facing case-study report</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>calibra<span class="w"> </span>case-study<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a><span class="w">    </span>--partner<span class="w"> </span><span class="s2">"Partner A"</span><span class="w"> </span>--gpu-cost-per-hour<span class="w"> </span><span class="m">2</span>.50<span class="w"> </span>--out<span class="w"> </span>case_study.md
+<a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>
+<a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>calibra<span class="w"> </span>case-study<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht<span class="w">   </span><span class="c1"># print to stdout</span>
+</code></pre></div>
+<p>Renders a completed (or in-progress) <code>calibra experiment record</code> history for one <code>--experiment-id</code> into the partner-facing report described in the design-partner protocol: a headline number, a full retention-curve table, a Calibra-vs-random delta table, and a GPU-cost estimate — written as markdown.</p>
+<p>Deliberately reads only real measured <code>ExperimentLog</code> data — this is <strong>not</strong> <code>calibra benchmark --sweep</code>, which blends measured and simulated numbers for internal planning. A report handed to a partner or used in outreach must never contain heuristic predictions dressed up as evidence, so the report is stamped:</p>
+<ul>
+<li><strong><code>VALIDATED — full protocol measured</code></strong> — every <code>(retention%, condition)</code> slot the protocol expects (<code>10/25/50/75/100%</code> × <code>full/random/calibra</code>, minus the combinations that don't apply) is recorded with both <code>gpu_hours</code> and <code>eval_success_rate</code>.</li>
+<li><strong><code>DRAFT — N gap(s) open</code></strong> — anything is still missing. The report lists every gap under "Open items before this is a validated case study" (unrecorded <code>(level, condition)</code> pairs, or recorded ones missing <code>gpu_hours</code>/<code>eval_success_rate</code>) instead of silently presenting a partial result as complete.</li>
+</ul>
+<p>The headline number picks the most aggressive (lowest) retention level that has a fully measured Calibra + random pair — where Calibra's advantage over random subsampling is expected to be largest per the protocol — and is withheld entirely if no level yet qualifies.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--experiment-id ID</code></td>
+<td>Required. The experiment to render.</td>
+</tr>
+<tr>
+<td><code>--partner NAME</code></td>
+<td>Display name for the partner (defaults to the recorded partner label, or the experiment id).</td>
+</tr>
+<tr>
+<td><code>--gpu-cost-per-hour RATE</code></td>
+<td>Assumed $/GPU-hour for the cost-estimate columns (default 2.50). Labeled explicitly in the report as an assumed rate, not a partner-billed figure.</td>
+</tr>
+<tr>
+<td><code>--out FILE.md</code></td>
+<td>Write the markdown report to this path instead of stdout.</td>
+</tr>
+<tr>
+<td><code>--path PATH</code></td>
+<td>Override the default <code>~/.calibra/experiments.jsonl</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Reads the same local-only JSON Lines store as <code>calibra experiment</code> — nothing is uploaded or synced automatically.</p>
 <p>Repeat steps 2–3 for each condition/retention level until <code>calibra experiment report</code> shows the protocol complete, at which point <code>calibra benchmark --sweep --experiment-id &lt;ID&gt;</code> reports <code>CASE STUDY / VALIDATED</code>.</p>
 
 
