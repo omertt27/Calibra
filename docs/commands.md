@@ -45,6 +45,74 @@ See [Integrity Checks](integrity.md) for what each check detects and why it matt
 
 ---
 
+## `calibra analyze` — one-command report
+
+```bash
+calibra analyze /data/robot_demos
+calibra analyze lerobot/pusht --format lerobot --policy act
+calibra analyze /data/robot_demos --keep 0.4 --export coreset_index.json
+calibra analyze /data/robot_demos --json
+```
+
+```
+────────────────────────────────────────────────────────────
+  CALIBRA ANALYSIS
+────────────────────────────────────────────────────────────
+  Dataset
+    Name       : lerobot/pusht
+    Episodes   : 206
+    Frames     : 25,650
+    Format     : lerobot
+
+──────────────────────────────────────────────────────────
+  Integrity
+    ✅ Timestamps & sync
+    ✅ Episode structure
+    ✅ Camera feed
+    ✅ Motion & control
+    Integrity score: 95/100 — Healthy
+──────────────────────────────────────────────────────────
+  Quality (Calibra Score)     76.7 / 100   —  Good
+  Coverage / diversity        68.2 / 100
+  Redundancy (estimated)      41.0%  of state-space occupies duplicate regions
+──────────────────────────────────────────────────────────
+  RECOMMENDATION
+
+    Regime             : Redundancy-dominated
+    Training set       : 52 / 206 episodes
+    Expected retention : 25%
+
+    Reasons:
+      • removes 6 corrupted/low-quality episodes
+      • removes 148 redundant episodes (diversity selection)
+      • preserves behavioral coverage via greedy max-coverage selection
+
+    This is a heuristic starting point (~1 - measured redundancy), not a
+    validated retention curve. Run the design-partner protocol
+    (`calibra experiment` + `calibra case-study`) before committing a
+    production training run to this number.
+
+    Export this coreset: calibra analyze <path> --export coreset_index.json
+────────────────────────────────────────────────────────────
+```
+
+The single-command "is this trustworthy, how good is it, what should I train on" report — the same story that otherwise takes three separate commands (`calibra integrity` for trust, `calibra audit`-style scoring for quality, `calibra prune` for a coreset) to assemble by hand. Nothing here is a new metric: it's the existing analyzers, the existing Calibra Score, and the existing regime-adaptive coreset selector (see `calibra prune`), composed into one report object.
+
+| Flag | Description |
+|---|---|
+| `--format FMT` | Force a format adapter (default: auto-detect). |
+| `--policy FAMILY` | Target policy family for conditioned hints (e.g. `diffusion`, `act`). |
+| `--keep FRACTION` | Override the automatic training-set retention recommendation (0–1]. |
+| `--export PATH` | Write the recommended coreset index to `PATH` (same format as `calibra prune --out`). |
+| `--json` | Print the full result as JSON instead of the formatted report. |
+| `--cache-dir DIR` | Cache directory for incremental analysis — an unchanged dataset returns the cached result instantly. |
+
+Datasets under 5 episodes skip the coreset recommendation (not enough data to diagnose a regime) but still get the integrity and quality sections.
+
+The training-set recommendation is a heuristic starting point (roughly `1 - measured state redundancy`, clamped) — not a substitute for the design-partner three-condition retention-sweep protocol. The report says so explicitly; `calibra experiment` and `calibra case-study` are the commands that turn it into a validated number.
+
+---
+
 ## `calibra audit` — full diagnostic report
 
 ```bash
@@ -527,6 +595,37 @@ Stored as JSON Lines at `~/.calibra/experiments.jsonl` by default (override with
 3. Record measured results         calibra experiment record --condition ... --retention ...
 4. Run benchmark with experiment ID   calibra benchmark --sweep --experiment-id <ID>
 5. Generate comparison              calibra experiment report --experiment-id <ID>
+6. Generate partner-facing report   calibra case-study --experiment-id <ID> --out case_study.md
 ```
+
+---
+
+## `calibra case-study` — partner-facing case-study report
+
+```bash
+calibra case-study --experiment-id partner-a-pusht \
+    --partner "Partner A" --gpu-cost-per-hour 2.50 --out case_study.md
+
+calibra case-study --experiment-id partner-a-pusht   # print to stdout
+```
+
+Renders a completed (or in-progress) `calibra experiment record` history for one `--experiment-id` into the partner-facing report described in the design-partner protocol: a headline number, a full retention-curve table, a Calibra-vs-random delta table, and a GPU-cost estimate — written as markdown.
+
+Deliberately reads only real measured `ExperimentLog` data — this is **not** `calibra benchmark --sweep`, which blends measured and simulated numbers for internal planning. A report handed to a partner or used in outreach must never contain heuristic predictions dressed up as evidence, so the report is stamped:
+
+- **`VALIDATED — full protocol measured`** — every `(retention%, condition)` slot the protocol expects (`10/25/50/75/100%` × `full/random/calibra`, minus the combinations that don't apply) is recorded with both `gpu_hours` and `eval_success_rate`.
+- **`DRAFT — N gap(s) open`** — anything is still missing. The report lists every gap under "Open items before this is a validated case study" (unrecorded `(level, condition)` pairs, or recorded ones missing `gpu_hours`/`eval_success_rate`) instead of silently presenting a partial result as complete.
+
+The headline number picks the most aggressive (lowest) retention level that has a fully measured Calibra + random pair — where Calibra's advantage over random subsampling is expected to be largest per the protocol — and is withheld entirely if no level yet qualifies.
+
+| Flag | Description |
+|---|---|
+| `--experiment-id ID` | Required. The experiment to render. |
+| `--partner NAME` | Display name for the partner (defaults to the recorded partner label, or the experiment id). |
+| `--gpu-cost-per-hour RATE` | Assumed $/GPU-hour for the cost-estimate columns (default 2.50). Labeled explicitly in the report as an assumed rate, not a partner-billed figure. |
+| `--out FILE.md` | Write the markdown report to this path instead of stdout. |
+| `--path PATH` | Override the default `~/.calibra/experiments.jsonl`. |
+
+Reads the same local-only JSON Lines store as `calibra experiment` — nothing is uploaded or synced automatically.
 
 Repeat steps 2–3 for each condition/retention level until `calibra experiment report` shows the protocol complete, at which point `calibra benchmark --sweep --experiment-id <ID>` reports `CASE STUDY / VALIDATED`.

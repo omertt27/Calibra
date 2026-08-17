@@ -5,7 +5,7 @@
   <a href="https://omertt27.github.io/Calibra/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-blue" alt="Docs"/></a>
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-BSL_1.1-blue.svg" alt="License"/></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v0.7.0-informational" alt="Changelog"/></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v0.8.0-informational" alt="Changelog"/></a>
 </p>
 
 <p align="center"><b>Train robot policies with up to 75% less data.</b></p>
@@ -68,6 +68,33 @@ Passed (8)
 Integrity Score: 85/100  ·  Status: Warning
 ```
 
+Or run all four steps as one report with `calibra analyze` — integrity, Calibra Score, estimated redundancy, and a training-set recommendation from the same coreset selector `calibra prune` uses:
+
+```
+$ calibra analyze lerobot/pusht
+
+────────────────────────────────────────────────────────────
+  CALIBRA ANALYSIS
+────────────────────────────────────────────────────────────
+  Dataset
+    Name       : lerobot/pusht
+    Episodes   : 206
+    ...
+
+  Quality (Calibra Score)     76.7 / 100   —  Good
+  Coverage / diversity        68.2 / 100
+  Redundancy (estimated)      41.0%  of state-space occupies duplicate regions
+──────────────────────────────────────────────────────────
+  RECOMMENDATION
+
+    Training set       : 52 / 206 episodes
+    Expected retention : 25%
+    ...
+    This is a heuristic starting point, not a validated retention curve.
+    Run the design-partner protocol (`calibra experiment` + `calibra
+    case-study`) before committing a production training run to this number.
+```
+
 ---
 
 ## Quick start
@@ -78,6 +105,9 @@ pip install calibra-robotics
 calibra integrity /data/my_demos.h5
 calibra audit lerobot/pusht
 calibra prune lerobot/pusht --keep 0.25 --report results/pusht/latest.json
+
+# or the whole pipeline in one command:
+calibra analyze lerobot/pusht
 ```
 
 ---
@@ -149,6 +179,14 @@ calibra benchmark --sweep --experiment-id my-run
 ```
 
 Reports distinguish **simulated**, **partially measured**, and **validated case-study** results so estimated compute savings are not confused with measured results.
+
+Once a design partner's retention curve is fully recorded, turn it into a partner-facing report:
+
+```bash
+calibra case-study --experiment-id my-run --partner "Partner A" --gpu-cost-per-hour 2.50 --out case_study.md
+```
+
+`calibra case-study` reads only real measured `calibra experiment record` data — never `calibra benchmark`'s simulated numbers — and marks the report `DRAFT` rather than `VALIDATED` if any protocol condition is still unrecorded.
 
 → [Full command reference](docs/commands.md)
 
@@ -241,6 +279,7 @@ result = selector.select(batch, report)
 
 | Command | Description |
 |---|---|
+| `calibra analyze` | One-command report: integrity, Calibra Score, estimated redundancy, and a training-set recommendation |
 | `calibra integrity` | "Can I trust this dataset?" — timestamps, sync, episode completeness, duplicate/frozen/blurry camera frames, jittery/jerky motion (`--decode-images` for LeRobot v1) |
 | `calibra audit` | Full diagnostic report with bootstrap CIs and per-episode outlier detection |
 | `calibra review` | Ranked episode review queue — separates anomaly, quality-risk, and coverage-value signals |
@@ -258,8 +297,9 @@ result = selector.select(batch, report)
 | `calibra audit-all` | Bulk-audit an entire HF org; writes CalibraReport JSONs |
 | `calibra site` | Generate a static leaderboard website from audit results |
 | `calibra serve` | Local REST API server and web dashboard |
-| `calibra benchmark` | Compare full, random, and Calibra-selected datasets across training-data retention levels |
+| `calibra benchmark` | Compare full, random, and Calibra-selected datasets across training-data retention levels (`--sweep`, `--experiment-id`) |
 | `calibra experiment` | Record and report measured training results such as GPU-hours and evaluation success |
+| `calibra case-study` | Render a fully (or partially) measured experiment into a partner-facing case-study report |
 
 → [Full command reference](docs/commands.md)
 
@@ -267,7 +307,9 @@ result = selector.select(batch, report)
 
 ## Roadmap
 
-**v0.7.1 (current) — Dataset Integrity:** `calibra integrity` — timestamps, sync, episode completeness, duplicate/frozen/blurry camera frames, jittery/jerky motion, with LeRobot v1 image support via `--decode-images`. Full details in [CHANGELOG.md](CHANGELOG.md).
+**v0.8.0 (current) — Measured training results:** `calibra experiment record/list/report` logs a design partner's real training-run outcomes; `calibra benchmark --sweep` and `--experiment-id` fold measured numbers into the benchmark report wherever available, tagging every value `(measured)` or `(simulated)` and stamping the report `SIMULATED` / `PARTIAL MEASUREMENT` / `CASE STUDY / VALIDATED`. Full details in [CHANGELOG.md](CHANGELOG.md).
+
+**Since v0.8.0 — One-command report:** `calibra analyze` composes integrity, Calibra Score, and the coreset recommendation into a single report, and `calibra case-study` turns a completed experiment log into a partner-facing markdown report.
 
 **Next — Vision Integrity for video-backed LeRobot (v2/v3):** decode sampled frames from LeRobot's mp4-encoded v2/v3 datasets so duplicate-frame/camera-freeze/blur detection work there too.
 
@@ -313,7 +355,7 @@ Calibra is not open to external pull requests or contributions at this time.
 ```bash
 git clone https://github.com/omertt27/Calibra
 pip install -e '.[all,dev]'
-pytest              # 679 tests
+pytest              # 770 tests
 ruff check .        # zero errors expected
 ```
 
