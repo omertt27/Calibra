@@ -7,7 +7,6 @@ import {
   Clipboard,
   ExternalLink,
   Github,
-  Sparkles,
 } from 'lucide-react'
 import './App.css'
 
@@ -231,7 +230,6 @@ function App() {
           <div className="container">
             <Reveal as="div" className="research-card">
               <div className="research-copy">
-                <div className="research-mark"><Sparkles size={22} /></div>
                 <h2><strong>75% smaller</strong> dataset. Prediction error within 0.5% of full-data training.</h2>
                 <p>
                   Calibra retained 41 of 165 training episodes while preserving more
