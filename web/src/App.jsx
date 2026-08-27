@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
+  AlertTriangle,
   ArrowDown,
   ArrowRight,
   Check,
@@ -7,6 +8,9 @@ import {
   Clipboard,
   ExternalLink,
   Github,
+  Menu,
+  Star,
+  X,
 } from 'lucide-react'
 import './App.css'
 
@@ -21,20 +25,21 @@ const LINKS = {
     'https://www.producthunt.com/products/calibra-train-with-less-data?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-calibra-cut-robot-training-costs',
 }
 
-const BADGES = [
-  {
-    href: LINKS.github,
-    alt: 'GitHub stars',
-    src: 'https://img.shields.io/github/stars/omertt27/Calibra?style=flat-square&label=stars&labelColor=17211b&color=bde75a',
-  },
-  {
-    href: LINKS.pypi,
-    alt: 'PyPI downloads',
-    src: 'https://img.shields.io/pypi/dm/calibra-robotics?style=flat-square&label=downloads%2Fmo&labelColor=17211b&color=bde75a',
-  },
+const INSTALL_COMMAND = 'pip install calibra-robotics'
+
+const NAV_LINKS = [
+  { href: '#benchmark', label: 'Benchmark' },
+  { href: '#workflow', label: 'How it works' },
+  { href: LINKS.docs, label: 'Docs' },
 ]
 
-const INSTALL_COMMAND = 'pip install calibra-robotics'
+const INTEGRITY_CHECKS = [
+  { label: 'Schema', detail: '165 episodes · 25,650 frames', ok: true },
+  { label: 'Timestamps', detail: 'monotonic, no gaps', ok: true },
+  { label: 'Action bounds', detail: 'within declared limits', ok: true },
+  { label: 'Camera frames', detail: '3 episodes with decode errors', ok: false },
+  { label: 'Reward signal', detail: 'present · dense', ok: true },
+]
 
 const STATS = [
   { number: '75%', label: 'less training data', note: 'at matched policy performance' },
@@ -89,12 +94,59 @@ function Reveal({ as: Tag = 'div', className = '', delay = 0, children, ...props
   )
 }
 
-function Logo() {
+function Logo({ hideIcon = false }) {
   return (
     <a className="brand" href="#top" aria-label="Calibra home">
-      <img src={`${import.meta.env.BASE_URL}logo-icon.svg`} alt="" />
+      {!hideIcon && <img src={`${import.meta.env.BASE_URL}logo-icon.svg`} alt="" />}
       <span>Calibra</span>
     </a>
+  )
+}
+
+function StarPill() {
+  const [stars, setStars] = useState(null)
+
+  useEffect(() => {
+    let live = true
+    fetch('https://api.github.com/repos/omertt27/Calibra')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (live && d && typeof d.stargazers_count === 'number') setStars(d.stargazers_count)
+      })
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [])
+
+  return (
+    <a className="nav-pill" href={LINKS.github} target="_blank" rel="noreferrer">
+      <Star size={13} /> {stars == null ? 'Star' : stars.toLocaleString()}
+    </a>
+  )
+}
+
+function HeroTerminal() {
+  return (
+    <Reveal as="div" className="hero-terminal" delay={220}>
+      <div className="hero-terminal-bar">
+        <span><i /><i /><i /></span>
+        calibra integrity
+      </div>
+      <div className="hero-terminal-body">
+        <p className="ht-cmd"><span className="ht-prompt">$</span> calibra integrity lerobot/pusht</p>
+        {INTEGRITY_CHECKS.map((check) => (
+          <p className={check.ok ? 'ht-ok' : 'ht-warn'} key={check.label}>
+            {check.ok ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
+            {check.label}
+            <span className="ht-detail">{check.detail}</span>
+          </p>
+        ))}
+        <p className="ht-score">
+          <strong>integrity score 0.98</strong> ready to train
+        </p>
+      </div>
+    </Reveal>
   )
 }
 
@@ -171,29 +223,51 @@ function CoverageGraphic() {
 }
 
 function App() {
+  const [menuOpen, setMenuOpen] = useState(false)
+
   return (
     <div id="top">
       <nav className="nav">
         <div className="container nav-inner">
-          <Logo />
+          <Logo hideIcon />
           <div className="nav-links">
-            <a href="#benchmark">Benchmark</a>
-            <a href="#workflow">How it works</a>
-            <a href={LINKS.docs}>Docs</a>
+            {NAV_LINKS.map((link) => (
+              <a href={link.href} key={link.label}>{link.label}</a>
+            ))}
           </div>
           <div className="nav-right">
             <div className="nav-badges">
-              {BADGES.map((badge) => (
-                <a href={badge.href} key={badge.alt} target="_blank" rel="noreferrer">
-                  <img src={badge.src} alt={badge.alt} height={20} />
-                </a>
-              ))}
+              <StarPill />
+              <a className="nav-pill" href={LINKS.pypi} target="_blank" rel="noreferrer">PyPI</a>
             </div>
             <a className="nav-github" href={LINKS.github} target="_blank" rel="noreferrer">
               <Github size={17} /> GitHub
             </a>
+            <button
+              className="nav-toggle"
+              type="button"
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              {menuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
           </div>
         </div>
+        {menuOpen && (
+          <div className="nav-menu">
+            <div className="container">
+              {NAV_LINKS.map((link) => (
+                <a href={link.href} key={link.label} onClick={() => setMenuOpen(false)}>
+                  {link.label}
+                </a>
+              ))}
+              <a href={LINKS.github} target="_blank" rel="noreferrer" onClick={() => setMenuOpen(false)}>
+                GitHub
+              </a>
+            </div>
+          </div>
+        )}
       </nav>
 
       <main>
@@ -218,6 +292,7 @@ function App() {
                 <CopyCommand />
               </div>
             </div>
+            <HeroTerminal />
           </div>
           <a className="scroll-cue" href="#benchmark">
             See benchmark results <ArrowDown size={15} />
