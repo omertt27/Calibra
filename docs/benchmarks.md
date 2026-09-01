@@ -10,7 +10,7 @@ How much training data can Calibra remove before performance degrades?
 
 | Dataset | Episodes | Quality Score | Calibra at 25% | Calibra vs. Random at 25% | Rare coverage vs. random (25%) |
 |---|---:|---:|---:|---:|---:|
-| PushT (`lerobot/pusht`) | 165 | 76.7/100 | **99.5% of full** | **+8pp** (99.5% vs 97.8%) | **+65%** (56% vs. 34%) |
+| PushT (`lerobot/pusht`) | 165 | 76.7/100 | **99.2% of full** | **+1.3pp** (99.2% vs 97.9%) | **+55%** (52% vs. 34%) |
 | DROID-100 (`lerobot/droid_100`) | 100 | 77.0/100 | 97.3% of full | **+10pp** (97.3% vs 107.3%) | **+194%** (83% vs. 28%) |
 | ALOHA sim (`lerobot/aloha_sim_insertion_human`) | 50 | 87.3/100 | 60.6% of full | −18pp | +117% (50% vs. 23%) |
 | xArm lift (`lerobot/xarm_lift_medium`) | 800 | 82.7/100 | 97.3% of full | −1pp (≈ random) | +2% (25.0% vs. 24.6%) |
@@ -51,8 +51,8 @@ Consistent finding across all four datasets: Calibra preserved more rare behavio
 
 | Condition | Overall MSE | Common-test MSE | Tail-test MSE | Train time |
 |---|---:|---:|---:|---:|
-| Full unfiltered (165 ep) | 420.93 | 440.29 | 323.98 | 25.3s |
-| Quality-approved full (123 ep) | 423.93 | 443.58 | 325.54 | 15.6s |
+| Full unfiltered (165 ep) | 420.93 | 440.29 | 323.98 | 27.1s |
+| Quality-approved full (123 ep) | 423.93 | 443.58 | 325.54 | 16.8s |
 
 **Methods compared (all at equal episode budget k):**
 
@@ -79,8 +79,10 @@ Consistent finding across all four datasets: Calibra preserved more rare behavio
 | random_full | 4.0% | 488.33 | 29.04 | — | — | — | 407.62 | 504.44 |
 | random_quality | 5.2% | 514.48 | 33.41 | −26.16 | 0.009 | −0.60 | 449.17 | 527.52 |
 | quality_only | **0.0%** | 549.11 | 7.23 | −60.79 | 0.001 | −2.05 | 500.16 | 558.88 |
-| diversity_only | **16.0%** | **449.13** | **1.07** | **+39.19** | **0.014** | **+1.36** | **351.73** | **468.58** |
-| calibra | 12.0% | 457.64 | 0.96 | +30.68 | 0.042 | +1.07 | 377.61 | 473.62 |
+| random_quality_eqk | 6.4% | 485.16 | 14.15 | +3.17 | 0.742 | +0.10 | 393.46 | 503.46 |
+| quality_only_eqk | **0.0%** | 515.57 | 7.01 | −27.24 | 0.036 | −0.92 | 469.79 | 524.71 |
+| diversity_only | **20.0%** | **464.79** | **1.13** | +23.54 | 0.104 | +0.82 | **369.41** | **483.83** |
+| **calibra** | 16.0% | **459.45** | 1.25 | **+28.88** | 0.056 | **+1.00** | 348.01 | 481.69 |
 
 #### 10% retention — k=16 from full / k=12 from quality pool
 
@@ -89,8 +91,10 @@ Consistent finding across all four datasets: Calibra preserved more rare behavio
 | random_full | 8.4% | 445.85 | 10.33 | — | — | — | 353.01 | 464.38 |
 | random_quality | 8.4% | 462.61 | 11.45 | −16.76 | 0.028 | −1.10 | 368.61 | 481.37 |
 | quality_only | 4.0% | 463.25 | 1.66 | −17.40 | 0.004 | −1.68 | 380.42 | 479.78 |
-| **diversity_only** | **24.0%** | **440.69** | **0.96** | +5.16 | 0.319 | +0.50 | **343.46** | **460.11** |
-| calibra | 24.0% | 463.42 | 2.40 | −17.57 | **0.006** | −1.68 | 384.12 | 479.25 |
+| random_quality_eqk | 10.0% | 453.46 | 11.41 | −7.61 | 0.249 | −0.50 | 356.70 | 472.77 |
+| quality_only_eqk | 8.0% | 442.84 | 0.76 | +3.01 | 0.538 | +0.29 | 341.68 | 463.04 |
+| **diversity_only** | **32.0%** | 449.37 | 0.52 | −3.52 | 0.464 | −0.34 | 351.76 | 468.86 |
+| **calibra** | 28.0% | **437.57** | **0.75** | **+8.28** | 0.112 | **+0.81** | **341.83** | **456.68** |
 
 #### 25% retention — k=41 from full / k=31 from quality pool
 
@@ -99,8 +103,10 @@ Consistent finding across all four datasets: Calibra preserved more rare behavio
 | random_full | 23.6% | 427.49 | 1.84 | — | — | — | 327.66 | 447.42 |
 | random_quality | 18.8% | 441.27 | 8.85 | −13.78 | 0.006 | −1.54 | 340.75 | 461.34 |
 | quality_only | 12.0% | 432.80 | 0.52 | −5.31 | <0.001 | −2.81 | 328.43 | 453.64 |
-| diversity_only | 52.0% | 425.71 | 0.44 | +1.79 | 0.065 | +0.96 | 330.57 | 444.70 |
-| **calibra** | **56.0%** | **422.89** | **0.45** | **+4.61** | **<0.001** | **+2.46** | **321.16** | **443.20** |
+| random_quality_eqk | 27.2% | 431.66 | 3.77 | −4.16 | 0.064 | −1.00 | 328.95 | 452.16 |
+| quality_only_eqk | 20.0% | 428.56 | 0.55 | −1.07 | 0.268 | −0.56 | 325.23 | 449.19 |
+| diversity_only | 60.0% | 431.00 | 0.36 | −3.51 | 0.002 | −1.90 | 332.50 | 450.66 |
+| **calibra** | **52.0%** | **424.16** | **0.51** | **+3.33** | **0.004** | **+1.77** | **318.86** | **445.19** |
 
 *d = Cohen's d vs. random_full — positive means method has lower (better) MSE than random_full. p = two-sided paired t-test. Tail cov. = fraction of 25 action-space low-density training episodes retained by the method.*
 
@@ -108,15 +114,15 @@ Consistent finding across all four datasets: Calibra preserved more rare behavio
 
 ### Key findings
 
-**1. At 5% retention (8 episodes), both diversity-based methods are statistically significantly better than random (p=0.014 and p=0.042).** diversity_only achieves the best overall MSE (449.13) and tail MSE (351.73) at this budget, retaining 4× more tail episodes than random (16% vs. 4%).
+**1. At 5% retention (8 episodes), neither diversity-based method reaches statistical significance vs. random (diversity_only p=0.104, calibra p=0.056).** Both are directionally positive (d=+0.82 and d=+1.00) and calibra achieves the lowest overall MSE (459.45) and tail MSE (348.01) at this budget. The wide CI on random_full (±29.04) at 8 episodes reflects high selection variance — 10 seeds is insufficient to resolve a significant difference at this budget.
 
-**2. At 10% retention, calibra is significantly worse than random (p=0.006, d=−1.68).** This is not noise — it replicates across all 10 seeds. The quality filter reduces the pool from 165 to 123 episodes before diversity selection, cutting off access to tail episodes. At k=16, drawing from 123 quality-approved episodes provides less tail coverage than drawing from the full 165. diversity_only (full pool, no quality gate) is not significantly different from random at this budget (p=0.319).
+**2. At 10% retention, calibra is the best-performing method (d=+0.81) but not statistically significant (p=0.112).** This is a reversal from pre-fix data where calibra appeared significantly worse than random (p=0.006). The `_build_feature_matrix` fix corrected the diversity weight, enabling k-center to spread selection across action space more effectively at k=16. diversity_only retains the most tail coverage (32%) but sits below random on overall MSE (d=−0.34). No method is significantly better than random_full at this budget.
 
-**3. At 25% retention, calibra is the strongest method (p<0.001, d=+2.46).** Tail coverage 56% vs. 23.6% for random. Tail MSE **321.16 — below the full-dataset tail MSE of 323.98**. The quality filter pays off at this budget because the 41-episode selection can afford to avoid lower-quality episodes while still covering the tail.
+**3. At 25% retention, calibra is the strongest method (p=0.004, d=+1.77).** Tail coverage 52% vs. 23.6% for random. Tail MSE **318.86 — below the full-dataset tail MSE of 323.98**. The quality filter pays off at this budget because the 41-episode selection can afford to avoid lower-quality episodes while still covering the tail.
 
 **4. quality_only is consistently the worst performing method at all three budgets.** It achieves 0% tail coverage at 5%, significantly worse MSE at 5% (p=0.001) and 10% (p=0.004), and significantly worse MSE at 25% (p<0.001, d=−2.81). Quality filtering without diversity selection removes tail episodes first (they are often kinematically atypical) and then draws randomly from what remains.
 
-**5. The optimal strategy is budget-dependent.** Below ~25% retention: use diversity-only (k-center on the full pool, no quality gate). At 25%+: Calibra's quality filter pays off. This is consistent with the regime-space analysis in the main ablation.
+**5. The optimal strategy is budget-dependent.** At 5%–10%: calibra shows the best point estimates but differences are not statistically significant at 10 seeds — diversity_only is a reasonable alternative at very low budgets. At 25%+: Calibra's quality filter pays off significantly (p=0.004). The pre-fix finding of a hard crossover at 10% where calibra was significantly *worse* than random does not replicate with corrected diversity weighting.
 
 ---
 
@@ -162,12 +168,12 @@ A broader sweep across six retention fractions (5%–100%) comparing Calibra vs.
 
 | Keep | N | Calibra MSE | Rel | Tail cov | Random MSE ±std | Rel | Tail cov | Saved |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 5% | 8 | 457.05 | 1.09x | 12.0% | 490.95 ±18.0 | 1.17x | 6.4% | 95% |
-| 10% | 16 | 459.46 | 1.09x | 24.0% | 448.13 ±9.5 | 1.07x | 10.4% | 90% |
-| 25% | 41 | 422.77 | 1.01x | 56.0% | 429.61 ±1.7 | 1.02x | 33.6% | 75% |
-| 50% | 82 | 422.55 | 1.00x | 68.0% | 423.36 ±2.2 | 1.01x | 52.8% | 50% |
-| 75% | 124 | 423.84 | 1.01x | 72.0% | 421.67 ±1.4 | 1.00x | 78.4% | 25% |
-| 100% | 123* | 423.14 | 1.01x | 72.0% | 420.76 ±0.2 | 1.00x | 100.0% | 0% |
+| 5% | 8 | 460.02 | 1.09x | 16.0% | 491.25 ±18.6 | 1.17x | 6.4% | 95% |
+| 10% | 16 | 436.58 | 1.04x | 28.0% | 447.75 ±10.2 | 1.06x | 10.4% | 90% |
+| 25% | 41 | 423.92 | 1.01x | 52.0% | 429.77 ±1.3 | 1.02x | 33.6% | 75% |
+| 50% | 82 | 422.65 | 1.00x | 64.0% | 423.04 ±2.1 | 1.01x | 52.8% | 50% |
+| 75% | 123 | 423.09 | 1.01x | 72.0% | 421.62 ±1.4 | 1.00x | 78.4% | 25% |
+| 100% | 123* | 422.78 | 1.01x | 72.0% | 421.12 ±0.3 | 1.00x | 100.0% | 0% |
 
 *At 100%, Calibra's quality filter caps selection at 123 of 165 episodes. The 100% row reflects quality-filtered full dataset, not the unfiltered full dataset.*
 

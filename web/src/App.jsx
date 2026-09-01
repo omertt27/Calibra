@@ -43,8 +43,8 @@ const INTEGRITY_CHECKS = [
 
 const STATS = [
   { number: '75%', label: 'less training data', note: 'at matched policy performance' },
-  { number: '0.5%', label: 'difference from full-data performance', note: 'LeRobot PushT · 25% retention · 5 seeds' },
-  { number: '67%', label: 'better rare-behavior preservation', note: 'vs. random coreset selection' },
+  { number: '0.8%', label: 'difference from full-data performance', note: 'LeRobot PushT · 25% retention · 5 seeds' },
+  { number: '55%', label: 'better rare-behavior preservation', note: 'vs. random coreset selection' },
 ]
 
 const WORKFLOW = [
@@ -127,6 +127,31 @@ function StarPill() {
 }
 
 function HeroTerminal() {
+  const [typed, setTyped] = useState('')
+  const [showResults, setShowResults] = useState(false)
+  const CMD = 'calibra integrity lerobot/pusht'
+  const done = typed.length >= CMD.length
+
+  useEffect(() => {
+    let ticker, startTimer, resultTimer
+    startTimer = setTimeout(() => {
+      let i = 0
+      ticker = setInterval(() => {
+        i++
+        setTyped(CMD.slice(0, i))
+        if (i >= CMD.length) {
+          clearInterval(ticker)
+          resultTimer = setTimeout(() => setShowResults(true), 250)
+        }
+      }, 38)
+    }, 800)
+    return () => {
+      clearTimeout(startTimer)
+      clearInterval(ticker)
+      clearTimeout(resultTimer)
+    }
+  }, [])
+
   return (
     <Reveal as="div" className="hero-terminal" delay={220}>
       <div className="hero-terminal-bar">
@@ -134,17 +159,24 @@ function HeroTerminal() {
         calibra integrity
       </div>
       <div className="hero-terminal-body">
-        <p className="ht-cmd"><span className="ht-prompt">$</span> calibra integrity lerobot/pusht</p>
-        {INTEGRITY_CHECKS.map((check) => (
-          <p className={check.ok ? 'ht-ok' : 'ht-warn'} key={check.label}>
-            {check.ok ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
-            {check.label}
-            <span className="ht-detail">{check.detail}</span>
-          </p>
-        ))}
-        <p className="ht-score">
-          <strong>integrity score 0.98</strong> ready to train
+        <p className="ht-cmd">
+          <span className="ht-prompt">$</span> {typed}
+          {!done && <span className="ht-cursor" aria-hidden="true" />}
         </p>
+        {showResults && (
+          <div className="ht-results">
+            {INTEGRITY_CHECKS.map((check) => (
+              <p className={check.ok ? 'ht-ok' : 'ht-warn'} key={check.label}>
+                {check.ok ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
+                {check.label}
+                <span className="ht-detail">{check.detail}</span>
+              </p>
+            ))}
+            <p className="ht-score">
+              <strong>integrity score 0.98</strong> ready to train
+            </p>
+          </div>
+        )}
       </div>
     </Reveal>
   )
@@ -170,13 +202,56 @@ function CopyCommand({ large = false }) {
   )
 }
 
+function StatNumber({ raw, active, delay }) {
+  const target = parseFloat(raw)
+  const decimals = raw.includes('.') ? 1 : 0
+  const suffix = raw.replace(/[\d.]/g, '')
+  const [display, setDisplay] = useState(0)
+
+  useEffect(() => {
+    if (!active) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setDisplay(target)
+      return
+    }
+    let raf
+    const DURATION = 1500
+    const startAt = performance.now() + delay
+    const tick = (now) => {
+      if (now < startAt) { raf = requestAnimationFrame(tick); return }
+      const t = Math.min((now - startAt) / DURATION, 1)
+      const eased = 1 - Math.pow(1 - t, 3)
+      setDisplay(parseFloat((eased * target).toFixed(decimals)))
+      if (t < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [active, target, decimals, delay])
+
+  return <strong className="stat-number">{display.toFixed(decimals)}{suffix}</strong>
+}
+
 function StatsBar() {
+  const [active, setActive] = useState(false)
+  const barRef = useRef(null)
+
+  useEffect(() => {
+    const el = barRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setActive(true); obs.disconnect() } },
+      { threshold: 0.25 }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
   return (
-    <div className="stats-bar">
+    <div className="stats-bar" ref={barRef}>
       <div className="container stats-grid">
         {STATS.map((stat, index) => (
           <Reveal as="div" className="stat-item" key={stat.number} delay={index * 90}>
-            <strong className="stat-number">{stat.number}</strong>
+            <StatNumber raw={stat.number} active={active} delay={index * 90} />
             <span className="stat-label">{stat.label}</span>
             <span className="stat-note">{stat.note}</span>
           </Reveal>
@@ -194,7 +269,7 @@ function StatsBar() {
 }
 
 const TAIL_COVERAGE = [
-  { label: 'Calibra coreset', value: 56.0, className: 'highlight' },
+  { label: 'Calibra coreset', value: 52.0, className: 'highlight' },
   { label: 'Random baseline', value: 33.6, className: '' },
 ]
 
@@ -203,7 +278,7 @@ function CoverageGraphic() {
     <Reveal as="div" className="coverage-card">
       <div className="coverage-head">
         <div><span>Tail-behavior coverage</span><strong>41/165 episodes · LeRobot PushT</strong></div>
-        <span className="coverage-score">+67% vs. random</span>
+        <span className="coverage-score">+55% vs. random</span>
       </div>
       <div className="coverage-bars">
         {TAIL_COVERAGE.map((row) => (
@@ -224,9 +299,22 @@ function CoverageGraphic() {
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const spotlightRef = useRef(null)
+
+  useEffect(() => {
+    const handle = (e) => {
+      const el = spotlightRef.current
+      if (!el) return
+      el.style.setProperty('--mx', `${e.clientX}px`)
+      el.style.setProperty('--my', `${e.clientY}px`)
+    }
+    window.addEventListener('mousemove', handle, { passive: true })
+    return () => window.removeEventListener('mousemove', handle)
+  }, [])
 
   return (
     <div id="top">
+      <div className="spotlight" ref={spotlightRef} />
       <nav className="nav">
         <div className="container nav-inner">
           <Logo hideIcon />
@@ -305,7 +393,7 @@ function App() {
           <div className="container">
             <Reveal as="div" className="research-card">
               <div className="research-copy">
-                <h2><strong>75% smaller</strong> dataset. Prediction error within 0.5% of full-data training.</h2>
+                <h2><strong>75% smaller</strong> dataset. Prediction error within 0.8% of full-data training.</h2>
                 <p>
                   Calibra retained 41 of 165 training episodes while preserving more
                   action-space tail coverage than a random coreset — and matching the
@@ -326,20 +414,20 @@ function App() {
                 <div className="benchmark-row">
                   <span>Full dataset <small>165 episodes</small></span>
                   <div><i style={{ '--bar-width': '100%' }} /></div>
-                  <strong>420.93</strong>
+                  <strong>420.67</strong>
                 </div>
                 <div className="benchmark-row highlight">
                   <span>Calibra <small>41 episodes</small></span>
-                  <div><i style={{ '--bar-width': '99.6%' }} /></div>
-                  <strong>422.77</strong>
+                  <div><i style={{ '--bar-width': '99.2%' }} /></div>
+                  <strong>423.92</strong>
                 </div>
                 <div className="benchmark-row">
                   <span>Random <small>41 episodes</small></span>
                   <div><i style={{ '--bar-width': '97.9%' }} /></div>
-                  <strong>429.61</strong>
+                  <strong>429.77</strong>
                 </div>
                 <div className="tail-coverage">
-                  <div><span>Calibra tail coverage</span><strong>56.0%</strong></div>
+                  <div><span>Calibra tail coverage</span><strong>52.0%</strong></div>
                   <div><span>Random tail coverage</span><strong>33.6%</strong></div>
                 </div>
                 <p>Source: 5-seed retention sweep. Full-data MSE is the unfiltered 165-episode baseline.</p>

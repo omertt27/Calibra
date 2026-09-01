@@ -168,14 +168,43 @@ footer a:hover {
   border-color: var(--green-bright);
 }
 
+.spotlight {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  background: radial-gradient(
+    500px circle at var(--mx, -999px) var(--my, -999px),
+    rgba(255, 255, 255, 0.033) 0%,
+    transparent 60%
+  );
+}
+
 .hero {
   position: relative;
   overflow: hidden;
   border-bottom: 1px solid var(--line);
 }
 
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: -28px;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.11) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  animation: grid-drift 22s linear infinite;
+  z-index: 0;
+}
+
+@keyframes grid-drift {
+  from { transform: translate(0, 0); }
+  to { transform: translate(28px, 28px); }
+}
+
 .hero-grid {
   position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 1fr 0.92fr;
   gap: 64px;
@@ -362,6 +391,27 @@ footer a:hover {
   font-weight: 500;
 }
 
+.ht-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 13px;
+  margin-left: 1px;
+  background: var(--green-bright);
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.ht-results {
+  display: grid;
+  gap: 11px;
+  animation: rise-in 350ms ease forwards;
+}
+
 .button {
   min-height: 50px;
   display: inline-flex;
@@ -438,6 +488,7 @@ footer a:hover {
   position: absolute;
   bottom: 24px;
   left: 50%;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -1367,8 +1418,15 @@ footer {
     transition: none !important;
   }
 
-  .scroll-cue svg {
+  .scroll-cue svg,
+  .ht-cursor,
+  .ht-results,
+  .hero::before {
     animation: none !important;
+  }
+
+  .ht-results {
+    opacity: 1 !important;
   }
 
   .coverage-bar-row > div i,
