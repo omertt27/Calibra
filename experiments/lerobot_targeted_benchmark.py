@@ -9,12 +9,29 @@ Answers three specific questions on real LeRobot data:
   25% -- Can Calibra reliably match full-data MSE with 75% fewer episodes?
 
 Methods compared (per fraction):
-  full_unfiltered    -- all training episodes, no filtering
-  random_full        -- random from full pool (random selection + training seed)
-  random_quality     -- random from quality-approved pool (same k episodes)
-  quality_only       -- quality filter, then random from approved pool
-  diversity_only     -- no quality filter, k-center from full pool
-  calibra            -- quality filter + k-center diversity selection
+  full_unfiltered      -- all training episodes, no filtering
+  random_full          -- random from full pool (random selection + training seed)
+  random_quality       -- random from quality-approved pool (same *fraction* of
+                           that smaller pool, i.e. k_q = frac * n_quality_pool)
+  quality_only         -- quality filter, then random from approved pool (also k_q)
+  random_quality_eqk   -- like random_quality, but sampled at the *full-pool*
+                           budget k (equal absolute training-set size to
+                           random_full/diversity_only/calibra)
+  quality_only_eqk     -- like quality_only, but sampled at k instead of k_q
+  diversity_only       -- no quality filter, k-center from full pool
+  calibra              -- quality filter + k-center diversity selection
+
+Why both k_q and k for the quality-filtered methods
+-----------------------------------------------------
+quality_only/random_quality at k_q answer "if I filter first and then keep
+the same *percentage* of what's left, what happens?" -- but that changes two
+things at once relative to random_full/calibra (a filtered pool, *and* a
+smaller final episode count). The *_eqk variants hold the final training
+budget fixed at k (the same as every other method) and only change the pool,
+which isolates "does quality filtering help or hurt at a fixed budget?" from
+"filtering also shrinks how much data you end up training on." When k
+exceeds the quality pool size, the eqk methods fall back to the full
+quality-approved pool (see quality_pool_smaller_than_k in the output).
 
 Evaluation (per trained model):
   mse_overall        -- mean squared action prediction error on all test episodes
@@ -335,6 +352,8 @@ def run_targeted_benchmark(
         "random_full",
         "random_quality",
         "quality_only",
+        "random_quality_eqk",
+        "quality_only_eqk",
         "diversity_only",
         "calibra",
     ]
@@ -347,8 +366,15 @@ def run_targeted_benchmark(
     for frac in fractions:
         k = max(1, round(len(train_eps) * frac))
         k_q = max(1, round(len(quality_eps) * frac))
+        quality_pool_smaller_than_k = len(quality_eps) < k
+        k_eqk = min(k, len(quality_eps))  # equal-k, capped by quality pool size
         print(f"\n{'=' * 72}")
         print(f"  Fraction {frac:.0%} -- k={k} from full pool, k_q={k_q} from quality pool")
+        if quality_pool_smaller_than_k:
+            print(
+                f"  NOTE: quality pool ({len(quality_eps)} ep) is smaller than k ({k}); "
+                f"*_eqk methods are capped at {k_eqk} ep."
+            )
         print("=" * 72)
 
         # deterministic selections for this fraction
@@ -357,10 +383,17 @@ def run_targeted_benchmark(
         # quality_only: quality filter -> random sample (use seed=999 for consistent baseline)
         pyrandom.seed(999)
         qualonly_eps = select_random(quality_eps, k_q, seed=999)
+        # quality_only_eqk: same quality filter, but sampled at the full-pool budget k
+        pyrandom.seed(999)
+        qualonly_eqk_eps = select_random(quality_eps, k_eqk, seed=999)
 
         tail_cov = {
             "quality_only": sum(
                 1 for ep in qualonly_eps if ep.metadata.episode_id in train_tail_ids
+            )
+            / n_train_tail,
+            "quality_only_eqk": sum(
+                1 for ep in qualonly_eqk_eps if ep.metadata.episode_id in train_tail_ids
             )
             / n_train_tail,
             "diversity_only": sum(
@@ -373,12 +406,14 @@ def run_targeted_benchmark(
 
         print(
             f"  Calibra selected {len(calibra_eps)} ep  |  "
-            f"diversity_only {len(divonly_eps)} ep  |  quality_only {len(qualonly_eps)} ep"
+            f"diversity_only {len(divonly_eps)} ep  |  quality_only {len(qualonly_eps)} ep  |  "
+            f"quality_only_eqk {len(qualonly_eqk_eps)} ep"
         )
         print(
             f"  Tail coverage: calibra={tail_cov['calibra']:.1%}  "
             f"div_only={tail_cov['diversity_only']:.1%}  "
-            f"qual_only={tail_cov['quality_only']:.1%}"
+            f"qual_only={tail_cov['quality_only']:.1%}  "
+            f"qual_only_eqk={tail_cov['quality_only_eqk']:.1%}"
         )
 
         method_runs: dict[str, dict[str, list[float]]] = {
@@ -416,9 +451,24 @@ def run_targeted_benchmark(
             )
             print("  rnd_qual=done", end="")
 
+            # random_quality_eqk: same pool as random_quality, but sampled at k (not k_q)
+            rnd_qual_eqk_eps = select_random(quality_eps, k_eqk, seed=seed)
+            t0 = time.perf_counter()
+            m = train_bc_seeded(rnd_qual_eqk_eps, n_epochs, seed=seed)
+            method_runs["random_quality_eqk"]["train_s"].append(time.perf_counter() - t0)
+            method_runs["random_quality_eqk"]["overall"].append(evaluate_bc(m, test_eps))
+            method_runs["random_quality_eqk"]["common"].append(
+                evaluate_bc(m, test_common_eps) if test_common_eps else float("nan")
+            )
+            method_runs["random_quality_eqk"]["tail"].append(
+                evaluate_bc(m, test_tail_eps) if test_tail_eps else float("nan")
+            )
+            print("  rnd_qual_eqk=done", end="")
+
             # deterministic methods: selection fixed, only training seed varies
             for label, eps in [
                 ("quality_only", qualonly_eps),
+                ("quality_only_eqk", qualonly_eqk_eps),
                 ("diversity_only", divonly_eps),
                 ("calibra", calibra_eps),
             ]:
@@ -442,6 +492,8 @@ def run_targeted_benchmark(
             "fraction": frac,
             "k_full": k,
             "k_quality": k_q,
+            "k_quality_eqk": k_eqk,
+            "quality_pool_smaller_than_k": quality_pool_smaller_than_k,
             "n_quality_pool": len(quality_eps),
             "methods": {},
         }
@@ -468,6 +520,15 @@ def run_targeted_benchmark(
                         / n_train_tail
                     )
                 tc = float(np.mean(rnd_q_tail_covs))
+            elif method == "random_quality_eqk":
+                rnd_qeqk_tail_covs = []
+                for seed in range(n_seeds):
+                    rnd_eps_s = select_random(quality_eps, k_eqk, seed=seed)
+                    rnd_qeqk_tail_covs.append(
+                        sum(1 for ep in rnd_eps_s if ep.metadata.episode_id in train_tail_ids)
+                        / n_train_tail
+                    )
+                tc = float(np.mean(rnd_qeqk_tail_covs))
 
             frac_result["methods"][method] = {
                 "tail_coverage": round(tc, 4) if tc is not None else None,
@@ -502,11 +563,11 @@ def run_targeted_benchmark(
             f"{fr['k_quality']} ep from {fr['n_quality_pool']} quality pool) ---"
         )
         print(
-            f"  {'Method':<18}  {'TailCov':>8}  {'Overall':>9}  {'+-CI95':>7}  "
+            f"  {'Method':<20}  {'TailCov':>8}  {'Overall':>9}  {'+-CI95':>7}  "
             f"{'DiffRef':>8}  {'p':>6}  {'d':>6}  {'Tail MSE':>9}  {'Common':>9}"
         )
         print(
-            f"  {'-' * 18}  {'-' * 8}  {'-' * 9}  {'-' * 7}  {'-' * 8}  {'-' * 6}  {'-' * 6}  {'-' * 9}  {'-' * 9}"
+            f"  {'-' * 20}  {'-' * 8}  {'-' * 9}  {'-' * 7}  {'-' * 8}  {'-' * 6}  {'-' * 6}  {'-' * 9}  {'-' * 9}"
         )
         for method in METHODS:
             m = fr["methods"][method]
@@ -517,7 +578,7 @@ def run_targeted_benchmark(
             p = ov.get("p_paired", float("nan"))
             d = ov.get("cohens_d", float("nan"))
             print(
-                f"  {method:<18}  {tc:>7.1%}  "
+                f"  {method:<20}  {tc:>7.1%}  "
                 f"{ov['mean']:>9.2f}  {ov['ci95']:>7.2f}  "
                 f"{diff:>+8.2f}  {p:>6.3f}  {d:>+6.2f}  "
                 f"{tl['mean']:>9.2f}  {m['common']['mean']:>9.2f}"
@@ -567,15 +628,18 @@ def run_targeted_benchmark(
 
         METHOD_STYLE = {
             "random_full": ("#dc2626", "s--", "Random (full)"),
-            "random_quality": ("#f97316", "^--", "Random (quality pool)"),
-            "quality_only": ("#8b5cf6", "D-.", "Quality-only"),
+            "random_quality": ("#f97316", "^--", "Random (quality pool, frac k_q)"),
+            "quality_only": ("#8b5cf6", "D-.", "Quality-only (frac k_q)"),
+            "random_quality_eqk": ("#facc15", "^:", "Random (quality pool, equal-k)"),
+            "quality_only_eqk": ("#a855f7", "D:", "Quality-only (equal-k)"),
             "diversity_only": ("#10b981", "v:", "Diversity-only"),
             "calibra": ("#2563eb", "o-", "Calibra"),
         }
 
         xs = [f"{f:.0%}" for f in fractions]
         x = np.arange(len(fractions))
-        width = 0.15
+        n_methods = len(METHOD_STYLE)
+        width = 0.8 / n_methods
 
         fig = plt.figure(figsize=(20, 10))
         gs = gridspec.GridSpec(2, 3, figure=fig, hspace=0.45, wspace=0.35)
@@ -600,7 +664,7 @@ def run_targeted_benchmark(
                 p_vals.append(m["overall"].get("p_paired", float("nan")))
                 d_vals.append(m["overall"].get("cohens_d", 0.0))
 
-            offset = (i - 2) * width
+            offset = (i - (n_methods - 1) / 2) * width
             ax_ov.bar(
                 x + offset,
                 means_ov,

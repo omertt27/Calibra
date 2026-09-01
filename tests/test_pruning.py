@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from calibra.pipeline import Pipeline
-from calibra.pruning import CoresetSelector, _greedy_max_coverage
+from calibra.pruning import CoresetSelector, _build_feature_matrix, _greedy_max_coverage
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 
 # ── fixtures ──────────────────────────────────────────────────────────────────
@@ -73,6 +73,79 @@ class TestGreedyMaxCoverage:
     def test_single_episode(self):
         selected = _greedy_max_coverage(np.array([[1.0, 2.0]]), k=1)
         assert selected == [0]
+
+
+# ── diversity_weight sensitivity ───────────────────────────────────────────────
+#
+# Regression coverage for a bug where _build_feature_matrix multiplied each
+# feature block by its weight and then min-max-normalised each column
+# independently — which is invariant to multiplying a whole column by any
+# positive constant, so every positive diversity_weight produced the exact
+# same normalised matrix (and therefore the same coreset) regardless of its
+# value. The fix normalises each block *before* weighting.
+
+
+def _conflicting_ep_data():
+    """
+    4 candidates where action-space diversity and quality-metric diversity
+    disagree about which pair is "more different":
+      ep_0, ep_1: identical action stats, very different spike_rate.
+      ep_2, ep_3: identical spike_rate, very different action stats.
+    """
+    episodes = [
+        _make_ep(action_scale=1.0, episode_id="ep_0"),
+        _make_ep(action_scale=1.0, episode_id="ep_1"),
+        _make_ep(action_scale=1.0, episode_id="ep_2"),
+        _make_ep(action_scale=1.0, episode_id="ep_3"),
+    ]
+    # Force identical action arrays for ep_0/ep_1, and far-apart arrays for ep_2/ep_3.
+    episodes[1].actions = episodes[0].actions.copy()
+    episodes[2].actions = np.zeros_like(episodes[2].actions)
+    episodes[3].actions = np.full_like(episodes[3].actions, 100.0)
+
+    ep_data = {
+        "per_episode_spike_rate": [0.0, 0.9, 0.1, 0.1],
+        "per_episode_vel_disc_rate": [0.0, 0.0, 0.0, 0.0],
+        "per_episode_length": [80, 80, 80, 80],
+    }
+    return episodes, ep_data
+
+
+class TestDiversityWeightSensitivity:
+    def test_feature_matrix_changes_with_weight(self):
+        episodes, ep_data = _conflicting_ep_data()
+        candidates = [0, 1, 2, 3]
+
+        mat_low = _build_feature_matrix(episodes, candidates, ep_data, diversity_weight=0.1)
+        mat_high = _build_feature_matrix(episodes, candidates, ep_data, diversity_weight=0.9)
+
+        assert not np.allclose(mat_low, mat_high), (
+            "diversity_weight=0.1 and diversity_weight=0.9 produced the same "
+            "normalised feature matrix — the weight has no effect."
+        )
+
+    def test_selection_changes_with_weight(self):
+        episodes, ep_data = _conflicting_ep_data()
+        candidates = [0, 1, 2, 3]
+
+        mat_low = _build_feature_matrix(episodes, candidates, ep_data, diversity_weight=0.1)
+        mat_high = _build_feature_matrix(episodes, candidates, ep_data, diversity_weight=0.9)
+
+        selected_low = set(_greedy_max_coverage(mat_low, k=2))
+        selected_high = set(_greedy_max_coverage(mat_high, k=2))
+
+        # Low diversity_weight (quality-dominated) should favor the pair that
+        # differs in spike_rate (ep_0, ep_1); high diversity_weight (action-
+        # dominated) should favor the pair that differs in action stats (ep_2, ep_3)
+        # over the pair that's identical in action space (ep_0, ep_1).
+        assert selected_low == {0, 1}, f"expected quality-diverse pair, got {selected_low}"
+        assert selected_high != selected_low, (
+            f"diversity_weight=0.1 and 0.9 produced the same selection {selected_low} — "
+            "the weight has no effect on which episodes are kept."
+        )
+        assert {0, 1} != selected_high and (2 in selected_high or 3 in selected_high), (
+            f"expected high diversity_weight to favor the action-diverse pair, got {selected_high}"
+        )
 
 
 # ── CoresetSelector ───────────────────────────────────────────────────────────

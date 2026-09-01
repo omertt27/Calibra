@@ -91,6 +91,24 @@ class EpisodeAssessment:
         return round(score, 6)
 
 
+def summarize_assessments(assessments: Sequence[EpisodeAssessment]) -> dict[str, Optional[float]]:
+    """
+    Roll up a batch of per-episode EpisodeAssessment into dataset-level means,
+    for logging alongside a design-partner experiment record (see
+    calibra.experiment_log.ExperimentLog.record). coverage_value is averaged
+    only over episodes where it was actually computed (InfluenceAnalyzer ran);
+    None if it never did.
+    """
+    if not assessments:
+        return {"mean_anomaly_score": None, "mean_quality_risk": None, "mean_coverage_value": None}
+    coverage = [a.coverage_value for a in assessments if a.coverage_value is not None]
+    return {
+        "mean_anomaly_score": float(np.mean([a.anomaly_score for a in assessments])),
+        "mean_quality_risk": float(np.mean([a.quality_risk for a in assessments])),
+        "mean_coverage_value": float(np.mean(coverage)) if coverage else None,
+    }
+
+
 def _percentile_ranks(values: list) -> list[Optional[float]]:
     """
     Rank each value against the others in the same list as a 0-1 fraction

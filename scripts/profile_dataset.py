@@ -232,11 +232,27 @@ def main() -> None:
         ep0 = batch.episodes[0]
         log(f"  action_dim={ep0.action_dim}  modalities={sorted(batch.modalities)}")
 
+    # ControlSmoothnessAnalyzer only knows how to differentiate "position",
+    # "velocity", or "acceleration" signals (see action_type in smoothness.py).
+    # --control-mode has two extra choices ("torque", "unknown") that have no
+    # direct mapping — fall back to the analyzer's own default ("position")
+    # for those rather than passing through a value it would reject.
+    if args.control_mode in ("position", "velocity"):
+        action_type = args.control_mode
+    else:
+        action_type = "position"
+        log(
+            f"warning: --control-mode={args.control_mode!r} has no direct smoothness "
+            "action_type mapping; LDLJ/jerk/velocity-discontinuity metrics are computed "
+            "as if action_type='position'. Pass --control-mode position|velocity for "
+            "accurate motion-quality interpretation."
+        )
+
     log("Running Calibra pipeline ...")
     pipeline = Pipeline(
         analyzers=[
             TemporalAnalyzer(),
-            ControlSmoothnessAnalyzer(gripper_dims=gripper_dims),
+            ControlSmoothnessAnalyzer(action_type=action_type, gripper_dims=gripper_dims),
             CoverageEntropyAnalyzer(),
             TaskStructureAnalyzer(),
         ]

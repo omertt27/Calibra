@@ -76,6 +76,12 @@ class PruningResult:
     diversity_pruned_ids    : episode IDs removed in Stage 2 (redundant under max-coverage).
     quality_scores          : per-episode composite quality score (lower = cleaner).
     diversity_scores        : per-episode min-distance-to-selected score after greedy selection.
+    quality_evaluation_status : per-episode "clean" | "bad" | "not_evaluated". Stage 1
+                              treats a missing metric as passing (permissive by design —
+                              see _quality_filter), so an episode can pass with zero
+                              quality evidence. This field keeps that case ("not_evaluated")
+                              distinguishable from a pass backed by real evidence ("clean"),
+                              mirroring the not-evaluated tracking in the integrity layer.
     n_original              : total episodes before pruning.
     n_kept                  : episodes in the coreset.
     n_quality_failures      : episodes removed for quality.
@@ -97,8 +103,12 @@ class PruningResult:
     keep_fraction_actual: float
     method: str = "quality_filter + greedy_max_coverage"
     fail_reasons: dict[str, list[str]] = field(default_factory=dict)
+    quality_evaluation_status: dict[str, str] = field(default_factory=dict)
 
     def summary(self) -> str:
+        n_not_evaluated = sum(
+            1 for status in self.quality_evaluation_status.values() if status == "not_evaluated"
+        )
         lines = [
             "━" * 56,
             "  CALIBRA PRUNING SUMMARY",
@@ -107,6 +117,7 @@ class PruningResult:
             f"  Quality failures   : {self.n_quality_failures}  (removed in Stage 1)",
             f"  Diversity pruned   : {self.n_diversity_pruned}  (removed in Stage 2)",
             f"  Coreset size       : {self.n_kept}  ({self.keep_fraction_actual:.1%} of original)",
+            f"  Not evaluated      : {n_not_evaluated}  (passed Stage 1 with no quality metrics)",
             f"  Method             : {self.method}",
             "─" * 56,
             "  To use: add --export-dataset <dir> to write a ready-to-train dataset.",
@@ -130,6 +141,7 @@ class PruningResult:
             "quality_scores": self.quality_scores,
             "diversity_scores": self.diversity_scores,
             "fail_reasons": self.fail_reasons,
+            "quality_evaluation_status": self.quality_evaluation_status,
         }
 
 
@@ -201,6 +213,7 @@ class CoresetSelector:
         )
         quality_fail_set = set(quality_fail_indices)
         quality_pass_indices = [i for i in range(n) if i not in quality_fail_set]
+        quality_evaluation_status = _quality_evaluation_status(episodes, ep_data, quality_fail_set)
 
         if not quality_pass_indices:
             # Everything failed quality — return empty coreset
@@ -216,6 +229,7 @@ class CoresetSelector:
                 n_diversity_pruned=0,
                 keep_fraction_actual=0.0,
                 fail_reasons=quality_fail_reasons,
+                quality_evaluation_status=quality_evaluation_status,
             )
 
         # ── Stage 2: diversity selection ──────────────────────────────────────
@@ -313,6 +327,7 @@ class CoresetSelector:
             keep_fraction_actual=len(keep_ids) / max(n, 1),
             method=_method,
             fail_reasons=all_fail_reasons,
+            quality_evaluation_status=quality_evaluation_status,
         )
 
 
@@ -666,6 +681,42 @@ def _quality_filter(
     return fail, reasons
 
 
+def _quality_evaluation_status(
+    episodes: list[Episode],
+    ep_data: dict[str, list],
+    quality_fail_set: set[int],
+) -> dict[str, str]:
+    """
+    Per-episode {"clean" | "bad" | "not_evaluated"} tri-state.
+
+    _quality_filter treats a missing metric as passing (permissive by design —
+    "missing metrics contribute 0 to the composite", see
+    compute_quality_scores_for_ids). That's the right default filtering
+    behavior, but it means a pass can be backed by real evidence or by no
+    evidence at all, and those look identical downstream unless kept separate.
+    An episode that positively failed (any reason, including a length check
+    with no quality metrics behind it) is "bad" regardless of which metrics
+    were present; a pass with at least one real metric is "clean"; a pass with
+    none is "not_evaluated".
+    """
+    spike_rates = ep_data.get("per_episode_spike_rate", [])
+    disc_rates = ep_data.get("per_episode_vel_disc_rate", [])
+    dropouts = ep_data.get("per_episode_dropout_fraction", [])
+    ldlj_values = ep_data.get("per_episode_ldlj", [])
+
+    status: dict[str, str] = {}
+    for i, ep in enumerate(episodes):
+        if i in quality_fail_set:
+            status[ep.metadata.episode_id] = "bad"
+            continue
+        evaluated = any(
+            _safe_get(lst, i) is not None
+            for lst in (spike_rates, disc_rates, dropouts, ldlj_values)
+        )
+        status[ep.metadata.episode_id] = "clean" if evaluated else "not_evaluated"
+    return status
+
+
 # ── Stage 2: behavioral feature extraction ────────────────────────────────────
 
 
@@ -688,19 +739,29 @@ def _build_feature_matrix(
     """
     Build a (len(candidate_indices), F) feature matrix for diversity selection.
 
-    Features (normalised to [0, 1]):
+    Features:
       - Latent state embeddings or Action-space statistics — behavioral representation
       - Quality metrics (spike_rate, vel_disc_rate) — quality diversity tie-breaker
       - Episode length (normalised)
 
     diversity_weight controls the blend: 1.0 = action stats/latent only; 0.0 = quality
     metrics only. Default 0.7.
+
+    Each block is independently normalised to [0, 1] per column *before* its
+    weight is applied, and the weighted blocks are concatenated without a
+    second normalisation pass. Min-max normalisation is invariant to
+    multiplying a column by a positive constant, so normalising the full
+    concatenated (weight-then-normalise) matrix — as this used to do — throws
+    diversity_weight's effect away entirely for any weight in (0, 1): the
+    resulting selection was identical across the whole tested range.
     """
     spike_rates = ep_data.get("per_episode_spike_rate", [])
     disc_rates = ep_data.get("per_episode_vel_disc_rate", [])
     lengths = ep_data.get("per_episode_length", [])
 
-    rows: list[np.ndarray] = []
+    action_rows: list[np.ndarray] = []
+    quality_rows: list[np.ndarray] = []
+    entropy_rows: list[np.ndarray] = []
     for i in candidate_indices:
         ep = episodes[i]
         acts = ep.actions
@@ -716,34 +777,39 @@ def _build_feature_matrix(
             action_mean = np.mean(acts, axis=0)
             action_std = np.std(acts, axis=0)
             action_feat = np.concatenate([action_mean, action_std])
+        action_rows.append(action_feat)
 
         # Quality metrics as secondary features
         spike = _safe_get(spike_rates, i) or 0.0
         disc = _safe_get(disc_rates, i) or 0.0
         length_raw = _safe_get(lengths, i) or float(ep.n_steps)
-        quality_feat = np.array([spike, disc, length_raw / 1000.0])
+        quality_rows.append(np.array([spike, disc, length_raw / 1000.0]))
 
         # Entropy feature: per-trajectory action diversity (bits/dim).
-        entropy_feat = np.array([entropy_scores.get(i, 0.0) if entropy_scores else 0.0])
+        entropy_rows.append(np.array([entropy_scores.get(i, 0.0) if entropy_scores else 0.0]))
 
-        # Blend: diversity_weight for action stats, entropy_weight for entropy,
-        # remaining for quality metrics.
-        q_scale = max(0.0, 1.0 - diversity_weight - entropy_weight)
-        row = np.concatenate(
-            [
-                action_feat * diversity_weight,
-                quality_feat * q_scale,
-                entropy_feat * entropy_weight,
-            ]
-        )
-        rows.append(row)
-
-    if not rows:
+    if not action_rows:
         return np.zeros((0, 1))
 
-    mat = np.stack(rows, axis=0)
+    action_mat = _normalize_columns(np.stack(action_rows, axis=0))
+    quality_mat = _normalize_columns(np.stack(quality_rows, axis=0))
+    entropy_mat = _normalize_columns(np.stack(entropy_rows, axis=0))
 
-    # Normalise each feature to [0, 1] across the candidate set
+    # Blend: diversity_weight for action stats, entropy_weight for entropy,
+    # remaining for quality metrics.
+    q_scale = max(0.0, 1.0 - diversity_weight - entropy_weight)
+    return np.concatenate(
+        [
+            action_mat * diversity_weight,
+            quality_mat * q_scale,
+            entropy_mat * entropy_weight,
+        ],
+        axis=1,
+    )
+
+
+def _normalize_columns(mat: np.ndarray) -> np.ndarray:
+    """Min-max normalise each column of `mat` to [0, 1]; constant columns become 0."""
     col_mins = mat.min(axis=0)
     col_maxs = mat.max(axis=0)
     scale = col_maxs - col_mins
@@ -905,6 +971,7 @@ class ApproximateCoresetSelector(CoresetSelector):
         )
         quality_fail_set = set(quality_fail_indices)
         quality_pass_indices = [i for i in range(n) if i not in quality_fail_set]
+        quality_evaluation_status = _quality_evaluation_status(episodes, ep_data, quality_fail_set)
 
         if not quality_pass_indices:
             return PruningResult(
@@ -920,6 +987,7 @@ class ApproximateCoresetSelector(CoresetSelector):
                 keep_fraction_actual=0.0,
                 method="quality_filter + approximate_minibatch_coverage",
                 fail_reasons=quality_fail_reasons,
+                quality_evaluation_status=quality_evaluation_status,
             )
 
         k = max(1, round(n * self.keep_fraction))
@@ -994,6 +1062,7 @@ class ApproximateCoresetSelector(CoresetSelector):
             keep_fraction_actual=len(keep_ids) / max(n, 1),
             method=_method,
             fail_reasons=all_fail_reasons,
+            quality_evaluation_status=quality_evaluation_status,
         )
 
 

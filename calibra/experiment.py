@@ -15,6 +15,7 @@ design-partner protocol requires can be tracked and reported consistently.
 
     calibra experiment list --experiment-id partner-a-pusht
     calibra experiment report --experiment-id partner-a-pusht
+    calibra experiment coverage
 """
 
 from __future__ import annotations
@@ -74,6 +75,24 @@ def run_experiment(argv: List[str]) -> None:
     record_p.add_argument("--seed", type=int, default=None)
     record_p.add_argument("--notes", default="")
     record_p.add_argument(
+        "--mean-anomaly-score",
+        type=float,
+        default=None,
+        help="0.0-1.0 dataset-level mean anomaly score (see `calibra review`)",
+    )
+    record_p.add_argument(
+        "--mean-quality-risk",
+        type=float,
+        default=None,
+        help="0.0-1.0 dataset-level mean quality risk (see `calibra review`)",
+    )
+    record_p.add_argument(
+        "--mean-coverage-value",
+        type=float,
+        default=None,
+        help="0.0-1.0 dataset-level mean coverage value (see `calibra review`)",
+    )
+    record_p.add_argument(
         "--path", default=None, help="Override the default ~/.calibra/experiments.jsonl"
     )
 
@@ -88,6 +107,13 @@ def run_experiment(argv: List[str]) -> None:
     report_p.add_argument("--experiment-id", required=True)
     report_p.add_argument("--json", action="store_true")
     report_p.add_argument("--path", default=None)
+
+    coverage_p = sub.add_parser(
+        "coverage",
+        help="Print embodiment/task/policy matrix coverage across all recorded experiments",
+    )
+    coverage_p.add_argument("--json", action="store_true")
+    coverage_p.add_argument("--path", default=None)
 
     args = p.parse_args(argv)
     path = Path(args.path) if getattr(args, "path", None) else None
@@ -113,6 +139,9 @@ def run_experiment(argv: List[str]) -> None:
                 eval_success_rate=args.eval_success_rate,
                 seed=args.seed,
                 notes=args.notes,
+                mean_anomaly_score=args.mean_anomaly_score,
+                mean_quality_risk=args.mean_quality_risk,
+                mean_coverage_value=args.mean_coverage_value,
             )
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
@@ -160,4 +189,16 @@ def run_experiment(argv: List[str]) -> None:
             )
             return
         print(log.report(args.experiment_id))
+        return
+
+    if args.subcommand == "coverage":
+        if args.json:
+            coverage = log.matrix_coverage()
+            payload = {
+                f"{embodiment}|{task}|{policy}": info
+                for (embodiment, task, policy), info in coverage.items()
+            }
+            print(json.dumps(payload, indent=2))
+            return
+        print(log.coverage_report())
         return

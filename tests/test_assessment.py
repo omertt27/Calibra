@@ -3,8 +3,14 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
-from calibra.assessment import compute_episode_assessments, rank_for_review
+from calibra.assessment import (
+    EpisodeAssessment,
+    compute_episode_assessments,
+    rank_for_review,
+    summarize_assessments,
+)
 from calibra.pipeline import Pipeline
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
 from calibra.schema.report import DiagnosticReport
@@ -209,3 +215,42 @@ class TestRankForReview:
             episode_id="b", anomaly_score=0.5, quality_risk=0.5, coverage_value=1.0
         )
         assert high_coverage.review_priority < low_coverage.review_priority
+
+
+class TestSummarizeAssessments:
+    def test_empty_returns_all_none(self):
+        summary = summarize_assessments([])
+        assert summary == {
+            "mean_anomaly_score": None,
+            "mean_quality_risk": None,
+            "mean_coverage_value": None,
+        }
+
+    def test_averages_anomaly_and_quality_risk(self):
+        assessments = [
+            EpisodeAssessment(episode_id="a", anomaly_score=0.2, quality_risk=0.4),
+            EpisodeAssessment(episode_id="b", anomaly_score=0.6, quality_risk=0.8),
+        ]
+        summary = summarize_assessments(assessments)
+        assert summary["mean_anomaly_score"] == pytest.approx(0.4)
+        assert summary["mean_quality_risk"] == pytest.approx(0.6)
+
+    def test_coverage_value_averages_only_over_present_episodes(self):
+        assessments = [
+            EpisodeAssessment(
+                episode_id="a", anomaly_score=0.0, quality_risk=0.0, coverage_value=0.2
+            ),
+            EpisodeAssessment(
+                episode_id="b", anomaly_score=0.0, quality_risk=0.0, coverage_value=None
+            ),
+            EpisodeAssessment(
+                episode_id="c", anomaly_score=0.0, quality_risk=0.0, coverage_value=0.8
+            ),
+        ]
+        summary = summarize_assessments(assessments)
+        assert summary["mean_coverage_value"] == pytest.approx(0.5)
+
+    def test_coverage_value_none_when_never_computed(self):
+        assessments = [EpisodeAssessment(episode_id="a", anomaly_score=0.1, quality_risk=0.1)]
+        summary = summarize_assessments(assessments)
+        assert summary["mean_coverage_value"] is None

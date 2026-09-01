@@ -42,7 +42,12 @@ import json
 import time
 import uuid
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional, Sequence
+
+from calibra.assessment import summarize_assessments
+
+if TYPE_CHECKING:
+    from calibra.assessment import EpisodeAssessment
 
 CONDITIONS = ("full", "random", "calibra")
 
@@ -73,6 +78,9 @@ class ExperimentRecord:
         "eval_success_rate",
         "seed",
         "notes",
+        "mean_anomaly_score",
+        "mean_quality_risk",
+        "mean_coverage_value",
     )
 
     def __init__(
@@ -96,6 +104,9 @@ class ExperimentRecord:
         eval_success_rate: Optional[float] = None,
         seed: Optional[int] = None,
         notes: str = "",
+        mean_anomaly_score: Optional[float] = None,
+        mean_quality_risk: Optional[float] = None,
+        mean_coverage_value: Optional[float] = None,
     ) -> None:
         if condition not in CONDITIONS:
             raise ValueError(f"condition must be one of {CONDITIONS}, got {condition!r}")
@@ -103,6 +114,13 @@ class ExperimentRecord:
             raise ValueError(f"retention_pct must be in [0, 100], got {retention_pct!r}")
         if eval_success_rate is not None and not 0.0 <= eval_success_rate <= 1.0:
             raise ValueError(f"eval_success_rate must be in [0, 1], got {eval_success_rate!r}")
+        for field_name, value in (
+            ("mean_anomaly_score", mean_anomaly_score),
+            ("mean_quality_risk", mean_quality_risk),
+            ("mean_coverage_value", mean_coverage_value),
+        ):
+            if value is not None and not 0.0 <= value <= 1.0:
+                raise ValueError(f"{field_name} must be in [0, 1], got {value!r}")
 
         self.record_id = record_id
         self.timestamp = timestamp
@@ -123,6 +141,9 @@ class ExperimentRecord:
         self.eval_success_rate = eval_success_rate
         self.seed = seed
         self.notes = notes
+        self.mean_anomaly_score = mean_anomaly_score
+        self.mean_quality_risk = mean_quality_risk
+        self.mean_coverage_value = mean_coverage_value
 
     def to_dict(self) -> dict:
         return {slot: getattr(self, slot) for slot in self.__slots__}
@@ -149,7 +170,26 @@ class ExperimentRecord:
             eval_success_rate=d.get("eval_success_rate"),
             seed=d.get("seed"),
             notes=d.get("notes", ""),
+            mean_anomaly_score=d.get("mean_anomaly_score"),
+            mean_quality_risk=d.get("mean_quality_risk"),
+            mean_coverage_value=d.get("mean_coverage_value"),
         )
+
+
+def _missing_for_table(table: dict) -> list[tuple[float, str]]:
+    """(retention_pct, condition) pairs PROTOCOL_RETENTION_LEVELS expects but a
+    {retention_pct: {condition: record}} table doesn't have."""
+    missing = []
+    for level in PROTOCOL_RETENTION_LEVELS:
+        have = table.get(level, {})
+        for cond in CONDITIONS:
+            if cond == "full" and level != 100.0:
+                continue  # "full" only makes sense at 100% retention
+            if cond != "full" and level == 100.0:
+                continue  # random/calibra at 100% retention is a no-op
+            if cond not in have:
+                missing.append((level, cond))
+    return missing
 
 
 _DEFAULT_DB_PATH = Path.home() / ".calibra" / "experiments.jsonl"
@@ -211,7 +251,33 @@ class ExperimentLog:
         eval_success_rate: Optional[float] = None,
         seed: Optional[int] = None,
         notes: str = "",
+        mean_anomaly_score: Optional[float] = None,
+        mean_quality_risk: Optional[float] = None,
+        mean_coverage_value: Optional[float] = None,
+        assessments: Optional[Sequence["EpisodeAssessment"]] = None,
     ) -> ExperimentRecord:
+        """
+        See class docstring for the basic fields. `assessments` is a
+        convenience for the dataset-characteristics side of the flywheel: pass
+        the list of EpisodeAssessment for the episodes actually used in this
+        condition (e.g. from calibra.assessment.compute_episode_assessments)
+        and the mean_anomaly_score/mean_quality_risk/mean_coverage_value
+        fields are derived automatically via summarize_assessments(). Passing
+        both `assessments` and any explicit mean_* kwarg is rejected as
+        ambiguous rather than silently picking one.
+        """
+        if assessments is not None:
+            if (
+                mean_anomaly_score is not None
+                or mean_quality_risk is not None
+                or mean_coverage_value is not None
+            ):
+                raise ValueError("pass either `assessments` or explicit mean_* kwargs, not both")
+            summary = summarize_assessments(assessments)
+            mean_anomaly_score = summary["mean_anomaly_score"]
+            mean_quality_risk = summary["mean_quality_risk"]
+            mean_coverage_value = summary["mean_coverage_value"]
+
         rec = ExperimentRecord(
             record_id=str(uuid.uuid4())[:8],
             timestamp=time.time(),
@@ -232,6 +298,9 @@ class ExperimentLog:
             eval_success_rate=eval_success_rate,
             seed=seed,
             notes=notes,
+            mean_anomaly_score=mean_anomaly_score,
+            mean_quality_risk=mean_quality_risk,
+            mean_coverage_value=mean_coverage_value,
         )
         self._records.append(rec)
         self._append(rec)
@@ -268,18 +337,59 @@ class ExperimentLog:
         Return (retention_pct, condition) pairs the protocol expects but that
         haven't been recorded yet, against PROTOCOL_RETENTION_LEVELS.
         """
-        table = self.retention_table(experiment_id)
-        missing = []
-        for level in PROTOCOL_RETENTION_LEVELS:
-            have = table.get(level, {})
-            for cond in CONDITIONS:
-                if cond == "full" and level != 100.0:
-                    continue  # "full" only makes sense at 100% retention
-                if cond != "full" and level == 100.0:
-                    continue  # random/calibra at 100% retention is a no-op
-                if cond not in have:
-                    missing.append((level, cond))
-        return missing
+        return _missing_for_table(self.retention_table(experiment_id))
+
+    def matrix_coverage(self) -> dict[tuple[str, str, str], dict]:
+        """
+        Group all records by (embodiment, task, policy_family) and report
+        protocol completeness per cell — the flywheel's target unit is
+        diverse *cells* of this matrix, not partner count (see project
+        memory: design-partner protocol). Records from different
+        experiment_ids that share a cell are merged, since two partners
+        contributing to the same embodiment/task/policy combo both count
+        toward that cell's coverage.
+
+        Returns {(embodiment, task, policy_family): {experiment_ids, missing,
+        complete, n_records}}. Unset embodiment/task fields group under "".
+        """
+        tables: dict[tuple[str, str, str], dict[float, dict[str, ExperimentRecord]]] = {}
+        exp_ids: dict[tuple[str, str, str], set[str]] = {}
+        for rec in self._records:
+            key = (rec.embodiment, rec.task, rec.policy_family)
+            tables.setdefault(key, {}).setdefault(rec.retention_pct, {})[rec.condition] = rec
+            exp_ids.setdefault(key, set()).add(rec.experiment_id)
+
+        coverage: dict[tuple[str, str, str], dict] = {}
+        for key, table in tables.items():
+            missing = _missing_for_table(table)
+            coverage[key] = {
+                "experiment_ids": sorted(exp_ids[key]),
+                "missing": missing,
+                "complete": not missing,
+                "n_records": sum(len(conds) for conds in table.values()),
+            }
+        return coverage
+
+    def coverage_report(self) -> str:
+        """Render a human-readable matrix-coverage summary across all experiments."""
+        coverage = self.matrix_coverage()
+        if not coverage:
+            return "Experiment log is empty — no matrix cells recorded yet."
+
+        lines = ["Design-partner matrix coverage", "─" * 78]
+        lines.append(
+            f"{'Embodiment':<14} {'Task':<16} {'Policy':<10} {'Experiments':<12} {'Status'}"
+        )
+        for (embodiment, task, policy), info in sorted(coverage.items()):
+            status = "complete" if info["complete"] else f"{len(info['missing'])} slot(s) missing"
+            lines.append(
+                f"{embodiment or '(unset)':<14} {task or '(unset)':<16} "
+                f"{policy or '(unset)':<10} {len(info['experiment_ids']):<12} {status}"
+            )
+        n_complete = sum(1 for info in coverage.values() if info["complete"])
+        lines.append("─" * 78)
+        lines.append(f"{n_complete}/{len(coverage)} cell(s) protocol-complete.")
+        return "\n".join(lines)
 
     def calibra_vs_random(self, experiment_id: str) -> dict[float, Optional[float]]:
         """

@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from calibra.assessment import EpisodeAssessment
 from calibra.experiment_log import ExperimentLog, ExperimentRecord
 
 
@@ -175,3 +176,147 @@ def test_record_to_dict_round_trip():
     )
     restored = ExperimentRecord.from_dict(rec.to_dict())
     assert restored.to_dict() == rec.to_dict()
+
+
+# ── dataset-characteristics rollup (mean_* fields) ──────────────────────────
+
+
+def test_record_rejects_out_of_range_mean_anomaly_score(tmp_path):
+    log = _log(tmp_path)
+    with pytest.raises(ValueError):
+        log.record(
+            experiment_id="e1", condition="calibra", retention_pct=25.0, mean_anomaly_score=1.5
+        )
+
+
+def test_record_accepts_explicit_mean_fields(tmp_path):
+    log = _log(tmp_path)
+    rec = log.record(
+        experiment_id="e1",
+        condition="calibra",
+        retention_pct=25.0,
+        mean_anomaly_score=0.3,
+        mean_quality_risk=0.2,
+        mean_coverage_value=0.6,
+    )
+    assert rec.mean_anomaly_score == 0.3
+    assert rec.mean_quality_risk == 0.2
+    assert rec.mean_coverage_value == 0.6
+
+
+def test_record_derives_mean_fields_from_assessments(tmp_path):
+    log = _log(tmp_path)
+    assessments = [
+        EpisodeAssessment(episode_id="a", anomaly_score=0.2, quality_risk=0.4, coverage_value=0.8),
+        EpisodeAssessment(episode_id="b", anomaly_score=0.6, quality_risk=0.8, coverage_value=0.2),
+    ]
+    rec = log.record(
+        experiment_id="e1", condition="calibra", retention_pct=25.0, assessments=assessments
+    )
+    assert rec.mean_anomaly_score == pytest.approx(0.4)
+    assert rec.mean_quality_risk == pytest.approx(0.6)
+    assert rec.mean_coverage_value == pytest.approx(0.5)
+
+
+def test_record_rejects_both_assessments_and_explicit_mean_field(tmp_path):
+    log = _log(tmp_path)
+    assessments = [EpisodeAssessment(episode_id="a", anomaly_score=0.2, quality_risk=0.4)]
+    with pytest.raises(ValueError):
+        log.record(
+            experiment_id="e1",
+            condition="calibra",
+            retention_pct=25.0,
+            assessments=assessments,
+            mean_anomaly_score=0.5,
+        )
+
+
+# ── matrix coverage ──────────────────────────────────────────────────────────
+
+
+def test_matrix_coverage_empty_log(tmp_path):
+    log = _log(tmp_path)
+    assert log.matrix_coverage() == {}
+
+
+def test_matrix_coverage_groups_by_embodiment_task_policy(tmp_path):
+    log = _log(tmp_path)
+    log.record(
+        experiment_id="e1",
+        condition="full",
+        retention_pct=100.0,
+        embodiment="so-100",
+        task="pick",
+        policy_family="act",
+    )
+    log.record(
+        experiment_id="e2",
+        condition="full",
+        retention_pct=100.0,
+        embodiment="franka",
+        task="insertion",
+        policy_family="diffusion",
+    )
+    coverage = log.matrix_coverage()
+    assert set(coverage.keys()) == {
+        ("so-100", "pick", "act"),
+        ("franka", "insertion", "diffusion"),
+    }
+
+
+def test_matrix_coverage_merges_experiments_sharing_a_cell(tmp_path):
+    log = _log(tmp_path)
+    log.record(
+        experiment_id="e1",
+        condition="full",
+        retention_pct=100.0,
+        embodiment="so-100",
+        task="pick",
+        policy_family="act",
+    )
+    log.record(
+        experiment_id="e2",
+        condition="random",
+        retention_pct=25.0,
+        embodiment="so-100",
+        task="pick",
+        policy_family="act",
+    )
+    coverage = log.matrix_coverage()
+    cell = coverage[("so-100", "pick", "act")]
+    assert cell["experiment_ids"] == ["e1", "e2"]
+    assert cell["n_records"] == 2
+
+
+def test_matrix_coverage_complete_when_protocol_satisfied(tmp_path):
+    log = _log(tmp_path)
+    kwargs = dict(embodiment="so-100", task="pick", policy_family="act")
+    log.record(experiment_id="e1", condition="full", retention_pct=100.0, **kwargs)
+    for level in (10.0, 25.0, 50.0, 75.0):
+        log.record(experiment_id="e1", condition="random", retention_pct=level, **kwargs)
+        log.record(experiment_id="e1", condition="calibra", retention_pct=level, **kwargs)
+    cell = log.matrix_coverage()[("so-100", "pick", "act")]
+    assert cell["complete"] is True
+    assert cell["missing"] == []
+
+
+def test_coverage_report_empty_log(tmp_path):
+    log = _log(tmp_path)
+    assert "empty" in log.coverage_report().lower()
+
+
+def test_coverage_report_lists_cells_and_status(tmp_path):
+    log = _log(tmp_path)
+    log.record(
+        experiment_id="e1",
+        condition="full",
+        retention_pct=100.0,
+        embodiment="so-100",
+        task="pick",
+        policy_family="act",
+    )
+    text = log.coverage_report()
+    assert "so-100" in text
+    assert "pick" in text
+    assert "act" in text
+    assert "missing" in text.lower()
