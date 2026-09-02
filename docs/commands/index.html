@@ -759,6 +759,28 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#reading-measured-values-from-a-finished-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading measured values from a finished run
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rolling-up-dataset-characteristics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rolling up dataset characteristics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#partner-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1518,6 +1540,28 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#reading-measured-values-from-a-finished-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading measured values from a finished run
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rolling-up-dataset-characteristics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rolling up dataset characteristics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#partner-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2084,21 +2128,47 @@
 </code></pre></div>
 <p>Records the <em>results</em> of real training runs — GPU-hours, wall-clock time, energy, eval success rate — against the design-partner protocol's three conditions (<code>full</code>, <code>random</code>, <code>calibra</code>) at a given retention percentage. This command doesn't run training itself; training happens in whatever pipeline the partner already uses (<code>lerobot-train</code>, a custom loop, etc.) — <code>calibra experiment</code> just logs what came out of it, consistently, so it can be compared and fed into <code>calibra benchmark --experiment-id</code>.</p>
 <p>Stored as JSON Lines at <code>~/.calibra/experiments.jsonl</code> by default (override with <code>--path</code>). Local only — never synced to any network endpoint, matching the rest of Calibra's on-prem posture.</p>
+<h3 id="reading-measured-values-from-a-finished-run">Reading measured values from a finished run</h3>
+<p>Instead of retyping numbers into <code>--gpu-hours</code> / <code>--eval-success-rate</code> / <code>--wall-clock-seconds</code>, point <code>--from-metrics</code> at what the training job already wrote:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="c1"># a flat metrics JSON, or a run directory containing one</span>
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>calibra<span class="w"> </span>experiment<span class="w"> </span>record<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a><span class="w">    </span>--condition<span class="w"> </span>calibra<span class="w"> </span>--retention<span class="w"> </span><span class="m">25</span><span class="w"> </span>--policy<span class="w"> </span>act<span class="w"> </span>--embodiment<span class="w"> </span>so-100<span class="w"> </span>--task<span class="w"> </span>pushing<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a><span class="w">    </span>--from-metrics<span class="w"> </span>runs/calibra-25/metrics.json
+<a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a>
+<a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a><span class="c1"># a Weights &amp; Biases offline run summary (read from disk — no network, no wandb import)</span>
+<a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a>calibra<span class="w"> </span>experiment<span class="w"> </span>record<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a><span class="w">    </span>--condition<span class="w"> </span>calibra<span class="w"> </span>--retention<span class="w"> </span><span class="m">25</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-32-9" name="__codelineno-32-9" href="#__codelineno-32-9"></a><span class="w">    </span>--from-metrics<span class="w"> </span>wandb/latest-run/files/wandb-summary.json
+<a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a>
+<a id="__codelineno-32-11" name="__codelineno-32-11" href="#__codelineno-32-11"></a><span class="c1"># see what would be recorded without writing anything</span>
+<a id="__codelineno-32-12" name="__codelineno-32-12" href="#__codelineno-32-12"></a>calibra<span class="w"> </span>experiment<span class="w"> </span>record<span class="w"> </span>...<span class="w"> </span>--from-metrics<span class="w"> </span>runs/calibra-25/<span class="w"> </span>--dry-run
+</code></pre></div>
+<p>Recognised keys are matched by a built-in alias table (<code>gpu_hours</code>/<code>gpu_hrs</code>/<code>gpu_time_h</code>, <code>success_rate</code>/<code>eval/success_rate</code>/<code>sr</code>, <code>_runtime</code>/<code>train_runtime</code>/<code>elapsed_sec</code>, <code>loss</code>/<code>train/loss</code>/<code>final_loss</code>, <code>energy_kwh</code>, …); nested keys are flattened. When a source uses a name the aliases miss, map it explicitly (repeatable):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>--map<span class="w"> </span><span class="nv">eval_success_rate</span><span class="o">=</span>results.eval.success<span class="w"> </span>--map<span class="w"> </span><span class="nv">gpu_hours</span><span class="o">=</span>timing.gpu_h
+</code></pre></div>
+<p>An <code>eval_success_rate</code> read as a value in <code>(1, 100]</code> is divided by 100 and flagged as read-as-percent. <strong><code>gpu_hours</code> is only ever taken when it is literally in the source</strong> — it is never derived from wall-clock × GPU count, so a derived figure can't be mistaken for a measured one by <code>calibra benchmark</code>'s measured/simulated classifier; pass <code>--gpu-hours</code> yourself to record a derived value. An explicit flag always overrides the metrics file. The provenance string (<code>wandb:…</code> / <code>json:…</code>) is stored on the record as <code>metrics_source</code>.</p>
+<h3 id="rolling-up-dataset-characteristics">Rolling up dataset characteristics</h3>
+<p><code>--from-review</code> folds a <code>calibra review --json</code> file's per-episode assessments into the record's <code>mean_anomaly_score</code> / <code>mean_quality_risk</code> / <code>mean_coverage_value</code>, so one command captures both the dataset side and the training-outcome side of an experiment:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>calibra<span class="w"> </span>review<span class="w"> </span>partner-a/pusht_v3<span class="w"> </span>--top<span class="w"> </span><span class="m">300</span><span class="w"> </span>-o<span class="w"> </span>review.json<span class="w">   </span><span class="c1"># must cover every episode</span>
+<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>calibra<span class="w"> </span>experiment<span class="w"> </span>record<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a><span class="w">    </span>--condition<span class="w"> </span>calibra<span class="w"> </span>--retention<span class="w"> </span><span class="m">25</span><span class="w"> </span>--from-review<span class="w"> </span>review.json
+</code></pre></div>
+<p>The file must cover the whole dataset (<code>--top &gt;= n_episodes</code>); a partial review queue is rejected rather than logged as a biased dataset-level mean.</p>
 <p><code>calibra experiment report</code> prints the full retention curve for one experiment, the Calibra-vs-random delta at each level, and which <code>(retention%, condition)</code> pairs the protocol still expects but haven't been recorded (<code>10/25/50/75/100%</code> × <code>full/random/calibra</code>, minus the combinations that don't apply — <code>full</code> only at 100%, <code>random</code>/<code>calibra</code> never at 100%).</p>
 <h3 id="partner-workflow">Partner workflow</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>1. Run Calibra           calibra prune / calibra benchmark --sweep
-<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>2. Train Full / Random / Calibra   (partner's own training pipeline)
-<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>3. Record measured results         calibra experiment record --condition ... --retention ...
-<a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>4. Run benchmark with experiment ID   calibra benchmark --sweep --experiment-id &lt;ID&gt;
-<a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a>5. Generate comparison              calibra experiment report --experiment-id &lt;ID&gt;
-<a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>6. Generate partner-facing report   calibra case-study --experiment-id &lt;ID&gt; --out case_study.md
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>1. Run Calibra           calibra prune / calibra benchmark --sweep
+<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>2. Train Full / Random / Calibra   (partner's own training pipeline)
+<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>3. Record measured results         calibra experiment record --condition ... --retention ...
+<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>4. Run benchmark with experiment ID   calibra benchmark --sweep --experiment-id &lt;ID&gt;
+<a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a>5. Generate comparison              calibra experiment report --experiment-id &lt;ID&gt;
+<a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a>6. Generate partner-facing report   calibra case-study --experiment-id &lt;ID&gt; --out case_study.md
 </code></pre></div>
 <hr />
 <h2 id="calibra-case-study-partner-facing-case-study-report"><code>calibra case-study</code> — partner-facing case-study report</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>calibra<span class="w"> </span>case-study<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a><span class="w">    </span>--partner<span class="w"> </span><span class="s2">"Partner A"</span><span class="w"> </span>--gpu-cost-per-hour<span class="w"> </span><span class="m">2</span>.50<span class="w"> </span>--out<span class="w"> </span>case_study.md
-<a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>
-<a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>calibra<span class="w"> </span>case-study<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht<span class="w">   </span><span class="c1"># print to stdout</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>calibra<span class="w"> </span>case-study<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a><span class="w">    </span>--partner<span class="w"> </span><span class="s2">"Partner A"</span><span class="w"> </span>--gpu-cost-per-hour<span class="w"> </span><span class="m">2</span>.50<span class="w"> </span>--out<span class="w"> </span>case_study.md
+<a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>
+<a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a>calibra<span class="w"> </span>case-study<span class="w"> </span>--experiment-id<span class="w"> </span>partner-a-pusht<span class="w">   </span><span class="c1"># print to stdout</span>
 </code></pre></div>
 <p>Renders a completed (or in-progress) <code>calibra experiment record</code> history for one <code>--experiment-id</code> into the partner-facing report described in the design-partner protocol: a headline number, a full retention-curve table, a Calibra-vs-random delta table, and a GPU-cost estimate — written as markdown.</p>
 <p>Deliberately reads only real measured <code>ExperimentLog</code> data — this is <strong>not</strong> <code>calibra benchmark --sweep</code>, which blends measured and simulated numbers for internal planning. A report handed to a partner or used in outreach must never contain heuristic predictions dressed up as evidence, so the report is stamped:</p>
