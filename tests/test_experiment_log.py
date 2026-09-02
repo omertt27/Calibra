@@ -178,6 +178,37 @@ def test_record_to_dict_round_trip():
     assert restored.to_dict() == rec.to_dict()
 
 
+def test_metrics_source_round_trips(tmp_path):
+    log = _log(tmp_path)
+    log.record(
+        experiment_id="e1",
+        condition="calibra",
+        retention_pct=25.0,
+        metrics_source="wandb:/runs/latest/wandb-summary.json",
+    )
+    reloaded = ExperimentLog(path=log.path).list_records()[0]
+    assert reloaded.metrics_source == "wandb:/runs/latest/wandb-summary.json"
+
+
+def test_metrics_source_defaults_empty_for_old_rows(tmp_path):
+    path = tmp_path / "experiments.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    # a row written before the metrics_source slot existed
+    path.write_text(
+        json.dumps(
+            {
+                "record_id": "x",
+                "timestamp": 1.0,
+                "experiment_id": "e1",
+                "condition": "full",
+                "retention_pct": 100.0,
+            }
+        )
+        + "\n"
+    )
+    assert ExperimentLog(path=path).list_records()[0].metrics_source == ""
+
+
 # ── dataset-characteristics rollup (mean_* fields) ──────────────────────────
 
 

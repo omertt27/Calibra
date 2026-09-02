@@ -78,6 +78,7 @@ class ExperimentRecord:
         "eval_success_rate",
         "seed",
         "notes",
+        "metrics_source",
         "mean_anomaly_score",
         "mean_quality_risk",
         "mean_coverage_value",
@@ -104,6 +105,7 @@ class ExperimentRecord:
         eval_success_rate: Optional[float] = None,
         seed: Optional[int] = None,
         notes: str = "",
+        metrics_source: str = "",
         mean_anomaly_score: Optional[float] = None,
         mean_quality_risk: Optional[float] = None,
         mean_coverage_value: Optional[float] = None,
@@ -141,6 +143,7 @@ class ExperimentRecord:
         self.eval_success_rate = eval_success_rate
         self.seed = seed
         self.notes = notes
+        self.metrics_source = metrics_source
         self.mean_anomaly_score = mean_anomaly_score
         self.mean_quality_risk = mean_quality_risk
         self.mean_coverage_value = mean_coverage_value
@@ -170,6 +173,7 @@ class ExperimentRecord:
             eval_success_rate=d.get("eval_success_rate"),
             seed=d.get("seed"),
             notes=d.get("notes", ""),
+            metrics_source=d.get("metrics_source", ""),
             mean_anomaly_score=d.get("mean_anomaly_score"),
             mean_quality_risk=d.get("mean_quality_risk"),
             mean_coverage_value=d.get("mean_coverage_value"),
@@ -251,6 +255,7 @@ class ExperimentLog:
         eval_success_rate: Optional[float] = None,
         seed: Optional[int] = None,
         notes: str = "",
+        metrics_source: str = "",
         mean_anomaly_score: Optional[float] = None,
         mean_quality_risk: Optional[float] = None,
         mean_coverage_value: Optional[float] = None,
@@ -298,6 +303,7 @@ class ExperimentLog:
             eval_success_rate=eval_success_rate,
             seed=seed,
             notes=notes,
+            metrics_source=metrics_source,
             mean_anomaly_score=mean_anomaly_score,
             mean_quality_risk=mean_quality_risk,
             mean_coverage_value=mean_coverage_value,

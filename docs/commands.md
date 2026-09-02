@@ -585,6 +585,45 @@ Records the *results* of real training runs — GPU-hours, wall-clock time, ener
 
 Stored as JSON Lines at `~/.calibra/experiments.jsonl` by default (override with `--path`). Local only — never synced to any network endpoint, matching the rest of Calibra's on-prem posture.
 
+### Reading measured values from a finished run
+
+Instead of retyping numbers into `--gpu-hours` / `--eval-success-rate` / `--wall-clock-seconds`, point `--from-metrics` at what the training job already wrote:
+
+```bash
+# a flat metrics JSON, or a run directory containing one
+calibra experiment record --experiment-id partner-a-pusht \
+    --condition calibra --retention 25 --policy act --embodiment so-100 --task pushing \
+    --from-metrics runs/calibra-25/metrics.json
+
+# a Weights & Biases offline run summary (read from disk — no network, no wandb import)
+calibra experiment record --experiment-id partner-a-pusht \
+    --condition calibra --retention 25 \
+    --from-metrics wandb/latest-run/files/wandb-summary.json
+
+# see what would be recorded without writing anything
+calibra experiment record ... --from-metrics runs/calibra-25/ --dry-run
+```
+
+Recognised keys are matched by a built-in alias table (`gpu_hours`/`gpu_hrs`/`gpu_time_h`, `success_rate`/`eval/success_rate`/`sr`, `_runtime`/`train_runtime`/`elapsed_sec`, `loss`/`train/loss`/`final_loss`, `energy_kwh`, …); nested keys are flattened. When a source uses a name the aliases miss, map it explicitly (repeatable):
+
+```bash
+--map eval_success_rate=results.eval.success --map gpu_hours=timing.gpu_h
+```
+
+An `eval_success_rate` read as a value in `(1, 100]` is divided by 100 and flagged as read-as-percent. **`gpu_hours` is only ever taken when it is literally in the source** — it is never derived from wall-clock × GPU count, so a derived figure can't be mistaken for a measured one by `calibra benchmark`'s measured/simulated classifier; pass `--gpu-hours` yourself to record a derived value. An explicit flag always overrides the metrics file. The provenance string (`wandb:…` / `json:…`) is stored on the record as `metrics_source`.
+
+### Rolling up dataset characteristics
+
+`--from-review` folds a `calibra review --json` file's per-episode assessments into the record's `mean_anomaly_score` / `mean_quality_risk` / `mean_coverage_value`, so one command captures both the dataset side and the training-outcome side of an experiment:
+
+```bash
+calibra review partner-a/pusht_v3 --top 300 -o review.json   # must cover every episode
+calibra experiment record --experiment-id partner-a-pusht \
+    --condition calibra --retention 25 --from-review review.json
+```
+
+The file must cover the whole dataset (`--top >= n_episodes`); a partial review queue is rejected rather than logged as a biased dataset-level mean.
+
 `calibra experiment report` prints the full retention curve for one experiment, the Calibra-vs-random delta at each level, and which `(retention%, condition)` pairs the protocol still expects but haven't been recorded (`10/25/50/75/100%` × `full/random/calibra`, minus the combinations that don't apply — `full` only at 100%, `random`/`calibra` never at 100%).
 
 ### Partner workflow

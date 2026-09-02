@@ -2,6 +2,14 @@
 
 All notable changes to Calibra are documented here.
 
+## [Unreleased]
+
+### Added
+
+- **`calibra experiment record --from-metrics PATH`** — reads GPU-hours / wall-clock / eval success / loss / energy straight out of a finished run's metrics file (flat JSON, or a Weights & Biases `wandb-summary.json` from an offline run) instead of retyping them. Point it at a file or a run directory. A built-in alias table matches common key names; `--map FIELD=path.to.key` (repeatable) handles anything unusual. An explicit flag always overrides the file. `gpu_hours` is only taken when literally present — never derived from wall-clock — so a derived figure can't be mistaken for a measured one by the benchmark classifier. The provenance string is stored on the record as `metrics_source`. New module `calibra/metrics_ingest.py`. No network access.
+- **`calibra experiment record --from-review PATH`** — folds a `calibra review --json` file's per-episode assessments into the record's `mean_anomaly_score` / `mean_quality_risk` / `mean_coverage_value`, capturing the dataset side and the training-outcome side of an experiment in one command. Rejects a partial review queue rather than logging a biased dataset-level mean.
+- **`calibra experiment record --dry-run`** — parse `--from-metrics` / `--from-review` and print what would be recorded, writing nothing.
+
 ## [0.8.0] — Measured training results
 
 Calibra's predictions (`calibra benchmark`) were always simulated — a heuristic outcome model plus linear GPU-hour scaling. That's useful for a first pass, but not evidence. This adds the other half: a way to record what a design partner's *real* training runs actually cost and achieved, and to fold those measured numbers into the benchmark report wherever they're available, so a report is never presented as a validated result when parts of it are still predictions.
