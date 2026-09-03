@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://omertt.github.io/Calibra/commands/">
       
       
-        <link rel="prev" href="../integrity/">
+        <link rel="prev" href="../annotate/">
       
       
         <link rel="next" href="../claims/">
@@ -279,6 +279,25 @@
   
   
   
+  
+    <li class="md-tabs__item">
+      <a href="../annotate/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Annotate Mode
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
     
   
   
@@ -505,6 +524,33 @@
     
   
     Integrity Checks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../annotate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Annotate Mode
   
 
     
@@ -937,10 +983,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
             
   
   
@@ -958,8 +1004,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1264,6 +1310,34 @@
     
   
     ADR-010: Claims references parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-011-dataset-decision-layer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-011: Dataset decision layer
   
 
     
@@ -1876,6 +1950,9 @@
 <a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>
 <a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="c1"># Incremental analysis: skip re-running the pipeline on unchanged episodes</span>
 <a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>calibra<span class="w"> </span>prune<span class="w"> </span>/data/demos.h5<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.3<span class="w"> </span>--cache-dir<span class="w"> </span>.calibra/cache<span class="w"> </span>--report<span class="w"> </span>results/latest.json
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="c1"># Annotate mode: keep every episode, write a per-episode metadata sidecar instead</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>calibra<span class="w"> </span>prune<span class="w"> </span>/data/demos.h5<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.3<span class="w"> </span>--annotate<span class="w"> </span>./calibra_meta/
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>  CALIBRA PRUNING SUMMARY
@@ -1894,6 +1971,7 @@
 - <strong>Stage 2 — Greedy max-coverage:</strong> from the quality-passing pool, selects the K most behaviorally diverse episodes using farthest-point sampling on action-space statistics. O(N × K) — handles ~50k episodes without approximation.</p>
 <p>Use <code>--entropy-weight 0.4</code> (or <code>--policy gr00t</code>) to bias selection toward high-entropy (informationally rich) episodes. Use <code>--strategy influence</code> to select episodes based on estimated learning value (combining action novelty, task contact representation, and Shannon entropy).</p>
 <p><code>--report PATH</code> writes a schema-versioned <strong>CalibraReport JSON</strong> with <code>episode_verdicts</code> — approved/rejected episode IDs, per-episode reason codes (e.g. <code>jerk_spike</code>, <code>diversity_pruned</code>), quality scores, and SHA-256 content hashes.</p>
+<p><code>--annotate DIR</code> switches to <strong>annotate mode</strong>: instead of only removing episodes, it writes a training-ready per-episode sidecar (<code>calibra_annotations.jsonl</code> + a self-describing <code>.manifest.json</code>) that keeps every episode with its disposition (<code>KEEP</code> / <code>DROP</code> / <code>ANNOTATE</code>) and characterization (<code>quality_risk</code>, <code>coverage_value</code>, <code>anomaly_score</code>, …) attached. Redundant episodes are marked <code>ANNOTATE</code> — keep them if your trainer conditions on the metadata. Default <code>--out</code> / <code>--report</code> output is unaffected. See <a href="../annotate/">Annotate Mode</a>.</p>
 <p><code>--cache-dir DIR</code> caches the diagnostic pipeline result keyed by episode manifest fingerprint. On repeated runs with unchanged data, skips the pipeline — typically 10–50× faster on large datasets collected incrementally.</p>
 <hr />
 <h2 id="calibra-corrupt-validate-metric-sensitivity"><code>calibra corrupt</code> — validate metric sensitivity</h2>

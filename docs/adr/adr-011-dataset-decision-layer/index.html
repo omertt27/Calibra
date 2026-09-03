@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://omertt.github.io/Calibra/adr/adr-008-claims-registry/">
+        <link rel="canonical" href="https://omertt.github.io/Calibra/adr/adr-011-dataset-decision-layer/">
       
       
-        <link rel="prev" href="../adr-007-optional-format-dependencies/">
+        <link rel="prev" href="../adr-010-claims-references-parity/">
       
       
-        <link rel="next" href="../adr-009-two-phase-pipeline/">
+        <link rel="next" href="../../hf_blog_post/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR-008: Claims registry - Calibra</title>
+        <title>ADR-011: Dataset decision layer - Calibra</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-008-evidence-backed-falsifiable-claims-registry" class="md-skip">
+        <a href="#adr-011-dataset-decision-layer-analysis-outputs-support-both-pruning-and-metadata-annotation" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-008: Claims registry
+              ADR-011: Dataset decision layer
             
           </span>
         </div>
@@ -929,37 +929,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-008: Claims registry
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../adr-008-claims-registry/" class="md-nav__link">
         
   
   
@@ -975,142 +948,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#alternatives-considered" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Alternatives Considered
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Alternatives Considered">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#hardcoded-thresholds-with-comments" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Hardcoded thresholds with comments
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#spreadsheet-or-google-docs-tracking" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Spreadsheet or Google Docs tracking
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#bayesian-prior-model-per-metric-per-class" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Bayesian prior model per metric per class
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remove-thresholds-entirely-show-only-raw-values" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Remove thresholds entirely; show only raw values
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#constraints" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Constraints
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#references" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        References
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1176,10 +1013,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../adr-011-dataset-decision-layer/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-011: Dataset decision layer
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1195,6 +1059,225 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-reframe-the-internal-product-model-analyze-characterize-decide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Reframe the internal product model: Analyze → Characterize → Decide
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-every-episode-carries-a-full-characterization-independent-of-disposition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Every episode carries a full characterization, independent of disposition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-each-episode-gets-a-disposition-from-a-closed-enum" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Each episode gets a disposition from a closed enum
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-two-consumption-modes-over-one-analysis-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Two consumption modes over one analysis pass
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-schema-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Schema change
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-the-up-to-75-less-training-data-claim-is-retained-but-qualified" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. The "up to 75% less training data" claim is retained but qualified
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-gating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Gating
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alternatives-considered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alternatives Considered
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Alternatives Considered">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keep-the-binary-prune-only-model-add-annotation-as-an-unrelated-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keep the binary prune-only model; add annotation as an unrelated command
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pivot-fully-to-keep-everything-metadata-drop-pruning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pivot fully to "keep everything + metadata", drop pruning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#free-form-tags-instead-of-a-closed-disposition-enum" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Free-form tags instead of a closed disposition enum
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-single-continuous-per-episode-weight-no-categorical-disposition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A single continuous per-episode weight, no categorical disposition
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#constraints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constraints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1307,6 +1390,89 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-reframe-the-internal-product-model-analyze-characterize-decide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Reframe the internal product model: Analyze → Characterize → Decide
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-every-episode-carries-a-full-characterization-independent-of-disposition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Every episode carries a full characterization, independent of disposition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-each-episode-gets-a-disposition-from-a-closed-enum" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Each episode gets a disposition from a closed enum
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-two-consumption-modes-over-one-analysis-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Two consumption modes over one analysis pass
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-schema-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Schema change
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-the-up-to-75-less-training-data-claim-is-retained-but-qualified" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. The "up to 75% less training data" claim is retained but qualified
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-gating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Gating
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1322,10 +1488,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#hardcoded-thresholds-with-comments" class="md-nav__link">
+  <a href="#keep-the-binary-prune-only-model-add-annotation-as-an-unrelated-command" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Hardcoded thresholds with comments
+        Keep the binary prune-only model; add annotation as an unrelated command
       
     </span>
   </a>
@@ -1333,10 +1499,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#spreadsheet-or-google-docs-tracking" class="md-nav__link">
+  <a href="#pivot-fully-to-keep-everything-metadata-drop-pruning" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Spreadsheet or Google Docs tracking
+        Pivot fully to "keep everything + metadata", drop pruning
       
     </span>
   </a>
@@ -1344,10 +1510,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#bayesian-prior-model-per-metric-per-class" class="md-nav__link">
+  <a href="#free-form-tags-instead-of-a-closed-disposition-enum" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Bayesian prior model per metric per class
+        Free-form tags instead of a closed disposition enum
       
     </span>
   </a>
@@ -1355,10 +1521,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#remove-thresholds-entirely-show-only-raw-values" class="md-nav__link">
+  <a href="#a-single-continuous-per-episode-weight-no-categorical-disposition" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Remove thresholds entirely; show only raw values
+        A single continuous per-episode weight, no categorical disposition
       
     </span>
   </a>
@@ -1423,104 +1589,181 @@
   
 
 
-<h1 id="adr-008-evidence-backed-falsifiable-claims-registry">ADR-008: Evidence-Backed Falsifiable Claims Registry</h1>
+<h1 id="adr-011-dataset-decision-layer-analysis-outputs-support-both-pruning-and-metadata-annotation">ADR-011: Dataset Decision Layer — Analysis Outputs Support Both Pruning and Metadata Annotation</h1>
 <p><strong>Status:</strong> Accepted<br />
-<strong>Date:</strong> 2024-01-01<br />
+<strong>Date:</strong> 2026-09-03<br />
 <strong>Deciders:</strong> Calibra core team</p>
 <hr />
 <h2 id="context">Context</h2>
-<p>Calibra's diagnostic thresholds (e.g. "flag velocity discontinuity rate &gt; 5%
-as WARNING") are not arbitrary. They are derived from empirical observations
-about what metric values are typical for different classes of robotics datasets.
-Without an explicit record of this empirical basis, thresholds become
-unjustifiable magic numbers — and, critically, there is no process for
-updating them when new evidence contradicts them.</p>
-<p>There is also a risk of overfitting thresholds to a small number of datasets
-that happened to be profiled early. A claim system that tracks which datasets
-support a threshold creates accountability for the strength of the evidence.</p>
+<p>Calibra's headline feature is coreset selection: <code>calibra prune</code> produces a
+smaller training set by removing bad and redundant episodes ("up to 75% less
+training data"). Internally the product has been modeled as <strong>Analyze →
+Prune</strong>, and the output schema reflects that — <code>CurationReport</code>
+(<code>calibra/schema/comparison.py</code>) records a binary partition:
+<code>retained_indices</code> vs. <code>dropped_indices</code>.</p>
+<p>That binary model bakes in an assumption: that an episode Calibra does not
+select for the coreset has no training value. Recent work in robot learning
+on heterogeneous data — metadata-conditioned policies (ACT, Diffusion Policy,
+VLA-style models) trained with per-episode quality / length / success signals
+as conditioning inputs — shows this assumption does not always hold. When the
+trainer can condition on metadata, mediocre data retained <em>with</em> an honest
+quality annotation can raise performance rather than lower it, and dataset
+diversity matters more than per-episode polish for compositional
+generalization.</p>
+<p>Calibra already computes everything such a trainer would want to condition on
+— <code>calibra_score</code>, integrity flags, success/failure, episode length,
+coverage/novelty contribution, redundancy, quality risk (<code>calibra/assessment.py</code>'s
+<code>EpisodeAssessment</code>, <code>calibra/pruning.py</code>, the integrity analyzers). It
+discards most of it at the last step by collapsing to keep/drop.</p>
+<p>This is an architectural product decision, not a future feature: it changes
+the shape of Calibra's primary output.</p>
 <hr />
 <h2 id="decision">Decision</h2>
-<p>Calibra maintains a claims registry: a set of JSON files in <code>calibra/claims/</code>
-where each file contains one or more falsifiable assertions about the
-statistical behavior of a metric under a specified class of robotics dataset.</p>
-<p>Each claim has:
-- A stable, never-reused <code>id</code> (e.g. <code>VD-001</code>).
-- A <code>metric</code> key matching a Calibra metric.
-- A <code>class</code> scope (<code>velocity</code>, <code>position</code>, <code>torque</code>, <code>sim</code>, <code>hardware</code>, <code>any</code>).
-- An <code>assertion</code> — one specific, falsifiable sentence.
-- An <code>evidence</code> list — one entry per profiled dataset, recording the observed
-  value and whether it supports the assertion.
-- A <code>falsification</code> block — the explicit condition and threshold that would
-  falsify the claim.
-- A <code>status</code> — <code>active_hypothesis</code>, <code>validated</code>, <code>falsified</code>, or <code>updated</code>.</p>
-<p><strong>Confidence is derived, not declared.</strong> <code>calibra/claims.py</code> computes
-confidence at read time from the count of supporting evidence entries, using
-a fixed scale (0 → NOT VALIDATED, 1 → LOW-MODERATE, 2–4 → MODERATE,
-5–9 → HIGH, 10+ → STRONG). This prevents contributors from asserting high
-confidence without supporting evidence.</p>
-<p><strong>Falsified claims are never deleted.</strong> They remain in the registry with
-<code>status: "falsified"</code> so the falsification event is traceable. Revised claims
-get new IDs.</p>
-<p>The contract is specified in <code>calibra/claims/SPEC.md</code>.</p>
+<h3 id="1-reframe-the-internal-product-model-analyze-characterize-decide">1. Reframe the internal product model: <code>Analyze → Characterize → Decide</code></h3>
+<p>"Prune" is one consumption strategy over the analysis, not Calibra's identity.
+Schema, code organization, and documentation reflect a decision layer whose
+output is a per-episode disposition, not a keep/drop list.</p>
+<h3 id="2-every-episode-carries-a-full-characterization-independent-of-disposition">2. Every episode carries a full <code>characterization</code>, independent of disposition</h3>
+<p>The characterization bundle is the union of signals Calibra already computes:
+<code>calibra_score</code>, integrity flags, <code>success</code> / <code>failure</code>, episode length,
+<code>anomaly_score</code>, <code>quality_risk</code>, <code>coverage_value</code> / novelty contribution,
+redundancy. It is computed for all episodes; the decision step consumes it
+but does not gate its production.</p>
+<h3 id="3-each-episode-gets-a-disposition-from-a-closed-enum">3. Each episode gets a <code>disposition</code> from a closed enum</h3>
+<table>
+<thead>
+<tr>
+<th>Disposition</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>KEEP</code></td>
+<td>In the coreset as-is. Default when no signal fires.</td>
+</tr>
+<tr>
+<td><code>DROP</code></td>
+<td>Exclude — integrity failure, or pure redundancy with no coverage value.</td>
+</tr>
+<tr>
+<td><code>DOWNWEIGHT</code></td>
+<td>Include with a reduced sample weight (the weight is an attribute of the disposition).</td>
+</tr>
+<tr>
+<td><code>ANNOTATE</code></td>
+<td>Include; emit characterization as trainer-facing conditioning metadata.</td>
+</tr>
+<tr>
+<td><code>REVIEW</code></td>
+<td>Human inspection before a decision — unusual but not clearly bad (the existing review-queue posture).</td>
+</tr>
+<tr>
+<td><code>RECOLLECT</code></td>
+<td>Reserved. Data-acquisition guidance — not emitted until that work lands (roadmap 2027–28).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-two-consumption-modes-over-one-analysis-pass">4. Two consumption modes over one analysis pass</h3>
+<ul>
+<li><strong>Prune mode</strong> (current headline, unchanged): materialize the <code>KEEP</code> set →
+  smaller dataset on disk. Serves vanilla BC/ACT/Diffusion pipelines that
+  cannot exploit metadata. Positioned as: <em>"When your trainer can't use
+  metadata, Calibra finds the smallest useful subset."</em></li>
+<li><strong>Annotate mode</strong> (new): emit a LeRobot-compatible sidecar carrying each
+  episode's <code>disposition</code> + <code>characterization</code>, plus documented recipes for
+  turning those fields into conditioning inputs for ACT / Diffusion Policy /
+  VLA training. Does not modify episode data.</li>
+</ul>
+<h3 id="5-schema-change">5. Schema change</h3>
+<p><code>CurationReport</code> gains a per-episode <code>disposition</code> and a structured
+<code>characterization</code>. <code>retained_indices</code> / <code>dropped_indices</code> become derived
+views (<code>KEEP</code> vs. not-<code>KEEP</code>), kept for backward compatibility with a
+deprecation note.</p>
+<h3 id="6-the-up-to-75-less-training-data-claim-is-retained-but-qualified">6. The "up to 75% less training data" claim is retained but qualified</h3>
+<p>In technical material it reads <em>"on validated non-conditioned policy
+benchmarks"</em> (see <a href="../adr-008-claims-registry/">ADR-008</a>, <code>docs/claims.md</code>).
+It is a training-efficiency result on measured benchmarks — not an
+information-theoretic claim that removed data is worthless.</p>
+<h3 id="7-gating">7. Gating</h3>
+<p>Promoting annotate mode to a co-headline is contingent on a 4-arm benchmark:
+full / prune-25% / full + metadata conditioning / prune-25% + metadata
+conditioning, across ACT and Diffusion Policy, measuring success rate,
+GPU-hours, convergence speed, generalization, and rare-behavior retention.
+That experiment is a research-roadmap item tracked separately and is <strong>not</strong>
+part of this ADR's acceptance. This ADR accepts only the output <em>architecture</em>
+(decision layer + disposition enum + dual consumption modes), which is worth
+building regardless of which mode wins.</p>
 <hr />
 <h2 id="alternatives-considered">Alternatives Considered</h2>
-<h3 id="hardcoded-thresholds-with-comments">Hardcoded thresholds with comments</h3>
-<p>Embed thresholds directly in analyzer code with a comment explaining the
-rationale.
-Rejected: thresholds are invisible to the CLI and to downstream consumers;
-there is no process for updating them; the comment rot immediately once the
-threshold is modified without revisiting the comment.</p>
-<h3 id="spreadsheet-or-google-docs-tracking">Spreadsheet or Google Docs tracking</h3>
-<p>Track dataset profiling results and threshold derivations in an external
-document.
-Rejected: not versioned with the code; broken link is a constant risk;
-can't be programmatically queried by <code>calibra compare</code>.</p>
-<h3 id="bayesian-prior-model-per-metric-per-class">Bayesian prior model per metric per class</h3>
-<p>Build a statistical model P(metric | class) from observed evidence and use
-it to generate thresholds and confidence intervals automatically.
-Deferred, not rejected: this is explicitly called out in <code>claims/SPEC.md</code> as
-a future direction once 20+ datasets per class are available. Implementing
-distribution modeling with fewer data points would produce "statistical theater,
-not statistical insight." The current system is designed to feed into a
-Bayesian model when the evidence base is sufficient.</p>
-<h3 id="remove-thresholds-entirely-show-only-raw-values">Remove thresholds entirely; show only raw values</h3>
-<p>Present raw metric values without any risk classification.
-Rejected: raw values are not actionable for users who don't have deep
-familiarity with robotics dataset characteristics. Risk levels provide
-triage; claims provide the justification for risk levels.</p>
+<h3 id="keep-the-binary-prune-only-model-add-annotation-as-an-unrelated-command">Keep the binary prune-only model; add annotation as an unrelated command</h3>
+<p>Ship <code>calibra annotate</code> as its own pipeline alongside <code>calibra prune</code>.
+Rejected: duplicates the analysis pass; two code paths over the same signals
+drift apart; no shared audit trail; forces users to pick a lane before seeing
+the characterization.</p>
+<h3 id="pivot-fully-to-keep-everything-metadata-drop-pruning">Pivot fully to "keep everything + metadata", drop pruning</h3>
+<p>Rejected: premature. No internal benchmark yet supports it; the GPU-cost
+value of pruning is real and validated for non-conditioned policies (the
+majority of current LeRobot-ecosystem training); abandoning a validated,
+differentiated result on an external-literature bet is the wrong risk
+trade-off. Item 7's benchmark exists precisely so this call is not made blind.</p>
+<h3 id="free-form-tags-instead-of-a-closed-disposition-enum">Free-form tags instead of a closed disposition enum</h3>
+<p>Rejected: downstream tooling (exporters, <code>calibra gate</code>, CI) needs a small
+stable set to switch on. Same reasoning as <code>RiskLevel</code> being a closed <code>str</code>
+enum in <a href="../adr-003-pydantic-output-schemas/">ADR-003</a>.</p>
+<h3 id="a-single-continuous-per-episode-weight-no-categorical-disposition">A single continuous per-episode weight, no categorical disposition</h3>
+<p>Rejected: <code>DROP</code> vs. <code>DOWNWEIGHT</code> vs. <code>RECOLLECT</code> are qualitatively different
+downstream actions, not points on one scale. A continuous weight is meaningful
+<em>within</em> <code>DOWNWEIGHT</code> and is modeled as an attribute of it.</p>
 <hr />
 <h2 id="constraints">Constraints</h2>
 <ul>
-<li>A claim's <code>metric</code> field must match a key in <code>_METRIC_KEYS</code> in
-  <code>calibra/claims.py</code>. This is checked by <code>scripts/generate_claims_doc.py</code>.</li>
-<li>The claims/references parity rule must be maintained (see ADR-010).</li>
-<li>Claims about causal links (e.g. "metric X predicts training outcome Y")
-  enter as <code>provisional</code> status, not <code>active_hypothesis</code>, because the
-  causal mechanism has not been directly measured. The <code>caution</code> field
-  documents what evidence would be needed to graduate the claim.</li>
+<li><code>Disposition</code> is a closed <code>str</code> enum in <code>calibra/schema/</code>. Adding a value is
+  an explicit decision (per <a href="../adr-003-pydantic-output-schemas/">ADR-003</a>).</li>
+<li><code>characterization</code> fields must be JSON-serializable scalars/lists; numpy
+  stays in <code>raw_metrics</code> (per <a href="../adr-003-pydantic-output-schemas/">ADR-003</a>).</li>
+<li>The annotate-mode sidecar must round-trip through LeRobot metadata
+  conventions without mutating episode data.</li>
+<li><code>RECOLLECT</code> is reserved now and only emitted once acquisition-guidance work
+  lands. Every consumer must tolerate an unrecognized disposition without
+  erroring.</li>
+<li>Default disposition when no signal fires is <code>KEEP</code> — existing <code>calibra
+  prune</code> behavior is preserved exactly.</li>
+<li>Default CLI output collapses to the familiar keep/drop summary unless
+  annotate mode is requested, so the common case is not confronted with a
+  six-way breakdown.</li>
 </ul>
 <hr />
 <h2 id="consequences">Consequences</h2>
 <p><strong>Positive:</strong>
-- Every diagnostic threshold has a traceable empirical basis.
-- <code>calibra compare</code> can surface which claims apply to a given dataset class
-  and how strong the evidence is.
-- When a dataset falsifies a claim, the update process is defined: set status,
-  add counter-evidence, write a revised claim with a new ID.
-- The evidence base grows systematically as more datasets are profiled.</p>
+- One analysis pass feeds both prune and annotate; a single unified audit
+  trail.
+- Hedges the metadata-conditioning trend instead of betting against it —
+  Calibra stays useful whether the field settles on "smaller sets" or
+  "annotated sets."
+- The disposition model extends cleanly to the planned roadmap:
+  training-aware weighting (2027–28) is <code>DOWNWEIGHT</code> with computed weights;
+  acquisition guidance (2028–29) is <code>RECOLLECT</code> with target descriptions.
+- "Prune" becomes a strategy name, not the product ceiling — consistent with
+  the observability-layer repositioning.</p>
 <p><strong>Negative:</strong>
-- Contributors must follow the claims protocol when adjusting thresholds —
-  they cannot simply change a number. This is intentional friction; it prevents
-  evidence-free threshold drift.
-- The claims/references parity constraint (see ADR-010) means new claims
-  cannot be added without first profiling a corresponding dataset.</p>
+- The <code>CurationReport</code> schema change is breaking for any consumer reading
+  <code>retained_indices</code> / <code>dropped_indices</code> directly. Mitigated by keeping them
+  as derived properties through a deprecation window.
+- More output surface to test and document; the "Decide" step introduces
+  threshold → disposition policy config that users must understand.
+- Risk of overwhelming users with a six-way output. Mitigated by the
+  collapse-to-keep/drop default in the constraints above.</p>
 <hr />
 <h2 id="references">References</h2>
 <ul>
-<li><code>calibra/claims/SPEC.md</code> — full claims contract</li>
-<li><code>calibra/claims/*.json</code> — claim files</li>
-<li><code>calibra/claims.py</code> — programmatic claims interface and confidence derivation</li>
-<li><code>scripts/generate_claims_doc.py</code> — parity check and documentation generation</li>
+<li><code>calibra/schema/comparison.py</code> — <code>CurationReport</code>, <code>EpisodeFlag</code> (schema change target)</li>
+<li><code>calibra/assessment.py</code> — <code>EpisodeAssessment</code> (characterization backbone: anomaly / quality_risk / coverage_value)</li>
+<li><code>calibra/pruning.py</code>, <code>calibra/curation/</code> — current prune path</li>
+<li><code>calibra/integrity.py</code> — integrity flags feeding characterization</li>
+<li><a href="../adr-003-pydantic-output-schemas/">ADR-003</a> — Pydantic output schemas, closed-enum convention</li>
+<li><a href="../adr-008-claims-registry/">ADR-008</a> — claims registry (the "75% less data" claim qualification)</li>
+<li><a href="../adr-009-two-phase-pipeline/">ADR-009</a> — two-phase pipeline (the analysis boundary this builds on)</li>
 </ul>
 
 

@@ -5,6 +5,10 @@
          <lastmod>2026-09-03</lastmod>
     </url>
     <url>
+         <loc>https://omertt.github.io/Calibra/annotate/</loc>
+         <lastmod>2026-09-03</lastmod>
+    </url>
+    <url>
          <loc>https://omertt.github.io/Calibra/awesome_list_submissions/</loc>
          <lastmod>2026-09-03</lastmod>
     </url>
@@ -86,6 +90,10 @@
     </url>
     <url>
          <loc>https://omertt.github.io/Calibra/adr/adr-010-claims-references-parity/</loc>
+         <lastmod>2026-09-03</lastmod>
+    </url>
+    <url>
+         <loc>https://omertt.github.io/Calibra/adr/adr-011-dataset-decision-layer/</loc>
          <lastmod>2026-09-03</lastmod>
     </url>
     <url>
