@@ -94,10 +94,9 @@ function Reveal({ as: Tag = 'div', className = '', delay = 0, children, ...props
   )
 }
 
-function Logo({ hideIcon = false }) {
+function Logo() {
   return (
     <a className="brand" href="#top" aria-label="Calibra home">
-      {!hideIcon && <img src={`${import.meta.env.BASE_URL}logo-icon.svg`} alt="" />}
       <span>Calibra</span>
     </a>
   )
@@ -317,7 +316,7 @@ function App() {
       <div className="spotlight" ref={spotlightRef} />
       <nav className="nav">
         <div className="container nav-inner">
-          <Logo hideIcon />
+          <Logo />
           <div className="nav-links">
             {NAV_LINKS.map((link) => (
               <a href={link.href} key={link.label}>{link.label}</a>
