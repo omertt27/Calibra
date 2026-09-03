@@ -38,6 +38,19 @@ Calibra's `--annotate` output over a dataset yields, per episode, a
 Optional **D0** = KEEP-only + metadata (same data as B) if you also want that
 point — cheap, but not required.
 
+> **KNOWN ISSUE (found 2026-09-03 while wiring `metadata_conditioning_reference.py`):**
+> with the current `--annotate` pipeline, the `ANNOTATE` bucket is *every*
+> non-KEEP, non-DROP episode — so **KEEP ∪ ANNOTATE == all non-DROP == arm C's
+> data**, and arms **C and D become identical** (same episodes, both with
+> metadata). Two ways out, pick one before running:
+> 1. **Narrow `ANNOTATE`** to only the diversity-pruned episodes close enough
+>    to a KEEP episode to be genuinely rescuable (a threshold on distance /
+>    `redundancy`), so KEEP ∪ ANNOTATE ⊊ non-DROP. This is a pipeline change
+>    (breaks the ADR-011 feature freeze) but is the more meaningful design.
+> 2. **Collapse the matrix to A / B / C / R / R+** and read D's question off
+>    C: "does metadata help on the full non-DROP set, and is that gain about
+>    selection (C vs R+) or just the extra input?"
+
 **Why R / R+ are in, not optional (approved 2026-09-03):** without a random
 baseline, "B < A" only shows *less data trains fine*, and "D > B" is
 confounded between *rescuing the right episodes* and *just having more
