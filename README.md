@@ -5,7 +5,7 @@
   <a href="https://omertt27.github.io/Calibra/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-blue" alt="Docs"/></a>
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-BSL_1.1-blue.svg" alt="License"/></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v0.8.0-informational" alt="Changelog"/></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v0.9.0-informational" alt="Changelog"/></a>
 </p>
 
 <p align="center"><b>Train robot policies with up to 75% less data.</b></p>
@@ -167,6 +167,14 @@ calibra prune lerobot/pusht --keep 0.25 \
 Two stages: filter quality failures, then greedily pick the most behaviorally
 distinct episodes until `--keep` is hit. `--report` writes a stable JSON of
 per-episode verdicts; `--export-dataset` materialises a ready-to-train copy.
+
+**Annotate mode.** `calibra prune --annotate DIR` keeps *every* episode instead
+of removing any, and writes a per-episode sidecar recording what Calibra would
+have done (`KEEP` / `DROP` / `ANNOTATE`) and why (`quality_risk`,
+`coverage_value`, `anomaly_score`, …). A training pipeline that can condition
+on that metadata can then use the weaker episodes rather than discarding them.
+`--annotate-format {jsonl,parquet,both}`. Model-agnostic;
+see [Annotate Mode](docs/annotate.md).
 
 Unsure what `--keep` to use? Run `calibra analyze lerobot/pusht` first — it
 recommends a retention fraction from the same selector. It is a heuristic starting
@@ -359,7 +367,7 @@ result = selector.select(batch, report)
 | `calibra integrity` | "Can I trust this dataset?" — timestamps, sync, episode completeness, duplicate/frozen/blurry camera frames, jittery/jerky motion (`--decode-images` for LeRobot v1) |
 | `calibra audit` | Full diagnostic report with bootstrap CIs and per-episode outlier detection |
 | `calibra review` | Ranked episode review queue — separates anomaly, quality-risk, and coverage-value signals |
-| `calibra prune` | Two-stage coreset: quality filter + greedy max-coverage selection |
+| `calibra prune` | Two-stage coreset: quality filter + greedy max-coverage selection. `--annotate DIR` keeps every episode instead and writes a per-episode decision + characterization sidecar ([Annotate Mode](docs/annotate.md)) |
 
 **Everything else:**
 
@@ -388,11 +396,25 @@ result = selector.select(batch, report)
 
 ## Roadmap
 
-**v0.8.0 (current) — Measured training results:** `calibra experiment record/list/report` logs a design partner's real training-run outcomes; `calibra benchmark --sweep` and `--experiment-id` fold measured numbers into the benchmark report wherever available, tagging every value `(measured)` or `(simulated)` and stamping the report `SIMULATED` / `PARTIAL MEASUREMENT` / `CASE STUDY / VALIDATED`. Full details in [CHANGELOG.md](CHANGELOG.md).
+**v0.9.0 (current) — Dataset decision layer & annotate mode:** `calibra prune`
+can now emit a per-episode decision (`KEEP` / `DROP` / `ANNOTATE` / …) plus a
+characterization (`quality_risk`, `coverage_value`, `anomaly_score`, `calibra_score`,
+`redundancy`), and `--annotate` writes it as a model-agnostic training sidecar
+(JSONL / Parquet) so a metadata-conditioned policy can use episodes aggressive
+pruning would drop. The existing coreset workflow is unchanged. See
+[Annotate Mode](docs/annotate.md) and ADR-011; full details in [CHANGELOG.md](CHANGELOG.md).
 
-**Since v0.8.0 — One-command report:** `calibra analyze` composes integrity, Calibra Score, and the coreset recommendation into a single report, and `calibra case-study` turns a completed experiment log into a partner-facing markdown report.
+**v0.8.0 — Measured training results:** `calibra experiment record/list/report` logs a design partner's real training-run outcomes; `calibra benchmark --sweep` and `--experiment-id` fold measured numbers into the benchmark report wherever available, tagging every value `(measured)` or `(simulated)` and stamping the report `SIMULATED` / `PARTIAL MEASUREMENT` / `CASE STUDY / VALIDATED`.
 
-**Next — Vision Integrity for video-backed LeRobot (v2/v3):** decode sampled frames from LeRobot's mp4-encoded v2/v3 datasets so duplicate-frame/camera-freeze/blur detection work there too.
+**Also since v0.8.0 — One-command report:** `calibra analyze` composes integrity, Calibra Score, and the coreset recommendation into a single report, and `calibra case-study` turns a completed experiment log into a partner-facing markdown report.
+
+**Next — does the metadata help?** A partner benchmark
+(`experiments/METADATA_CONDITIONING_BENCHMARK.md`) measures whether conditioning
+ACT / Diffusion Policy on the annotate-mode sidecar recovers what aggressive
+pruning loses. That result decides whether Calibra's emphasis is smaller
+datasets or richer characterization.
+
+**Also next — Vision Integrity for video-backed LeRobot (v2/v3):** decode sampled frames from LeRobot's mp4-encoded v2/v3 datasets so duplicate-frame/camera-freeze/blur detection work there too.
 
 ---
 
