@@ -21,53 +21,43 @@ Calibra's `--annotate` output over a dataset yields, per episode, a
 
 - **KEEP** — in the aggressive coreset (~`--keep` fraction).
 - **DROP** — integrity failure; excluded in every arm.
-- **ANNOTATE** — redundant enough that pruning drops it, *rescuable* if the
-  trainer conditions on the metadata. This bucket is the whole experiment.
+- **ANNOTATE** — redundant enough that pruning drops it. Kept + labelled so a
+  metadata-conditioned trainer can still use it.
 
-**Frozen matrix (6 arms):**
+**Frozen matrix (5 arms):**
 
 | Arm | Training data | Metadata conditioning |
 |-----|---------------|-----------------------|
 | **A** | Full (all non-DROP episodes) | no |
-| **B** | Calibra KEEP only (nominal 25%) | no |
+| **B** | Calibra KEEP only (nominal `--keep`, e.g. 25%) | no |
 | **C** | Full (all non-DROP) | yes |
-| **D** | Calibra **KEEP ∪ ANNOTATE** (the rescued set) | yes |
-| **R** | Random subset, same episode count as D | no |
-| **R+** | Random subset, same episode count as D | yes |
+| **R** | Random subset, same episode count as B | no |
+| **R+** | Random subset, same episode count as B | yes |
 
-Optional **D0** = KEEP-only + metadata (same data as B) if you also want that
-point — cheap, but not required.
+Optional **B+meta** = KEEP-only + metadata (same data as B) — cheap, tests
+whether conditioning helps on the aggressive coreset itself. Not required.
 
-> **KNOWN ISSUE (found 2026-09-03 while wiring `metadata_conditioning_reference.py`):**
-> with the current `--annotate` pipeline, the `ANNOTATE` bucket is *every*
-> non-KEEP, non-DROP episode — so **KEEP ∪ ANNOTATE == all non-DROP == arm C's
-> data**, and arms **C and D become identical** (same episodes, both with
-> metadata). Two ways out, pick one before running:
-> 1. **Narrow `ANNOTATE`** to only the diversity-pruned episodes close enough
->    to a KEEP episode to be genuinely rescuable (a threshold on distance /
->    `redundancy`), so KEEP ∪ ANNOTATE ⊊ non-DROP. This is a pipeline change
->    (breaks the ADR-011 feature freeze) but is the more meaningful design.
-> 2. **Collapse the matrix to A / B / C / R / R+** and read D's question off
->    C: "does metadata help on the full non-DROP set, and is that gain about
->    selection (C vs R+) or just the extra input?"
+**Why not an explicit "Calibra-selected + metadata" arm (decided 2026-09-03):**
+under the current `--annotate` pipeline the `ANNOTATE` bucket is *every*
+non-KEEP, non-DROP episode, so `KEEP ∪ ANNOTATE == all non-DROP == arm C's
+data`. A "keep-what-pruning-drops + condition" arm is therefore **identical to
+C**. Rather than break the ADR-011 feature freeze to invent a rescue
+threshold before there's any evidence metadata conditioning works, the thesis
+is read off **C vs A**: if `B ≪ A` (pruning costs performance) and `C ≈ A`
+(metadata on the full set recovers it), the metadata is carrying the signal
+that pruning loses. A narrower ANNOTATE bucket is a *follow-up* if C beats A.
 
-**Why R / R+ are in, not optional (approved 2026-09-03):** without a random
-baseline, "B < A" only shows *less data trains fine*, and "D > B" is
-confounded between *rescuing the right episodes* and *just having more
-episodes*. R separates the selection effect from the size effect; R+ checks
-that metadata isn't just a free extra input helping on random data.
+**Why R / R+ are in, not optional:** without a random baseline, `B < A` only
+shows *less data trains fine*. R (random subset the size of B, no metadata)
+isolates whether Calibra's *selection* beats random. R+ checks that metadata
+isn't just a free extra input that helps even on a random subset.
 
-**Why D = KEEP ∪ ANNOTATE, not "Calibra 25%" (approved 2026-09-03):**
-conditioning on the KEEP-only coreset never touches the ANNOTATE bucket, so it
-would not test the ADR-011 rescue hypothesis at all.
-
-**D's retention is not 25%.** ANNOTATE episodes raise effective retention
-above the `--keep` target. Record **both** the nominal prune target and the
-actual training retention for every arm, and never label D "Calibra-25%" in
-the writeup — call it "Calibra KEEP∪ANNOTATE (nominal 25%, actual N%)".
-`calibra experiment record` carries this: `--retention` = nominal,
-`--actual-retention` = fraction of the original dataset trained on,
-`--arm D --metadata-conditioning`.
+**Retention bookkeeping.** A and C train on all non-DROP episodes; B and R/R+
+on `--keep` of them. Record **both** the nominal prune target and the actual
+training retention (`n_episodes / n_original`) for every arm — they differ
+whenever there are DROP episodes. `calibra experiment record` carries this:
+`--retention` = nominal, `--actual-retention` = fraction of the original
+dataset trained on, plus `--arm` and `--metadata-conditioning`.
 
 Every arm: **DROP episodes excluded**. `DOWNWEIGHT` rows (none emitted by the
 current pipeline) would carry a loss weight.
@@ -119,8 +109,9 @@ bins; **at inference pass bin 0** (cleanest / highest-coverage).
 (optionally plus raw `anomaly_score`) to the global conditioning vector fed to
 the denoiser. At inference pass the "clean" bins.
 
-Arms A / B / R: the conditioning inputs are absent (or a fixed zero token, if
-the architecture needs a fixed input shape).
+Arms A / B / R: the conditioning inputs are a fixed zero vector (same shape as
+C / R+, so the model code is identical across arms —
+`metadata_conditioning_reference.build_conditioning(use_metadata=False)`).
 
 ---
 
@@ -142,8 +133,8 @@ Per arm × architecture × seed:
      fall in each slice.
   3. Report: (a) **mean success on the bottom-quartile slices**, (b)
      **worst-slice success**, (c) success-rate spread across slices.
-  Metadata conditioning is expected to help most on (a)/(b): that is where
-  the rescued ANNOTATE data lives.
+  If metadata conditioning helps, it should help most on (a)/(b) — the slices
+  whose only training data is the mediocre episodes pruning would drop.
 
 Log every field through `calibra experiment record` — it carries `--arm`,
 `--metadata-conditioning`, `--retention` (nominal) and `--actual-retention`
@@ -159,11 +150,12 @@ Read against arm A (full, no metadata):
 | Observation | Conclusion | Product implication |
 |-------------|------------|---------------------|
 | **B ≈ A** | pruning alone already recovers full performance | double down on "train on less data"; annotate mode is a secondary feature |
-| **B ≪ A**, **C ≈ A** | metadata recovers what pruning lost, on full data | characterization is the product; pruning is optional |
-| **D ≈ or > A** at meaningfully **less compute than A** | rescue + condition beats both | **strongest outcome** — Calibra is a hybrid optimization layer |
-| **C ≫ D** | keeping more data + metadata beats aggressive prune + metadata | lean toward characterization over aggressive pruning |
-| **D ≈ R+** | the *rescue selection* adds nothing beyond having more data | ANNOTATE bucket is not carrying signal — investigate coverage_value |
-| rare-slice success: **D > B** but overall ≈ | metadata's value is concentrated in the long tail | position annotate mode for coverage-critical deployments |
+| **B ≪ A** and **C ≈ or > A** | metadata on the full set recovers what pruning lost | the characterization is the product — annotate mode becomes primary; a narrower `ANNOTATE` bucket ("prune, then rescue only what's rescuable") is the obvious follow-up |
+| **B ≪ A** and **C ≈ B** | metadata does *not* rescue the weak data | the ADR-011 rescue thesis fails — stay a pruning tool |
+| **B > R** (at the same size) | Calibra's *selection* beats random | the coreset algorithm is doing real work, not just shrinking the set |
+| **B ≈ R** | selection is no better than random at this ratio | the pruning value is "less data trains fine", not smart selection — a credibility problem, surface it |
+| **R+ > R** but **C ≈ A** | metadata helps even on random data | conditioning is a generic regularizer, not specific to Calibra's signal — weaker story |
+| rare-slice: **C > B** but overall ≈ | metadata's value is concentrated in the long tail | position annotate mode for coverage-critical deployments |
 
 ---
 

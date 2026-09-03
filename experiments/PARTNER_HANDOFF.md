@@ -28,16 +28,16 @@ Do **not** pitch "try Calibra." Pitch this specific experiment.
 **Calibra provides**
 - `calibra prune --annotate DIR` run on the partner's dataset → the sidecar
   (`calibra_annotations.jsonl` + manifest + parquet).
-- The frozen 6-arm protocol and the reference conditioning code.
+- The frozen 5-arm protocol and the reference conditioning code.
 - Analysis + writeup of the results.
 
 **Partner provides**
 - One existing dataset (ideally in an under-covered cell of the diversity
   matrix — see below).
 - Their training + eval stack for ACT and Diffusion Policy.
-- Compute for the matrix: 6 arms × 2 architectures × 3–5 seeds × N datasets.
-  A reduced first pass (arms A + D, one architecture, one dataset, 2 seeds) is
-  a valid go/no-go before committing the full matrix.
+- Compute for the matrix: 5 arms × 2 architectures × 3–5 seeds × N datasets.
+  A reduced first pass (arms A + B + C, one architecture, one dataset, 2
+  seeds) is a valid go/no-go before committing the full matrix.
 - Sign-off on the evaluation agreement below **before** the run.
 
 ---
@@ -88,7 +88,8 @@ question. DROID and multi-task ALOHA are the reference choices.
       the clean bin).
 - [ ] `run_metadata_benchmark.py` pointed at the partner's `train_and_eval`
       callable.
-- [ ] First pass: arms A + D, one arch, 2 seeds → go/no-go.
+- [ ] First pass: arms A + B + C, one arch, 2 seeds → go/no-go on "does
+      metadata recover what pruning loses?"
 - [ ] Full matrix.
 - [ ] Results logged via `calibra experiment record` (`--arm`,
       `--metadata-conditioning`, `--retention`, `--actual-retention`).

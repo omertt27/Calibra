@@ -10,11 +10,14 @@ training repo and fill in `inject_into_act` / `inject_into_diffusion`.
 
     from metadata_conditioning_reference import prepare_arm
 
-    spec = prepare_arm("calibra_meta/", arm="D", seed=0)
+    spec = prepare_arm("calibra_meta/", arm="C", seed=0)
     #   spec.episode_ids      -> which episodes to train on
     #   spec.cond[episode_id] -> np.ndarray conditioning vector (or zeros)
     #   spec.weight[episode_id] -> loss weight (1.0 unless DOWNWEIGHT)
     #   spec.actual_retention_pct -> log this next to the nominal --keep target
+
+Arms (frozen 2026-09-03): A Full / B Calibra-KEEP / C Full+metadata /
+R Random(size of B) / R+ Random+metadata.  Optional: B+meta.
 """
 
 from __future__ import annotations
@@ -29,14 +32,18 @@ import numpy as np
 
 # Arms of the frozen matrix. `select` says which episodes train; `metadata`
 # says whether the conditioning vector is real or zeros.
+#
+# Arm D (KEEP u ANNOTATE + metadata) was dropped 2026-09-03: under the current
+# --annotate pipeline ANNOTATE is every non-KEEP/non-DROP episode, so
+# KEEP u ANNOTATE == all-non-DROP == arm C's data. The ADR-011 thesis ("keep
+# what pruning drops, via metadata") is now read off C vs A instead.
 ARMS = {
     "A": dict(select="all_non_drop", metadata=False),
     "B": dict(select="keep", metadata=False),
     "C": dict(select="all_non_drop", metadata=True),
-    "D": dict(select="keep_plus_annotate", metadata=True),
-    "R": dict(select="random_like_D", metadata=False),
-    "R+": dict(select="random_like_D", metadata=True),
-    "D0": dict(select="keep", metadata=True),  # optional KEEP-only + metadata
+    "R": dict(select="random_like_B", metadata=False),
+    "R+": dict(select="random_like_B", metadata=True),
+    "B+meta": dict(select="keep", metadata=True),  # optional: metadata on the aggressive coreset
 }
 
 # Columns binned into quartiles and one-hot encoded as the conditioning vector.
@@ -88,21 +95,18 @@ def _select_ids(rows: list[dict], arm: str, seed: int) -> list[str]:
     disp = {r["episode_id"]: r["calibra_disposition"] for r in rows}
     non_drop = [e for e, d in disp.items() if d != "DROP"]
     keep = [e for e, d in disp.items() if d == "KEEP"]
-    keep_plus_annotate = [e for e, d in disp.items() if d in ("KEEP", "ANNOTATE")]
 
     kind = ARMS[arm]["select"]
     if kind == "all_non_drop":
         return non_drop
     if kind == "keep":
         return keep
-    if kind == "keep_plus_annotate":
-        return keep_plus_annotate
-    if kind == "random_like_D":
-        # random subset of the non-DROP pool, same size as arm D
+    if kind == "random_like_B":
+        # random subset of the non-DROP pool, same size as arm B (Calibra KEEP)
         rng = random.Random(seed)
         pool = list(non_drop)
         rng.shuffle(pool)
-        return sorted(pool[: len(keep_plus_annotate)])
+        return sorted(pool[: len(keep)])
     raise ValueError(f"unknown select kind {kind!r}")
 
 
@@ -235,7 +239,7 @@ if __name__ == "__main__":  # small demo against a real sidecar dir
     import sys
 
     d = sys.argv[1] if len(sys.argv) > 1 else "calibra_meta"
-    for a in ("A", "B", "C", "D", "R", "R+"):
+    for a in ("A", "B", "C", "R", "R+"):
         s = prepare_arm(d, a, seed=0)
         print(
             f"{a:3}  n={len(s.episode_ids):5}  "

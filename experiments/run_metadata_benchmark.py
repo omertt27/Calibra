@@ -51,10 +51,9 @@ _ARM_CONDITION = {
     "A": "full",
     "B": "calibra",
     "C": "full",
-    "D": "calibra",
-    "D0": "calibra",
     "R": "random",
     "R+": "random",
+    "B+meta": "calibra",
 }
 
 _METRIC_FIELDS = (
@@ -83,7 +82,7 @@ def run(
     log_path: Optional[str] = None,
     dry_run: bool = False,
 ) -> list[dict]:
-    arms = arms or ["A", "B", "C", "D", "R", "R+"]
+    arms = arms or ["A", "B", "C", "R", "R+"]
     log = ExperimentLog(path=Path(log_path) if log_path else None)
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -105,12 +104,13 @@ def run(
                     metrics = train_and_eval(spec, arch, seed)
                     metrics.setdefault("wall_clock_seconds", time.time() - t0)
 
+                    nominal = 100.0 if _ARM_CONDITION[arm] == "full" else spec.nominal_keep_pct
                     log.record(
                         experiment_id=experiment_id,
                         condition=_ARM_CONDITION[arm],
                         arm=arm,
                         metadata_conditioning=ARMS[arm]["metadata"],
-                        retention_pct=spec.nominal_keep_pct if arm in _ARM_CONDITION and _ARM_CONDITION[arm] != "full" else 100.0,
+                        retention_pct=nominal,
                         actual_retention_pct=spec.actual_retention_pct,
                         dataset_name=ds_name,
                         policy_family=arch,
@@ -171,7 +171,7 @@ def _write_summary(path: Path, rows: list[dict]) -> None:
                   "| arm | meta | actual ret. | success | gpu_hours | "
                   "rare-slice bottom-q | worst slice |",
                   "|---|---|---|---|---|---|---|"]
-        for arm in ["A", "B", "C", "D", "R", "R+", "D0"]:
+        for arm in ["A", "B", "C", "R", "R+", "B+meta"]:
             sub = [r for r in rows if r["dataset"] == ds and r["arch"] == arch and r["arm"] == arm]
             if not sub:
                 continue
@@ -194,7 +194,7 @@ def _cli() -> None:
     p.add_argument("--arch", action="append", default=None, help="default: act, diffusion")
     p.add_argument("--seeds", default="0,1,2")
     p.add_argument("--experiment-id", default="metadata-benchmark")
-    p.add_argument("--arms", default="A,B,C,D,R,R+")
+    p.add_argument("--arms", default="A,B,C,R,R+")
     p.add_argument("--out-dir", default="metadata_benchmark_results")
     p.add_argument("--dry-run", action="store_true",
                    help="print the plan without training (no callable needed)")
