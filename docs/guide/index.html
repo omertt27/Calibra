@@ -1,0 +1,1706 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Dataset observability and coreset selection for robotics imitation learning.">
+      
+      
+      
+        <link rel="canonical" href="https://omertt.github.io/Calibra/guide/">
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../integrity/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../logo-icon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Using Calibra - Calibra</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#using-calibra" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Calibra" class="md-header__button md-logo" aria-label="Calibra" data-md-component="logo">
+      
+  <img src="../logo-icon.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Calibra
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Using Calibra
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="deep-orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/omertt27/Calibra" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Using Calibra
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../integrity/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Integrity Checks
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../commands/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Command Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="/Calibra/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Interactive Playground
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../claims/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Claims Registry
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../adr/" class="md-tabs__link">
+          
+  
+  
+  Architecture Decision Records
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../hf_blog_post/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Blog Post
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Calibra" class="md-nav__button md-logo" aria-label="Calibra" data-md-component="logo">
+      
+  <img src="../logo-icon.svg" alt="logo">
+
+    </a>
+    Calibra
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/omertt27/Calibra" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using Calibra
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using Calibra
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-four-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The four questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-trust-calibra-integrity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Trust — calibra integrity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-quality-calibra-audit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Quality — calibra audit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-coverage-calibra-review" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Coverage — calibra review
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-select-calibra-prune" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Select — calibra prune
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Select — calibra prune">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#picking-keep" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Picking --keep
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-train" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Train
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#one-command-instead" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One command instead
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-to-go-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where to go next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrity Checks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="/Calibra/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interactive Playground
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../claims/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claims Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture Decision Records
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture Decision Records
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-001-episodebatch-interchange-format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-001: EpisodeBatch format
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-002-adapter-registry-auto-detection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-002: Adapter registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-003-pydantic-output-schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-003: Pydantic schemas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-004-stateless-analyzer-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-004: Stateless analyzers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-005-observation-key-normalization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-005: Key normalization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-006-duckdb-lerobot-v2-fast-path/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-006: DuckDB fast-path
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-007-optional-format-dependencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-007: Optional dependencies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-008-claims-registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-008: Claims registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-009-two-phase-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-009: Two-phase pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/adr-010-claims-references-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-010: Claims references parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hf_blog_post/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Blog Post
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-four-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The four questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-trust-calibra-integrity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Trust — calibra integrity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-quality-calibra-audit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Quality — calibra audit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-coverage-calibra-review" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Coverage — calibra review
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-select-calibra-prune" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Select — calibra prune
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Select — calibra prune">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#picking-keep" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Picking --keep
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-train" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Train
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#one-command-instead" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One command instead
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-to-go-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where to go next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="using-calibra">Using Calibra</h1>
+<p>A full pass on one dataset, from install to a trained policy, with annotated output
+at each step. This is the long version of the README's <a href="https://github.com/omertt27/Calibra#using-calibra">Using Calibra</a>
+section.</p>
+<p>Every command below accepts either a <strong>local path</strong> (<code>.h5</code>, <code>.hdf5</code>, a LeRobot
+directory, an RLDS dir, an MCAP bag) or a <strong>HuggingFace Hub ID</strong>
+(<code>lerobot/pusht</code>). Examples use <code>lerobot/pusht</code>.</p>
+<p>If you just want the answer without the intermediate steps, skip to
+<a href="#one-command-instead">One command instead</a>.</p>
+<hr />
+<h2 id="the-four-questions">The four questions</h2>
+<p>Calibra is organized around the questions practitioners ask about a new dataset, in
+the order they ask them:</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Question</th>
+<th>Command</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Integrity</td>
+<td>Can I trust this dataset?</td>
+<td><code>calibra integrity</code></td>
+</tr>
+<tr>
+<td>2. Quality</td>
+<td>Which episodes are clean?</td>
+<td><code>calibra audit</code></td>
+</tr>
+<tr>
+<td>3. Coverage</td>
+<td>Which episodes are distinct?</td>
+<td><code>calibra review</code></td>
+</tr>
+<tr>
+<td>4. Select</td>
+<td>Keep only what matters.</td>
+<td><code>calibra prune</code></td>
+</tr>
+</tbody>
+</table>
+<p>Steps 1–3 are read-only diagnostics. Step 4 is the only one that produces a
+training set.</p>
+<hr />
+<h2 id="1-trust-calibra-integrity">1. Trust — <code>calibra integrity</code></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">'calibra-robotics[lerobot]'</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>calibra<span class="w"> </span>integrity<span class="w"> </span>lerobot/pusht
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>─── Dataset Integrity ────────────────────────────────────
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>pusht · 206 episodes
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>Critical (1)
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>  ❌ camera_freeze_events: 1 of 206 episodes (0.5%) contain a run of ≥5
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>     consecutive near-identical camera frames (episode ep_17).
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>     suggested_action: block
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>Warnings (1)
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>  ⚠️  jerk_spike_rate: acceleration spikes above the dataset-wide 99th
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>     percentile in 3 episodes. suggested_action: inspect
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>Passed (8)
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>  ✅ timestamp_jitter_cv     ✅ timestamp_dropout_rate
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>  ✅ short_episode_fraction  ✅ action_dropout_rate
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>  ✅ duplicate_frame_rate    ✅ ldlj
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>  ✅ velocity_discontinuity_rate  ✅ blurry_episode_fraction
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>Integrity Score: 88/100  ·  Status: Warning
+</code></pre></div>
+<p><strong>How to read it:</strong></p>
+<ul>
+<li><strong><code>suggested_action: block</code></strong> — an objective acquisition/format/sync/completeness
+  failure. The data is wrong, not just unusual. Fix it upstream or exclude those
+  episodes before you do anything else. These are the only findings that fail CI by
+  default (exit code 1).</li>
+<li><strong><code>suggested_action: inspect</code></strong> and everything under <strong>Warnings</strong> — context
+  dependent. <code>jerk_spike_rate</code>, <code>ldlj</code>, and <code>velocity_discontinuity_rate</code> are a
+  defect for a delicate insertion task and normal for a fast reach or a whipping
+  motion. Open the named episodes and decide for your task.</li>
+<li><strong>Integrity Score ≥ 80 · Status: Pass</strong> — nothing objective is broken. Below 80,
+  expect to lose episodes in step 4.</li>
+</ul>
+<p><strong>Flags you'll actually use:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--decode-images</code></td>
+<td>LeRobot <strong>v1</strong> datasets — turns on <code>duplicate_frame_rate</code> / <code>camera_freeze_events</code> / <code>blurry_episode_fraction</code>, which are off by default there because decoding is slow. Not available for v2/v3 (video-encoded).</td>
+</tr>
+<tr>
+<td><code>--strict</code></td>
+<td>CI — also fail on <code>inspect</code> findings, not just <code>block</code>.</td>
+</tr>
+<tr>
+<td><code>--policy FILE</code></td>
+<td>CI — a JSON map of <code>metric -&gt; block\|inspect</code> to override the default split. See <a href="../integrity/">Integrity Checks → CI Policy Files</a>.</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>Pipe the report somewhere.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-quality-calibra-audit">2. Quality — <code>calibra audit</code></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>calibra<span class="w"> </span>audit<span class="w"> </span>lerobot/pusht<span class="w"> </span>--policy<span class="w"> </span>diffusion<span class="w"> </span>--html-out<span class="w"> </span>report.html
+</code></pre></div>
+<p><code>audit</code> runs four analyzers over every episode with bootstrap confidence intervals
+and per-episode outlier detection, and produces a <strong>Calibra Score</strong> (0–100).
+<code>--html-out</code> writes a dashboard with the score broken into Quality, Synchrony,
+Coverage, and Integrity sub-scores.</p>
+<p><strong>How to read the score:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Calibra Score</th>
+<th>What it means</th>
+<th>What Calibra can do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>&lt; 60</strong></td>
+<td>Real quality problems — corrupted episodes, sync errors, jerky motion.</td>
+<td>Big gains from the quality filter alone.</td>
+</tr>
+<tr>
+<td><strong>60–80</strong></td>
+<td>Normal, usable dataset with redundancy to remove.</td>
+<td>This is the sweet spot — expect a large training-data reduction from step 4.</td>
+</tr>
+<tr>
+<td><strong>&gt; 80</strong></td>
+<td>Already clean (often a polished sim dataset).</td>
+<td>Smaller gains; the coverage selector still helps, the quality filter won't.</td>
+</tr>
+</tbody>
+</table>
+<p><code>--policy {diffusion,act,transformer}</code> conditions the hints on your target policy
+family. Add <code>--cache-dir .calibra/cache</code> if you re-audit the same dataset as you
+collect more demos — unchanged data returns instantly.</p>
+<hr />
+<h2 id="3-coverage-calibra-review">3. Coverage — <code>calibra review</code></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>calibra<span class="w"> </span>review<span class="w"> </span>lerobot/pusht<span class="w"> </span>--top<span class="w"> </span><span class="m">20</span><span class="w"> </span>--output<span class="w"> </span>review.json
+</code></pre></div>
+<p><code>review</code> ranks episodes by <strong>three separate signals</strong> so you don't conflate them:</p>
+<ul>
+<li><strong>anomaly</strong> — this episode is unlike the rest (could be a defect, could be a rare
+  behavior worth keeping).</li>
+<li><strong>quality risk</strong> — this episode is likely to hurt training.</li>
+<li><strong>coverage value</strong> — this episode is the <em>only</em> example of some behavior; dropping
+  it loses a mode.</li>
+</ul>
+<p>Skim the top of the queue before pruning. If a high-coverage-value episode also
+shows up as a quality risk, that's the one to fix by hand rather than drop.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--top N</code></td>
+<td>How many episodes to show / export (default 20). For a full per-episode assessment (e.g. to feed <code>calibra experiment --from-review</code>), set <code>--top</code> ≥ the episode count.</td>
+</tr>
+<tr>
+<td><code>--mode fast</code></td>
+<td>Very large datasets — action/timestamp diagnostics only, skips <code>coverage_value</code>.</td>
+</tr>
+<tr>
+<td><code>--group-by task,robot</code></td>
+<td>Rank within each task/robot group so a harder task's episodes don't all look like outliers.</td>
+</tr>
+<tr>
+<td><code>--output PATH</code></td>
+<td>Write the ranked IDs + assessments as JSON.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4-select-calibra-prune">4. Select — <code>calibra prune</code></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>calibra<span class="w"> </span>prune<span class="w"> </span>lerobot/pusht<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.25<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span>--report<span class="w"> </span>results/pusht/latest.json<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>--export-dataset<span class="w"> </span>./pusht_coreset
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>  CALIBRA PRUNING SUMMARY
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>  Original episodes  : 206
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>  Quality failures   : 6    (removed in Stage 1)
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>  Diversity pruned   : 148  (removed in Stage 2)
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>  Coreset size       : 52   (25.0% of original)
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>  Method             : quality_filter + greedy_max_coverage
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>────────────────────────────────────────────────────────
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>  To use: filter your dataset to the episode IDs in keep_episode_ids.
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+</code></pre></div>
+<p><strong>Two stages:</strong></p>
+<ol>
+<li><strong>Quality filter</strong> — drops episodes that fail kinematic/temporal thresholds
+   (jerk spike rate, velocity discontinuity, dropout, LDLJ, minimum length). Tune
+   with <code>--max-spike-rate</code>, <code>--max-vel-disc-rate</code>, <code>--max-dropout</code>, <code>--min-ldlj</code>,
+   <code>--min-length</code>, or run <code>--quality-only</code> to stop here.</li>
+<li><strong>Greedy max-coverage</strong> — from the survivors, farthest-point sampling on
+   action-space statistics picks the <code>--keep</code> fraction of most behaviorally
+   distinct episodes. O(N × K); handles ~50k episodes without approximation.</li>
+</ol>
+<p><strong>Outputs:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Produces</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--out PATH</code></td>
+<td><code>coreset_index.json</code> — just the kept episode IDs (default).</td>
+</tr>
+<tr>
+<td><code>--report PATH</code></td>
+<td>Schema-versioned <strong>CalibraReport JSON</strong> — per-episode verdicts, reason codes (<code>jerk_spike</code>, <code>diversity_pruned</code>, …), quality scores, SHA-256 content hashes. Use this; it's the stable contract the integrations read.</td>
+</tr>
+<tr>
+<td><code>--export-dataset DIR</code></td>
+<td>A materialised, ready-to-train copy of the dataset (LeRobot v1/v2, HDF5).</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Other knobs:</strong></p>
+<ul>
+<li><code>--policy gr00t</code> — stricter quality thresholds + entropy-weighted diversity, tuned
+  for GR00T fine-tuning.</li>
+<li><code>--strategy influence</code> — select by estimated learning value (action novelty +
+  contact representation + entropy) instead of pure coverage.</li>
+<li><code>--entropy-weight 0.4</code> — bias toward informationally rich episodes.</li>
+<li><code>--curriculum</code> — slice the coreset into progressive curriculum stages.</li>
+</ul>
+<h3 id="picking-keep">Picking <code>--keep</code></h3>
+<p>Don't guess. Run <code>calibra analyze</code> (below) once — it recommends a retention fraction
+from the same selector, based on measured state-space redundancy. Then treat that
+number as a <strong>heuristic starting point, not a validated retention curve</strong>. Confirm
+it with the design-partner protocol (<code>calibra experiment</code> + <code>calibra case-study</code>)
+before you commit a production training run to it.</p>
+<hr />
+<h2 id="5-train">5. Train</h2>
+<p>Point your trainer at the exported coreset:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>lerobot-train<span class="w"> </span><span class="nv">policy</span><span class="o">=</span>act<span class="w"> </span><span class="nv">dataset_repo_id</span><span class="o">=</span>./pusht_coreset
+</code></pre></div>
+<p>Or keep your existing training script and filter at load time from the report:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">calibra.integrations.lerobot</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"lerobot/pusht"</span><span class="p">,</span> <span class="n">report_path</span><span class="o">=</span><span class="s2">"results/pusht/latest.json"</span><span class="p">)</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># ds is a datasets.Dataset with only Calibra-approved episodes</span>
+</code></pre></div>
+<p>Isaac Lab → GR00T:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">calibra.integrations.isaac_lab</span><span class="w"> </span><span class="kn">import</span> <span class="n">export_gr00t_manifest</span><span class="p">,</span> <span class="n">filter_hdf5</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">export_gr00t_manifest</span><span class="p">(</span><span class="s2">"results/franka/latest.json"</span><span class="p">,</span> <span class="n">demos_path</span><span class="o">=</span><span class="s2">"demos.hdf5"</span><span class="p">)</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">filter_hdf5</span><span class="p">(</span><span class="s2">"demos.hdf5"</span><span class="p">,</span> <span class="s2">"results/franka/latest.json"</span><span class="p">,</span> <span class="s2">"demos_coreset.hdf5"</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="one-command-instead">One command instead</h2>
+<p><code>calibra analyze</code> composes steps 1, 2, and 4 into a single report — trust, quality,
+estimated redundancy, and a training-set recommendation from the same coreset
+selector <code>calibra prune</code> uses:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>calibra<span class="w"> </span>analyze<span class="w"> </span>lerobot/pusht<span class="w"> </span>--policy<span class="w"> </span>act
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>calibra<span class="w"> </span>analyze<span class="w"> </span>lerobot/pusht<span class="w"> </span>--keep<span class="w"> </span><span class="m">0</span>.4<span class="w"> </span>--export<span class="w"> </span>coreset_index.json
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>────────────────────────────────────────────────────────────
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>  CALIBRA ANALYSIS
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>────────────────────────────────────────────────────────────
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>  Dataset
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    Name       : lerobot/pusht
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    Episodes   : 206
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    Frames     : 25,650
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    Format     : lerobot
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>──────────────────────────────────────────────────────────
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>  Integrity
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>    ✅ Timestamps &amp; sync    ✅ Episode structure
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>    ✅ Camera feed          ✅ Motion &amp; control
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>    Integrity score: 95/100 — Healthy
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>──────────────────────────────────────────────────────────
+<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>  Quality (Calibra Score)     76.7 / 100   —  Good
+<a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>  Coverage / diversity        68.2 / 100
+<a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a>  Redundancy (estimated)      41.0%  of state-space occupies duplicate regions
+<a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a>──────────────────────────────────────────────────────────
+<a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a>  RECOMMENDATION
+<a id="__codelineno-10-20" name="__codelineno-10-20" href="#__codelineno-10-20"></a>
+<a id="__codelineno-10-21" name="__codelineno-10-21" href="#__codelineno-10-21"></a>    Regime             : Redundancy-dominated
+<a id="__codelineno-10-22" name="__codelineno-10-22" href="#__codelineno-10-22"></a>    Training set       : 52 / 206 episodes
+<a id="__codelineno-10-23" name="__codelineno-10-23" href="#__codelineno-10-23"></a>    Expected retention : 25%
+<a id="__codelineno-10-24" name="__codelineno-10-24" href="#__codelineno-10-24"></a>
+<a id="__codelineno-10-25" name="__codelineno-10-25" href="#__codelineno-10-25"></a>    Reasons:
+<a id="__codelineno-10-26" name="__codelineno-10-26" href="#__codelineno-10-26"></a>      • removes 6 corrupted/low-quality episodes
+<a id="__codelineno-10-27" name="__codelineno-10-27" href="#__codelineno-10-27"></a>      • removes 148 redundant episodes (diversity selection)
+<a id="__codelineno-10-28" name="__codelineno-10-28" href="#__codelineno-10-28"></a>      • preserves behavioral coverage via greedy max-coverage selection
+<a id="__codelineno-10-29" name="__codelineno-10-29" href="#__codelineno-10-29"></a>
+<a id="__codelineno-10-30" name="__codelineno-10-30" href="#__codelineno-10-30"></a>    This is a heuristic starting point (~1 - measured redundancy), not a
+<a id="__codelineno-10-31" name="__codelineno-10-31" href="#__codelineno-10-31"></a>    validated retention curve.
+<a id="__codelineno-10-32" name="__codelineno-10-32" href="#__codelineno-10-32"></a>────────────────────────────────────────────────────────────
+</code></pre></div>
+<p>Use <code>analyze</code> for the first look at a dataset; use the four separate commands when
+you need to act on the intermediate output — inspect specific episodes, tune quality
+thresholds, or export a review queue.</p>
+<hr />
+<h2 id="where-to-go-next">Where to go next</h2>
+<ul>
+<li><a href="../integrity/">Integrity Checks</a> — every check <code>calibra integrity</code> runs, and CI policy files.</li>
+<li><a href="../commands/">Command Reference</a> — all commands and every flag.</li>
+<li><a href="../benchmarks/">Benchmarks</a> — how much data reduction to expect, by dataset regime.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "content.code.copy", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
