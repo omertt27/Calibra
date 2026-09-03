@@ -1,6 +1,6 @@
 """Calibra — dataset reliability and risk profiling for robotics IL pipelines."""
 
-__version__ = "0.8.0"
+__version__ = "0.9.0"
 
 from calibra.analyzers.coverage import CoverageEntropyAnalyzer
 from calibra.analyzers.gr00t import GR00TCompatibilityAnalyzer
@@ -15,10 +15,13 @@ from calibra.comparison import DatasetComparator, EpisodeCurator
 from calibra.ingestion.registry import load, registered_formats
 from calibra.pipeline import Pipeline
 from calibra.predict import predict_outcome
+from calibra.schema.annotations import AnnotationManifest, EpisodeAnnotation
 from calibra.schema.comparison import (
     ComparisonReport,
     CurationReport,
+    Disposition,
     DriftFlag,
+    EpisodeCharacterization,
     EpisodeFlag,
 )
 from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
@@ -49,8 +52,13 @@ __all__ = [
     # phase 2 schema
     "ComparisonReport",
     "CurationReport",
+    "Disposition",
     "DriftFlag",
+    "EpisodeCharacterization",
     "EpisodeFlag",
+    # annotate mode (ADR-011)
+    "AnnotationManifest",
+    "EpisodeAnnotation",
     # ingestion
     "load",
     "registered_formats",
