@@ -211,7 +211,7 @@ footer a:hover {
   pointer-events: none;
 }
 
-/* Wandering "episode" trajectories drawn on load, then drifting slowly. */
+/* Flowing "episode" wave lines: faded in on load, morphed every frame in JS. */
 .hero-trajectories {
   position: absolute;
   inset: 0;
@@ -232,21 +232,14 @@ footer a:hover {
 .traj-path {
   stroke-width: 1.5;
   stroke-linecap: round;
-  opacity: 0.12;
-  stroke-dasharray: 2800;
-  stroke-dashoffset: 2800;
-  animation: traj-draw 2.6s cubic-bezier(0.16, 1, 0.3, 1) forwards,
-    traj-drift 42s ease-in-out infinite alternate;
-  animation-delay: calc(var(--i) * 240ms), calc(var(--i) * -9s);
+  stroke-linejoin: round;
+  opacity: 0;
+  animation: traj-fade-in 1.4s ease forwards;
+  animation-delay: calc(var(--i) * 180ms);
 }
 
-@keyframes traj-draw {
-  to { stroke-dashoffset: 0; }
-}
-
-@keyframes traj-drift {
-  from { transform: translateX(-22px); }
-  to { transform: translateX(22px); }
+@keyframes traj-fade-in {
+  to { opacity: 0.13; }
 }
 
 .traj-nodes circle {
@@ -1501,7 +1494,7 @@ footer {
   }
 
   .traj-path {
-    stroke-dashoffset: 0 !important;
+    opacity: 0.13 !important;
   }
 
   .traj-nodes circle {

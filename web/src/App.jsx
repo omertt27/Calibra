@@ -86,24 +86,80 @@ const ECOSYSTEMS = [
   { name: 'Hugging Face', detail: 'Hub IDs', logo: 'huggingface.svg' },
 ]
 
-// Decorative hero backdrop: wandering paths that read like plotted robot
-// episodes, with waypoint nodes. Purely visual, hidden from assistive tech.
-const HERO_TRAJECTORIES = [
-  'M-60 90 C 220 150, 420 30, 640 100 S 980 190, 1210 96 S 1360 66, 1400 88',
-  'M-60 168 C 160 70, 300 250, 480 182 S 820 46, 1044 158 S 1320 232, 1400 190',
-  'M-60 322 C 190 384, 344 220, 524 302 S 864 428, 1084 322 S 1300 258, 1400 300',
-  'M-60 470 C 204 522, 360 402, 560 462 S 902 566, 1124 472 S 1320 430, 1400 462',
-  'M-60 560 C 168 502, 384 624, 604 542 S 944 460, 1164 560 S 1330 604, 1400 560',
-]
-const HERO_NODES = [
-  [220, 150], [640, 100], [980, 190], [1210, 96],
-  [160, 70], [480, 182], [820, 46], [1044, 158],
-  [344, 220], [524, 302], [1084, 322],
-  [560, 462], [1124, 472],
-  [604, 542], [1164, 560],
+// Decorative hero backdrop: wave lines that flow continuously, reading like
+// plotted robot episodes streaming past. Purely visual, hidden from assistive
+// tech, and frozen to a single frame when reduced motion is requested.
+const HERO_WAVES = [
+  { baseY: 96, amp: 26, len: 620, speed: 0.55, phase: 0 },
+  { baseY: 168, amp: 20, len: 520, speed: -0.72, phase: 1.7 },
+  { baseY: 312, amp: 30, len: 700, speed: 0.44, phase: 3.1 },
+  { baseY: 452, amp: 22, len: 560, speed: -0.62, phase: 4.6 },
+  { baseY: 548, amp: 28, len: 640, speed: 0.68, phase: 5.9 },
 ]
 
+// Waypoint dots, each pinned to a wave (index) at a fixed x so it bobs along.
+const HERO_NODES = [
+  [0, 210], [0, 700], [0, 1040],
+  [1, 300], [1, 880],
+  [2, 380], [2, 1080],
+  [3, 560], [3, 980],
+  [4, 260], [4, 660], [4, 1160],
+]
+
+const WAVE_X0 = -60
+const WAVE_X1 = 1260
+const WAVE_STEP = 20
+
+function waveOffsetY(w, x, t) {
+  const k = (x / w.len) * Math.PI * 2
+  return (
+    w.amp * Math.sin(k + w.speed * t + w.phase) +
+    w.amp * 0.32 * Math.sin(k * 2.6 - w.speed * 1.5 * t + w.phase)
+  )
+}
+
+function wavePathD(w, t) {
+  let d = ''
+  for (let x = WAVE_X0; x <= WAVE_X1; x += WAVE_STEP) {
+    const y = (w.baseY + waveOffsetY(w, x, t)).toFixed(1)
+    d += `${x === WAVE_X0 ? 'M' : 'L'}${x} ${y} `
+  }
+  return d.trim()
+}
+
 function HeroTrajectories() {
+  const pathRefs = useRef([])
+  const nodeRefs = useRef([])
+
+  useEffect(() => {
+    const paint = (t) => {
+      HERO_WAVES.forEach((w, i) => {
+        pathRefs.current[i]?.setAttribute('d', wavePathD(w, t))
+      })
+      HERO_NODES.forEach(([wi, x], i) => {
+        const y = HERO_WAVES[wi].baseY + waveOffsetY(HERO_WAVES[wi], x, t)
+        nodeRefs.current[i]?.setAttribute('cy', y.toFixed(1))
+      })
+    }
+
+    const reduce =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduce) {
+      paint(0)
+      return
+    }
+
+    let raf
+    const start = performance.now()
+    const tick = (now) => {
+      paint((now - start) / 1000)
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
   return (
     <div className="hero-trajectories" aria-hidden="true">
       <svg viewBox="0 0 1200 620" preserveAspectRatio="xMidYMid slice">
@@ -115,13 +171,26 @@ function HeroTrajectories() {
           </linearGradient>
         </defs>
         <g className="traj-paths" fill="none" stroke="url(#traj-fade)">
-          {HERO_TRAJECTORIES.map((d, i) => (
-            <path key={i} className="traj-path" d={d} style={{ '--i': i }} />
+          {HERO_WAVES.map((w, i) => (
+            <path
+              key={i}
+              className="traj-path"
+              ref={(el) => (pathRefs.current[i] = el)}
+              d={wavePathD(w, 0)}
+              style={{ '--i': i }}
+            />
           ))}
         </g>
         <g className="traj-nodes" fill="#ffffff">
-          {HERO_NODES.map(([cx, cy], i) => (
-            <circle key={i} cx={cx} cy={cy} r="2.4" style={{ '--i': i }} />
+          {HERO_NODES.map(([wi, x], i) => (
+            <circle
+              key={i}
+              ref={(el) => (nodeRefs.current[i] = el)}
+              cx={x}
+              cy={HERO_WAVES[wi].baseY}
+              r="2.4"
+              style={{ '--i': i }}
+            />
           ))}
         </g>
       </svg>
