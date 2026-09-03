@@ -17,7 +17,7 @@ import './App.css'
 const LINKS = {
   github: 'https://github.com/omertt27/Calibra',
   demo: 'https://huggingface.co/spaces/omert27/robot-dataset-health-check',
-  docs: 'https://omertt27.github.io/Calibra/docs/',
+  docs: 'https://github.com/omertt27/Calibra/tree/main/docs',
   benchmarks: 'https://github.com/omertt27/Calibra#benchmark-results',
   license: 'https://github.com/omertt27/Calibra/blob/main/LICENSE',
   pypi: 'https://pypi.org/project/calibra-robotics/',
@@ -73,7 +73,7 @@ const WORKFLOW = [
     number: '04',
     name: 'Decide',
     question: 'What should I train on?',
-    detail: 'Keep, drop, review, annotate, or downweight episodes — or build a smaller quality-aware training set.',
+    detail: 'Keep, drop, review, annotate, or downweight episodes, or build a smaller quality-aware training set.',
     command: 'calibra prune',
   },
 ]
@@ -283,8 +283,8 @@ function StatsBar() {
       <div className="container">
         <p className="stats-caveat">
           Measured on LeRobot PushT. Curation gains hold up across a broader 5-seed sweep on
-          3 datasets and 3 policy families (BC-MLP, ACT, Diffusion Policy) —{' '}
-          <a href={LINKS.benchmarks} target="_blank" rel="noreferrer">see the full benchmark table</a>.
+          3 datasets and 3 policy families (BC-MLP, ACT, Diffusion Policy).{' '}
+          <a href={LINKS.benchmarks} target="_blank" rel="noreferrer">See the full benchmark table</a>.
         </p>
       </div>
     </div>
@@ -314,7 +314,7 @@ function CoverageGraphic() {
       </div>
       <p className="coverage-footnote">
         Share of held-out rare-behavior episodes represented in a 41-episode coreset at 25%
-        retention — same benchmark run shown above.
+        retention, from the same benchmark run shown above.
       </p>
     </Reveal>
   )
@@ -342,9 +342,18 @@ function App() {
         <div className="container nav-inner">
           <Logo />
           <div className="nav-links">
-            {NAV_LINKS.map((link) => (
-              <a href={link.href} key={link.label}>{link.label}</a>
-            ))}
+            {NAV_LINKS.map((link) => {
+              const external = link.href.startsWith('http')
+              return (
+                <a
+                  href={link.href}
+                  key={link.label}
+                  {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+                >
+                  {link.label}
+                </a>
+              )
+            })}
           </div>
           <div className="nav-right">
             <div className="nav-badges">
@@ -368,11 +377,19 @@ function App() {
         {menuOpen && (
           <div className="nav-menu">
             <div className="container">
-              {NAV_LINKS.map((link) => (
-                <a href={link.href} key={link.label} onClick={() => setMenuOpen(false)}>
-                  {link.label}
-                </a>
-              ))}
+              {NAV_LINKS.map((link) => {
+                const external = link.href.startsWith('http')
+                return (
+                  <a
+                    href={link.href}
+                    key={link.label}
+                    onClick={() => setMenuOpen(false)}
+                    {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+                  >
+                    {link.label}
+                  </a>
+                )
+              })}
               <a href={LINKS.github} target="_blank" rel="noreferrer" onClick={() => setMenuOpen(false)}>
                 GitHub
               </a>
@@ -387,9 +404,9 @@ function App() {
             <div className="hero-copy">
               <h1>Stop wasting <span className="accent-word">GPU hours</span> on robot data.</h1>
               <p>
-                Calibra is an open-source dataset intelligence layer for robotics. It audits
+                Calibra is a robotics dataset intelligence layer. It audits
                 integrity, measures quality and coverage, and tells you what data to keep, drop,
-                review, or annotate before training — so you train on less data, preserve the
+                review, or annotate before training, so you train on less data, preserve the
                 behaviors that matter, and understand every decision before spending compute.
               </p>
               <div className="hero-actions">
@@ -420,7 +437,7 @@ function App() {
                 <h2><strong>75% smaller</strong> dataset. Prediction error within 0.8% of full-data training.</h2>
                 <p>
                   Calibra retained 41 of 165 training episodes while preserving more
-                  action-space tail coverage than a random coreset — and matching the
+                  action-space tail coverage than a random coreset, and matching the
                   full-dataset baseline across 5 seeds.
                 </p>
                 <div className="benchmark-meta">
@@ -499,7 +516,7 @@ function App() {
                 <li><CheckCircle2 size={18} /> CI-friendly, deterministic analysis</li>
                 <li><CheckCircle2 size={18} /> No upload, account, or API key required</li>
               </ul>
-              <a className="text-link" href={LINKS.docs}>Explore the commands <ArrowRight size={16} /></a>
+              <a className="text-link" href={LINKS.docs} target="_blank" rel="noreferrer">Explore the commands <ArrowRight size={16} /></a>
             </Reveal>
             <CoverageGraphic />
           </div>
@@ -558,7 +575,7 @@ function App() {
             <Reveal as="div" className="cta-panel">
               <span className="cta-kicker">Before your next training run</span>
               <h2>Check the data first.</h2>
-              <p>Install Calibra locally or inspect a public LeRobot dataset in the browser — free, no account needed.</p>
+              <p>Install Calibra locally or inspect a public LeRobot dataset in the browser. Free, no account needed.</p>
               <CopyCommand large />
               <a className="button button-primary" href={LINKS.demo} target="_blank" rel="noreferrer">
                 Try the Hugging Face demo <ExternalLink size={16} />
@@ -581,9 +598,9 @@ function App() {
                 height={43}
               />
             </a>
-            <a href={LINKS.github}>GitHub</a>
-            <a href={LINKS.docs}>Docs</a>
-            <a href={LINKS.license}>BSL 1.1</a>
+            <a href={LINKS.github} target="_blank" rel="noreferrer">GitHub</a>
+            <a href={LINKS.docs} target="_blank" rel="noreferrer">Docs</a>
+            <a href={LINKS.license} target="_blank" rel="noreferrer">BSL 1.1</a>
           </div>
         </div>
       </footer>
