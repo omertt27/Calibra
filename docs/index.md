@@ -39,6 +39,8 @@ graph LR
 
 Integrity checks are deliberately the first thing Calibra runs: timestamp sync, episode completeness, and camera freeze/duplicate-frame detection catch the failures practitioners hit most often, before anything about quality or diversity matters. See [Integrity Checks](integrity.md) for the full list.
 
+**New here?** [Using Calibra](guide.md) walks through all four steps end to end on one dataset, with annotated output and how to read each score.
+
 ---
 
 ## Why Calibra?

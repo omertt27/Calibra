@@ -112,6 +112,80 @@ calibra analyze lerobot/pusht
 
 ---
 
+## Using Calibra
+
+A full pass on one dataset, from install to a trained policy. Every step accepts a
+local path (`.h5`, `.hdf5`, a LeRobot directory) or a HuggingFace Hub ID.
+
+### 1. Trust — `calibra integrity`
+
+```bash
+pip install 'calibra-robotics[lerobot]'
+calibra integrity lerobot/pusht
+```
+
+Answers *can I trust this dataset?* — timestamp sync, episode completeness, and (on
+HDF5 / LeRobot v1) duplicate, frozen, and blurry camera frames. Read it top-down:
+
+- **Critical** findings with `suggested_action: block` are objective acquisition
+  failures. Fix the data or drop those episodes before training.
+- **Critical / inspect** and everything under **Warnings** are context-dependent —
+  jerky motion is a defect for a delicate insertion and normal for a fast reach.
+  Open those episodes and decide.
+- **Integrity Score ≥ 80 · Status: Pass** means nothing objective is broken. Below
+  that, expect to lose episodes.
+
+### 2. Quality — `calibra audit`
+
+```bash
+calibra audit lerobot/pusht --html-out report.html
+```
+
+The full diagnostic: a 0–100 Calibra Score with bootstrap confidence intervals plus
+per-episode outliers. Open `report.html` for the dashboard. A score in the **70s**
+is a normal, usable dataset with redundancy to remove; **80s+** means it is already
+clean and Calibra will help less.
+
+### 3. Coverage — `calibra review`
+
+```bash
+calibra review lerobot/pusht --top 20 --output review.json
+```
+
+Ranks episodes by three separate signals — anomaly, quality risk, and coverage
+value — so you can see which episodes are broken *and* which rare ones you cannot
+afford to drop. Skim the top of the queue before pruning.
+
+### 4. Select — `calibra prune`
+
+```bash
+calibra prune lerobot/pusht --keep 0.25 \
+  --report results/pusht/latest.json \
+  --export-dataset ./pusht_coreset
+```
+
+Two stages: filter quality failures, then greedily pick the most behaviorally
+distinct episodes until `--keep` is hit. `--report` writes a stable JSON of
+per-episode verdicts; `--export-dataset` materialises a ready-to-train copy.
+
+Unsure what `--keep` to use? Run `calibra analyze lerobot/pusht` first — it
+recommends a retention fraction from the same selector. It is a heuristic starting
+point, not a validated retention curve — confirm it with the design-partner
+protocol (`calibra experiment` + `calibra case-study`) before a production run.
+
+### 5. Train
+
+```bash
+lerobot-train policy=act dataset_repo_id=./pusht_coreset
+```
+
+Or keep your existing training script and load the coreset directly — see
+[LeRobot integration](#lerobot-integration) and [Isaac Lab → GR00T](#isaac-lab--gr00t-nvidia) below.
+
+→ [Full walkthrough with annotated output](docs/guide.md) · [Command reference](docs/commands.md)
+
+---
+
 ## Try it online
 
 No installation required.
@@ -277,6 +351,8 @@ result = selector.select(batch, report)
 
 ## Commands
 
+**Start here — the core workflow** ([full walkthrough](docs/guide.md)):
+
 | Command | Description |
 |---|---|
 | `calibra analyze` | One-command report: integrity, Calibra Score, estimated redundancy, and a training-set recommendation |
@@ -284,6 +360,11 @@ result = selector.select(batch, report)
 | `calibra audit` | Full diagnostic report with bootstrap CIs and per-episode outlier detection |
 | `calibra review` | Ranked episode review queue — separates anomaly, quality-risk, and coverage-value signals |
 | `calibra prune` | Two-stage coreset: quality filter + greedy max-coverage selection |
+
+**Everything else:**
+
+| Command | Description |
+|---|---|
 | `calibra certify` | Structured CERTIFIED / PROVISIONAL / NOT CERTIFIED; `--json` for CI |
 | `calibra predict` | Estimate training outcome before spending GPU time |
 | `calibra watch` | Real-time quality feedback during teleoperation |
