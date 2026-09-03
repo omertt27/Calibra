@@ -238,6 +238,9 @@ calibra prune demos.hdf5 --keep 0.3 --policy gr00t --report results/franka/lates
 
 # Incremental analysis: skip re-running the pipeline on unchanged episodes
 calibra prune /data/demos.h5 --keep 0.3 --cache-dir .calibra/cache --report results/latest.json
+
+# Annotate mode: keep every episode, write a per-episode metadata sidecar instead
+calibra prune /data/demos.h5 --keep 0.3 --annotate ./calibra_meta/
 ```
 
 ```
@@ -261,6 +264,8 @@ Two-stage pipeline:
 Use `--entropy-weight 0.4` (or `--policy gr00t`) to bias selection toward high-entropy (informationally rich) episodes. Use `--strategy influence` to select episodes based on estimated learning value (combining action novelty, task contact representation, and Shannon entropy).
 
 `--report PATH` writes a schema-versioned **CalibraReport JSON** with `episode_verdicts` — approved/rejected episode IDs, per-episode reason codes (e.g. `jerk_spike`, `diversity_pruned`), quality scores, and SHA-256 content hashes.
+
+`--annotate DIR` switches to **annotate mode**: instead of only removing episodes, it writes a training-ready per-episode sidecar (`calibra_annotations.jsonl` + a self-describing `.manifest.json`) that keeps every episode with its disposition (`KEEP` / `DROP` / `ANNOTATE`) and characterization (`quality_risk`, `coverage_value`, `anomaly_score`, …) attached. Redundant episodes are marked `ANNOTATE` — keep them if your trainer conditions on the metadata. Default `--out` / `--report` output is unaffected. See [Annotate Mode](annotate.md).
 
 `--cache-dir DIR` caches the diagnostic pipeline result keyed by episode manifest fingerprint. On repeated runs with unchanged data, skips the pipeline — typically 10–50× faster on large datasets collected incrementally.
 
