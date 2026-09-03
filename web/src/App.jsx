@@ -86,6 +86,49 @@ const ECOSYSTEMS = [
   { name: 'Hugging Face', detail: 'Hub IDs', logo: 'huggingface.svg' },
 ]
 
+// Decorative hero backdrop: wandering paths that read like plotted robot
+// episodes, with waypoint nodes. Purely visual, hidden from assistive tech.
+const HERO_TRAJECTORIES = [
+  'M-60 90 C 220 150, 420 30, 640 100 S 980 190, 1210 96 S 1360 66, 1400 88',
+  'M-60 168 C 160 70, 300 250, 480 182 S 820 46, 1044 158 S 1320 232, 1400 190',
+  'M-60 322 C 190 384, 344 220, 524 302 S 864 428, 1084 322 S 1300 258, 1400 300',
+  'M-60 470 C 204 522, 360 402, 560 462 S 902 566, 1124 472 S 1320 430, 1400 462',
+  'M-60 560 C 168 502, 384 624, 604 542 S 944 460, 1164 560 S 1330 604, 1400 560',
+]
+const HERO_NODES = [
+  [220, 150], [640, 100], [980, 190], [1210, 96],
+  [160, 70], [480, 182], [820, 46], [1044, 158],
+  [344, 220], [524, 302], [1084, 322],
+  [560, 462], [1124, 472],
+  [604, 542], [1164, 560],
+]
+
+function HeroTrajectories() {
+  return (
+    <div className="hero-trajectories" aria-hidden="true">
+      <svg viewBox="0 0 1200 620" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="traj-fade" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="#ffffff" stopOpacity="0" />
+            <stop offset="0.5" stopColor="#ffffff" stopOpacity="1" />
+            <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <g className="traj-paths" fill="none" stroke="url(#traj-fade)">
+          {HERO_TRAJECTORIES.map((d, i) => (
+            <path key={i} className="traj-path" d={d} style={{ '--i': i }} />
+          ))}
+        </g>
+        <g className="traj-nodes" fill="#ffffff">
+          {HERO_NODES.map(([cx, cy], i) => (
+            <circle key={i} cx={cx} cy={cy} r="2.4" style={{ '--i': i }} />
+          ))}
+        </g>
+      </svg>
+    </div>
+  )
+}
+
 function Reveal({ as: Tag = 'div', className = '', delay = 0, children, ...props }) {
   const ref = useRef(null)
   const [visible, setVisible] = useState(false)
@@ -400,6 +443,7 @@ function App() {
 
       <main>
         <header className="hero">
+          <HeroTrajectories />
           <div className="container hero-grid">
             <div className="hero-copy">
               <h1>Stop wasting <span className="accent-word">GPU hours</span> on robot data.</h1>
