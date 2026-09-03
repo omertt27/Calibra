@@ -11,7 +11,7 @@
 <p align="center"><b>Train robot policies with up to 75% less data.</b></p>
 
 <p align="center">
-Calibra helps robotics teams build smaller, higher-quality training sets — catching bad demonstrations before they waste GPU time, then selecting the episodes that actually matter.
+Calibra is a robotics dataset decision layer. It audits integrity, characterizes every episode, and helps you decide what to keep, drop, downweight, review, or annotate before training. Prune to a smaller training set, or export per-episode metadata for a training pipeline that can use it.
 </p>
 
 ---
@@ -35,7 +35,7 @@ Across three datasets and three policy families (BC-MLP, ACT, Diffusion Policy) 
 
 ## How it works
 
-The reason Calibra can remove 75% of demonstrations without hurting performance is that most robotics datasets contain two distinct problems: bad episodes (jerk spikes, dropped frames, sync errors) and redundant episodes (near-duplicate demonstrations of the same behavior). Calibra removes both.
+The reason Calibra can remove 75% of demonstrations without hurting performance is that most robotics datasets contain two distinct problems: bad episodes (jerk spikes, dropped frames, sync errors) and redundant episodes (near-duplicate demonstrations of the same behavior). Calibra finds both, then assigns each episode a disposition: drop it, keep it, downweight it, flag it for review, or keep it with a characterization annotation so a metadata-aware trainer can still use it.
 
 **The pipeline:**
 
@@ -44,7 +44,7 @@ The reason Calibra can remove 75% of demonstrations without hurting performance 
 | 1. Integrity | Can I trust this dataset? | `calibra integrity` |
 | 2. Quality | Which episodes are clean? | `calibra audit` |
 | 3. Coverage | Which episodes are distinct? | `calibra review` |
-| 4. Select | Keep only what matters. | `calibra prune` |
+| 4. Decide | Keep, drop, downweight, review, or annotate, then export. | `calibra prune` |
 
 ```
 $ calibra integrity /data/my_demos.h5
@@ -156,7 +156,7 @@ Ranks episodes by three separate signals — anomaly, quality risk, and coverage
 value — so you can see which episodes are broken *and* which rare ones you cannot
 afford to drop. Skim the top of the queue before pruning.
 
-### 4. Select — `calibra prune`
+### 4. Decide — `calibra prune`
 
 ```bash
 calibra prune lerobot/pusht --keep 0.25 \
