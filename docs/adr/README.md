@@ -21,3 +21,4 @@ a new ADR written to replace it — the original is never deleted.
 | [ADR-008](adr-008-claims-registry.md) | Evidence-backed falsifiable claims registry | Accepted |
 | [ADR-009](adr-009-two-phase-pipeline.md) | Two-phase pipeline: Phase 1 analysis then Phase 2 comparison | Accepted |
 | [ADR-010](adr-010-claims-references-parity.md) | Claims/references parity rule | Accepted |
+| [ADR-011](adr-011-dataset-decision-layer.md) | Dataset decision layer: analysis outputs support both pruning and metadata annotation | Accepted |

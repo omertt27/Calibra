@@ -49,6 +49,12 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from calibra.comparison.comparator import _extract_ep_data
+from calibra.schema.comparison import (
+    KEEP_LIKE,
+    CurationReport,
+    Disposition,
+    EpisodeCharacterization,
+)
 from calibra.schema.episode import Episode, EpisodeBatch
 from calibra.schema.report import DiagnosticReport
 
@@ -143,6 +149,105 @@ class PruningResult:
             "fail_reasons": self.fail_reasons,
             "quality_evaluation_status": self.quality_evaluation_status,
         }
+
+    def to_curation_report(
+        self,
+        batch: EpisodeBatch,
+        *,
+        report: DiagnosticReport | None = None,
+        redundant_disposition: "Disposition | None" = None,
+    ) -> CurationReport:
+        """
+        This prune result as an ADR-011 `CurationReport` — the same decision-layer
+        schema `EpisodeCurator.curate()` returns, so both curation paths expose a
+        uniform per-episode `dispositions` view. Thin wrapper over
+        `pruning_result_to_curation_report`; see it for the mapping.
+        """
+        kwargs = {} if redundant_disposition is None else {"redundant_disposition": redundant_disposition}
+        return pruning_result_to_curation_report(self, batch, report=report, **kwargs)
+
+
+def pruning_result_to_curation_report(
+    result: PruningResult,
+    batch: EpisodeBatch,
+    *,
+    report: DiagnosticReport | None = None,
+    redundant_disposition: Disposition = Disposition.DROP,
+) -> CurationReport:
+    """
+    Re-express a PruningResult in the ADR-011 decision-layer schema.
+
+    Mapping:
+      keep_episode_ids     → KEEP
+      quality_fail_ids     → DROP  (integrity / quality-threshold failure)
+      diversity_pruned_ids → `redundant_disposition` (default DROP; annotate
+                             mode can pass DOWNWEIGHT or ANNOTATE to retain a
+                             redundant episode with a weight/tag rather than
+                             removing it)
+
+    Per-episode `quality_risk` is the same composite score `calibra prune`
+    ranks on; `reasons` / `integrity_flags` come from `result.fail_reasons`.
+    Episode order and `episode_index` follow `batch`.
+
+    Pass the `DiagnosticReport` the prune ran on to also fill `anomaly_score`,
+    `coverage_value` and `redundancy` from `calibra.assessment` — the
+    strongest signals Calibra already computes. Without it, only the fields
+    derivable from `result` and `batch` are populated (`calibra_score` and
+    `quality_risk` still are).
+    """
+    # Local import: calibra.assessment imports from this module.
+    from calibra.assessment import (
+        compute_episode_assessments,
+        episode_calibra_score,
+        episode_redundancy,
+    )
+
+    quality_fail = set(result.quality_fail_ids)
+    diversity_pruned = set(result.diversity_pruned_ids)
+
+    assessment_by_id: dict = {}
+    if report is not None:
+        assessment_by_id = {a.episode_id: a for a in compute_episode_assessments(report, batch)}
+
+    dispositions: list[EpisodeCharacterization] = []
+    for i, ep in enumerate(batch.episodes):
+        eid = ep.metadata.episode_id
+        reasons = list(result.fail_reasons.get(eid, []))
+        if eid in quality_fail:
+            disposition = Disposition.DROP
+            integrity_flags = reasons
+        elif eid in diversity_pruned:
+            disposition = redundant_disposition
+            integrity_flags = []
+        else:
+            disposition = Disposition.KEEP
+            integrity_flags = []
+        assessment = assessment_by_id.get(eid)
+        quality_risk = result.quality_scores.get(eid)
+        coverage_value = assessment.coverage_value if assessment else None
+        dispositions.append(
+            EpisodeCharacterization(
+                episode_index=i,
+                episode_id=eid,
+                disposition=disposition,
+                n_steps=ep.n_steps,
+                success=ep.metadata.success,
+                calibra_score=episode_calibra_score(quality_risk),
+                quality_risk=quality_risk,
+                anomaly_score=assessment.anomaly_score if assessment else None,
+                coverage_value=coverage_value,
+                redundancy=episode_redundancy(coverage_value),
+                integrity_flags=integrity_flags,
+                reasons=reasons,
+            )
+        )
+
+    retained_n = sum(1 for d in dispositions if d.disposition in KEEP_LIKE)
+    return CurationReport(
+        original_n_episodes=result.n_original,
+        retained_n_episodes=retained_n,
+        dispositions=dispositions,
+    )
 
 
 # ── selector ──────────────────────────────────────────────────────────────────

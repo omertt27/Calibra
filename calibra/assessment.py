@@ -20,9 +20,12 @@ computed by the pipeline's analyzers:
   - coverage_value  reuses InfluenceAnalyzer's per_episode_influence (novelty +
                      entropy + contact-density composite, 0-1).
   - anomaly_score   is new: the largest percentile-rank extremity (distance
-                     from the batch median) across all available
-                     per_episode_* metrics, so it fires on any dimension
-                     without presupposing which one matters.
+                     from the batch median) among the per_episode_* metrics on
+                     which this episode is in the decile tail (p<=0.1 or
+                     p>=0.9). It fires on any dimension without presupposing
+                     which one matters; an episode mid-pack on every metric
+                     scores 0.0. Weak signal on datasets with fewer than ~100
+                     episodes, where rank tails are coarse.
 
 Percentile ranking is global by default, which can misfire on datasets that
 mix multiple tasks/robots/sessions — a harder task's episodes can look like
@@ -56,6 +59,13 @@ _ANOMALY_METRICS = (
     "per_episode_contact_fraction",
     "per_episode_transition_entropy",
 )
+
+# An episode counts toward `anomaly_score` on a metric only if it is BOTH in
+# that metric's rank tail AND this many robust-MAD deviations from the batch
+# median. The rank test alone saturated to ~1.0 for every episode once the
+# batch was small relative to the metric count (every episode is min/max on
+# something); requiring real magnitude separation keeps the score meaningful.
+_ANOMALY_Z_THRESHOLD = 2.5
 
 
 @dataclass
@@ -109,6 +119,36 @@ def summarize_assessments(assessments: Sequence[EpisodeAssessment]) -> dict[str,
     }
 
 
+def episode_calibra_score(quality_risk: Optional[float]) -> Optional[float]:
+    """
+    Per-episode 0–100 cleanliness score: ``100 · (1 − quality_risk)``. A clean
+    episode scores 100, a maximally risky one 0. None when quality_risk is
+    unavailable.
+
+    This is NOT a per-episode decomposition of the dataset-level Calibra Score
+    (`calibra.score.compute_score`), which is a quality-gated blend of temporal,
+    smoothness, coverage and task-structure dimensions. Averaging these
+    per-episode scores does not reproduce it. This one is quality-risk only.
+    """
+    if quality_risk is None:
+        return None
+    return round(100.0 * (1.0 - quality_risk), 1)
+
+
+def episode_redundancy(coverage_value: Optional[float]) -> Optional[float]:
+    """
+    Per-episode redundancy: ``1 − coverage_value``, the complement of how much
+    unique behavioral coverage the episode adds (novelty + entropy +
+    contact-density, via InfluenceAnalyzer). High = its behavior is already
+    well represented elsewhere. None without InfluenceAnalyzer. Perfectly
+    anti-correlated with coverage_value by construction — not an independent
+    feature, a human-readable restatement.
+    """
+    if coverage_value is None:
+        return None
+    return round(1.0 - coverage_value, 4)
+
+
 def _percentile_ranks(values: list) -> list[Optional[float]]:
     """
     Rank each value against the others in the same list as a 0-1 fraction
@@ -127,6 +167,30 @@ def _percentile_ranks(values: list) -> list[Optional[float]]:
     out: list[Optional[float]] = [None] * len(values)
     for idx, v in zip(valid_idx, valid_vals):
         out[idx] = float(np.mean(valid_vals <= v))
+    return out
+
+
+def _abs_robust_z(values: list) -> list[Optional[float]]:
+    """
+    |z| of each value against the batch median, scaled by MAD (falling back to
+    std, then giving up on a constant metric). None where the metric is
+    missing or there are fewer than 3 comparable episodes. Used to require
+    that a rank-tail episode is also genuinely far from typical before it
+    counts toward anomaly_score.
+    """
+    valid_idx = [i for i, v in enumerate(values) if v is not None]
+    if len(valid_idx) < 3:
+        return [None] * len(values)
+    vv = np.array([values[i] for i in valid_idx], dtype=np.float64)
+    median = float(np.median(vv))
+    scale = 1.4826 * float(np.median(np.abs(vv - median)))
+    if scale < 1e-9:
+        scale = float(vv.std())
+    if scale < 1e-9:
+        return [None] * len(values)
+    out: list[Optional[float]] = [None] * len(values)
+    for idx, v in zip(valid_idx, vv):
+        out[idx] = abs(float(v) - median) / scale
     return out
 
 
@@ -201,17 +265,22 @@ def compute_episode_assessments(
         groups = [list(range(n))]
 
     percentiles_by_metric: dict[str, list[Optional[float]]] = {}
+    absz_by_metric: dict[str, list[Optional[float]]] = {}
     for metric in _ANOMALY_METRICS:
         values = ep_data.get(metric)
         if not values or len(values) != n:
             continue
-        merged: list[Optional[float]] = [None] * n
+        merged_p: list[Optional[float]] = [None] * n
+        merged_z: list[Optional[float]] = [None] * n
         for group_indices in groups:
             group_values = [values[i] for i in group_indices]
             group_percentiles = _percentile_ranks(group_values)
+            group_absz = _abs_robust_z(group_values)
             for local_i, global_i in enumerate(group_indices):
-                merged[global_i] = group_percentiles[local_i]
-        percentiles_by_metric[metric] = merged
+                merged_p[global_i] = group_percentiles[local_i]
+                merged_z[global_i] = group_absz[local_i]
+        percentiles_by_metric[metric] = merged_p
+        absz_by_metric[metric] = merged_z
 
     assessments = []
     for i, episode_id in enumerate(episode_ids):
@@ -221,10 +290,17 @@ def compute_episode_assessments(
             p = percentiles[i]
             if p is None:
                 continue
-            extremity = abs(p - 0.5) * 2.0  # 0 at the median, 1 at either tail
-            anomaly = max(anomaly, extremity)
-            if p >= 0.9 or p <= 0.1:
-                reasons.append(AnomalyReason(metric=metric, percentile=round(p * 100, 1)))
+            if not (p >= 0.9 or p <= 0.1):
+                continue
+            reasons.append(AnomalyReason(metric=metric, percentile=round(p * 100, 1)))
+            # A rank-tail episode only counts toward anomaly_score if it is also
+            # genuinely far from the batch median (robust MAD z). The rank test
+            # alone saturated to ~1.0 for every episode once the batch was small
+            # relative to the ~9 metrics — every episode is min/max on something.
+            z = absz_by_metric[metric][i]
+            if z is not None and z >= _ANOMALY_Z_THRESHOLD:
+                extremity = abs(p - 0.5) * 2.0  # 0 at the median, 1 at either tail
+                anomaly = max(anomaly, extremity)
         reasons.sort(key=lambda r: abs(r.percentile - 50.0), reverse=True)
 
         assessments.append(

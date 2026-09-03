@@ -49,6 +49,7 @@ nav:
   - Home: index.md
   - Using Calibra: guide.md
   - Integrity Checks: integrity.md
+  - Annotate Mode: annotate.md
   - Command Reference: commands.md
   - Interactive Playground: /Calibra/
   - Claims Registry: claims.md
@@ -64,5 +65,6 @@ nav:
     - "ADR-008: Claims registry": adr/adr-008-claims-registry.md
     - "ADR-009: Two-phase pipeline": adr/adr-009-two-phase-pipeline.md
     - "ADR-010: Claims references parity": adr/adr-010-claims-references-parity.md
+    - "ADR-011: Dataset decision layer": adr/adr-011-dataset-decision-layer.md
   - Blog Post: hf_blog_post.md
   - Contributing: contributing.md

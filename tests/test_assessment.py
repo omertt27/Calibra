@@ -107,6 +107,41 @@ class TestComputeEpisodeAssessments:
         for episode_id, exp_score in expected.items():
             assert assessments[episode_id].quality_risk == exp_score
 
+    def test_anomaly_score_needs_magnitude_not_just_rank(self):
+        """anomaly_score no longer saturates at 1.0 for a whole small batch:
+        being last in a tight cluster is not an anomaly; being a genuine
+        magnitude outlier is."""
+        from calibra.schema.report import AnalyzerResult
+
+        ids = [f"ep_{i}" for i in range(11)]
+        # 10 tightly-clustered episodes + ep_10 a real outlier on both metrics.
+        clustered = [0.10, 0.11, 0.09, 0.10, 0.12, 0.08, 0.11, 0.10, 0.09, 0.11]
+        spike = clustered + [0.95]
+        disc = clustered + [0.90]
+        report = DiagnosticReport(
+            dataset_name="synthetic",
+            source_path="/tmp/synthetic",
+            format="hdf5",
+            n_episodes=11,
+            n_samples=110,
+            episode_ids=ids,
+            analyzer_results=[
+                AnalyzerResult(
+                    analyzer_name="control_smoothness",
+                    raw_metrics={
+                        "per_episode_spike_rate": spike,
+                        "per_episode_vel_disc_rate": disc,
+                    },
+                )
+            ],
+        )
+        a = {x.episode_id: x for x in compute_episode_assessments(report)}
+        # the clustered episodes — even the max of the cluster — are not anomalies
+        assert all(a[f"ep_{i}"].anomaly_score == 0.0 for i in range(10))
+        # the real outlier is
+        assert a["ep_10"].anomaly_score > 0.0
+        assert not all(x.anomaly_score == 1.0 for x in a.values())
+
 
 def _make_synthetic_report(episode_ids: list[str], ldlj_values: list[float]) -> DiagnosticReport:
     """A hand-built report with one exact, fully-controlled metric — avoids

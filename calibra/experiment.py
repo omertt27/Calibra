@@ -104,6 +104,12 @@ def _print_dry_run(args, resolved, sources, bundle, assessments):
     print(f"  experiment_id      = {args.experiment_id}")
     print(f"  condition          = {args.condition}")
     print(f"  retention_pct      = {args.retention:g}")
+    if args.arm:
+        print(f"  arm                = {args.arm}")
+    if args.metadata_conditioning:
+        print("  metadata_conditioning = True")
+    if args.actual_retention is not None:
+        print(f"  actual_retention_pct = {args.actual_retention:g}")
     for field in (
         "gpu_hours",
         "wall_clock_seconds",
@@ -165,6 +171,27 @@ def run_experiment(argv: List[str]) -> None:
     record_p.add_argument("--policy", dest="policy_family", default="generic")
     record_p.add_argument("--model-size", default="", help="e.g. '80M params'")
     record_p.add_argument("--n-episodes", type=int, default=0)
+    record_p.add_argument(
+        "--actual-retention",
+        type=float,
+        default=None,
+        metavar="PCT",
+        help=(
+            "Fraction of the ORIGINAL dataset actually trained on, 0-100. Use when it "
+            "differs from --retention (the nominal prune target) — e.g. the "
+            "KEEP+ANNOTATE arm, where rescued episodes raise effective retention."
+        ),
+    )
+    record_p.add_argument(
+        "--arm",
+        default="",
+        help="Label in the metadata-conditioning matrix (e.g. A, B, C, D, R, R+).",
+    )
+    record_p.add_argument(
+        "--metadata-conditioning",
+        action="store_true",
+        help="The policy was conditioned on the annotate-mode sidecar.",
+    )
     record_p.add_argument("--gpu-hours", type=float, default=None)
     record_p.add_argument("--wall-clock-seconds", type=float, default=None)
     record_p.add_argument("--energy-kwh", type=float, default=None)
@@ -311,6 +338,9 @@ def run_experiment(argv: List[str]) -> None:
                 policy_family=args.policy_family,
                 model_size=args.model_size,
                 n_episodes=args.n_episodes,
+                actual_retention_pct=args.actual_retention,
+                arm=args.arm,
+                metadata_conditioning=args.metadata_conditioning,
                 gpu_hours=resolved["gpu_hours"],
                 wall_clock_seconds=resolved["wall_clock_seconds"],
                 energy_kwh=resolved["energy_kwh"],
@@ -351,9 +381,17 @@ def run_experiment(argv: List[str]) -> None:
             return
         for r in records:
             success = f"{r.eval_success_rate:.1%}" if r.eval_success_rate is not None else "n/a"
+            arm = f" arm={r.arm}" if r.arm else ""
+            meta = " +meta" if r.metadata_conditioning else ""
+            actual = (
+                f" (actual {r.actual_retention_pct:.0f}%)"
+                if r.actual_retention_pct is not None
+                and r.actual_retention_pct != r.retention_pct
+                else ""
+            )
             print(
                 f"{r.record_id}  {r.experiment_id:<24} {r.condition:<8} "
-                f"{r.retention_pct:>5.0f}%  eps={r.n_episodes:<6} success={success}"
+                f"{r.retention_pct:>5.0f}%{actual}  eps={r.n_episodes:<6} success={success}{arm}{meta}"
             )
         return
 

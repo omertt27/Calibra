@@ -209,6 +209,57 @@ def test_metrics_source_defaults_empty_for_old_rows(tmp_path):
     assert ExperimentLog(path=path).list_records()[0].metrics_source == ""
 
 
+# ── metadata-conditioning benchmark fields (arm / metadata_conditioning /
+#    actual_retention_pct) ──────────────────────────────────────────────────
+
+
+def test_metadata_conditioning_fields_round_trip(tmp_path):
+    log = _log(tmp_path)
+    log.record(
+        experiment_id="mc",
+        condition="calibra",
+        retention_pct=25.0,
+        actual_retention_pct=41.0,
+        arm="D",
+        metadata_conditioning=True,
+        n_episodes=85,
+    )
+    r = ExperimentLog(path=log.path).list_records()[0]
+    assert r.arm == "D"
+    assert r.metadata_conditioning is True
+    assert r.retention_pct == 25.0  # nominal prune target
+    assert r.actual_retention_pct == 41.0  # what was actually trained on
+
+
+def test_metadata_conditioning_defaults_for_old_rows(tmp_path):
+    path = tmp_path / "experiments.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "record_id": "x",
+                "timestamp": 1.0,
+                "experiment_id": "e1",
+                "condition": "full",
+                "retention_pct": 100.0,
+            }
+        )
+        + "\n"
+    )
+    r = ExperimentLog(path=path).list_records()[0]
+    assert r.arm == ""
+    assert r.metadata_conditioning is False
+    assert r.actual_retention_pct is None
+
+
+def test_record_rejects_out_of_range_actual_retention(tmp_path):
+    log = _log(tmp_path)
+    with pytest.raises(ValueError):
+        log.record(
+            experiment_id="e1", condition="calibra", retention_pct=25.0, actual_retention_pct=150.0
+        )
+
+
 # ── dataset-characteristics rollup (mean_* fields) ──────────────────────────
 
 

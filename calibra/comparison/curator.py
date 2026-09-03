@@ -21,7 +21,12 @@ from dataclasses import dataclass
 from typing import Optional
 
 from calibra.comparison.comparator import _extract_ep_data
-from calibra.schema.comparison import CurationReport, EpisodeFlag
+from calibra.schema.comparison import (
+    CurationReport,
+    Disposition,
+    EpisodeCharacterization,
+    EpisodeFlag,
+)
 from calibra.schema.episode import Episode, EpisodeBatch
 from calibra.schema.report import DiagnosticReport
 
@@ -156,16 +161,56 @@ class EpisodeCurator:
 
         # ── split retained / dropped ──────────────────────────────────────────
 
+        # Enrich each characterization with the anomaly / quality_risk /
+        # coverage_value axes Calibra already computes, so the disposition
+        # record carries more than just the threshold that fired. Local import:
+        # calibra.assessment imports from calibra.comparison.comparator.
+        from calibra.assessment import (
+            compute_episode_assessments,
+            episode_calibra_score,
+            episode_redundancy,
+        )
+
+        assessment_by_id = {
+            a.episode_id: a for a in compute_episode_assessments(report, batch)
+        }
+
         retained_indices: list[int] = []
         dropped_indices: list[int] = []
         flat_flags: list[EpisodeFlag] = []
+        dispositions: list[EpisodeCharacterization] = []
 
         for i in range(n):
-            if per_ep_flags[i]:
+            ep = batch.episodes[i]
+            flags_i = per_ep_flags[i]
+            if flags_i:
                 dropped_indices.append(i)
-                flat_flags.extend(per_ep_flags[i])
+                flat_flags.extend(flags_i)
             else:
                 retained_indices.append(i)
+            assessment = assessment_by_id.get(ep.metadata.episode_id)
+            quality_risk = assessment.quality_risk if assessment else None
+            coverage_value = assessment.coverage_value if assessment else None
+            dispositions.append(
+                EpisodeCharacterization(
+                    episode_index=i,
+                    episode_id=ep.metadata.episode_id,
+                    # This path is threshold-based quality filtering: an episode
+                    # either clears every configured threshold (KEEP) or fails
+                    # one and is excluded (DROP). DOWNWEIGHT / ANNOTATE / REVIEW
+                    # are produced by the richer decision layer, not here.
+                    disposition=Disposition.DROP if flags_i else Disposition.KEEP,
+                    n_steps=ep.n_steps,
+                    success=ep.metadata.success,
+                    calibra_score=episode_calibra_score(quality_risk),
+                    quality_risk=quality_risk,
+                    anomaly_score=assessment.anomaly_score if assessment else None,
+                    coverage_value=coverage_value,
+                    redundancy=episode_redundancy(coverage_value),
+                    integrity_flags=[f.metric for f in flags_i],
+                    reasons=[f.interpretation for f in flags_i],
+                )
+            )
 
         filtered_batch = EpisodeBatch(
             episodes=[batch.episodes[i] for i in retained_indices],
@@ -180,6 +225,7 @@ class EpisodeCurator:
             retained_indices=retained_indices,
             dropped_indices=dropped_indices,
             episode_flags=flat_flags,
+            dispositions=dispositions,
         )
 
         return filtered_batch, curation_report

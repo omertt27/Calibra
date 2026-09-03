@@ -187,6 +187,32 @@ def run_prune(argv: list[str]) -> None:
         ),
     )
     p.add_argument(
+        "--annotate",
+        metavar="DIR",
+        default=None,
+        help=(
+            "Annotate mode (ADR-011): write a training-ready sidecar to DIR instead "
+            "of only removing episodes. calibra_annotations.jsonl carries one row per "
+            "episode — disposition (KEEP / DROP / ANNOTATE) plus characterization "
+            "(calibra_score, quality_risk, coverage_value, anomaly_score, redundancy, "
+            "success, n_steps) — with calibra_annotations.manifest.json (schema + "
+            "field docs) and the raw calibra_curation_report.json. Redundant episodes "
+            "are marked ANNOTATE (keep them if your trainer conditions on the metadata) "
+            "rather than dropped."
+        ),
+    )
+    p.add_argument(
+        "--annotate-format",
+        choices=["jsonl", "parquet", "both"],
+        default="jsonl",
+        help=(
+            "Sidecar row format for --annotate (default: jsonl). 'parquet' / 'both' "
+            "also write calibra_annotations.parquet and need pyarrow "
+            "(pip install 'calibra-robotics[lerobot]'). The JSONL + manifest are "
+            "always written."
+        ),
+    )
+    p.add_argument(
         "--json",
         "-j",
         action="store_true",
@@ -329,6 +355,30 @@ def run_prune(argv: list[str]) -> None:
     with open(out_path, "w") as f:
         json.dump(out_data, f, indent=2)
     log(f"Coreset index written to {out_path}")
+
+    if args.annotate:
+        from calibra.annotate import write_annotations
+        from calibra.pruning import pruning_result_to_curation_report
+        from calibra.schema.comparison import Disposition
+
+        curation = pruning_result_to_curation_report(
+            result, batch, report=report, redundant_disposition=Disposition.ANNOTATE
+        )
+        try:
+            written = write_annotations(
+                curation,
+                args.annotate,
+                source_dataset=dataset_path,
+                dataset_format=batch.format,
+                parquet=args.annotate_format in ("parquet", "both"),
+            )
+        except ImportError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            sys.exit(1)
+        for path in written:
+            log(f"  wrote {path}")
+        counts = curation.disposition_counts()
+        log(f"Annotation sidecar written to {args.annotate}/  ({counts})")
 
     # Curriculum Partitioning
     if args.curriculum:
