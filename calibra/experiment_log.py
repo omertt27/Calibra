@@ -6,6 +6,14 @@ runs the same three conditions (full dataset, random subset, Calibra coreset)
 at multiple retention levels, and the *comparison itself* only means something
 if the numbers behind it are recorded consistently.
 
+The metadata-conditioning benchmark (experiments/METADATA_CONDITIONING_BENCHMARK.md)
+adds two orthogonal fields: `metadata_conditioning` (was the policy conditioned
+on the annotate-mode sidecar?) and `arm` (its label in that matrix, e.g. "D").
+`retention_pct` stays the *nominal* prune target; `actual_retention_pct` is the
+fraction of the original dataset actually trained on — these diverge for the
+KEEP∪ANNOTATE arm, where rescued episodes raise effective retention above the
+`--keep` target. Report both.
+
 Unlike calibra.outcome_db, this store never syncs to any network endpoint.
 Design-partner datasets and training results are the customer's most sensitive
 asset — the whole pitch is that Calibra runs inside their infrastructure and
@@ -70,6 +78,9 @@ class ExperimentRecord:
         "model_size",
         "condition",
         "retention_pct",
+        "actual_retention_pct",
+        "arm",
+        "metadata_conditioning",
         "n_episodes",
         "gpu_hours",
         "wall_clock_seconds",
@@ -98,6 +109,9 @@ class ExperimentRecord:
         policy_family: str = "generic",
         model_size: str = "",
         n_episodes: int = 0,
+        actual_retention_pct: Optional[float] = None,
+        arm: str = "",
+        metadata_conditioning: bool = False,
         gpu_hours: Optional[float] = None,
         wall_clock_seconds: Optional[float] = None,
         energy_kwh: Optional[float] = None,
@@ -114,6 +128,10 @@ class ExperimentRecord:
             raise ValueError(f"condition must be one of {CONDITIONS}, got {condition!r}")
         if not 0.0 <= retention_pct <= 100.0:
             raise ValueError(f"retention_pct must be in [0, 100], got {retention_pct!r}")
+        if actual_retention_pct is not None and not 0.0 <= actual_retention_pct <= 100.0:
+            raise ValueError(
+                f"actual_retention_pct must be in [0, 100], got {actual_retention_pct!r}"
+            )
         if eval_success_rate is not None and not 0.0 <= eval_success_rate <= 1.0:
             raise ValueError(f"eval_success_rate must be in [0, 1], got {eval_success_rate!r}")
         for field_name, value in (
@@ -135,6 +153,9 @@ class ExperimentRecord:
         self.model_size = model_size
         self.condition = condition
         self.retention_pct = retention_pct
+        self.actual_retention_pct = actual_retention_pct
+        self.arm = arm
+        self.metadata_conditioning = bool(metadata_conditioning)
         self.n_episodes = n_episodes
         self.gpu_hours = gpu_hours
         self.wall_clock_seconds = wall_clock_seconds
@@ -166,6 +187,9 @@ class ExperimentRecord:
             policy_family=d.get("policy_family", "generic"),
             model_size=d.get("model_size", ""),
             n_episodes=d.get("n_episodes", 0),
+            actual_retention_pct=d.get("actual_retention_pct"),
+            arm=d.get("arm", ""),
+            metadata_conditioning=d.get("metadata_conditioning", False),
             gpu_hours=d.get("gpu_hours"),
             wall_clock_seconds=d.get("wall_clock_seconds"),
             energy_kwh=d.get("energy_kwh"),
@@ -248,6 +272,9 @@ class ExperimentLog:
         policy_family: str = "generic",
         model_size: str = "",
         n_episodes: int = 0,
+        actual_retention_pct: Optional[float] = None,
+        arm: str = "",
+        metadata_conditioning: bool = False,
         gpu_hours: Optional[float] = None,
         wall_clock_seconds: Optional[float] = None,
         energy_kwh: Optional[float] = None,
@@ -296,6 +323,9 @@ class ExperimentLog:
             policy_family=policy_family,
             model_size=model_size,
             n_episodes=n_episodes,
+            actual_retention_pct=actual_retention_pct,
+            arm=arm,
+            metadata_conditioning=metadata_conditioning,
             gpu_hours=gpu_hours,
             wall_clock_seconds=wall_clock_seconds,
             energy_kwh=energy_kwh,
