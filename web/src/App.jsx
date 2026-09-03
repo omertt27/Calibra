@@ -48,10 +48,34 @@ const STATS = [
 ]
 
 const WORKFLOW = [
-  { number: '01', name: 'Integrity', question: 'Can I trust this dataset?', command: 'calibra integrity' },
-  { number: '02', name: 'Quality', question: 'Is it clean?', command: 'calibra <path>' },
-  { number: '03', name: 'Coverage', question: 'Is it diverse?', command: 'calibra review' },
-  { number: '04', name: 'Optimization', question: 'Can I train faster?', command: 'calibra prune' },
+  {
+    number: '01',
+    name: 'Integrity',
+    question: 'Can I trust this data?',
+    detail: 'Detect corrupted episodes, timing problems, invalid actions, broken frames, and other structural failures.',
+    command: 'calibra integrity',
+  },
+  {
+    number: '02',
+    name: 'Characterize',
+    question: 'What does each episode contain?',
+    detail: 'Measure quality risk, anomaly signals, coverage contribution, redundancy, success, and other episode-level characteristics.',
+    command: 'calibra <path>',
+  },
+  {
+    number: '03',
+    name: 'Coverage',
+    question: 'What information would I lose?',
+    detail: 'Find rare behaviors, under-covered regions, and episodes that contribute meaningful diversity.',
+    command: 'calibra review',
+  },
+  {
+    number: '04',
+    name: 'Decide',
+    question: 'What should I train on?',
+    detail: 'Keep, drop, review, annotate, or downweight episodes — or build a smaller quality-aware training set.',
+    command: 'calibra prune',
+  },
 ]
 
 const ECOSYSTEMS = [
@@ -363,9 +387,10 @@ function App() {
             <div className="hero-copy">
               <h1>Stop wasting <span className="accent-word">GPU hours</span> on robot data.</h1>
               <p>
-                Calibra audits dataset integrity, measures quality and coverage, and builds
-                quality-aware coresets — so you train on less data, spend less compute, and
-                know exactly why before training begins.
+                Calibra is an open-source dataset intelligence layer for robotics. It audits
+                integrity, measures quality and coverage, and tells you what data to keep, drop,
+                review, or annotate before training — so you train on less data, preserve the
+                behaviors that matter, and understand every decision before spending compute.
               </p>
               <div className="hero-actions">
                 <a className="button button-primary" href={LINKS.demo} target="_blank" rel="noreferrer">
@@ -439,7 +464,7 @@ function App() {
           <div className="container">
             <Reveal as="div" className="section-intro">
               <h2>Fix the data question before the model question.</h2>
-              <p>Calibra turns an unknown dataset into a training decision through four explicit checks.</p>
+              <p>Calibra turns an unknown robotics dataset into an explicit training decision.</p>
             </Reveal>
             <div className="workflow-grid">
               {WORKFLOW.map((step, index) => (
@@ -449,7 +474,8 @@ function App() {
                     {index < WORKFLOW.length - 1 && <ArrowRight className="step-arrow" size={20} />}
                   </div>
                   <h3>{step.name}</h3>
-                  <p>{step.question}</p>
+                  <p className="step-question">{step.question}</p>
+                  <p className="step-detail">{step.detail}</p>
                   <code>{step.command}</code>
                 </Reveal>
               ))}
@@ -460,15 +486,18 @@ function App() {
         <section className="proof section">
           <div className="container proof-grid">
             <Reveal as="div" className="proof-copy">
-              <h2>See the problem. Find the episode. Fix it.</h2>
+              <h2>Understand every episode. Make the training decision.</h2>
               <p>
-                Every warning maps to a measurable condition and the exact episodes that triggered it.
-                Calibra runs locally and produces deterministic results you can inspect.
+                Every Calibra decision maps back to measurable signals and the exact episodes that
+                caused it. Run everything locally, inspect the reasoning, and export the result for
+                your training pipeline.
               </p>
               <ul>
-                <li><CheckCircle2 size={18} /> Episode-level root causes</li>
-                <li><CheckCircle2 size={18} /> CI-friendly exit codes</li>
-                <li><CheckCircle2 size={18} /> No upload, account, or API key</li>
+                <li><CheckCircle2 size={18} /> Episode-level characterization</li>
+                <li><CheckCircle2 size={18} /> Explicit KEEP / DROP / REVIEW / ANNOTATE decisions</li>
+                <li><CheckCircle2 size={18} /> JSONL and Parquet annotation exports</li>
+                <li><CheckCircle2 size={18} /> CI-friendly, deterministic analysis</li>
+                <li><CheckCircle2 size={18} /> No upload, account, or API key required</li>
               </ul>
               <a className="text-link" href={LINKS.docs}>Explore the commands <ArrowRight size={16} /></a>
             </Reveal>

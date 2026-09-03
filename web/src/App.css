@@ -624,7 +624,7 @@ footer a:hover {
 }
 
 .workflow-step {
-  min-height: 245px;
+  min-height: 288px;
   padding: 26px;
   border-right: 1px solid var(--line);
 }
@@ -638,7 +638,7 @@ footer a:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 48px;
+  margin-bottom: 26px;
 }
 
 .step-number {
@@ -660,9 +660,17 @@ footer a:hover {
   letter-spacing: -0.035em;
 }
 
-.workflow-step p {
-  min-height: 42px;
-  margin: 0 0 26px;
+.workflow-step .step-question {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.workflow-step .step-detail {
+  min-height: 84px;
+  margin: 0 0 22px;
   color: var(--muted);
   font-size: 13px;
   line-height: 1.55;
@@ -680,7 +688,11 @@ footer a:hover {
   color: var(--green-bright);
 }
 
-.workflow-step:last-child p {
+.workflow-step:last-child .step-question {
+  color: #ffffff;
+}
+
+.workflow-step:last-child .step-detail {
   color: #d4d4d2;
 }
 
@@ -1364,9 +1376,13 @@ footer {
   }
 
   .workflow-step {
-    min-height: 210px;
+    min-height: 220px;
     border-right: 0;
     border-bottom: 1px solid var(--line);
+  }
+
+  .workflow-step .step-detail {
+    min-height: 0;
   }
 
   .workflow-step:nth-child(3) {
