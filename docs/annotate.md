@@ -136,7 +136,7 @@ retained-but-mediocre data has the best chance of beating pure pruning.
 ```python
 from calibra.schema.annotations import AnnotationManifest
 
-manifest = AnnotationManifest.load("./calibra_meta/")   # reads jsonl + manifest
+manifest = AnnotationManifest.load("./calibra_meta/")  # reads jsonl + manifest
 for row in manifest.annotations:
     ...
 ```

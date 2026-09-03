@@ -171,9 +171,7 @@ class EpisodeCurator:
             episode_redundancy,
         )
 
-        assessment_by_id = {
-            a.episode_id: a for a in compute_episode_assessments(report, batch)
-        }
+        assessment_by_id = {a.episode_id: a for a in compute_episode_assessments(report, batch)}
 
         retained_indices: list[int] = []
         dropped_indices: list[int] = []

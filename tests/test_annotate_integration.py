@@ -97,10 +97,16 @@ def test_characterization_columns_populated_and_sane(annotated):
 def test_annotate_episodes_are_lower_coverage_than_keep(annotated):
     _, _, out, _ = annotated
     rows = AnnotationManifest.load(str(out)).annotations
-    keep_cov = [r.coverage_value for r in rows
-                if r.calibra_disposition == "KEEP" and r.coverage_value is not None]
-    ann_cov = [r.coverage_value for r in rows
-               if r.calibra_disposition == "ANNOTATE" and r.coverage_value is not None]
+    keep_cov = [
+        r.coverage_value
+        for r in rows
+        if r.calibra_disposition == "KEEP" and r.coverage_value is not None
+    ]
+    ann_cov = [
+        r.coverage_value
+        for r in rows
+        if r.calibra_disposition == "ANNOTATE" and r.coverage_value is not None
+    ]
     if keep_cov and ann_cov:
         # rescue semantics: ANNOTATE = "redundant enough that pruning drops it"
         assert st.mean(ann_cov) < st.mean(keep_cov)

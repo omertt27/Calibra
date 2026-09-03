@@ -385,8 +385,7 @@ def run_experiment(argv: List[str]) -> None:
             meta = " +meta" if r.metadata_conditioning else ""
             actual = (
                 f" (actual {r.actual_retention_pct:.0f}%)"
-                if r.actual_retention_pct is not None
-                and r.actual_retention_pct != r.retention_pct
+                if r.actual_retention_pct is not None and r.actual_retention_pct != r.retention_pct
                 else ""
             )
             print(

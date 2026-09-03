@@ -124,8 +124,11 @@ def run(
                     )
                     rows.append(
                         dict(
-                            dataset=ds_name, arch=arch, arm=arm,
-                            metadata=ARMS[arm]["metadata"], seed=seed,
+                            dataset=ds_name,
+                            arch=arch,
+                            arm=arm,
+                            metadata=ARMS[arm]["metadata"],
+                            seed=seed,
                             nominal_retention_pct=spec.nominal_keep_pct,
                             actual_retention_pct=spec.actual_retention_pct,
                             n_episodes=len(spec.episode_ids),
@@ -136,7 +139,7 @@ def run(
     if rows:
         _write_runs(out / "runs.csv", rows)
         _write_summary(out / "summary.md", rows)
-        print(f"\nwrote {out/'runs.csv'} and {out/'summary.md'}")
+        print(f"\nwrote {out / 'runs.csv'} and {out / 'summary.md'}")
     return rows
 
 
@@ -167,10 +170,13 @@ def _write_summary(path: Path, rows: list[dict]) -> None:
     keys = sorted({(r["dataset"], r["arch"]) for r in rows})
     lines = ["# Metadata-conditioning benchmark — summary", ""]
     for ds, arch in keys:
-        lines += [f"## {ds} · {arch}", "",
-                  "| arm | meta | actual ret. | success | gpu_hours | "
-                  "rare-slice bottom-q | worst slice |",
-                  "|---|---|---|---|---|---|---|"]
+        lines += [
+            f"## {ds} · {arch}",
+            "",
+            "| arm | meta | actual ret. | success | gpu_hours | "
+            "rare-slice bottom-q | worst slice |",
+            "|---|---|---|---|---|---|---|",
+        ]
         for arm in ["A", "B", "C", "R", "R+", "B+meta"]:
             sub = [r for r in rows if r["dataset"] == ds and r["arch"] == arch and r["arm"] == arm]
             if not sub:
@@ -182,28 +188,40 @@ def _write_summary(path: Path, rows: list[dict]) -> None:
                 f"{_agg([r['worst_slice_success'] for r in sub])} |"
             )
         lines.append("")
-    lines += ["> Read against arm A. See METADATA_CONDITIONING_BENCHMARK.md §6 "
-              "for the decision-rule table."]
+    lines += [
+        "> Read against arm A. See METADATA_CONDITIONING_BENCHMARK.md §6 "
+        "for the decision-rule table."
+    ]
     path.write_text("\n".join(lines))
 
 
 def _cli() -> None:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--sidecar", action="append", metavar="NAME=DIR", required=True,
-                   help="dataset name and its --annotate output dir (repeatable)")
+    p.add_argument(
+        "--sidecar",
+        action="append",
+        metavar="NAME=DIR",
+        required=True,
+        help="dataset name and its --annotate output dir (repeatable)",
+    )
     p.add_argument("--arch", action="append", default=None, help="default: act, diffusion")
     p.add_argument("--seeds", default="0,1,2")
     p.add_argument("--experiment-id", default="metadata-benchmark")
     p.add_argument("--arms", default="A,B,C,R,R+")
     p.add_argument("--out-dir", default="metadata_benchmark_results")
-    p.add_argument("--dry-run", action="store_true",
-                   help="print the plan without training (no callable needed)")
+    p.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print the plan without training (no callable needed)",
+    )
     args = p.parse_args()
 
     datasets = dict(s.split("=", 1) for s in args.sidecar)
     if not args.dry_run:
-        print("This scaffold does not train. Import run() and pass train_and_eval, "
-              "or use --dry-run.", file=sys.stderr)
+        print(
+            "This scaffold does not train. Import run() and pass train_and_eval, or use --dry-run.",
+            file=sys.stderr,
+        )
         sys.exit(2)
     run(
         datasets=datasets,

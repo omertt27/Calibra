@@ -276,9 +276,7 @@ class CurationReport(BaseModel):
             f"Retained  : {self.retained_n_episodes} episodes",
             f"Dropped   : {len(self.dropped_indices)} ({self.drop_fraction:.1%})",
         ]
-        other = {
-            k: v for k, v in self.disposition_counts().items() if k not in ("KEEP", "DROP")
-        }
+        other = {k: v for k, v in self.disposition_counts().items() if k not in ("KEEP", "DROP")}
         if other:
             lines.append(
                 "Other     : " + ", ".join(f"{k.lower()}={v}" for k, v in sorted(other.items()))

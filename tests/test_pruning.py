@@ -473,9 +473,7 @@ class TestPruningResultToCurationReport:
         )
 
         without = pruning_result_to_curation_report(result, mixed_batch)
-        with_report = pruning_result_to_curation_report(
-            result, mixed_batch, report=report_diag
-        )
+        with_report = pruning_result_to_curation_report(result, mixed_batch, report=report_diag)
 
         # No report → assessment axes stay None; quality_risk still set from result.
         assert all(d.anomaly_score is None for d in without.dispositions)
@@ -484,9 +482,7 @@ class TestPruningResultToCurationReport:
 
         # With report → anomaly_score populated for every episode.
         assert all(d.anomaly_score is not None for d in with_report.dispositions)
-        assert all(
-            0.0 <= d.anomaly_score <= 1.0 for d in with_report.dispositions
-        )
+        assert all(0.0 <= d.anomaly_score <= 1.0 for d in with_report.dispositions)
         # dispositions themselves are unchanged by enrichment
         assert [d.disposition for d in without.dispositions] == [
             d.disposition for d in with_report.dispositions

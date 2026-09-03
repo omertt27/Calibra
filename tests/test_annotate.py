@@ -179,9 +179,7 @@ def test_parquet_output_matches_jsonl(tmp_path):
 
     table = pq.read_table(tmp_path / "calibra_annotations.parquet")
     assert table.num_rows == 3
-    assert set(table.column_names) == set(
-        EpisodeAnnotation.model_fields.keys()
-    )
+    assert set(table.column_names) == set(EpisodeAnnotation.model_fields.keys())
     by_id = {r["episode_id"]: r for r in table.to_pylist()}
     assert by_id["ep_1"]["calibra_disposition"] == "DROP"
     assert by_id["ep_1"]["integrity_flags"] == ["jerk_spike"]
@@ -202,9 +200,7 @@ def test_parquet_requested_without_pyarrow_raises(tmp_path, monkeypatch):
         return real_import(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "__import__", _no_pyarrow)
-    manifest = build_annotation_manifest(
-        _curation(_sample_dispositions()), source_dataset="x"
-    )
+    manifest = build_annotation_manifest(_curation(_sample_dispositions()), source_dataset="x")
     with pytest.raises(ImportError, match="pyarrow"):
         manifest.write(str(tmp_path), parquet=True)
 

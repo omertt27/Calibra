@@ -163,7 +163,11 @@ class PruningResult:
         uniform per-episode `dispositions` view. Thin wrapper over
         `pruning_result_to_curation_report`; see it for the mapping.
         """
-        kwargs = {} if redundant_disposition is None else {"redundant_disposition": redundant_disposition}
+        kwargs = (
+            {}
+            if redundant_disposition is None
+            else {"redundant_disposition": redundant_disposition}
+        )
         return pruning_result_to_curation_report(self, batch, report=report, **kwargs)
 
 

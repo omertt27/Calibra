@@ -87,13 +87,13 @@ def test_dispositions_derive_legacy_indices():
     dispositions = [
         EpisodeCharacterization(episode_index=0, episode_id="a", disposition=Disposition.DROP),
         EpisodeCharacterization(episode_index=1, episode_id="b", disposition=Disposition.KEEP),
-        EpisodeCharacterization(episode_index=2, episode_id="c", disposition=Disposition.DOWNWEIGHT),
+        EpisodeCharacterization(
+            episode_index=2, episode_id="c", disposition=Disposition.DOWNWEIGHT
+        ),
         EpisodeCharacterization(episode_index=3, episode_id="d", disposition=Disposition.ANNOTATE),
         EpisodeCharacterization(episode_index=4, episode_id="e", disposition=Disposition.REVIEW),
     ]
-    report = CurationReport(
-        original_n_episodes=5, retained_n_episodes=3, dispositions=dispositions
-    )
+    report = CurationReport(original_n_episodes=5, retained_n_episodes=3, dispositions=dispositions)
     # KEEP / DOWNWEIGHT / ANNOTATE are "in the training set" → retained.
     assert report.retained_indices == [1, 2, 3]
     assert report.dropped_indices == [0, 4]
@@ -141,9 +141,7 @@ def test_disposition_counts_and_by_disposition():
         EpisodeCharacterization(episode_index=2, episode_id="c", disposition=Disposition.DROP),
         EpisodeCharacterization(episode_index=3, episode_id="d", disposition=Disposition.REVIEW),
     ]
-    report = CurationReport(
-        original_n_episodes=4, retained_n_episodes=2, dispositions=dispositions
-    )
+    report = CurationReport(original_n_episodes=4, retained_n_episodes=2, dispositions=dispositions)
     assert report.disposition_counts() == {"KEEP": 2, "DROP": 1, "REVIEW": 1}
     reviewed = report.by_disposition(Disposition.REVIEW)
     assert [r.episode_id for r in reviewed] == ["d"]
@@ -154,9 +152,7 @@ def test_summary_lists_non_keepdrop_dispositions():
         EpisodeCharacterization(episode_index=0, episode_id="a", disposition=Disposition.KEEP),
         EpisodeCharacterization(episode_index=1, episode_id="b", disposition=Disposition.REVIEW),
     ]
-    report = CurationReport(
-        original_n_episodes=2, retained_n_episodes=1, dispositions=dispositions
-    )
+    report = CurationReport(original_n_episodes=2, retained_n_episodes=1, dispositions=dispositions)
     s = report.summary()
     assert "Calibra Curation Report" in s
     assert "review=1" in s
@@ -198,9 +194,7 @@ def test_curator_dispositions_consistent_with_legacy_indices():
     _, curation_report = curator.curate(batch, report)
 
     keep_from_disp = sorted(
-        d.episode_index
-        for d in curation_report.dispositions
-        if d.disposition is Disposition.KEEP
+        d.episode_index for d in curation_report.dispositions if d.disposition is Disposition.KEEP
     )
     assert keep_from_disp == sorted(curation_report.retained_indices)
     assert curation_report.disposition_counts() == {"KEEP": 7, "DROP": 1}
