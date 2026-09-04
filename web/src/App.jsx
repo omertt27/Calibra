@@ -8,6 +8,7 @@ import {
   Clipboard,
   ExternalLink,
   Github,
+  Linkedin,
   Menu,
   Star,
   X,
@@ -16,6 +17,7 @@ import './App.css'
 
 const LINKS = {
   github: 'https://github.com/omertt27/Calibra',
+  linkedin: 'https://www.linkedin.com/company/calibrarobotics',
   demo: 'https://huggingface.co/spaces/omert27/robot-dataset-health-check',
   docs: 'https://github.com/omertt27/Calibra/tree/main/docs',
   benchmarks: 'https://github.com/omertt27/Calibra#benchmark-results',
@@ -86,114 +88,156 @@ const ECOSYSTEMS = [
   { name: 'Hugging Face', detail: 'Hub IDs', logo: 'huggingface.svg' },
 ]
 
-// Decorative hero backdrop: wave lines that flow continuously, reading like
-// plotted robot episodes streaming past. Purely visual, hidden from assistive
-// tech, and frozen to a single frame when reduced motion is requested.
-const HERO_WAVES = [
-  { baseY: 96, amp: 26, len: 620, speed: 0.55, phase: 0 },
-  { baseY: 168, amp: 20, len: 520, speed: -0.72, phase: 1.7 },
-  { baseY: 312, amp: 30, len: 700, speed: 0.44, phase: 3.1 },
-  { baseY: 452, amp: 22, len: 560, speed: -0.62, phase: 4.6 },
-  { baseY: 548, amp: 28, len: 640, speed: 0.68, phase: 5.9 },
-]
-
-// Waypoint dots, each pinned to a wave (index) at a fixed x so it bobs along.
-const HERO_NODES = [
-  [0, 210], [0, 700], [0, 1040],
-  [1, 300], [1, 880],
-  [2, 380], [2, 1080],
-  [3, 560], [3, 980],
-  [4, 260], [4, 660], [4, 1160],
-]
-
-const WAVE_X0 = -60
-const WAVE_X1 = 1260
-const WAVE_STEP = 20
-
-function waveOffsetY(w, x, t) {
-  const k = (x / w.len) * Math.PI * 2
-  return (
-    w.amp * Math.sin(k + w.speed * t + w.phase) +
-    w.amp * 0.32 * Math.sin(k * 2.6 - w.speed * 1.5 * t + w.phase)
-  )
-}
-
-function wavePathD(w, t) {
-  let d = ''
-  for (let x = WAVE_X0; x <= WAVE_X1; x += WAVE_STEP) {
-    const y = (w.baseY + waveOffsetY(w, x, t)).toFixed(1)
-    d += `${x === WAVE_X0 ? 'M' : 'L'}${x} ${y} `
-  }
-  return d.trim()
-}
+// Decorative hero backdrop: a drifting constellation of nodes that link to any
+// neighbour within reach and trace brighter threads toward the cursor, nudging
+// away from it as it moves. Purely visual, hidden from assistive tech, and
+// frozen to a single static frame when reduced motion is requested.
+const LINK_DIST = 172
+const POINTER_DIST = 200
 
 function HeroTrajectories() {
-  const pathRefs = useRef([])
-  const nodeRefs = useRef([])
+  const canvasRef = useRef(null)
 
   useEffect(() => {
-    const paint = (t) => {
-      HERO_WAVES.forEach((w, i) => {
-        pathRefs.current[i]?.setAttribute('d', wavePathD(w, t))
-      })
-      HERO_NODES.forEach(([wi, x], i) => {
-        const y = HERO_WAVES[wi].baseY + waveOffsetY(HERO_WAVES[wi], x, t)
-        nodeRefs.current[i]?.setAttribute('cy', y.toFixed(1))
-      })
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+
+    let width = 0
+    let height = 0
+    let points = []
+    let raf = 0
+    const pointer = { x: -9999, y: -9999, active: false }
+
+    const seed = () => {
+      const count = Math.round(Math.min(104, Math.max(30, (width * height) / 14000)))
+      points = Array.from({ length: count }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.24,
+        vy: (Math.random() - 0.5) * 0.24,
+      }))
     }
+
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect()
+      width = rect.width
+      height = rect.height
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      canvas.width = Math.round(width * dpr)
+      canvas.height = Math.round(height * dpr)
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      seed()
+    }
+
+    const step = () => {
+      for (const p of points) {
+        p.x += p.vx
+        p.y += p.vy
+        if (p.x <= 0 || p.x >= width) p.vx *= -1
+        if (p.y <= 0 || p.y >= height) p.vy *= -1
+        p.x = Math.max(0, Math.min(width, p.x))
+        p.y = Math.max(0, Math.min(height, p.y))
+
+        if (pointer.active) {
+          const dx = p.x - pointer.x
+          const dy = p.y - pointer.y
+          const d2 = dx * dx + dy * dy
+          if (d2 > 0.01 && d2 < POINTER_DIST * POINTER_DIST) {
+            const d = Math.sqrt(d2)
+            const force = (1 - d / POINTER_DIST) * 0.7
+            p.x += (dx / d) * force
+            p.y += (dy / d) * force
+          }
+        }
+      }
+    }
+
+    const draw = () => {
+      ctx.clearRect(0, 0, width, height)
+
+      for (let i = 0; i < points.length; i++) {
+        const a = points[i]
+        for (let j = i + 1; j < points.length; j++) {
+          const b = points[j]
+          const dx = a.x - b.x
+          const dy = a.y - b.y
+          const d = Math.hypot(dx, dy)
+          if (d < LINK_DIST) {
+            ctx.strokeStyle = `rgba(255, 255, 255, ${(1 - d / LINK_DIST) * 0.4})`
+            ctx.lineWidth = 1.2
+            ctx.beginPath()
+            ctx.moveTo(a.x, a.y)
+            ctx.lineTo(b.x, b.y)
+            ctx.stroke()
+          }
+        }
+      }
+
+      for (const p of points) {
+        if (pointer.active) {
+          const d = Math.hypot(p.x - pointer.x, p.y - pointer.y)
+          if (d < POINTER_DIST) {
+            ctx.strokeStyle = `rgba(120, 214, 140, ${(1 - d / POINTER_DIST) * 0.6})`
+            ctx.lineWidth = 1.3
+            ctx.beginPath()
+            ctx.moveTo(p.x, p.y)
+            ctx.lineTo(pointer.x, pointer.y)
+            ctx.stroke()
+          }
+        }
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)'
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, 1.9, 0, Math.PI * 2)
+        ctx.fill()
+      }
+    }
+
+    const tick = () => {
+      step()
+      draw()
+      raf = requestAnimationFrame(tick)
+    }
+
+    const onMove = (e) => {
+      const rect = canvas.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+      pointer.x = x
+      pointer.y = y
+      pointer.active = x >= 0 && y >= 0 && x <= rect.width && y <= rect.height
+    }
+    const onLeave = () => {
+      pointer.active = false
+    }
+
+    resize()
+    window.addEventListener('resize', resize)
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('blur', onLeave)
+    document.addEventListener('mouseleave', onLeave)
 
     const reduce =
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (reduce) {
-      paint(0)
-      return
-    }
-
-    let raf
-    const start = performance.now()
-    const tick = (now) => {
-      paint((now - start) / 1000)
+      draw()
+    } else {
       raf = requestAnimationFrame(tick)
     }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('resize', resize)
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('blur', onLeave)
+      document.removeEventListener('mouseleave', onLeave)
+    }
   }, [])
 
   return (
     <div className="hero-trajectories" aria-hidden="true">
-      <svg viewBox="0 0 1200 620" preserveAspectRatio="xMidYMid slice">
-        <defs>
-          <linearGradient id="traj-fade" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stopColor="#ffffff" stopOpacity="0" />
-            <stop offset="0.5" stopColor="#ffffff" stopOpacity="1" />
-            <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <g className="traj-paths" fill="none" stroke="url(#traj-fade)">
-          {HERO_WAVES.map((w, i) => (
-            <path
-              key={i}
-              className="traj-path"
-              ref={(el) => (pathRefs.current[i] = el)}
-              d={wavePathD(w, 0)}
-              style={{ '--i': i }}
-            />
-          ))}
-        </g>
-        <g className="traj-nodes" fill="#ffffff">
-          {HERO_NODES.map(([wi, x], i) => (
-            <circle
-              key={i}
-              ref={(el) => (nodeRefs.current[i] = el)}
-              cx={x}
-              cy={HERO_WAVES[wi].baseY}
-              r="2.4"
-              style={{ '--i': i }}
-            />
-          ))}
-        </g>
-      </svg>
+      <canvas ref={canvasRef} />
     </div>
   )
 }
@@ -475,6 +519,15 @@ function App() {
             <a className="nav-github" href={LINKS.github} target="_blank" rel="noreferrer">
               <Github size={17} /> GitHub
             </a>
+            <a
+              className="nav-linkedin"
+              href={LINKS.linkedin}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Calibra on LinkedIn"
+            >
+              <Linkedin size={17} />
+            </a>
             <button
               className="nav-toggle"
               type="button"
@@ -504,6 +557,9 @@ function App() {
               })}
               <a href={LINKS.github} target="_blank" rel="noreferrer" onClick={() => setMenuOpen(false)}>
                 GitHub
+              </a>
+              <a href={LINKS.linkedin} target="_blank" rel="noreferrer" onClick={() => setMenuOpen(false)}>
+                LinkedIn
               </a>
             </div>
           </div>
