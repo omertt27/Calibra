@@ -89,11 +89,10 @@ const ECOSYSTEMS = [
 ]
 
 // Decorative hero backdrop: a drifting constellation of nodes that link to any
-// neighbour within reach and trace brighter threads toward the cursor, nudging
-// away from it as it moves. Purely visual, hidden from assistive tech, and
-// frozen to a single static frame when reduced motion is requested.
+// neighbour within reach. Purely visual and non-interactive: it ignores the
+// cursor, is hidden from assistive tech, and freezes to a single static frame
+// when reduced motion is requested.
 const LINK_DIST = 172
-const POINTER_DIST = 200
 
 function HeroTrajectories() {
   const canvasRef = useRef(null)
@@ -107,7 +106,6 @@ function HeroTrajectories() {
     let height = 0
     let points = []
     let raf = 0
-    const pointer = { x: -9999, y: -9999, active: false }
 
     const seed = () => {
       const count = Math.round(Math.min(104, Math.max(30, (width * height) / 14000)))
@@ -138,18 +136,6 @@ function HeroTrajectories() {
         if (p.y <= 0 || p.y >= height) p.vy *= -1
         p.x = Math.max(0, Math.min(width, p.x))
         p.y = Math.max(0, Math.min(height, p.y))
-
-        if (pointer.active) {
-          const dx = p.x - pointer.x
-          const dy = p.y - pointer.y
-          const d2 = dx * dx + dy * dy
-          if (d2 > 0.01 && d2 < POINTER_DIST * POINTER_DIST) {
-            const d = Math.sqrt(d2)
-            const force = (1 - d / POINTER_DIST) * 0.7
-            p.x += (dx / d) * force
-            p.y += (dy / d) * force
-          }
-        }
       }
     }
 
@@ -175,17 +161,6 @@ function HeroTrajectories() {
       }
 
       for (const p of points) {
-        if (pointer.active) {
-          const d = Math.hypot(p.x - pointer.x, p.y - pointer.y)
-          if (d < POINTER_DIST) {
-            ctx.strokeStyle = `rgba(120, 214, 140, ${(1 - d / POINTER_DIST) * 0.6})`
-            ctx.lineWidth = 1.3
-            ctx.beginPath()
-            ctx.moveTo(p.x, p.y)
-            ctx.lineTo(pointer.x, pointer.y)
-            ctx.stroke()
-          }
-        }
         ctx.fillStyle = 'rgba(255, 255, 255, 0.6)'
         ctx.beginPath()
         ctx.arc(p.x, p.y, 1.9, 0, Math.PI * 2)
@@ -199,23 +174,8 @@ function HeroTrajectories() {
       raf = requestAnimationFrame(tick)
     }
 
-    const onMove = (e) => {
-      const rect = canvas.getBoundingClientRect()
-      const x = e.clientX - rect.left
-      const y = e.clientY - rect.top
-      pointer.x = x
-      pointer.y = y
-      pointer.active = x >= 0 && y >= 0 && x <= rect.width && y <= rect.height
-    }
-    const onLeave = () => {
-      pointer.active = false
-    }
-
     resize()
     window.addEventListener('resize', resize)
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('blur', onLeave)
-    document.addEventListener('mouseleave', onLeave)
 
     const reduce =
       typeof window.matchMedia === 'function' &&
@@ -229,9 +189,6 @@ function HeroTrajectories() {
     return () => {
       cancelAnimationFrame(raf)
       window.removeEventListener('resize', resize)
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('blur', onLeave)
-      document.removeEventListener('mouseleave', onLeave)
     }
   }, [])
 

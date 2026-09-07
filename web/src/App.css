@@ -228,8 +228,8 @@ footer a:hover {
   pointer-events: none;
 }
 
-/* Interactive node constellation: drifting points that link to nearby
-   neighbours and thread toward the cursor, painted each frame on a canvas. */
+/* Decorative node constellation: drifting points that link to nearby
+   neighbours, painted each frame on a canvas. Non-interactive. */
 .hero-trajectories {
   position: absolute;
   inset: 0;
