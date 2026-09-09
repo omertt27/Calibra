@@ -309,6 +309,15 @@ footer a:hover {
   animation-delay: 390ms;
 }
 
+.hero-kicker {
+  display: inline-block;
+  color: var(--green-bright);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .hero h1 {
   max-width: 620px;
   margin: 0;

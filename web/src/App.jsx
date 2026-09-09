@@ -22,6 +22,7 @@ const LINKS = {
   docs: 'https://github.com/omertt27/Calibra/tree/main/docs',
   benchmarks: 'https://github.com/omertt27/Calibra#benchmark-results',
   license: 'https://github.com/omertt27/Calibra/blob/main/LICENSE',
+  licensing: 'https://github.com/omertt27/Calibra/blob/main/LICENSING.md',
   pypi: 'https://pypi.org/project/calibra-robotics/',
   productHunt:
     'https://www.producthunt.com/products/calibra-train-with-less-data?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-calibra-cut-robot-training-costs',
@@ -470,6 +471,7 @@ function App() {
           </div>
           <div className="nav-right">
             <div className="nav-badges">
+              <a className="nav-pill" href={LINKS.licensing} target="_blank" rel="noreferrer">Open Source</a>
               <StarPill />
               <a className="nav-pill" href={LINKS.pypi} target="_blank" rel="noreferrer">PyPI</a>
             </div>
@@ -528,12 +530,14 @@ function App() {
           <HeroTrajectories />
           <div className="container hero-grid">
             <div className="hero-copy">
+              <span className="hero-kicker">Open source · runs on your machine</span>
               <h1>Stop wasting <span className="accent-word">GPU hours</span> on robot data.</h1>
               <p>
-                Calibra is a robotics dataset intelligence layer. It audits
+                Calibra is an open source robotics dataset intelligence layer. It audits
                 integrity, measures quality and coverage, and tells you what data to keep, drop,
                 review, or annotate before training, so you train on less data, preserve the
                 behaviors that matter, and understand every decision before spending compute.
+                Full source on GitHub, no account or upload required.
               </p>
               <div className="hero-actions">
                 <a className="button button-primary" href={LINKS.demo} target="_blank" rel="noreferrer">
@@ -636,6 +640,7 @@ function App() {
                 your training pipeline.
               </p>
               <ul>
+                <li><CheckCircle2 size={18} /> Open source: read, modify, and self-host the code</li>
                 <li><CheckCircle2 size={18} /> Episode-level characterization</li>
                 <li><CheckCircle2 size={18} /> Explicit KEEP / DROP / REVIEW / ANNOTATE decisions</li>
                 <li><CheckCircle2 size={18} /> JSONL and Parquet annotation exports</li>
@@ -701,7 +706,7 @@ function App() {
             <Reveal as="div" className="cta-panel">
               <span className="cta-kicker">Before your next training run</span>
               <h2>Check the data first.</h2>
-              <p>Install Calibra locally or inspect a public LeRobot dataset in the browser. Free, no account needed.</p>
+              <p>Free and open source. Install Calibra locally or inspect a public LeRobot dataset in the browser, no account, no cloud upload.</p>
               <CopyCommand large />
               <a className="button button-primary" href={LINKS.demo} target="_blank" rel="noreferrer">
                 Try the Hugging Face demo <ExternalLink size={16} />
@@ -714,7 +719,7 @@ function App() {
       <footer>
         <div className="container footer-inner">
           <Logo />
-          <p>Train on less data. Spend less compute. Ship better policies.</p>
+          <p>Open source. Train on less data. Spend less compute. Ship better policies.</p>
           <div>
             <a href={LINKS.productHunt} target="_blank" rel="noopener noreferrer" className="ph-badge">
               <img
@@ -726,7 +731,7 @@ function App() {
             </a>
             <a href={LINKS.github} target="_blank" rel="noreferrer">GitHub</a>
             <a href={LINKS.docs} target="_blank" rel="noreferrer">Docs</a>
-            <a href={LINKS.license} target="_blank" rel="noreferrer">BSL 1.1</a>
+            <a href={LINKS.licensing} target="_blank" rel="noreferrer">BSL 1.1</a>
           </div>
         </div>
       </footer>
