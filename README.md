@@ -284,16 +284,6 @@ Random selection picks a clustered subset. Calibra's coverage-based selector spr
 
 ---
 
-## Dashboard
-
-<p align="center">
-  <img src="docs/figures/dashboard.png" alt="Calibra dashboard showing dataset health score, diagnostic findings, and per-episode outliers" width="780"/>
-</p>
-
-*Inspect dataset health, identify problematic demonstrations with root causes, and generate a training-ready coreset — all from one interface. Generated with `calibra audit lerobot/columbia_cairlab_pusht_real --html-out report.html`.*
-
----
-
 ## In practice
 
 <p align="center">
