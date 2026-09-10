@@ -139,6 +139,8 @@ class Finding(BaseModel):
     observed_value: Optional[float] = None
     observed_unit: str = ""
     threshold: Optional[float] = None
+    benign_baseline_rate: Optional[float] = None  # fraction flagged on known-clean datasets; null = no baseline
+    baseline_source: Optional[str] = None  # e.g. "lerobot/pusht (n=206, v0.10.0)"
 
 
 # ── results container ─────────────────────────────────────────────────────────
@@ -191,6 +193,53 @@ class EpisodeVerdicts(BaseModel):
     method: str = ""
 
 
+# ── anomaly summary ───────────────────────────────────────────────────────────
+
+
+class DetectorCalibrationSummary(BaseModel):
+    """
+    Per-detector calibration context for an anomaly audit.
+
+    Separates what the detector observed from what clean datasets typically show.
+    A detected anomaly is not the same as confirmed corruption — this context
+    lets users judge whether the observed rate is genuinely elevated.
+    """
+
+    detector: str
+    n_flagged: int  # episodes flagged by this detector in the current audit
+    fraction_flagged: float  # n_flagged / total episodes
+    benign_firing_rate: Optional[float] = None  # from calibration registry; null = no baseline
+    corrupted_episode_detection_rate: Optional[float] = None  # from benchmark; null = not measured
+    # Episode-level: an episode is counted detected if the detector fired anywhere in it.
+    # Does not distinguish whether the detector fired at the corrupted region or elsewhere.
+    baseline_dataset: Optional[str] = None  # which dataset the baseline came from
+    sample_count: Optional[int] = None  # n_episodes in the baseline measurement
+    concentration: str = "unknown"  # "spread" | "clustered" | "endpoint" | "unknown"
+
+
+class AnomalySummary(BaseModel):
+    """
+    Episode-level anomaly detection summary.
+
+    Designed to answer: "When Calibra flags my data, how surprised should I be?"
+
+    Architecture note: detected anomaly ≠ confirmed corruption ≠ DROP decision.
+    The detector identifies statistical outliers within the dataset's own
+    distribution. The decision layer (EpisodeCharacterization / CurationReport)
+    determines what to do with them.
+    """
+
+    total_flags: int  # total (episode, detector) flag pairs
+    affected_episodes: int  # episodes with at least one flag
+    affected_episode_rate: float  # affected_episodes / n_total_episodes
+    n_total_episodes: int
+    detectors: list[DetectorCalibrationSummary] = []
+    # Concentration: fraction of flags in the top-5 most-flagged episodes.
+    # High concentration → investigate those episodes for a shared cause.
+    top5_episode_flag_fraction: Optional[float] = None
+    position_note: str = ""  # e.g. "concentrated near dataset end"
+
+
 # ── top-level contract ────────────────────────────────────────────────────────
 
 
@@ -200,12 +249,16 @@ class EpisodeHash(BaseModel):
 
 
 class CalibraReport(BaseModel):
-    schema_version: str = "1.1.0"
+    schema_version: str = "1.2.0"
     report: ReportMeta
     dataset: DatasetInfo
     audit: AuditConfig
     results: AuditResults
     episode_verdicts: Optional[EpisodeVerdicts] = None
+    # Episode-level anomaly detection summary with calibration context.
+    # Null when produced without anomaly detection (e.g. raw `calibra certify`
+    # without the decision layer). Added in schema 1.2.0.
+    anomaly_summary: Optional[AnomalySummary] = None
     # Incremental analysis: per-episode SHA-256[:16] of timestamps+actions.
     # A list of records (not a dict keyed by episode_id) so the field has a
     # stable Arrow/Parquet schema regardless of which episodes are hashed —

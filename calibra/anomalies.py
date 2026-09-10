@@ -52,6 +52,10 @@ class EpisodeFlag:
     median: float
     deviation_mads: float
     higher_is_worse: bool
+    benign_baseline_rate: float | None = None  # fraction flagged on known-clean datasets (None = no baseline available)
+    baseline_source: str | None = None  # e.g. "lerobot/pusht (n=206)"
+    trigger_start: int | None = None  # approximate first step that drove the flag
+    trigger_end: int | None = None  # approximate last step that drove the flag
 
     @property
     def multiple(self) -> float:
@@ -83,11 +87,24 @@ class EpisodeAnomaly:
 def find_outliers(
     report: DiagnosticReport,
     k: float = OUTLIER_K,
+    dataset: str | None = None,
+    task_family: str | None = None,
+    registry=None,
 ) -> list[EpisodeAnomaly]:
     """
     Return a list of EpisodeAnomaly objects, sorted by severity descending.
     Only episodes with at least one metric deviation > k MADs are returned.
+
+    When `dataset` or `task_family` are provided, each flag is annotated with
+    the known benign firing rate from `registry` (defaults to DEFAULT_REGISTRY).
+    When no matching baseline exists the fields remain None — callers must not
+    substitute a generic number.
     """
+    from calibra.calibration import DEFAULT_REGISTRY
+
+    if registry is None:
+        registry = DEFAULT_REGISTRY
+
     raw_by_analyzer: dict[str, dict] = {
         r.analyzer_name: r.raw_metrics for r in report.analyzer_results
     }
@@ -128,6 +145,11 @@ def find_outliers(
 
         threshold_k = _OUTLIER_K_BY_METRIC.get(label, k)
 
+        # Look up benign baseline once per metric (same for all episodes)
+        baseline_rate, baseline_src = registry.benign_firing_rate(
+            label, dataset=dataset, task_family=task_family
+        )
+
         for idx, v in enumerate(arr):
             if np.isnan(v):
                 continue
@@ -147,6 +169,10 @@ def find_outliers(
                 median=median,
                 deviation_mads=abs(deviation),
                 higher_is_worse=higher_is_worse,
+                benign_baseline_rate=baseline_rate,
+                baseline_source=baseline_src,
+                # trigger_start / trigger_end: requires per-step data not yet
+                # stored in raw_metrics — populated by future per-step analyzers
             )
             flags_by_ep.setdefault(idx, []).append(flag)
 
@@ -245,9 +271,133 @@ def render(anomalies: list[EpisodeAnomaly], n_episodes: int) -> str:
         lines.append(f"    → {label}")
         lines.append("")
 
-    lines.append(
-        "Inspect flagged episodes before training. "
-        "Remove with: calibra.comparison.curator.EpisodeCurator"
-    )
+    # Calibration context: per-detector flag rates vs. known-clean baselines.
+    # Detecting anomalies ≠ confirming corruption — show the rates so users
+    # can judge whether the observed rate is genuinely elevated.
+    summary = firing_rate_summary(anomalies, n_episodes)
+    if summary:
+        lines.append("")
+        lines.append("Calibration Context (detector firing rates vs. known-clean baselines)")
+        lines.append(f"  {'Detector':<18} {'Your rate':>9}  {'Clean baseline':>14}  Signal")
+        lines.append(f"  {'─'*18} {'─'*9}  {'─'*14}  {'─'*20}")
+        for entry in summary:
+            your_pct = f"{entry['fraction']:.1%}"
+            baseline = entry["benign_baseline_rate"]
+            baseline_src = entry["baseline_source"]
+            if baseline is None:
+                baseline_str = "unavailable"
+                signal = "—"
+            else:
+                baseline_str = f"{baseline:.1%}"
+                ratio = entry["fraction"] / baseline if baseline > 0 else float("inf")
+                if abs(entry["fraction"] - baseline) < 0.005:
+                    signal = "within normal range"
+                elif ratio >= 2.0:
+                    signal = f"{ratio:.1f}× above baseline"
+                elif ratio <= 0.5:
+                    signal = "below baseline"
+                else:
+                    signal = "near baseline"
+                if baseline_src:
+                    baseline_str += f" [{baseline_src.split('(')[0].strip()}]"
+            lines.append(f"  {entry['detector']:<18} {your_pct:>9}  {baseline_str:>14}  {signal}")
+        lines.append("")
+        lines.append(
+            "A flag means this episode is unusual relative to the rest of this"
+        )
+        lines.append(
+            "dataset — not that it is corrupted. Review flagged episodes before"
+        )
+        lines.append("deciding to drop, downweight, or annotate them.")
+    else:
+        lines.append(
+            "Inspect flagged episodes before training. "
+            "Unusual ≠ corrupted — review before dropping."
+        )
+    lines.append("─" * 58)
+    return "\n".join(lines)
+
+
+def firing_rate_summary(
+    anomalies: list[EpisodeAnomaly],
+    n_episodes: int,
+) -> list[dict]:
+    """
+    Per-detector firing rates for the current dataset, suitable for calibration
+    context tables. Each entry has:
+        detector, n_flagged, fraction, benign_baseline_rate, baseline_source
+    """
+    from collections import defaultdict
+
+    counts: dict[str, int] = defaultdict(int)
+    baselines: dict[str, float | None] = {}
+    sources: dict[str, str | None] = {}
+
+    for anomaly in anomalies:
+        for flag in anomaly.flags:
+            counts[flag.metric] += 1
+            if flag.metric not in baselines:
+                baselines[flag.metric] = flag.benign_baseline_rate
+                sources[flag.metric] = flag.baseline_source
+
+    return [
+        {
+            "detector": metric,
+            "n_flagged": n,
+            "fraction": n / n_episodes if n_episodes > 0 else 0.0,
+            "benign_baseline_rate": baselines.get(metric),
+            "baseline_source": sources.get(metric),
+        }
+        for metric, n in sorted(counts.items(), key=lambda x: x[1], reverse=True)
+    ]
+
+
+def concentration_report(anomalies: list[EpisodeAnomaly], n_episodes: int) -> str:
+    """
+    Report whether detector firings are spread across the dataset or concentrated
+    in a small number of episodes / trajectory regions.
+
+    Returns a short human-readable string suitable for appending to audit output.
+    """
+    if not anomalies:
+        return ""
+
+    n_flagged = len(anomalies)
+    all_flags = [f for a in anomalies for f in a.flags]
+    n_flags = len(all_flags)
+
+    # Episode concentration: what fraction of flags are in the top-5 episodes?
+    from collections import Counter
+
+    per_episode = Counter(f.episode_id for a in anomalies for f in a.flags)
+    top5_count = sum(v for _, v in per_episode.most_common(5))
+    top5_pct = top5_count / n_flags if n_flags > 0 else 0.0
+
+    # Position concentration: are flagged episodes clustered at start/end?
+    idxs = sorted(a.episode_idx for a in anomalies)
+    start_cluster = sum(1 for i in idxs if i <= int(n_episodes * 0.10))
+    end_cluster = sum(1 for i in idxs if i >= int(n_episodes * 0.90))
+    position_note = ""
+    if start_cluster >= 2 and start_cluster / n_flagged >= 0.30:
+        position_note = " — concentrated near dataset start"
+    elif end_cluster >= 2 and end_cluster / n_flagged >= 0.30:
+        position_note = " — concentrated near dataset end"
+
+    lines = [
+        "─── Concentration Analysis " + "─" * 32,
+        f"  {n_flagged} flagged episodes, {n_flags} total flags",
+        f"  Top-5 episodes account for {top5_pct:.0%} of all flags{position_note}",
+    ]
+
+    if top5_pct > 0.70:
+        lines.append(
+            "  → Flags are concentrated. Check these episodes for a shared"
+        )
+        lines.append(
+            "    cause: recording session, operator, task condition, or hardware."
+        )
+    else:
+        lines.append("  → Flags are spread across the dataset (no strong concentration).")
+
     lines.append("─" * 58)
     return "\n".join(lines)

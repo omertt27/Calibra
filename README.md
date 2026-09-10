@@ -237,6 +237,26 @@ Method rankings are stable across all three policy families (Spearman ρ ≥ 0.8
 
 ---
 
+## Detector calibration
+
+Calibra flags episodes that look unusual relative to the rest of the dataset. Not every flag is corruption — some episodes are just at the tail of a clean distribution. The table below shows, for each detector, how often it fires on **ground-truth-clean data** (benign firing rate) and how often it catches **synthetically-corrupted episodes** (episode detection rate). Both measured on real LeRobot datasets via `experiments/benign_firing_rate_benchmark.py`.
+
+| Detector | Benign firing rate | Episode detection rate | Signal ratio |
+|---|---:|---:|---:|
+| `jitter_cv` | 3.4% | 37.1% | 11× |
+| `dropout_rate` | 0.0% | 18.8% | — |
+| `spike_rate` | 4.7% | 51.2% | 11× |
+| `vel_disc_rate` | 1.9% | 30.5% | 16× |
+| `ldlj` | 0.0% | 50.0% | — |
+
+Averaged across `lerobot/pusht` (n=206) and `lerobot/aloha_sim_insertion_scripted` (n=50) with 95% Wilson CIs. Signal ratio is undefined (—) when the benign rate is 0%.
+
+**A detected anomaly is not the same as confirmed corruption.** Use `calibra review` to inspect flagged episodes before deciding to drop, downweight, or annotate them.
+
+→ [Full per-dataset tables with confidence intervals](experiments/results/benign_firing_rates.md)
+
+---
+
 ## Measure real training savings
 
 Calibra can record measured training results from real experiments and connect them to benchmark reports.

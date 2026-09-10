@@ -24,10 +24,12 @@ from typing import Optional
 from calibra import __version__
 from calibra.certify import _grade
 from calibra.schema.public_report import (
+    AnomalySummary,
     AuditConfig,
     AuditResults,
     CalibraReport,
     DatasetInfo,
+    DetectorCalibrationSummary,
     DimensionResult,
     EnvironmentInfo,
     EpisodeHash,
@@ -160,6 +162,112 @@ def _compute_confidence(flags: list[RiskFlag]) -> float:
     return round(sum(ratios) / len(ratios), 3) if ratios else 0.9
 
 
+def _build_anomaly_summary(
+    diag: DiagnosticReport,
+    dataset: Optional[str] = None,
+    task_family: Optional[str] = None,
+) -> Optional[AnomalySummary]:
+    """
+    Run episode-level anomaly detection on `diag` and return a calibrated summary.
+
+    Returns None if the diagnostic report lacks per-episode data (fewer than 5
+    episodes or missing per-episode metrics), keeping report generation cheap
+    when the data is not present.
+
+    Architecture note: a detected anomaly ≠ confirmed corruption ≠ DROP.
+    The summary records what the detectors observed; the decision layer
+    (EpisodeCharacterization / CurationReport) determines what to do.
+    """
+    from calibra.anomalies import find_outliers, firing_rate_summary
+    from calibra.calibration import DEFAULT_REGISTRY
+    from collections import Counter
+
+    if diag.n_episodes < 5:
+        return None
+
+    anomalies = find_outliers(diag, dataset=dataset, task_family=task_family)
+    if not anomalies and diag.n_episodes > 0:
+        return AnomalySummary(
+            total_flags=0,
+            affected_episodes=0,
+            affected_episode_rate=0.0,
+            n_total_episodes=diag.n_episodes,
+        )
+
+    n_episodes = diag.n_episodes
+    all_flags = [f for a in anomalies for f in a.flags]
+    n_flags = len(all_flags)
+    n_affected = len(anomalies)
+
+    # Concentration: fraction of flags in top-5 most-flagged episodes
+    per_ep = Counter(f.episode_id for a in anomalies for f in a.flags)
+    top5 = sum(v for _, v in per_ep.most_common(5))
+    top5_frac = top5 / n_flags if n_flags > 0 else 0.0
+
+    # Position clustering
+    sorted_idxs = sorted(a.episode_idx for a in anomalies)
+    start_cluster = sum(1 for i in sorted_idxs if i <= int(n_episodes * 0.10))
+    end_cluster = sum(1 for i in sorted_idxs if i >= int(n_episodes * 0.90))
+    position_note = ""
+    if start_cluster >= 2 and n_affected > 0 and start_cluster / n_affected >= 0.30:
+        position_note = "concentrated near dataset start"
+    elif end_cluster >= 2 and n_affected > 0 and end_cluster / n_affected >= 0.30:
+        position_note = "concentrated near dataset end"
+
+    # Per-detector calibration summaries
+    rate_entries = firing_rate_summary(anomalies, n_episodes)
+    detector_summaries: list[DetectorCalibrationSummary] = []
+    for entry in rate_entries:
+        det = entry["detector"]
+        frac = entry["fraction"]
+        baseline_rate = entry["benign_baseline_rate"]
+        baseline_src = entry["baseline_source"]
+
+        profile = DEFAULT_REGISTRY.lookup(det, dataset=dataset, task_family=task_family)
+        n_baseline = profile.n_episodes if profile else None
+        baseline_ds = profile.dataset if profile else None
+
+        # Concentration per detector
+        det_idxs = sorted(
+            a.episode_idx for a in anomalies if any(f.metric == det for f in a.flags)
+        )
+        if len(det_idxs) == 0:
+            conc = "unknown"
+        elif len(det_idxs) == 1:
+            conc = "spread"
+        else:
+            span = det_idxs[-1] - det_idxs[0]
+            if span <= max(3, int(n_episodes * 0.10)):
+                conc = "clustered"
+            elif det_idxs[-1] >= int(n_episodes * 0.85):
+                conc = "endpoint"
+            else:
+                conc = "spread"
+
+        detector_summaries.append(
+            DetectorCalibrationSummary(
+                detector=det,
+                n_flagged=entry["n_flagged"],
+                fraction_flagged=round(frac, 4),
+                benign_firing_rate=baseline_rate,
+                corrupted_episode_detection_rate=None,  # populated by benchmark script
+                baseline_dataset=baseline_ds,
+                sample_count=n_baseline,
+                concentration=conc,
+            )
+        )
+
+    return AnomalySummary(
+        total_flags=n_flags,
+        affected_episodes=n_affected,
+        affected_episode_rate=round(n_affected / n_episodes, 4) if n_episodes > 0 else 0.0,
+        n_total_episodes=n_episodes,
+        detectors=detector_summaries,
+        top5_episode_flag_fraction=round(top5_frac, 3),
+        position_note=position_note,
+    )
+
+
 def _config_hash(
     profile: Optional[str],
     rubric: str,
@@ -180,6 +288,7 @@ def assemble_public_report(
     profile: Optional[str] = None,
     pruning_result=None,
     episode_hashes: Optional[dict] = None,
+    task_family: Optional[str] = None,
 ) -> CalibraReport:
     """
     Convert a DiagnosticReport into the public CalibraReport contract.
@@ -230,6 +339,14 @@ def assemble_public_report(
         ),
     )
 
+    # Anomaly summary — runs find_outliers internally so callers don't pay the
+    # cost unless they produce a full report. Returns None for small datasets.
+    anomaly_summary = _build_anomaly_summary(
+        diag,
+        dataset=dataset_info.repository_id,
+        task_family=task_family,
+    )
+
     # Compute report ID from the body (excluding the id field itself)
     now = datetime.now(timezone.utc)
     verdicts = _pruning_to_verdicts(pruning_result) if pruning_result is not None else None
@@ -237,19 +354,20 @@ def assemble_public_report(
         EpisodeHash(episode_id=eid, hash=h) for eid, h in sorted((episode_hashes or {}).items())
     ]
     id_body = {
-        "schema_version": "1.1.0",
+        "schema_version": "1.2.0",
         "generated_at": now.isoformat(),
         "calibra_version": __version__,
         "dataset": dataset_info.model_dump(),
         "audit": audit_cfg.model_dump(),
         "results": results.model_dump(),
         "episode_verdicts": verdicts.model_dump() if verdicts is not None else None,
+        "anomaly_summary": anomaly_summary.model_dump() if anomaly_summary is not None else None,
         "episode_hashes": [h.model_dump() for h in ep_hashes],
     }
     report_id = CalibraReport.compute_id(id_body)
 
     return CalibraReport(
-        schema_version="1.1.0",
+        schema_version="1.2.0",
         report=ReportMeta(
             id=report_id,
             generated_at=now,
@@ -260,6 +378,7 @@ def assemble_public_report(
         audit=audit_cfg,
         results=results,
         episode_verdicts=verdicts,
+        anomaly_summary=anomaly_summary,
         episode_hashes=ep_hashes,
     )
 

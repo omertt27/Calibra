@@ -1,0 +1,11 @@
+dataset,task_family,detector,detector_version,n_episodes,n_flagged,firing_rate,ci_lower,ci_upper,corrupted_episode_detection_rate,measured_at
+lerobot/pusht,pusht,jitter_cv,0.9.0,206,14,0.068,0.0409,0.1108,0.6,2026-09-10
+lerobot/pusht,pusht,dropout_rate,0.9.0,206,0,0.0,0.0,0.0183,0.2333,2026-09-10
+lerobot/pusht,pusht,spike_rate,0.9.0,206,3,0.0146,0.005,0.0419,0.1667,2026-09-10
+lerobot/pusht,pusht,vel_disc_rate,0.9.0,206,8,0.0388,0.0198,0.0747,0.4667,2026-09-10
+lerobot/pusht,pusht,ldlj,0.9.0,206,0,0.0,0.0,0.0183,0.0,2026-09-10
+lerobot/aloha_sim_insertion_scripted,aloha,jitter_cv,0.9.0,50,0,0.0,0.0,0.0714,0.1429,2026-09-10
+lerobot/aloha_sim_insertion_scripted,aloha,dropout_rate,0.9.0,50,0,0.0,0.0,0.0714,0.1429,2026-09-10
+lerobot/aloha_sim_insertion_scripted,aloha,spike_rate,0.9.0,50,4,0.08,0.0315,0.1884,0.8571,2026-09-10
+lerobot/aloha_sim_insertion_scripted,aloha,vel_disc_rate,0.9.0,50,0,0.0,0.0,0.0714,0.1429,2026-09-10
+lerobot/aloha_sim_insertion_scripted,aloha,ldlj,0.9.0,50,0,0.0,0.0,0.0714,1.0,2026-09-10
