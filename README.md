@@ -5,7 +5,7 @@
   <a href="https://omertt27.github.io/Calibra/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-blue" alt="Docs"/></a>
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-BSL_1.1-blue.svg" alt="License"/></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v0.9.0-informational" alt="Changelog"/></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v0.10.0-informational" alt="Changelog"/></a>
 </p>
 
 <p align="center"><b>Train robot policies with up to 75% less data.</b></p>
@@ -406,7 +406,16 @@ result = selector.select(batch, report)
 
 ## Roadmap
 
-**v0.9.0 (current) — Dataset decision layer & annotate mode:** `calibra prune`
+**v0.10.0 (current) — Calibrated detection:** `CalibrationRegistry` ships
+empirically-measured benign firing rates for each detector on known-clean LeRobot
+datasets (PushT n=206, ALOHA n=50), so flagged episodes can be compared against a
+baseline rather than treated as absolute. `AnomalySummary` (schema 1.2.0) exposes
+per-detector context — baseline, concentration, detection rate — in the public JSON
+report. Human-reviewed `FindingCharacterization` evidence schema (ADR-012) provides
+the vocabulary to distinguish true corruption from unusual-but-valid episodes. See
+[CHANGELOG.md](CHANGELOG.md).
+
+**v0.9.0 — Dataset decision layer & annotate mode:** `calibra prune`
 can now emit a per-episode decision (`KEEP` / `DROP` / `ANNOTATE` / …) plus a
 characterization (`quality_risk`, `coverage_value`, `anomaly_score`, `calibra_score`,
 `redundancy`), and `--annotate` writes it as a model-agnostic training sidecar

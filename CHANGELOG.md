@@ -4,6 +4,66 @@ All notable changes to Calibra are documented here.
 
 ## [Unreleased]
 
+## [0.10.0] — Calibrated detection
+
+Addresses the core HF feedback question: "Is this anomaly actually corruption, or
+just unusual data?" Three interlocking additions answer it. First, a
+`CalibrationRegistry` ships empirically-measured benign firing rates — on known-clean
+LeRobot datasets (PushT n=206, ALOHA n=50) the detectors fire at a known base rate,
+so any observed rate can be compared to a baseline rather than treated as absolute.
+Second, `AnomalySummary` (new in schema 1.2.0) surfaces that context — per-detector
+flag counts, benign baseline rate, detection rate, and concentration score — directly
+in the public JSON report. Third, `calibra.schema.evidence` (ADR-012) introduces the
+`FindingCharacterization` vocabulary (`TRUE_CORRUPTION` / `UNUSUAL_VALID` /
+`AMBIGUOUS`) for human-reviewed findings, letting teams build a labeled dataset that
+quantifies per-detector precision. Architecture rule enforced throughout: detected
+anomaly ≠ confirmed corruption ≠ DROP decision.
+
+### Added
+
+- **`CalibrationRegistry` / `CalibrationProfile`** (`calibra/calibration.py`) —
+  in-memory registry of empirically-measured benign firing rates. Each profile is
+  keyed by detector, dataset, task family, and detector version so a PushT baseline
+  is never silently applied to ALOHA. `lookup()` returns `None` when no baseline
+  exists — callers must not substitute a generic number. `benign_firing_rate()` and
+  `calibration_context()` provide one-line display strings (e.g. "7.8% flag rate
+  (clean baseline 3.2% from lerobot/pusht — 2.4× above)"). Profiles can be
+  serialized (`save_json` / `load_json`) and merged so user-measured baselines
+  override the built-ins. `DEFAULT_REGISTRY` ships 10 benchmark-measured profiles
+  across PushT (n=206) and ALOHA (n=50) for five detectors
+  (`jitter_cv`, `dropout_rate`, `spike_rate`, `vel_disc_rate`, `ldlj`). Provenance
+  tag `"builtin_estimate"` vs `"benchmark_run"` is always shown so users know the
+  quality of the baseline.
+- **`AnomalySummary` / `DetectorCalibrationSummary`** (schema 1.2.0,
+  `calibra/schema/public_report.py`) — new top-level field on `CalibraReport`
+  (null when produced without anomaly detection). `AnomalySummary` carries
+  `total_flags`, `affected_episodes`, `affected_episode_rate`, `n_total_episodes`,
+  and a `detectors` list. Each `DetectorCalibrationSummary` pairs the observed
+  `fraction_flagged` against `benign_firing_rate` from the registry, plus
+  `corrupted_episode_detection_rate` from the benchmark and a `concentration` tag
+  (`"spread"` / `"clustered"` / `"endpoint"` / `"unknown"`). The architecture note
+  is encoded in the docstring: anomaly ≠ corruption ≠ DROP.
+- **`Finding.benign_baseline_rate` / `Finding.baseline_source`** — two new nullable
+  fields on `Finding` (schema 1.2.0) attach the calibration context per-finding so
+  consumers that only read individual findings still get the baseline.
+- **Human-reviewed evidence schema (ADR-012)** (`calibra/schema/evidence.py`) —
+  `FindingCharacterization` enum (`TRUE_CORRUPTION` / `UNUSUAL_VALID` / `AMBIGUOUS`),
+  `ReviewedFinding` (dataset, episode, detector, characterization, reviewer note,
+  raw signal context), and `ReviewedFindingDataset` (JSONL-backed collection with
+  `precision_table()`, `to_markdown()`, `summary()` for per-detector corruption vs.
+  unusual-valid breakdowns).
+- **Benign firing rate benchmark** (`experiments/benign_firing_rate_benchmark.py`) —
+  full HuggingFace-backed script that downloads LeRobot datasets, runs every detector
+  on every episode, computes Wilson-score 95% CIs, and writes
+  `experiments/results/benign_firing_rates.{csv,json,md}`. Results for PushT and ALOHA
+  sim are included. The benchmark also measures corrupted-episode detection rate
+  against synthetically injected defects.
+
+### Changed
+
+- `CalibraReport.schema_version` bumped to `"1.2.0"`. Reports from earlier versions
+  are structurally forward-compatible — new nullable fields default to null.
+
 ## [0.9.0] — Dataset decision layer & annotate mode
 
 ADR-011: `calibra prune` no longer only removes episodes. It can now emit a
