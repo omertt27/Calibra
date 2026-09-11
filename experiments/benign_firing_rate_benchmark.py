@@ -61,7 +61,6 @@ computed automatically; see the --sample-review flag for a review helper.
 from __future__ import annotations
 
 import argparse
-import copy
 import json
 import pathlib
 import random

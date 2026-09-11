@@ -178,9 +178,10 @@ def _build_anomaly_summary(
     The summary records what the detectors observed; the decision layer
     (EpisodeCharacterization / CurationReport) determines what to do.
     """
+    from collections import Counter
+
     from calibra.anomalies import find_outliers, firing_rate_summary
     from calibra.calibration import DEFAULT_REGISTRY
-    from collections import Counter
 
     if diag.n_episodes < 5:
         return None
@@ -221,7 +222,6 @@ def _build_anomaly_summary(
         det = entry["detector"]
         frac = entry["fraction"]
         baseline_rate = entry["benign_baseline_rate"]
-        baseline_src = entry["baseline_source"]
 
         profile = DEFAULT_REGISTRY.lookup(det, dataset=dataset, task_family=task_family)
         n_baseline = profile.n_episodes if profile else None
