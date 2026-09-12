@@ -228,9 +228,7 @@ def _build_anomaly_summary(
         baseline_ds = profile.dataset if profile else None
 
         # Concentration per detector
-        det_idxs = sorted(
-            a.episode_idx for a in anomalies if any(f.metric == det for f in a.flags)
-        )
+        det_idxs = sorted(a.episode_idx for a in anomalies if any(f.metric == det for f in a.flags))
         if len(det_idxs) == 0:
             conc = "unknown"
         elif len(det_idxs) == 1:

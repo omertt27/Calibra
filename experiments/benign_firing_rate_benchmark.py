@@ -96,8 +96,7 @@ def _load_lerobot_batch(dataset_id: str, max_episodes: Optional[int] = None):
         from datasets import load_dataset
     except ImportError as exc:
         raise ImportError(
-            "Benchmark requires the 'datasets' package. "
-            "Install: pip install datasets"
+            "Benchmark requires the 'datasets' package. Install: pip install datasets"
         ) from exc
 
     from calibra.schema.episode import Episode, EpisodeBatch, EpisodeMetadata
@@ -122,10 +121,7 @@ def _load_lerobot_batch(dataset_id: str, max_episodes: Optional[int] = None):
     obs_col = _detect(["observation.state", "state", "observation", "proprio"])
 
     if action_col is None or ep_index_col is None:
-        raise ValueError(
-            f"Cannot find required columns in {dataset_id}. "
-            f"Available: {sorted(cols)}"
-        )
+        raise ValueError(f"Cannot find required columns in {dataset_id}. Available: {sorted(cols)}")
 
     # Group rows by episode
     rows_by_ep: dict[int, list[dict]] = defaultdict(list)
@@ -172,7 +168,9 @@ def _load_lerobot_batch(dataset_id: str, max_episodes: Optional[int] = None):
             )
         )
 
-    return EpisodeBatch(episodes=episodes, dataset_name=dataset_id, format="lerobot-v2", source_path=dataset_id)
+    return EpisodeBatch(
+        episodes=episodes, dataset_name=dataset_id, format="lerobot-v2", source_path=dataset_id
+    )
 
 
 # ── corruption ────────────────────────────────────────────────────────────────
@@ -543,7 +541,7 @@ def _write_markdown(
         lines += [
             f"### {dataset} (task: {task_family}, n={n})",
             "",
-            f"Episode flag rate: {n_flag}/{n} = {n_flag/n:.1%}",
+            f"Episode flag rate: {n_flag}/{n} = {n_flag / n:.1%}",
             f"Top-5 episode concentration: {conc:.0%} of flags",
         ]
         if pos:
@@ -598,9 +596,7 @@ def _write_markdown(
     print(f"  -> {path}")
 
 
-def _print_summary_table(
-    clean_results: list[dict], corrupt_results: dict[str, dict]
-) -> None:
+def _print_summary_table(clean_results: list[dict], corrupt_results: dict[str, dict]) -> None:
     header = f"\n{'Detector':<18} {'Clean rate':>11} {'Detection rate':>14} {'Ratio':>7}"
     print("=" * 55)
     print("Calibra Detector Calibration - Two-Axis Summary")
@@ -625,7 +621,11 @@ def _print_summary_table(
         corrupt_rate = np.mean(det_corrupt[det]) if det_corrupt[det] else None
         clean_str = f"{clean_rate:.1%}"
         corrupt_str = f"{corrupt_rate:.1%}" if corrupt_rate is not None else "--"
-        ratio = f"{corrupt_rate / clean_rate:.0f}x" if corrupt_rate is not None and clean_rate > 1e-9 else "--"
+        ratio = (
+            f"{corrupt_rate / clean_rate:.0f}x"
+            if corrupt_rate is not None and clean_rate > 1e-9
+            else "--"
+        )
         print(f"  {det:<16} {clean_str:>11} {corrupt_str:>14} {ratio:>7}")
 
     print("-" * 55)
@@ -722,8 +722,7 @@ def main() -> int:
         cr = measure_clean_firing_rates(dataset_id, task_family, batch, clean_report)
         clean_results.append(cr)
         print(
-            f"  Episode flag rate: {cr['n_flagged_episodes']}/{n} = "
-            f"{cr['episode_flag_rate']:.1%}"
+            f"  Episode flag rate: {cr['n_flagged_episodes']}/{n} = {cr['episode_flag_rate']:.1%}"
         )
         print(f"  Top-5 episode concentration: {cr['top5_flag_fraction']:.0%} of flags")
         if cr.get("position_note"):

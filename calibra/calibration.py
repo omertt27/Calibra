@@ -223,9 +223,7 @@ class CalibrationRegistry:
 
     def merge(self, other: "CalibrationRegistry") -> "CalibrationRegistry":
         """Return a new registry combining profiles from both, other takes precedence."""
-        merged = {
-            (p.detector, p.dataset, p.task_family): p for p in self._profiles
-        }
+        merged = {(p.detector, p.dataset, p.task_family): p for p in self._profiles}
         for p in other._profiles:
             merged[(p.detector, p.dataset, p.task_family)] = p
         return CalibrationRegistry(list(merged.values()))

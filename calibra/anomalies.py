@@ -52,7 +52,9 @@ class EpisodeFlag:
     median: float
     deviation_mads: float
     higher_is_worse: bool
-    benign_baseline_rate: float | None = None  # fraction flagged on known-clean datasets (None = no baseline available)
+    benign_baseline_rate: float | None = (
+        None  # fraction flagged on known-clean datasets (None = no baseline available)
+    )
     baseline_source: str | None = None  # e.g. "lerobot/pusht (n=206)"
     trigger_start: int | None = None  # approximate first step that drove the flag
     trigger_end: int | None = None  # approximate last step that drove the flag
@@ -279,7 +281,7 @@ def render(anomalies: list[EpisodeAnomaly], n_episodes: int) -> str:
         lines.append("")
         lines.append("Calibration Context (detector firing rates vs. known-clean baselines)")
         lines.append(f"  {'Detector':<18} {'Your rate':>9}  {'Clean baseline':>14}  Signal")
-        lines.append(f"  {'─'*18} {'─'*9}  {'─'*14}  {'─'*20}")
+        lines.append(f"  {'─' * 18} {'─' * 9}  {'─' * 14}  {'─' * 20}")
         for entry in summary:
             your_pct = f"{entry['fraction']:.1%}"
             baseline = entry["benign_baseline_rate"]
@@ -302,12 +304,8 @@ def render(anomalies: list[EpisodeAnomaly], n_episodes: int) -> str:
                     baseline_str += f" [{baseline_src.split('(')[0].strip()}]"
             lines.append(f"  {entry['detector']:<18} {your_pct:>9}  {baseline_str:>14}  {signal}")
         lines.append("")
-        lines.append(
-            "A flag means this episode is unusual relative to the rest of this"
-        )
-        lines.append(
-            "dataset — not that it is corrupted. Review flagged episodes before"
-        )
+        lines.append("A flag means this episode is unusual relative to the rest of this")
+        lines.append("dataset — not that it is corrupted. Review flagged episodes before")
         lines.append("deciding to drop, downweight, or annotate them.")
     else:
         lines.append(
@@ -390,12 +388,8 @@ def concentration_report(anomalies: list[EpisodeAnomaly], n_episodes: int) -> st
     ]
 
     if top5_pct > 0.70:
-        lines.append(
-            "  → Flags are concentrated. Check these episodes for a shared"
-        )
-        lines.append(
-            "    cause: recording session, operator, task condition, or hardware."
-        )
+        lines.append("  → Flags are concentrated. Check these episodes for a shared")
+        lines.append("    cause: recording session, operator, task condition, or hardware.")
     else:
         lines.append("  → Flags are spread across the dataset (no strong concentration).")
 

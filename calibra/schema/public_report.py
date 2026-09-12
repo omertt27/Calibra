@@ -139,7 +139,9 @@ class Finding(BaseModel):
     observed_value: Optional[float] = None
     observed_unit: str = ""
     threshold: Optional[float] = None
-    benign_baseline_rate: Optional[float] = None  # fraction flagged on known-clean datasets; null = no baseline
+    benign_baseline_rate: Optional[float] = (
+        None  # fraction flagged on known-clean datasets; null = no baseline
+    )
     baseline_source: Optional[str] = None  # e.g. "lerobot/pusht (n=206, v0.10.0)"
 
 
