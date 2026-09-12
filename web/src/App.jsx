@@ -108,6 +108,14 @@ function HeroTrajectories() {
     let points = []
     let raf = 0
 
+    const WAVES = [
+      { yRatio: 0.22, amp: 38, freq: 0.0042, speed: 0.008, opacity: 0.10, width: 1.5, phase: 0 },
+      { yRatio: 0.38, amp: 28, freq: 0.0055, speed: 0.006, opacity: 0.07, width: 1.2, phase: 1.8 },
+      { yRatio: 0.54, amp: 44, freq: 0.0036, speed: 0.010, opacity: 0.09, width: 1.8, phase: 3.5 },
+      { yRatio: 0.70, amp: 22, freq: 0.0064, speed: 0.007, opacity: 0.06, width: 1.0, phase: 0.9 },
+      { yRatio: 0.85, amp: 32, freq: 0.0048, speed: 0.009, opacity: 0.08, width: 1.4, phase: 2.6 },
+    ]
+
     const seed = () => {
       const count = Math.round(Math.min(104, Math.max(30, (width * height) / 14000)))
       points = Array.from({ length: count }, () => ({
@@ -138,10 +146,29 @@ function HeroTrajectories() {
         p.x = Math.max(0, Math.min(width, p.x))
         p.y = Math.max(0, Math.min(height, p.y))
       }
+      for (const w of WAVES) {
+        w.phase += w.speed
+      }
+    }
+
+    const drawWaves = () => {
+      for (const w of WAVES) {
+        const baseY = height * w.yRatio
+        ctx.beginPath()
+        ctx.lineWidth = w.width
+        ctx.strokeStyle = `rgba(255, 255, 255, ${w.opacity})`
+        for (let x = 0; x <= width; x += 2) {
+          const y = baseY + Math.sin(x * w.freq + w.phase) * w.amp
+          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+        }
+        ctx.stroke()
+      }
     }
 
     const draw = () => {
       ctx.clearRect(0, 0, width, height)
+
+      drawWaves()
 
       for (let i = 0; i < points.length; i++) {
         const a = points[i]

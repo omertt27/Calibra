@@ -198,17 +198,6 @@ footer a:hover {
   border-bottom: 1px solid var(--line);
 }
 
-.hero::before {
-  content: '';
-  position: absolute;
-  inset: -34px;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px);
-  background-size: 34px 34px;
-  pointer-events: none;
-  animation: grid-drift 22s linear infinite;
-  z-index: 0;
-}
-
 @keyframes grid-drift {
   from { transform: translate(0, 0); }
   to { transform: translate(34px, 34px); }
